@@ -396,7 +396,7 @@ class FloorPlansController extends Controller
                 'floorplan_version' => $floorplan->versions()->latest('version')->value('version'),
                 'date_version' => $f_version ? Carbon::parse($f_version->updated_at)->format('Y-m-d') : '',
                 'customer' => $floorplan->customer->name,
-                'service' => $floorplan->service->name,
+                'service' => $floorplan->service->name ?? '',
                 'count' => $devices->count(),
                 'legend' => $legend
             ];
