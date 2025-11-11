@@ -1,0 +1,78 @@
+{
+    "NameId": 16,
+    "ExpeditionPlace": "78240",
+    "Folio": 1,
+    "CfdiType": "N",
+    "PaymentMethod": "PUE",
+    
+    "Receiver": {
+        "Rfc": "FUNK671228PH6",
+        "CfdiUse": "CN01",
+        "Name": "KARLA FUENTE NOLASCO",
+        "FiscalRegime": "605",
+        "TaxZipCode": "83200"
+    },
+
+    "Complemento": {
+        "Payroll": {
+            "Type": "O",
+            "DailySalary": 0.0,
+            "BaseSalary": 0.0,
+            "PaymentDate": "2019-09-06",
+            "InitialPaymentDate": "2019-08-22",
+            "FinalPaymentDate": "2019-09-06",
+            "DaysPaid": 15,
+            "Issuer": {
+                "EmployerRegistration": "B5510768108"
+            },
+            "Employee": {
+                "Curp": "GAMA800912MSPRRD05",
+                "SocialSecurityNumber": "92919084431",
+                "PositionRisk": 1,
+                "ContractType": "01",
+                "RegimeType": "02",
+                "Unionized": false,
+                "TypeOfJourney": "01",
+                "EmployeeNumber": "006",
+                "Department": null,
+                "Position": null,
+                "FrequencyPayment": "04",
+                "FederalEntityKey": "SLP",
+                "DailySalary": 50.0,
+                "StartDateLaborRelations": "2019-01-01"
+            },
+            "Perceptions": {
+                "Details": [
+                    {
+                        "PerceptionType": "046",
+                        "Code": "046",
+                        "Description": "ASIMILIADOS A SALARIOS",
+                        "TaxedAmount": 3621.18,
+                        "ExemptAmount": 0.0
+                    }
+                ]
+            },
+            "Deductions": {
+                "Details": [
+                    {
+                        "DeduccionType": "002",
+                        "Code": "002",
+                        "Description": "ISR",
+                        "Amount": 272.6
+                    }
+                ]
+            },
+            "OtherPayments": [
+                {
+                    "EmploymentSubsidy": {
+                        "Amount": "10"
+                    },
+                    "OtherPaymentType": "002",
+                    "Code": "000",
+                    "Description": "Subsidio",
+                    "Amount": 10
+                }
+            ]
+        }
+    }
+}

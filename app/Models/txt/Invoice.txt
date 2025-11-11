@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Invoice extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'folio',
+        'serie',
+        'UUID',
+        'type',
+        'customer_id',
+        'issue_date',
+        'due_date',
+        'expedition_place',
+        'subtotal',
+        'tax',
+        'total',
+        'currency',
+        'notes',
+        'status',
+        'cfdi_use',
+        'payment_type',
+        'payment_terms',
+        'payment_method',
+        'csd_serial_number',
+        'xml_file',
+        'pdf_path'
+    ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(InvoiceItem::class, 'invoice_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(InvoicePayment::class, 'invoice_id');
+    }
+}

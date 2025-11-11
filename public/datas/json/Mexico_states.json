@@ -1,0 +1,40 @@
+[
+    { "key": "AGS", "name": "Aguascalientes" },
+    { "key": "BC", "name": "Baja California" },
+    { "key": "BCS", "name": "Baja California Sur" },
+    { "key": "CHI", "name": "Chihuahua" },
+    { "key": "CHS", "name": "Chiapas" },
+    { "key": "CMP", "name": "Campeche" },
+    { "key": "CMX", "name": "Ciudad de México" },
+    { "key": "COA", "name": "Coahuila" },
+    { "key": "COL", "name": "Colima" },
+    { "key": "DGO", "name": "Durango" },
+    { "key": "GRO", "name": "Guerrero" },
+    { "key": "GTO", "name": "Guanajuato" },
+    { "key": "HGO", "name": "Hidalgo" },
+    { "key": "JAL", "name": "Jalisco" },
+    { "key": "MCH", "name": "Michoacán" },
+    { "key": "MEX", "name": "Estado de México" },
+    { "key": "MOR", "name": "Morelos" },
+    { "key": "NAY", "name": "Nayarit" },
+    { "key": "NL", "name": "Nuevo León" },
+    { "key": "OAX", "name": "Oaxaca" },
+    { "key": "PUE", "name": "Puebla" },
+    { "key": "QR", "name": "Quintana Roo" },
+    { "key": "QRO", "name": "Querétaro" },
+    { "key": "SIN", "name": "Sinaloa" },
+    { "key": "SLP", "name": "San Luis Potosí" },
+    { "key": "SON", "name": "Sonora" },
+    { "key": "TAB", "name": "Tabasco" },
+    { "key": "TLX", "name": "Tlaxcala" },
+    { "key": "TMS", "name": "Tamaulipas" },
+    { "key": "VER", "name": "Veracruz" },
+    { "key": "YUC", "name": "Yucatán" },
+    { "key": "ZAC", "name": "Zacatecas" }
+]
+    
+    
+    
+    
+    
+    

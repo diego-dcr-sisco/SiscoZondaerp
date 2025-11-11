@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "de9c8dab-3351-47ee-8e99-05d1f5f43c73"
+      }
+    },
+    "android": {
+      "package": "com.siscoplagas.siscoapp"
+    }
+  }
+}
