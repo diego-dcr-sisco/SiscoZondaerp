@@ -88,7 +88,7 @@ use App\Models\Question;
 }
 */
 
-/*class MakerDataSeeder extends Seeder
+class MakerDataSeeder extends Seeder
 {
     public function run(): void
     {
@@ -100,11 +100,11 @@ use App\Models\Question;
         }
         $this->command->info("¡Copia actualizados! Se actualizaron {$trackings->count()} usuarios.");
     }
-}*/
+}
 
 
 // Section -> Control Points 
-class MakerDataSeeder extends Seeder
+/*class MakerDataSeeder extends Seeder
 {
     private $file_answers_path = 'datas/json/answers.json';
 
@@ -131,4 +131,4 @@ class MakerDataSeeder extends Seeder
             ]);
         }
     }
-}
+}*/
