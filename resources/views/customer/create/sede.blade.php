@@ -17,7 +17,7 @@
                     <div class="col-lg-4 col-12 mb-3">
                         <label for="name" class="form-label is-required">Matriz: </label>
                         @isset($customer_matrix)
-                            <input type="hidden" id="customer-matrix" name="customer-matrix"
+                            <input type="hidden" id="customer-matrix" name="customer_matrix"
                                 value="{{ $customer_matrix?->id }}" />
                             <input type="text" class="form-control" value="{{ $customer_matrix?->name }}" disabled  >
                         @else
