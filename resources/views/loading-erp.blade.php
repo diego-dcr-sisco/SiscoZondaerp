@@ -145,7 +145,7 @@
 
 <body>
     <div class="loading-erp-container">
-        <img src="{{ asset('images/header_logo.png') }}" alt="ZONDA Logo" class="logo-animation">
+        <img src="{{ asset('images/zonda/isotype_logo.png') }}" alt="ZONDA Logo" class="logo-animation">
 
         <div class="progress-bar">
             <div class="progress-fill"></div>

@@ -15,7 +15,7 @@
                     <!-- Logo en la parte superior del card -->
                     <div class="card-header bg-transparent border-0 p-5 pb-0">
                         <div class="text-center">
-                            <img src="{{ asset('images/login_logo.png') }}" class="img-fluid" alt="Logo"
+                            <img src="{{ asset('images/zonda/landscape_logo.png') }}" class="img-fluid" alt="Logo"
                                 style="max-height: 120px;">
                         </div>
                     </div>

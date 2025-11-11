@@ -91,7 +91,7 @@ background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 6
         <!-- Logo del menú -->
         <a href="{{ !auth()->check() ? '/' : (!auth()->user()->hasRole('Cliente') ? route('loading-erp') : route('client.index', ['section' => 1])) }}"
             class="navbar-brand">
-            <img src="{{ asset('images/header_logo.png') }}" alt="Logo" class="img-fluid">
+            <img src="{{ asset('images/zonda/isotype_logo.png') }}" alt="Logo" class="img-fluid">
         </a>
 
         <!-- Botón toggle para móviles -->
