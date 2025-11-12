@@ -670,7 +670,7 @@ class OrderController extends Controller
 
     public function filter(Request $request)
     {
-        //dd($request->all());
+        // dd($request->all());
         // Obtener parámetros de ordenamiento
         $size = $request->input('size');
         $sort = $request->input('sort', 'id');
@@ -680,6 +680,10 @@ class OrderController extends Controller
         $query = Order::query();
 
         // Aplicar filtros (mantén tus filtros existentes)
+        if($request->filled('folio')) {
+            $query->where('folio', 'like', '%' . $request->input('folio') . '%');
+        }
+
         if ($request->filled('customer')) {
             $searchTerm = '%' . $request->input('customer') . '%';
             $customerIds = Customer::where('name', 'LIKE', $searchTerm)->pluck('id');

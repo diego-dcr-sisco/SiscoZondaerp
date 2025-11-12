@@ -120,7 +120,10 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach ($movement->products as $mp)
+                                        @php
+                                            var_dump($movement->products);
+                                        @endphp
+                                        {{-- @foreach ($movement?->products as $mp)
                                             <tr>
                                                 <th scope="row">{{ $mp->product->name }}</th>
                                                 <td>{{ $mp->lot->registration_number ?? '-' }}</td>
@@ -131,7 +134,7 @@
                                                     class="{{ $mp->movement && $mp->movement->type == 'in' ? 'text-success' : 'text-danger' }}">
                                                     {{ $mp->amount }}</td>
                                             </tr>
-                                        @endforeach
+                                        @endforeach--}}
                                     </tbody>
                                 </table>
                             </td>
