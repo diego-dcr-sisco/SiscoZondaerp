@@ -122,13 +122,11 @@
                             </td>
                             <td class="text-center">
                                 @can('write_customer')
-                                    @if ($customer->general_sedes != 0)
-                                        <a href="{{ route('customer.quote', ['id' => $customer->id, 'class' => 'customer']) }}"
-                                            class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                            data-bs-title="Cotizaciones">
-                                            <i class="bi bi-clipboard-data-fill"></i>
-                                        </a>
-                                    @endif
+                                    <a href="{{ route('customer.quote', ['id' => $customer->id, 'class' => 'customer']) }}"
+                                        class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                        data-bs-title="Cotizaciones">
+                                        <i class="bi bi-clipboard-data-fill"></i>
+                                    </a>
 
                                     <a href="{{ route('customer.edit.sede', ['id' => $customer->id]) }}"
                                         class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
