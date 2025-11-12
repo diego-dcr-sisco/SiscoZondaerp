@@ -424,7 +424,7 @@ class OrderController extends Controller
         return $data_arr;
     }
 
-    public function edit(string $id): View
+    /*public function edit(string $id): View
     {
         try {
             $selected_services = [];
@@ -503,7 +503,92 @@ class OrderController extends Controller
             $error = 'Ocurrió un error al cargar la orden. Por favor, intente nuevamente.';
             return view('order.index', compact('error'));
         }
+    }*/
+
+    public function edit(string $id): View
+    {
+        try {
+            $selected_services = [];
+            $services_configuration = [];
+            $cost = 0;
+
+            // Cargar solo la orden específica con relaciones necesarias
+            $order = Order::with(['services.serviceType', 'services.businessLine', 'customer'])
+                ->findOrFail($id);
+
+            if (!isset($order->customer_id)) {
+                $error = 'No se ha seleccionado un cliente.';
+                return view('order.index', compact('error'));
+            }
+
+            // Eliminar estas líneas que consumen mucha memoria
+            // $orders = Order::orderBy('id', 'desc')->get(); // ❌ Esto carga TODAS las órdenes
+            // $order_status = OrderStatus::all(); // ❌ Esto carga TODOS los estados
+
+            $customer = $order->customer; // Ya viene cargado con with()
+
+            foreach ($order->services as $service) {
+                $selected_services[] = [
+                    'id' => $service->id,
+                    'prefix' => $service->prefix,
+                    'name' => $service->name,
+                    'type' => [$service->serviceType->name],
+                    'line' => [$service->businessLine->name],
+                    'cost' => $service->cost,
+                    'propagate_description' => $order->propagateByService($service->id)->text ?? null,
+                ];
+
+                $services_configuration[] = [
+                    'service_id' => $service->id,
+                    'description' => $order->propagateByService($service->id)->text ?? null,
+                ];
+
+                $cost += $service->cost;
+            }
+
+            // Optimizar la consulta de técnicos
+            $technicians = Technician::with('user')
+                ->join('user', 'technician.user_id', '=', 'user.id')
+                ->orderBy('user.name', 'ASC')
+                ->select('technician.*')
+                ->get();
+
+            $navigation = [
+                'Orden de servicio' => route('order.edit', ['id' => $order->id]),
+                'Reporte' => route('report.review', ['id' => $order->id]),
+                'Seguimientos' => route('tracking.create.order', ['id' => $order->id]),
+            ];
+
+            // Si necesitas order_status para la vista, cargar solo lo necesario
+            $order_status = OrderStatus::select('id', 'name')->get();
+
+            return view(
+                'order.edit',
+                compact(
+                    'order',
+                    'order_status',
+                    'customer',
+                    'technicians',
+                    'selected_services',
+                    'cost',
+                    'navigation',
+                    'services_configuration'
+                )
+            );
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            $error = 'La orden no fue encontrada.';
+            return view('order.index', compact('error'));
+
+        } catch (\Exception $e) {
+            // Log del error
+            \Log::error('Error en OrderController@edit - ID: ' . $id . ' - Error: ' . $e->getMessage());
+
+            $error = 'Ocurrió un error al cargar la orden. Por favor, intente nuevamente.';
+            return view('order.index', compact('error'));
+        }
     }
+
     public function update(Request $request, string $id): RedirectResponse
     {
         //dd($request->all());
