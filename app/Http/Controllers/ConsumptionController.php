@@ -52,89 +52,121 @@ class ConsumptionController extends Controller
 
     public function index(Request $request)
     {
-        dd($request->all());
-        $consumptions_data = [];
-        $last_start = Carbon::now()->startOfMonth()->subMonth();
-        $last_end = Carbon::now()->subMonth()->endOfMonth();
+        try {
+            // dd($request->all()); // Comentado temporalmente para debugging
 
-        $orders_query = Order::query();
+            $consumptions_data = [];
+            $last_start = Carbon::now()->startOfMonth()->subMonth();
+            $last_end = Carbon::now()->subMonth()->endOfMonth();
 
-        // Almacenar los valores de los filtros para pasarlos a la vista
-        $filters = [
-            'comercial_zone' => $request->comercial_zone,
-            'customers' => $request->customers,
-            'date' => $request->date
-        ];
+            $orders_query = Order::query();
 
-        if ($request->filled('comercial_zone')) {
-            $comercial_zone = ComercialZone::find($request->comercial_zone);
-            $customers = $comercial_zone->customers();
-            $orders_query = $orders_query->whereIn('customer_id', $customers->pluck('customer.id'));
-        }
+            // Almacenar los valores de los filtros para pasarlos a la vista
+            $filters = [
+                'comercial_zone' => $request->comercial_zone,
+                'customers' => $request->customers,
+                'date' => $request->date
+            ];
 
-        if ($request->filled('customers')) {
-            $customer_names = explode(",", $request->customers);
-            $customers_query = Customer::query();
-            foreach ($customer_names as $customer_name) {
-                $customers_query->orWhere('name', 'LIKE', "%{$customer_name}%");
+            if ($request->filled('comercial_zone')) {
+                $comercial_zone = ComercialZone::find($request->comercial_zone);
+                if ($comercial_zone) {
+                    $customers = $comercial_zone->customers();
+                    $orders_query = $orders_query->whereIn('customer_id', $customers->pluck('customer.id'));
+                }
             }
-            $customers = $customers_query->get();
-            $orders_query = $orders_query->whereIn('customer_id', $customers->pluck('id'));
-        }
 
-        if ($request->filled('date')) {
-            [$startDate, $endDate] = array_map(function ($d) {
-                return Carbon::createFromFormat('d/m/Y', trim($d));
-            }, explode(' - ', $request->date));
-
-            // CORRECCIÓN: Usar las fechas del filtro en lugar de las fechas por defecto
-            $startDate = $startDate->format('Y-m-d');
-            $endDate = $endDate->format('Y-m-d');
-            $orders_query = $orders_query->whereBetween('programmed_date', [$startDate, $endDate]);
-        }
-
-        $orders = $orders_query->get();
-        $wos = WarehouseOrder::whereIn('order_id', $orders_query->pluck('id'))->get();
-
-        foreach ($wos as $wo) {
-            $product_id = $wo->product_id;
-            $customer_id = $wo->order->customer_id;
-
-            $key = $product_id . '_' . $customer_id;
-
-            if (isset($consumptions_data[$key])) {
-                $consumptions_data[$key]['amount'] += $wo->amount;
-            } else {
-                $czcs = ComercialZoneCustomer::where('customer_id', $wo->order->customer_id)->get();
-                $comercial_zones = ComercialZone::whereIn('id', $czcs->pluck('comercial_zone_id'))->orderBy('name')->get();
-
-                $consumptions_data[$key] = [
-                    'key' => $key,
-                    'product_id' => $product_id,
-                    'product_name' => $wo->product->name,
-                    'product_metric' => $wo->product->metric->value,
-                    'customer_id' => $customer_id,
-                    'customer_name' => $wo->order->customer->name,
-                    'amount' => $wo->amount,
-                    'comercial_zones' => $comercial_zones->pluck('name', 'code')->toArray(),
-                    'timelapse' => $request->filled('date') ? $request->date : $last_start->format('d/m/Y') . ' - ' . $last_end->format('d/m/Y')
-                ];
+            if ($request->filled('customers')) {
+                $customer_names = explode(",", $request->customers);
+                $customers_query = Customer::query();
+                foreach ($customer_names as $customer_name) {
+                    $customers_query->orWhere('name', 'LIKE', "%{$customer_name}%");
+                }
+                $customers = $customers_query->get();
+                $orders_query = $orders_query->whereIn('customer_id', $customers->pluck('id'));
             }
+
+            if ($request->filled('date')) {
+                $dates = explode(' - ', $request->date);
+                if (count($dates) === 2) {
+                    [$startDate, $endDate] = array_map(function ($d) {
+                        return Carbon::createFromFormat('d/m/Y', trim($d));
+                    }, $dates);
+
+                    $startDate = $startDate->format('Y-m-d');
+                    $endDate = $endDate->format('Y-m-d');
+                    $orders_query = $orders_query->whereBetween('programmed_date', [$startDate, $endDate]);
+                }
+            }
+
+            $orders = $orders_query->get();
+            $wos = WarehouseOrder::whereIn('order_id', $orders_query->pluck('id'))->get();
+
+            foreach ($wos as $wo) {
+                // Verificar relaciones antes de acceder
+                if (!$wo->order || !$wo->order->customer || !$wo->product) {
+                    continue; // Saltar si faltan relaciones
+                }
+
+                $product_id = $wo->product_id;
+                $customer_id = $wo->order->customer_id;
+
+                $key = $product_id . '_' . $customer_id;
+
+                if (isset($consumptions_data[$key])) {
+                    $consumptions_data[$key]['amount'] += $wo->amount;
+                } else {
+                    $czcs = ComercialZoneCustomer::where('customer_id', $wo->order->customer_id)->get();
+                    $comercial_zones = ComercialZone::whereIn('id', $czcs->pluck('comercial_zone_id'))->orderBy('name')->get();
+
+                    $consumptions_data[$key] = [
+                        'key' => $key,
+                        'product_id' => $product_id,
+                        'product_name' => $wo->product->name,
+                        'product_metric' => $wo->product->metric->value ?? 'N/A',
+                        'customer_id' => $customer_id,
+                        'customer_name' => $wo->order->customer->name,
+                        'amount' => $wo->amount,
+                        'comercial_zones' => $comercial_zones->pluck('name', 'code')->toArray(),
+                        'timelapse' => $request->filled('date') ? $request->date : $last_start->format('d/m/Y') . ' - ' . $last_end->format('d/m/Y')
+                    ];
+                }
+            }
+
+            $consumptions_data = array_values($consumptions_data);
+            $comercial_zones = ComercialZone::orderBy('name')->get();
+            $navigation = $this->navigation;
+
+            // Pasar los filtros a la vista
+            return view('stock.consumptions.table', compact(
+                'comercial_zones',
+                'consumptions_data',
+                'navigation',
+                'filters'
+            ));
+
+        } catch (\Exception $e) {
+            // Log del error completo
+            \Log::error('Error en consumptions index: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+
+            // Para desarrollo, muestra el error completo
+            if (app()->environment('local')) {
+                dd([
+                    'error' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+
+            // Para producción, redirige con mensaje de error
+            return redirect()->back()->with('error', 'Ocurrió un error al cargar los datos: ' . $e->getMessage());
         }
-
-        $consumptions_data = array_values($consumptions_data);
-        $comercial_zones = ComercialZone::orderBy('name')->get();
-        $navigation = $this->navigation;
-
-        //dd($filters);   
-
-        // Pasar los filtros a la vista
-        return view('stock.consumptions.table', compact(
-            'comercial_zones',
-            'consumptions_data',
-            'navigation',
-            'filters' // ← Añadir los filtros aquí
-        ));
     }
 
     public function create()
