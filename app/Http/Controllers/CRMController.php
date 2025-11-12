@@ -18,57 +18,57 @@ use Illuminate\Routing\Route;
 class CRMController extends Controller
 {
     protected $navigation;
-    protected $size         = 100;
+    protected $size = 100;
     private $contact_medium = [
         'whatsapp' => 'WhatsApp',
-        'sms'      => 'Mensaje SMS',
-        'call'     => 'Llamada telefónica',
-        'email'    => 'Correo electrónico',
-        'flyer'    => 'Volanteo físico',
+        'sms' => 'Mensaje SMS',
+        'call' => 'Llamada telefónica',
+        'email' => 'Correo electrónico',
+        'flyer' => 'Volanteo físico',
     ];
 
     private $search_urls = [
-        'history'   => 'tracking.history',
+        'history' => 'tracking.history',
         'customers' => 'tracking.table',
-        'agenda'    => 'crm.agenda.index',
+        'agenda' => 'crm.agenda.index',
     ];
 
     private function generateChartColors(int $count, string $type = 'random', float $opacity = 0.8): array
     {
-        $colors     = [];
+        $colors = [];
         $baseColors = [
-            'blue'   => [
-                'base'       => [21, 67, 96],
+            'blue' => [
+                'base' => [21, 67, 96],
                 'variations' => 5,
             ],
-            'red'    => [
-                'base'       => [148, 49, 38],
+            'red' => [
+                'base' => [148, 49, 38],
                 'variations' => 5,
             ],
             'yellow' => [
-                'base'       => [255, 206, 86],
+                'base' => [255, 206, 86],
                 'variations' => 5,
             ],
-            'green'  => [
-                'base'       => [75, 192, 192],
+            'green' => [
+                'base' => [75, 192, 192],
                 'variations' => 5,
             ],
             'purple' => [
-                'base'       => [153, 102, 255],
+                'base' => [153, 102, 255],
                 'variations' => 5,
             ],
             'orange' => [
-                'base'       => [255, 159, 64],
+                'base' => [255, 159, 64],
                 'variations' => 5,
             ],
             'random' => [
-                'base'       => null,
+                'base' => null,
                 'variations' => 0,
             ],
         ];
 
         // Si el tipo no existe, usar random
-        if (! array_key_exists($type, $baseColors)) {
+        if (!array_key_exists($type, $baseColors)) {
             $type = 'random';
         }
 
@@ -80,7 +80,7 @@ class CRMController extends Controller
                 $b = mt_rand(0, 255);
             } else {
                 // Generar variaciones del color base
-                $base            = $baseColors[$type]['base'];
+                $base = $baseColors[$type]['base'];
                 $variationFactor = $i % $baseColors[$type]['variations'] * 5;
 
                 $r = max(0, min(255, $base[0] + mt_rand(-30, 30) + $variationFactor * 10));
@@ -99,7 +99,7 @@ class CRMController extends Controller
         $calendar_data = [];
 
         $startMonth = now()->startOfMonth();
-        $endMonth   = now()->endOfMonth();
+        $endMonth = now()->endOfMonth();
 
         $query_orders = Order::with(['customer', 'products']) // Carga relaciones necesarias
             ->whereBetween('programmed_date', [$startMonth, $endMonth])
@@ -115,23 +115,23 @@ class CRMController extends Controller
                 : $order->programmed_date;
 
             $calendar_data[] = [
-                'type'          => 'order',
-                'id'            => $order->id,
-                'title'         => 'Orden #' . $order->id . ' - ' . $order->customer->name ?? '',
-                'start'         => $programmed_date->toIso8601String(),
-                'end'           => $programmed_date->copy()->addHours(2)->toIso8601String(),
-                'color'         => $this->getOrderColor($order->status_id - 1),
+                'type' => 'order',
+                'id' => $order->id,
+                'title' => 'Orden #' . $order->id . ' - ' . ($order->customer->name ?? 'Cliente no disponible'),
+                'start' => $programmed_date->toIso8601String(),
+                'end' => $programmed_date->copy()->addHours(2)->toIso8601String(),
+                'color' => $this->getOrderColor($order->status_id - 1),
                 'extendedProps' => [
-                    'type'        => 'order',
-                    'customer'    => $order->customer->name,
-                    'products'    => $order->products->pluck('name')->implode(', ') ?? null,
-                    'services'    => $order->services->pluck('name')->implode(', ') ?? null,
+                    'type' => 'order',
+                    'customer' => $order->customer->name,
+                    'products' => $order->products->pluck('name')->implode(', ') ?? null,
+                    'services' => $order->services->pluck('name')->implode(', ') ?? null,
                     'technicians' => $order->getNameTechnicians()->pluck('name')->implode(', ') ?? null,
-                    'status'      => $order->status->name ?? '-',
-                    'date'        => Carbon::parse($order->programmed_date)->format('d-m-y'),
-                    'time'        => Carbon::parse($order->start_time)->format('H:i') . ' - ' . Carbon::parse($order->end_time)->format('H:i'),
-                    'edit_url'    => route('order.edit', ['id' => $order->id]),
-                    'report_url'  => route('report.review', ['id' => $order->id]),
+                    'status' => $order->status->name ?? '-',
+                    'date' => Carbon::parse($order->programmed_date)->format('d-m-y'),
+                    'time' => Carbon::parse($order->start_time)->format('H:i') . ' - ' . Carbon::parse($order->end_time)->format('H:i'),
+                    'edit_url' => route('order.edit', ['id' => $order->id]),
+                    'report_url' => route('report.review', ['id' => $order->id]),
                 ],
             ];
         }
@@ -143,22 +143,22 @@ class CRMController extends Controller
                 : $tracking->next_date;
 
             $calendar_data[] = [
-                'id'            => $tracking->id,
-                'title'         => 'Seg. #' . $tracking->id . ' - ' . $tracking->trackable->name,
-                'start'         => $date->toIso8601String(),
-                'end'           => $date->copy()->addHours(2)->toIso8601String(),
-                'color'         => $this->getOrderColor($tracking->status == 'active' ? 4 : ($tracking->status == 'completed' ? 2 : 5)),
+                'id' => $tracking->id,
+                'title' => 'Seg. #' . $tracking->id . ' - ' . $tracking->trackable->name,
+                'start' => $date->toIso8601String(),
+                'end' => $date->copy()->addHours(2)->toIso8601String(),
+                'color' => $this->getOrderColor($tracking->status == 'active' ? 4 : ($tracking->status == 'completed' ? 2 : 5)),
                 'extendedProps' => [
-                    'type'          => 'tracking',
-                    'customer'      => $tracking->trackable->name,
-                    'date'          => Carbon::parse($tracking->next_date)->format('d-m-y'),
-                    'title'         => $tracking->title,
-                    'description'   => $tracking->description,
-                    'status'        => $tracking->status,
-                    'edit_url'      => route('crm.tracking.edit', ['id' => $tracking->id]),
-                    'auto_url'      => route('crm.tracking.auto', ['id' => $tracking->id]),
+                    'type' => 'tracking',
+                    'customer' => $tracking->trackable->name,
+                    'date' => Carbon::parse($tracking->next_date)->format('d-m-y'),
+                    'title' => $tracking->title,
+                    'description' => $tracking->description,
+                    'status' => $tracking->status,
+                    'edit_url' => route('crm.tracking.edit', ['id' => $tracking->id]),
+                    'auto_url' => route('crm.tracking.auto', ['id' => $tracking->id]),
                     'completed_url' => route('crm.tracking.auto', ['id' => $tracking->id]),
-                    'cancel_url'    => route('crm.tracking.cancel', ['id' => $tracking->id]),
+                    'cancel_url' => route('crm.tracking.cancel', ['id' => $tracking->id]),
                 ],
             ];
         }
@@ -169,12 +169,12 @@ class CRMController extends Controller
     public function __construct()
     {
         $this->navigation = [
-            'Agenda'               => route('crm.agenda'),
-            'Clientes'             => route('customer.index'),
-            'Sedes'                => route('customer.index.sedes'),
+            'Agenda' => route('crm.agenda'),
+            'Clientes' => route('customer.index'),
+            'Sedes' => route('customer.index.sedes'),
             'Clientes potenciales' => Route('customer.index.leads'),
-            'Estadisticas'         => route('crm.chart.dashboard'),
-            'Ordenes de servicio'  => route('order.index'),
+            'Estadisticas' => route('crm.chart.dashboard'),
+            'Ordenes de servicio' => route('order.index'),
         ];
     }
 
@@ -187,8 +187,8 @@ class CRMController extends Controller
 
     public function agenda()
     {
-        $startDate     = now()->startOfWeek();
-        $endDate       = now()->endOfWeek();
+        $startDate = now()->startOfWeek();
+        $endDate = now()->endOfWeek();
         $calendar_data = $this->makeAgenda($startDate, $endDate);
 
         $query_trackings = Tracking::whereBetween('next_date', [$startDate, $endDate])
@@ -202,11 +202,11 @@ class CRMController extends Controller
 
         return view('crm.agenda.calendar', [
             'calendar_events' => json_encode($calendar_data),
-            'trackings'       => $query_trackings->orderByRaw("FIELD(status, '" . implode("','", ['active', 'completed', 'canceled']) . "')")->paginate($this->size),
-            'order_status'    => OrderStatus::all(),
-            'quotes'          => $quotes,
-            'navigation'      => $navigation,
-            'nav'             => 'c',
+            'trackings' => $query_trackings->orderByRaw("FIELD(status, '" . implode("','", ['active', 'completed', 'canceled']) . "')")->paginate($this->size),
+            'order_status' => OrderStatus::all(),
+            'quotes' => $quotes,
+            'navigation' => $navigation,
+            'nav' => 'c',
         ]);
     }
 
@@ -215,7 +215,7 @@ class CRMController extends Controller
         $tracking_query = Tracking::query();
 
         $startDate = now()->startOfWeek();
-        $endDate   = now()->endOfWeek();
+        $endDate = now()->endOfWeek();
 
         if ($request->filled('trackable')) {
             $searchTerm = '%' . $request->trackable . '%';
@@ -253,10 +253,10 @@ class CRMController extends Controller
         $navigation = $this->navigation;
 
         return view('crm.agenda.tracking', [
-            'trackings'    => $trackings,
+            'trackings' => $trackings,
             'order_status' => OrderStatus::all(),
-            'navigation'   => $navigation,
-            'nav'          => 't',
+            'navigation' => $navigation,
+            'nav' => 't',
         ]);
     }
 
@@ -302,9 +302,9 @@ class CRMController extends Controller
 
         return view('crm.agenda.quotation', [
             'order_status' => OrderStatus::all(),
-            'quotes'       => $quotes,
-            'navigation'   => $navigation,
-            'nav'          => 'q',
+            'quotes' => $quotes,
+            'navigation' => $navigation,
+            'nav' => 'q',
         ]);
     }
 
@@ -341,8 +341,8 @@ class CRMController extends Controller
             ->groupBy('service_id')
             ->map(function ($group) {
                 return [
-                    'id'    => $group->first()->service->id,
-                    'name'  => $group->first()->service->name,
+                    'id' => $group->first()->service->id,
+                    'name' => $group->first()->service->name,
                     'count' => $group->count(),
                 ];
             })
@@ -352,36 +352,36 @@ class CRMController extends Controller
         $colors = $this->generateChartColors(count($services), 'blue');
 
         $data_charts['services'] = [
-            'labels'   => array_column($services, 'name'),
+            'labels' => array_column($services, 'name'),
             'datasets' => [
                 [
-                    'label'           => 'Servicios',
-                    'data'            => array_column($services, 'count'),
+                    'label' => 'Servicios',
+                    'data' => array_column($services, 'count'),
                     'backgroundColor' => $colors,
-                    'borderWidth'     => 1,
+                    'borderWidth' => 1,
                 ],
             ],
         ];
 
-        $service_ids    = array_column($services, 'id');
+        $service_ids = array_column($services, 'id');
         $services_count = array_fill(0, count($service_ids), 0);
         foreach ($service_ids as $index => $service_id) {
             $services_count[$index] = Tracking::where('trackable_id', $customerId)->where('service_id', $service_id)->count();
         }
 
         $data_charts['trackingByServices'] = [
-            'labels'   => array_column($services, 'name'),
+            'labels' => array_column($services, 'name'),
             'datasets' => [
                 [
-                    'label'           => 'Trackings por mes',
-                    'data'            => $services_count,
+                    'label' => 'Trackings por mes',
+                    'data' => $services_count,
                     'backgroundColor' => $colors,
-                    'borderWidth'     => 1,
+                    'borderWidth' => 1,
                 ],
             ],
         ];
 
-        $trackings      = Tracking::where('trackable_id', $customerId)->whereIn('service_id', $service_ids)->get();
+        $trackings = Tracking::where('trackable_id', $customerId)->whereIn('service_id', $service_ids)->get();
         $monthly_counts = array_fill(0, 12, 0);
         foreach ($trackings as $tracking) {
             if ($tracking->next_date) {
@@ -391,14 +391,14 @@ class CRMController extends Controller
         }
 
         $data_charts['trackingByMonths'] = [
-            'labels'   => ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+            'labels' => ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
             'datasets' => [
                 [
-                    'label'       => 'Seguimientos por mes',
-                    'data'        => $monthly_counts,
+                    'label' => 'Seguimientos por mes',
+                    'data' => $monthly_counts,
                     'borderColor' => 'rgba(75, 192, 192, 1)',
                     'borderWidth' => 2,
-                    'tension'     => 0.5,
+                    'tension' => 0.5,
                 ],
             ],
         ];
@@ -409,8 +409,8 @@ class CRMController extends Controller
     {
         $tracking_data = [];
         $tracking_urls = [];
-        $customer_id   = $request->input('customer_id');
-        $service_ids   = OrderService::whereHas('order', fn($q) => $q->where('customer_id', $customer_id))
+        $customer_id = $request->input('customer_id');
+        $service_ids = OrderService::whereHas('order', fn($q) => $q->where('customer_id', $customer_id))
             ->pluck('service_id')
             ->unique()
             ->values()
@@ -418,29 +418,29 @@ class CRMController extends Controller
 
         foreach ($service_ids as $service_id) {
             $tracking_urls[$service_id] = Route('crm.tracking.create', ['customerId' => $customer_id, 'serviceId' => $service_id]);
-            $trackings                  = Tracking::where('trackable_id', $customer_id)
+            $trackings = Tracking::where('trackable_id', $customer_id)
                 ->where('trackable_type', 'App\Models\Customer')
                 ->where('service_id', $service_id)
                 ->get();
 
-            if (! $trackings->isEmpty()) {
+            if (!$trackings->isEmpty()) {
                 foreach ($trackings as $tracking) {
                     $tracking_data[$service_id]['data'][] = [
-                        'id'          => $tracking->id ?? null,
-                        'title'       => $tracking->title ?? null,
+                        'id' => $tracking->id ?? null,
+                        'title' => $tracking->title ?? null,
                         'description' => $tracking->description ?? null,
-                        'next_date'   => $tracking->next_date ?? null,
-                        'range'       => $tracking->range ?? null,
-                        'status'      => $tracking->status ?? null,
-                        'updated_at'  => $tracking->updated_at ?? null,
+                        'next_date' => $tracking->next_date ?? null,
+                        'range' => $tracking->range ?? null,
+                        'status' => $tracking->status ?? null,
+                        'updated_at' => $tracking->updated_at ?? null,
                     ];
 
                     if ($tracking->id) {
                         $tracking_data[$service_id][$tracking->id] = [
-                            'url_auto'     => Route('crm.tracking.auto', ['id' => $tracking->id]),
+                            'url_auto' => Route('crm.tracking.auto', ['id' => $tracking->id]),
                             'url_complete' => Route('crm.tracking.complete', ['id' => $tracking->id]),
-                            'url_edit'     => Route('crm.tracking.edit', ['id' => $tracking->id]),
-                            'url_destroy'  => Route('crm.tracking.destroy', ['id' => $tracking->id]),
+                            'url_edit' => Route('crm.tracking.edit', ['id' => $tracking->id]),
+                            'url_destroy' => Route('crm.tracking.destroy', ['id' => $tracking->id]),
                         ];
                     }
                 }
@@ -452,10 +452,10 @@ class CRMController extends Controller
         $services = Service::whereIn('id', $service_ids)->select('id', 'name')->get();
 
         return response()->json([
-            'customer'  => Customer::find($customer_id),
-            'services'  => $services,
+            'customer' => Customer::find($customer_id),
+            'services' => $services,
             'trackings' => $tracking_data,
-            'urls'      => $tracking_urls,
+            'urls' => $tracking_urls,
         ]);
     }
 
@@ -464,8 +464,8 @@ class CRMController extends Controller
         $orders_data = $service_ids = [];
 
         $customer = Customer::find($customerId);
-        $service  = Service::find($serviceId);
-        $leads    = Lead::select('id', 'name')->get();
+        $service = Service::find($serviceId);
+        $leads = Lead::select('id', 'name')->get();
 
         if ($customer) {
             $service_ids = OrderService::whereHas('order', fn($q) => $q->where('customer_id', $customer->id))
@@ -474,7 +474,7 @@ class CRMController extends Controller
                 ->values()
                 ->toArray();
         }
-        $services  = ! empty($service_ids) ? Service::whereIn('id', $service_ids)->select('id', 'name')->get() : Service::select('id', 'name')->get();
+        $services = !empty($service_ids) ? Service::whereIn('id', $service_ids)->select('id', 'name')->get() : Service::select('id', 'name')->get();
         $customers = Customer::where('general_sedes', '!=', 0)->get();
 
         foreach ($service_ids as $service_id) {
@@ -486,9 +486,9 @@ class CRMController extends Controller
 
             foreach ($orders as $order) {
                 $orders_data[$service_id][] = [
-                    'id'     => $order->id,
+                    'id' => $order->id,
                     'status' => $order->status_id,
-                    'date'   => $order->programmed_date,
+                    'date' => $order->programmed_date,
                 ];
             }
         }
@@ -503,25 +503,25 @@ class CRMController extends Controller
 
     public function storeTracking(Request $request)
     {
-        $tracking_type  = $request->input('tracking_type');
+        $tracking_type = $request->input('tracking_type');
         $trackable_type = $request->input('trackable_type'); // 'customer' o 'lead'
-        $trackable_id   = $request->input('trackable_id');
+        $trackable_id = $request->input('trackable_id');
 
         $data = [
-            'trackable_id'   => $trackable_id,
+            'trackable_id' => $trackable_id,
             'trackable_type' => $trackable_type === 'customer'
                 ? 'App\Models\Customer'
                 : 'App\Models\Lead',
-            'service_id'     => $request->input('service_id'),
-            'order_id'       => $request->input('order_id'),
-            'title'          => $request->input('title'),
-            'description'    => $request->input('description'),
-            'next_date'      => $request->input('next_date'),
+            'service_id' => $request->input('service_id'),
+            'order_id' => $request->input('order_id'),
+            'title' => $request->input('title'),
+            'description' => $request->input('description'),
+            'next_date' => $request->input('next_date'),
         ];
 
         if ($request->has('frequency_type')) {
             $range = [
-                'frequency'      => $request->input('frequency'),
+                'frequency' => $request->input('frequency'),
                 'frequency_type' => $request->input('frequency_type'),
             ];
             $data['range'] = json_encode($range);
@@ -541,13 +541,13 @@ class CRMController extends Controller
 
     protected function generateFutureTrackingDates(Tracking $mainTracking)
     {
-        $range         = json_decode($mainTracking->range, true);
-        $frequency     = (int) $range['frequency'];
+        $range = json_decode($mainTracking->range, true);
+        $frequency = (int) $range['frequency'];
         $frequencyType = $range['frequency_type'];
-        $startDate     = Carbon::parse($mainTracking->next_date);
-        $endDate       = $startDate->copy()->addYear()->subDay();
+        $startDate = Carbon::parse($mainTracking->next_date);
+        $endDate = $startDate->copy()->addYear()->subDay();
 
-        $currentDate   = $startDate->copy();
+        $currentDate = $startDate->copy();
         $datesToCreate = [];
 
         while ($currentDate->lte($endDate)) {
@@ -565,21 +565,21 @@ class CRMController extends Controller
 
             if ($currentDate->lte($endDate)) {
                 $datesToCreate[] = [
-                    'trackable_id'   => $mainTracking->trackable_id,
+                    'trackable_id' => $mainTracking->trackable_id,
                     'trackable_type' => $mainTracking->trackable_type,
-                    'service_id'     => $mainTracking->service_id,
-                    'order_id'       => $mainTracking->order_id,
-                    'title'          => $mainTracking->title,
-                    'description'    => $mainTracking->description,
-                    'next_date'      => $currentDate->format('Y-m-d'),
-                    'range'          => $mainTracking->range,
-                    'created_at'     => now(),
-                    'updated_at'     => now(),
+                    'service_id' => $mainTracking->service_id,
+                    'order_id' => $mainTracking->order_id,
+                    'title' => $mainTracking->title,
+                    'description' => $mainTracking->description,
+                    'next_date' => $currentDate->format('Y-m-d'),
+                    'range' => $mainTracking->range,
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
             }
         }
 
-        if (! empty($datesToCreate)) {
+        if (!empty($datesToCreate)) {
             Tracking::insert($datesToCreate);
         }
     }
@@ -587,7 +587,7 @@ class CRMController extends Controller
     public function editTracking(string $trackingId)
     {
         $tracking = Tracking::find($trackingId);
-        $order    = Order::find($tracking->order_id);
+        $order = Order::find($tracking->order_id);
         $services = Service::whereIn('id', $order->services->pluck('service_id'))->select('id', 'name')->get();
 
         return view('tracking.edit', compact('tracking', 'services'));
@@ -604,11 +604,11 @@ class CRMController extends Controller
     public function searchTracking(Request $request)
     {
         $customers = $trackings = null;
-        $view      = $request->view ?? 'trackings'; // Valor por defecto
-        $url       = $this->search_urls[$view];
+        $view = $request->view ?? 'trackings'; // Valor por defecto
+        $url = $this->search_urls[$view];
 
-        $startDate       = now()->startOfWeek();
-        $endDate         = now()->endOfWeek();
+        $startDate = now()->startOfWeek();
+        $endDate = now()->endOfWeek();
         $calendar_events = json_encode($this->makeAgenda($startDate, $endDate));
 
         //dd($request->all());
@@ -701,7 +701,7 @@ class CRMController extends Controller
 
         // Datos para la vista
         $contact_medium = $this->contact_medium;
-        $serviceTypes   = ServiceType::all();
+        $serviceTypes = ServiceType::all();
 
         return view($url, compact(
             'customers',
@@ -731,18 +731,18 @@ class CRMController extends Controller
     public function autoTracking(string $id)
     {
         $tracking = Tracking::find($id);
-        $range    = json_decode($tracking->range);
+        $range = json_decode($tracking->range);
         $new_date = Carbon::parse($tracking->next_date)->add($range->frequency, $range->frequency_type);
 
         Tracking::create([
-            'trackable_id'   => $tracking->trackable_id,
+            'trackable_id' => $tracking->trackable_id,
             'trackable_type' => $tracking->trackable_type,
-            'service_id'     => $tracking->service_id,
-            'order_id'       => $tracking->order_id,
-            'title'          => null,
-            'description'    => null,
-            'next_date'      => $new_date,
-            'range'          => json_encode($range),
+            'service_id' => $tracking->service_id,
+            'order_id' => $tracking->order_id,
+            'title' => null,
+            'description' => null,
+            'next_date' => $new_date,
+            'range' => json_encode($range),
         ]);
 
         return back();
@@ -762,7 +762,7 @@ class CRMController extends Controller
 
     public function historyTracking()
     {
-        $trackings     = Tracking::orderBy('next_date')->paginate($this->size);
+        $trackings = Tracking::orderBy('next_date')->paginate($this->size);
         $service_types = ServiceType::all();
         return view('dashboard.crm.tracking.history', compact('trackings'));
     }
@@ -770,7 +770,7 @@ class CRMController extends Controller
     public function getTrackings()
     {
         $startOfWeek = now()->startOfWeek();
-        $endOfWeek   = now()->endOfWeek();
+        $endOfWeek = now()->endOfWeek();
 
         $trackings = Tracking::whereBetween('next_date', [$startOfWeek, $endOfWeek])
             ->where('status', '!=', 'canceled')
@@ -783,51 +783,51 @@ class CRMController extends Controller
             $orderInfo = null;
             if ($tracking->order_id && $tracking->order) {
                 $orderInfo = [
-                    'id'    => $tracking->order_id,
+                    'id' => $tracking->order_id,
                     'folio' => $tracking->order->folio ?? 'Sin folio',
-                    'url'   => route('order.edit', ['id' => $tracking->order_id]),
+                    'url' => route('order.edit', ['id' => $tracking->order_id]),
                 ];
             }
 
             $data[] = [
-                'id'          => $tracking->id,
-                'customer'    => $tracking->trackable->name,
-                'order'       => $orderInfo, // Aquí usamos la estructura segura
-                'service'     => $tracking->service_id,
-                'next_date'   => $tracking->next_date,
-                'title'       => $tracking->title,
+                'id' => $tracking->id,
+                'customer' => $tracking->trackable->name,
+                'order' => $orderInfo, // Aquí usamos la estructura segura
+                'service' => $tracking->service_id,
+                'next_date' => $tracking->next_date,
+                'title' => $tracking->title,
                 'description' => $tracking->description,
-                'status'      => $tracking->status,
-                'range'       => $tracking->range,
-                'auto_url'    => route('crm.tracking.auto', ['id' => $tracking->id]),
-                'edit_url'    => route('crm.tracking.edit', ['id' => $tracking->id]),
-                'cancel_url'  => route('crm.tracking.cancel', ['id' => $tracking->id]),
+                'status' => $tracking->status,
+                'range' => $tracking->range,
+                'auto_url' => route('crm.tracking.auto', ['id' => $tracking->id]),
+                'edit_url' => route('crm.tracking.edit', ['id' => $tracking->id]),
+                'cancel_url' => route('crm.tracking.cancel', ['id' => $tracking->id]),
                 'destroy_url' => route('crm.tracking.destroy', ['id' => $tracking->id]),
             ];
         }
 
         return response()->json([
-            'success'   => true,
+            'success' => true,
             'trackings' => $data,
-            'count'     => $trackings->count(),
+            'count' => $trackings->count(),
         ]);
     }
 
     public function setTracking(Request $request)
     {
         $tracking_id = $request->input('tracking_id');
-        $status      = $request->input('status');
+        $status = $request->input('status');
 
         $tracking = Tracking::find($tracking_id);
 
-        if (! $tracking) {
+        if (!$tracking) {
         }
 
         $final_desc = 'Descripción: ' . $tracking->description . '\n' . 'Razon: ' . $request->input('reason');
 
         $tracking->update([
             'description' => $final_desc,
-            'status'      => $status,
+            'status' => $status,
         ]);
 
         return back();
@@ -844,13 +844,13 @@ class CRMController extends Controller
         $colors = $this->generateChartColors(count($this->contact_medium), 'red');
 
         $chartData = [
-            'labels'   => $this->contact_medium,
+            'labels' => $this->contact_medium,
             'datasets' => [
                 [
-                    'label'           => 'Medio de contacto',
-                    'data'            => $data,
+                    'label' => 'Medio de contacto',
+                    'data' => $data,
                     'backgroundColor' => $colors,
-                    'borderWidth'     => 1,
+                    'borderWidth' => 1,
                 ],
             ],
         ];
