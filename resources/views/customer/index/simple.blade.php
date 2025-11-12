@@ -112,7 +112,7 @@
                             </td>
                             <td class="text-center">
                                 @can('write_customer')
-                                    @if ($customer->general_sedes != 0)
+                                    @if (!$customer->hasSedes() && $customer->service_type_id != 3)
                                         <a href="{{ route('customer.quote', ['id' => $customer->id, 'class' => 'customer']) }}"
                                             class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                                             data-bs-title="Cotizaciones">

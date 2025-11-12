@@ -132,6 +132,10 @@ class Customer extends Model
         return $this->hasMany(Customer::class, 'general_sedes', 'id');
     }
 
+    public function hasSedes() {
+        return $this->sedes()->count() > 0;
+    }
+
     public function orders()
     {
         return $this->hasMany(Order::class, 'customer_id', 'id');
