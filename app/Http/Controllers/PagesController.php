@@ -360,7 +360,7 @@ class PagesController extends Controller
             //session(['dashboard_services' => $services]);
             session(['count_trackings' => $count_trackings]);
 
-            return view('dashboard.index', compact( 'services'));
+            return view('dashboard.index', compact('trackings_data', 'services', 'count_trackings'));
         } else {
             $path = $this->path;
             $mip_path = $this->mip_path;
