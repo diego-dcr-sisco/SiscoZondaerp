@@ -117,7 +117,7 @@ class CRMController extends Controller
             $calendar_data[] = [
                 'type'          => 'order',
                 'id'            => $order->id,
-                'title'         => 'Orden #' . $order->id . ' - ' . $order->customer->name,
+                'title'         => 'Orden #' . $order->id . ' - ' . $order->customer->name ?? '',
                 'start'         => $programmed_date->toIso8601String(),
                 'end'           => $programmed_date->copy()->addHours(2)->toIso8601String(),
                 'color'         => $this->getOrderColor($order->status_id - 1),

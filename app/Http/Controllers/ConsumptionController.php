@@ -52,6 +52,7 @@ class ConsumptionController extends Controller
 
     public function index(Request $request)
     {
+        dd($request->all());
         $consumptions_data = [];
         $last_start = Carbon::now()->startOfMonth()->subMonth();
         $last_end = Carbon::now()->subMonth()->endOfMonth();
