@@ -312,7 +312,6 @@ class PagesController extends Controller
 
     public function dashboard()
     {
-
         if (auth()->user()->type_id == 1) {
             $trackings_data = [];
 
@@ -321,7 +320,6 @@ class PagesController extends Controller
             $services = Service::select('id', 'name')->orderBy('name')->get();
 
             $trackings = Tracking::whereBetween('next_date', [$startOfWeek, $endOfWeek])
-                //->where('status', '!=', 'canceled')
                 ->orderBy('next_date')
                 ->get();
 
@@ -343,7 +341,7 @@ class PagesController extends Controller
                 $trackings_data[] = [
                     'id' => $tracking->id,
                     'customer' => $tracking->trackable->name,
-                    'order' => $orderInfo, // Aquí usamos la estructura segura
+                    'order' => $orderInfo,
                     'service' => $tracking->service_id,
                     'next_date' => $tracking->next_date,
                     'title' => $tracking->title,
@@ -355,18 +353,19 @@ class PagesController extends Controller
                     'cancel_url' => route('tracking.cancel', ['id' => $tracking->id]),
                     'destroy_url' => route('tracking.destroy', ['id' => $tracking->id])
                 ];
-
-                dd($trackings_data);
             }
-            return view('dashboard.index', compact('trackings_data', 'services', 'count_trackings'));
-        } else {
 
+            // Almacenar en sesión
+            session(['trackings_data' => $trackings_data]);
+            //session(['dashboard_services' => $services]);
+            session(['count_trackings' => $count_trackings]);
+
+            return view('dashboard.index', compact( 'services'));
+        } else {
             $path = $this->path;
             $mip_path = $this->mip_path;
             return view('client.index', compact('path', 'mip_path'));
         }
-
-
     }
 
     public function crm()
