@@ -123,7 +123,7 @@ class CRMController extends Controller
                 'color' => $this->getOrderColor($order->status_id - 1),
                 'extendedProps' => [
                     'type' => 'order',
-                    'customer' => $order->customer->name,
+                    'customer' => $order->customer->name ?? 'Cliente no disponible',
                     'products' => $order->products->pluck('name')->implode(', ') ?? null,
                     'services' => $order->services->pluck('name')->implode(', ') ?? null,
                     'technicians' => $order->getNameTechnicians()->pluck('name')->implode(', ') ?? null,
