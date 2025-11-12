@@ -113,6 +113,12 @@
                                 </td>
                                 <td class="text-center">
                                     @can('write_customer')
+                                        <a href="{{ route('customer.quote', ['id' => $customer->id, 'class' => 'customer']) }}"
+                                            class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            data-bs-title="Cotizaciones">
+                                            <i class="bi bi-clipboard-data-fill"></i>
+                                        </a>
+
                                         <a href="{{ route('customer.edit.sede', ['id' => $sede->id]) }}"
                                             class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                                             data-bs-title="Editar sede">
