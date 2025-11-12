@@ -341,60 +341,60 @@ class OrderController extends Controller
     }
 
     public function searchCustomer(Request $request)
-    {
-        $customer_ids = $request->input('customer_ids');
-        $name = $request->input('customer_name');
-        $phone = $request->input('customer_phone');
-        $address = $request->input('customer_address');
+	{
+		$customer_ids = $request->input('customer_ids');
+		$name = $request->input('customer_name');
+		$phone = $request->input('customer_phone');
+		$address = $request->input('customer_address');
 
-        if ($customer_ids) {
-            $customer_ids = json_decode($customer_ids);
-            $customers = Customer::whereIn('id', $customer_ids)->get();
+		if ($customer_ids) {
+			$customer_ids = json_decode($customer_ids);
+			$customers = Customer::whereIn('id', $customer_ids)->get();
 
-            return response()->json([
-                'customers' => $customers->map(function ($customer) {
-                    return [
-                        'id' => $customer->id,
-                        'code' => $customer->code,
-                        'name' => $customer->name,
-                        'address' => $customer->address,
-                        'type' => $customer->serviceType->name
-                    ];
-                })
-            ]);
-        }
+			return response()->json([
+				'customers' => $customers->map(function ($customer) {
+					return [
+						'id' => $customer->id,
+						'code' => $customer->code,
+						'name' => $customer->name,
+						'address' => $customer->address,
+						'type' => $customer->serviceType->name
+					];
+				})
+			]);
+		}
 
-        // Consulta para sedes (manteniendo condiciones originales)
-        $sedesQuery = Customer::where('service_type_id', '!=', 1)
-            ->where('general_sedes', '!=', 0)
-            ->when($name, fn($q) => $q->where('name', 'like', "%$name%"))
-            ->when($phone, fn($q) => $q->where('phone', 'like', "%$phone%"))
-            ->when($address, fn($q) => $q->where('address', 'like', "%$address%"));
+		// Consulta para sedes (manteniendo condiciones originales)
+		$sedesQuery = Customer::where('service_type_id', '!=', 1)
+			->where('general_sedes', '!=', 0)
+			->when($name, fn($q) => $q->where('name', 'like', "%$name%"))
+			->when($phone, fn($q) => $q->where('phone', 'like', "%$phone%"))
+			->when($address, fn($q) => $q->where('address', 'like', "%$address%"));
 
-        $matrixs = $sedesQuery->get()->pluck('general_sedes');
+		$matrixs = $sedesQuery->get()->pluck('general_sedes');
 
-        // Consulta para clientes principales (manteniendo condiciones originales)
-        $customersQuery = Customer::where('status', '!=', 0)
-            //->where('service_type_id', 1)
-            ->when($name, fn($q) => $q->where('name', 'like', "%$name%"))
-            ->when($phone, fn($q) => $q->where('phone', 'like', "%$phone%"))
-            ->when($address, fn($q) => $q->where('address', 'like', "%$address%"))
-            ->whereNotIn('id', $matrixs);
+		// Consulta para clientes principales (manteniendo condiciones originales)
+		$customersQuery = Customer::where('status', '!=', 0)
+			//->where('service_type_id', 1)
+			->when($name, fn($q) => $q->where('name', 'like', "%$name%"))
+			->when($phone, fn($q) => $q->where('phone', 'like', "%$phone%"))
+			->when($address, fn($q) => $q->where('address', 'like', "%$address%"))
+			->whereNotIn('id', $matrixs);
 
-        $results = $customersQuery->get()->merge($sedesQuery->get());
+		$results = $customersQuery->get()->merge($sedesQuery->get());
 
-        return response()->json([
-            'customers' => $results->map(function ($customer) {
-                return [
-                    'id' => $customer->id,
-                    'code' => $customer->code,
-                    'name' => $customer->name,
-                    'address' => $customer->address,
-                    'type' => $customer->serviceType->name
-                ];
-            }),
-        ]);
-    }
+		return response()->json([
+			'customers' => $results->map(function ($customer) {
+				return [
+					'id' => $customer->id,
+					'code' => $customer->code,
+					'name' => $customer->name,
+					'address' => $customer->address,
+					'type' => $customer->serviceType->name
+				];
+			}),
+		]);
+	}
 
     public function show(string $id, string $section)
     {
@@ -423,7 +423,7 @@ class OrderController extends Controller
         return $data_arr;
     }
 
-    /*public function edit(string $id): View
+    public function edit(string $id): View
     {
         $selected_services = [];
         $services_configuration = [];
@@ -494,121 +494,7 @@ class OrderController extends Controller
                 'services_configuration'
             )
         );
-    }*/
-
-    public function edit(string $id): View
-{
-    try {
-        // Validar que el ID sea numérico
-        if (!is_numeric($id)) {
-            throw new \Exception('ID de orden inválido');
-        }
-
-        $selected_services = [];
-        $services_configuration = [];
-        $cost = 0;
-
-        // CORRECCIÓN: Usar las relaciones correctas que existen en el modelo
-        $order = Order::with([
-            'customer',
-            'services.serviceType',
-            'services.businessLine',
-            'propagate' // ← Cambiar de 'propagations' a 'propagate'
-        ])->find($id);
-
-        if (!$order) {
-            throw new \Exception('Orden no encontrada');
-        }
-
-        // Verificar customer_id de manera segura
-        if (empty($order->customer_id)) {
-            $orders = Order::orderBy('id', 'desc')->get();
-            $order_status = OrderStatus::all();
-            
-            return view('order.index', compact('orders', 'order_status'))
-                ->with('error', 'No se ha seleccionado un cliente.');
-        }
-
-        // Obtener customer (ya debería estar cargado por el with)
-        $customer = $order->customer;
-        if (!$customer) {
-            throw new \Exception('Cliente no encontrado para esta orden');
-        }
-
-        // Procesar servicios de manera optimizada
-        foreach ($order->services as $service) {
-            // Verificar relaciones antes de acceder
-            $serviceTypeName = $service->serviceType ? $service->serviceType->name : 'N/A';
-            $businessLineName = $service->businessLine ? $service->businessLine->name : 'N/A';
-            
-            // CORRECCIÓN: Usar el método propagateByService que ya existe
-            $propagation = $order->propagateByService($service->id);
-            
-            $selected_services[] = [
-                'id' => $service->id,
-                'prefix' => $service->prefix,
-                'name' => $service->name,
-                'type' => [$serviceTypeName],
-                'line' => [$businessLineName],
-                'cost' => $service->cost ?? 0,
-                'propagate_description' => $propagation->text ?? null,
-            ];
-
-            $services_configuration[] = [
-                'service_id' => $service->id,
-                'description' => $propagation->text ?? null,
-            ];
-
-            $cost += $service->cost ?? 0;
-        }
-
-        // Optimizar consulta de técnicos
-        $technicians = Technician::with(['user' => function($query) {
-            $query->orderBy('name', 'ASC');
-        }])
-        ->whereHas('user')
-        ->get()
-        ->sortBy('user.name');
-
-        $navigation = [
-            'Orden de servicio' => route('order.edit', ['id' => $order->id]),
-            'Reporte' => route('report.review', ['id' => $order->id]),
-            'Seguimientos' => route('tracking.create.order', ['id' => $order->id]),
-        ];
-
-        // Obtener order_status
-        $order_status = OrderStatus::all();
-        $orders = Order::orderBy('id', 'desc')->get();
-
-        return view(
-            'order.edit',
-            compact(
-                'order',
-                'order_status',
-                'customer',
-                'technicians',
-                'selected_services',
-                'cost',
-                'navigation',
-                'services_configuration'
-            )
-        );
-
-    } catch (\Exception $e) {
-        \Log::error('Error en OrderController@edit: ' . $e->getMessage(), [
-            'id' => $id,
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        // Redirigir a una vista de error o a la lista de órdenes
-        return redirect()->route('order.index')
-            ->with('error', 'Error al cargar la orden: ' . 
-                (app()->environment('local') ? $e->getMessage() : 'Contacte al administrador'));
     }
-}
-
     public function update(Request $request, string $id): RedirectResponse
     {
         //dd($request->all());
@@ -794,7 +680,7 @@ class OrderController extends Controller
         $query = Order::query();
 
         // Aplicar filtros (mantén tus filtros existentes)
-        if ($request->filled('folio')) {
+        if($request->filled('folio')) {
             $query->where('folio', 'like', '%' . $request->input('folio') . '%');
         }
 
