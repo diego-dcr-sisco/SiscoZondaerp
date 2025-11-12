@@ -50,7 +50,7 @@ class ConsumptionController extends Controller
         return view('stock.consumptions.pre-index');
     }
 
-    public function index(Request $request)
+    /*public function index(Request $request)
     {
         try {
             // dd($request->all()); // Comentado temporalmente para debugging
@@ -167,7 +167,163 @@ class ConsumptionController extends Controller
             // Para producción, redirige con mensaje de error
             return redirect()->back()->with('error', 'Ocurrió un error al cargar los datos: ' . $e->getMessage());
         }
+    }*/
+
+    public function index(Request $request)
+{
+    try {
+        ini_set('memory_limit', '512M'); // Aumentar memoria temporalmente
+        
+        $consumptions_data = [];
+        $last_start = Carbon::now()->startOfMonth()->subMonth();
+        $last_end = Carbon::now()->subMonth()->endOfMonth();
+
+        // Obtener IDs de órdenes filtradas (sin cargar datos completos)
+        $order_ids = $this->getFilteredOrderIds($request);
+        
+        // Si no hay órdenes, retornar vacío
+        if (empty($order_ids)) {
+            return $this->buildResponse([], $request);
+        }
+
+        // Procesar en chunks para evitar memory overflow
+        $consumptions_data = $this->processWarehouseOrdersChunked($order_ids, $request, $last_start, $last_end);
+        
+        return $this->buildResponse($consumptions_data, $request);
+
+    } catch (\Exception $e) {
+        \Log::error('Error en consumptions index: ' . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'request' => $request->all()
+        ]);
+
+        return redirect()->back()->with('error', 'Ocurrió un error al cargar los datos. ' . 
+            (app()->environment('local') ? $e->getMessage() : ''));
     }
+}
+
+/**
+ * Obtener IDs de órdenes aplicando filtros (optimizado para memoria)
+ */
+private function getFilteredOrderIds(Request $request): array
+{
+    $query = Order::query();
+
+    // Filtro por zona comercial
+    if ($request->filled('comercial_zone')) {
+        $comercial_zone = ComercialZone::find($request->comercial_zone);
+        if ($comercial_zone) {
+            $customer_ids = $comercial_zone->customers()->pluck('customer.id')->toArray();
+            $query->whereIn('customer_id', $customer_ids);
+        }
+    }
+
+    // Filtro por clientes
+    if ($request->filled('customers')) {
+        $customer_names = explode(",", $request->customers);
+        $customer_query = Customer::query();
+        foreach ($customer_names as $customer_name) {
+            $customer_query->orWhere('name', 'LIKE', "%" . trim($customer_name) . "%");
+        }
+        $customer_ids = $customer_query->pluck('id')->toArray();
+        $query->whereIn('customer_id', $customer_ids);
+    }
+
+    // Filtro por fecha
+    if ($request->filled('date')) {
+        $dates = explode(' - ', $request->date);
+        if (count($dates) === 2) {
+            [$startDate, $endDate] = array_map(function ($d) {
+                return Carbon::createFromFormat('d/m/Y', trim($d));
+            }, $dates);
+
+            $query->whereBetween('programmed_date', [
+                $startDate->format('Y-m-d'),
+                $endDate->format('Y-m-d')
+            ]);
+        }
+    }
+
+    // Solo obtener IDs para reducir memoria
+    return $query->pluck('id')->toArray();
+}
+
+/**
+ * Procesar warehouse orders en chunks para optimizar memoria
+ */
+private function processWarehouseOrdersChunked(array $order_ids, Request $request, Carbon $last_start, Carbon $last_end): array
+{
+    $consumptions_data = [];
+    $chunk_size = 500; // Procesar 500 órdenes a la vez
+
+    // Procesar por chunks
+    foreach (array_chunk($order_ids, $chunk_size) as $chunk_order_ids) {
+        // Cargar warehouse orders con eager loading optimizado
+        $warehouse_orders = WarehouseOrder::with([
+            'product.metric',
+            'order.customer.comercialZones'
+        ])
+        ->whereIn('order_id', $chunk_order_ids)
+        ->get();
+
+        foreach ($warehouse_orders as $wo) {
+            // Validar relaciones críticas
+            if (!$wo->order || !$wo->order->customer || !$wo->product) {
+                continue;
+            }
+
+            $key = $wo->product_id . '_' . $wo->order->customer_id;
+
+            if (isset($consumptions_data[$key])) {
+                $consumptions_data[$key]['amount'] += $wo->amount;
+            } else {
+                $comercial_zones = $wo->order->customer->comercialZones ?? collect();
+                
+                $consumptions_data[$key] = [
+                    'key' => $key,
+                    'product_id' => $wo->product_id,
+                    'product_name' => $wo->product->name,
+                    'product_metric' => $wo->product->metric->value ?? 'N/A',
+                    'customer_id' => $wo->order->customer_id,
+                    'customer_name' => $wo->order->customer->name,
+                    'amount' => $wo->amount,
+                    'comercial_zones' => $comercial_zones->pluck('name', 'code')->toArray(),
+                    'timelapse' => $request->filled('date') ? $request->date : 
+                                  $last_start->format('d/m/Y') . ' - ' . $last_end->format('d/m/Y')
+                ];
+            }
+        }
+
+        // Liberar memoria del chunk actual
+        unset($warehouse_orders);
+        gc_collect_cycles(); // Forzar garbage collection
+    }
+
+    return array_values($consumptions_data);
+}
+
+/**
+ * Construir respuesta final
+ */
+private function buildResponse(array $consumptions_data, Request $request)
+{
+    $filters = [
+        'comercial_zone' => $request->comercial_zone,
+        'customers' => $request->customers,
+        'date' => $request->date
+    ];
+
+    $comercial_zones = ComercialZone::orderBy('name')->get();
+    $navigation = $this->navigation;
+
+    return view('stock.consumptions.table', compact(
+        'comercial_zones',
+        'consumptions_data',
+        'navigation',
+        'filters'
+    ));
+}
 
     public function create()
     {
