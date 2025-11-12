@@ -105,7 +105,7 @@
             <div class="card-content">
                 <div class="device-text">
                     <div class="logo">
-                        <img src="file://{{ public_path('images/siscoplagas_logo.png') }}" style="width:70%; margin: 0;">
+                        <img src="file://{{ public_path('images/siscoplagas/landscape_logo.png') }}" style="width:70%; margin: 0;">
                     </div>
                     <div
                         style="font-size: 15px;
