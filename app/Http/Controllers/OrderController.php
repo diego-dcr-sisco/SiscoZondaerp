@@ -22,6 +22,7 @@ use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
 
@@ -341,60 +342,60 @@ class OrderController extends Controller
     }
 
     public function searchCustomer(Request $request)
-	{
-		$customer_ids = $request->input('customer_ids');
-		$name = $request->input('customer_name');
-		$phone = $request->input('customer_phone');
-		$address = $request->input('customer_address');
+    {
+        $customer_ids = $request->input('customer_ids');
+        $name = $request->input('customer_name');
+        $phone = $request->input('customer_phone');
+        $address = $request->input('customer_address');
 
-		if ($customer_ids) {
-			$customer_ids = json_decode($customer_ids);
-			$customers = Customer::whereIn('id', $customer_ids)->get();
+        if ($customer_ids) {
+            $customer_ids = json_decode($customer_ids);
+            $customers = Customer::whereIn('id', $customer_ids)->get();
 
-			return response()->json([
-				'customers' => $customers->map(function ($customer) {
-					return [
-						'id' => $customer->id,
-						'code' => $customer->code,
-						'name' => $customer->name,
-						'address' => $customer->address,
-						'type' => $customer->serviceType->name
-					];
-				})
-			]);
-		}
+            return response()->json([
+                'customers' => $customers->map(function ($customer) {
+                    return [
+                        'id' => $customer->id,
+                        'code' => $customer->code,
+                        'name' => $customer->name,
+                        'address' => $customer->address,
+                        'type' => $customer->serviceType->name
+                    ];
+                })
+            ]);
+        }
 
-		// Consulta para sedes (manteniendo condiciones originales)
-		$sedesQuery = Customer::where('service_type_id', '!=', 1)
-			->where('general_sedes', '!=', 0)
-			->when($name, fn($q) => $q->where('name', 'like', "%$name%"))
-			->when($phone, fn($q) => $q->where('phone', 'like', "%$phone%"))
-			->when($address, fn($q) => $q->where('address', 'like', "%$address%"));
+        // Consulta para sedes (manteniendo condiciones originales)
+        $sedesQuery = Customer::where('service_type_id', '!=', 1)
+            ->where('general_sedes', '!=', 0)
+            ->when($name, fn($q) => $q->where('name', 'like', "%$name%"))
+            ->when($phone, fn($q) => $q->where('phone', 'like', "%$phone%"))
+            ->when($address, fn($q) => $q->where('address', 'like', "%$address%"));
 
-		$matrixs = $sedesQuery->get()->pluck('general_sedes');
+        $matrixs = $sedesQuery->get()->pluck('general_sedes');
 
-		// Consulta para clientes principales (manteniendo condiciones originales)
-		$customersQuery = Customer::where('status', '!=', 0)
-			//->where('service_type_id', 1)
-			->when($name, fn($q) => $q->where('name', 'like', "%$name%"))
-			->when($phone, fn($q) => $q->where('phone', 'like', "%$phone%"))
-			->when($address, fn($q) => $q->where('address', 'like', "%$address%"))
-			->whereNotIn('id', $matrixs);
+        // Consulta para clientes principales (manteniendo condiciones originales)
+        $customersQuery = Customer::where('status', '!=', 0)
+            //->where('service_type_id', 1)
+            ->when($name, fn($q) => $q->where('name', 'like', "%$name%"))
+            ->when($phone, fn($q) => $q->where('phone', 'like', "%$phone%"))
+            ->when($address, fn($q) => $q->where('address', 'like', "%$address%"))
+            ->whereNotIn('id', $matrixs);
 
-		$results = $customersQuery->get()->merge($sedesQuery->get());
+        $results = $customersQuery->get()->merge($sedesQuery->get());
 
-		return response()->json([
-			'customers' => $results->map(function ($customer) {
-				return [
-					'id' => $customer->id,
-					'code' => $customer->code,
-					'name' => $customer->name,
-					'address' => $customer->address,
-					'type' => $customer->serviceType->name
-				];
-			}),
-		]);
-	}
+        return response()->json([
+            'customers' => $results->map(function ($customer) {
+                return [
+                    'id' => $customer->id,
+                    'code' => $customer->code,
+                    'name' => $customer->name,
+                    'address' => $customer->address,
+                    'type' => $customer->serviceType->name
+                ];
+            }),
+        ]);
+    }
 
     public function show(string $id, string $section)
     {
@@ -425,75 +426,83 @@ class OrderController extends Controller
 
     public function edit(string $id): View
     {
-        $selected_services = [];
-        $services_configuration = [];
+        try {
+            $selected_services = [];
+            $services_configuration = [];
 
-        $cost = 0;
-        $order = Order::find($id);
+            $cost = 0;
+            $order = Order::find($id);
 
-        if (!isset($order->customer_id)) {
-            $error = 'No se ha seleccionado un cliente.';
-            return view(
-                'order.index',
-                with(
-                    compact(
-                        'orders',
-                        'order_status',
-                        'error'
+            if (!isset($order->customer_id)) {
+                $error = 'No se ha seleccionado un cliente.';
+                return view(
+                    'order.index',
+                    with(
+                        compact(
+                            'orders',
+                            'order_status',
+                            'error'
+                        )
                     )
+                );
+            }
+
+            $orders = Order::orderBy('id', 'desc')->get();
+            $order_status = OrderStatus::all();
+            $customer = Customer::find($order->customer_id);
+
+            foreach ($order->services as $service) {
+                $selected_services[] = [
+                    'id' => $service->id,
+                    'prefix' => $service->prefix,
+                    'name' => $service->name,
+                    'type' => [$service->serviceType->name],
+                    'line' => [$service->businessLine->name],
+                    'cost' => $service->cost,
+                    'propagate_description' => $order->propagateByService($service->id)->text ?? null,
+                ];
+
+                $services_configuration[] = [
+                    'service_id' => $service->id,
+                    'description' => $order->propagateByService($service->id)->text ?? null,
+                ];
+
+                $cost += $service->cost;
+            }
+
+            $technicians = Technician::with('user')
+                ->whereIn('user_id', Technician::pluck('user_id'))
+                ->join('user', 'technician.user_id', '=', 'user.id')
+                ->orderBy('user.name', 'ASC')
+                ->select('technician.*')
+                ->get();
+
+            $navigation = [
+                'Orden de servicio' => route('order.edit', ['id' => $order->id]),
+                'Reporte' => route('report.review', ['id' => $order->id]),
+                'Seguimientos' => route('tracking.create.order', ['id' => $order->id]),
+            ];
+
+            return view(
+                'order.edit',
+                compact(
+                    'order',
+                    'order_status',
+                    'customer',
+                    'technicians',
+                    'selected_services',
+                    'cost',
+                    'navigation',
+                    'services_configuration'
                 )
             );
+        } catch (\Exception $e) {
+            // Log del error si es necesario
+            Log::error('Error en OrderController@edit: ' . $e->getMessage());
+
+            $error = 'Ocurrió un error al cargar la orden. Por favor, intente nuevamente.';
+            return view('order.index', compact('error'));
         }
-
-        $orders = Order::orderBy('id', 'desc')->get();
-        $order_status = OrderStatus::all();
-        $customer = Customer::find($order->customer_id);
-
-        foreach ($order->services as $service) {
-            $selected_services[] = [
-                'id' => $service->id,
-                'prefix' => $service->prefix,
-                'name' => $service->name,
-                'type' => [$service->serviceType->name],
-                'line' => [$service->businessLine->name],
-                'cost' => $service->cost,
-                'propagate_description' => $order->propagateByService($service->id)->text ?? null,
-            ];
-
-            $services_configuration[] = [
-                'service_id' => $service->id,
-                'description' => $order->propagateByService($service->id)->text ?? null,
-            ];
-
-            $cost += $service->cost;
-        }
-
-        $technicians = Technician::with('user')
-            ->whereIn('user_id', Technician::pluck('user_id'))
-            ->join('user', 'technician.user_id', '=', 'user.id')
-            ->orderBy('user.name', 'ASC')
-            ->select('technician.*')
-            ->get();
-
-        $navigation = [
-            'Orden de servicio' => route('order.edit', ['id' => $order->id]),
-            'Reporte' => route('report.review', ['id' => $order->id]),
-            'Seguimientos' => route('tracking.create.order', ['id' => $order->id]),
-        ];
-
-        return view(
-            'order.edit',
-            compact(
-                'order',
-                'order_status',
-                'customer',
-                'technicians',
-                'selected_services',
-                'cost',
-                'navigation',
-                'services_configuration'
-            )
-        );
     }
     public function update(Request $request, string $id): RedirectResponse
     {
@@ -680,7 +689,7 @@ class OrderController extends Controller
         $query = Order::query();
 
         // Aplicar filtros (mantén tus filtros existentes)
-        if($request->filled('folio')) {
+        if ($request->filled('folio')) {
             $query->where('folio', 'like', '%' . $request->input('folio') . '%');
         }
 
