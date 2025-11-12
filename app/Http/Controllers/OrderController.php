@@ -496,120 +496,119 @@ class OrderController extends Controller
         );
     }*/
 
-    public function edit(string $id)
-    {
-        try {
-            // Validar que el ID sea numérico
-            if (!is_numeric($id)) {
-                throw new \Exception('ID de orden inválido');
-            }
+    public function edit(string $id): View
+{
+    try {
+        // Validar que el ID sea numérico
+        if (!is_numeric($id)) {
+            throw new \Exception('ID de orden inválido');
+        }
 
-            $selected_services = [];
-            $services_configuration = [];
-            $cost = 0;
+        $selected_services = [];
+        $services_configuration = [];
+        $cost = 0;
 
-            // Cargar la orden con relaciones necesarias para evitar N+1
-            $order = Order::with([
-                'customer',
-                'services.serviceType',
-                'services.businessLine',
-                'propagations'
-            ])->find($id);
+        // CORRECCIÓN: Usar las relaciones correctas que existen en el modelo
+        $order = Order::with([
+            'customer',
+            'services.serviceType',
+            'services.businessLine',
+            'propagate' // ← Cambiar de 'propagations' a 'propagate'
+        ])->find($id);
 
-            if (!$order) {
-                throw new \Exception('Orden no encontrada');
-            }
+        if (!$order) {
+            throw new \Exception('Orden no encontrada');
+        }
 
-            // Verificar customer_id de manera segura
-            if (empty($order->customer_id)) {
-                $orders = Order::orderBy('id', 'desc')->get();
-                $order_status = OrderStatus::all();
+        // Verificar customer_id de manera segura
+        if (empty($order->customer_id)) {
+            $orders = Order::orderBy('id', 'desc')->get();
+            $order_status = OrderStatus::all();
+            
+            return view('order.index', compact('orders', 'order_status'))
+                ->with('error', 'No se ha seleccionado un cliente.');
+        }
 
-                return view('order.index', compact('orders', 'order_status'))
-                    ->with('error', 'No se ha seleccionado un cliente.');
-            }
+        // Obtener customer (ya debería estar cargado por el with)
+        $customer = $order->customer;
+        if (!$customer) {
+            throw new \Exception('Cliente no encontrado para esta orden');
+        }
 
-            // Obtener customer (ya debería estar cargado por el with)
-            $customer = $order->customer;
-            if (!$customer) {
-                throw new \Exception('Cliente no encontrado para esta orden');
-            }
-
-            // Procesar servicios de manera optimizada
-            foreach ($order->services as $service) {
-                // Verificar relaciones antes de acceder
-                $serviceTypeName = $service->serviceType ? $service->serviceType->name : 'N/A';
-                $businessLineName = $service->businessLine ? $service->businessLine->name : 'N/A';
-
-                $propagation = $order->propagateByService($service->id);
-
-                $selected_services[] = [
-                    'id' => $service->id,
-                    'prefix' => $service->prefix,
-                    'name' => $service->name,
-                    'type' => [$serviceTypeName],
-                    'line' => [$businessLineName],
-                    'cost' => $service->cost ?? 0,
-                    'propagate_description' => $propagation->text ?? null,
-                ];
-
-                $services_configuration[] = [
-                    'service_id' => $service->id,
-                    'description' => $propagation->text ?? null,
-                ];
-
-                $cost += $service->cost ?? 0;
-            }
-
-            // Optimizar consulta de técnicos
-            $technicians = Technician::with([
-                'user' => function ($query) {
-                    $query->orderBy('name', 'ASC');
-                }
-            ])
-                ->whereHas('user')
-                ->get()
-                ->sortBy('user.name');
-
-            $navigation = [
-                'Orden de servicio' => route('order.edit', ['id' => $order->id]),
-                'Reporte' => route('report.review', ['id' => $order->id]),
-                'Seguimientos' => route('tracking.create.order', ['id' => $order->id]),
+        // Procesar servicios de manera optimizada
+        foreach ($order->services as $service) {
+            // Verificar relaciones antes de acceder
+            $serviceTypeName = $service->serviceType ? $service->serviceType->name : 'N/A';
+            $businessLineName = $service->businessLine ? $service->businessLine->name : 'N/A';
+            
+            // CORRECCIÓN: Usar el método propagateByService que ya existe
+            $propagation = $order->propagateByService($service->id);
+            
+            $selected_services[] = [
+                'id' => $service->id,
+                'prefix' => $service->prefix,
+                'name' => $service->name,
+                'type' => [$serviceTypeName],
+                'line' => [$businessLineName],
+                'cost' => $service->cost ?? 0,
+                'propagate_description' => $propagation->text ?? null,
             ];
 
-            // Obtener order_status
-            $order_status = OrderStatus::all();
-            $orders = Order::orderBy('id', 'desc')->get();
+            $services_configuration[] = [
+                'service_id' => $service->id,
+                'description' => $propagation->text ?? null,
+            ];
 
-            return view(
-                'order.edit',
-                compact(
-                    'order',
-                    'order_status',
-                    'customer',
-                    'technicians',
-                    'selected_services',
-                    'cost',
-                    'navigation',
-                    'services_configuration'
-                )
-            );
-
-        } catch (\Exception $e) {
-            \Log::error('Error en OrderController@edit: ' . $e->getMessage(), [
-                'id' => $id,
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            // Redirigir a una vista de error o a la lista de órdenes
-            return redirect()->route('order.index')
-                ->with('error', 'Error al cargar la orden: ' .
-                    (app()->environment('local') ? $e->getMessage() : 'Contacte al administrador'));
+            $cost += $service->cost ?? 0;
         }
+
+        // Optimizar consulta de técnicos
+        $technicians = Technician::with(['user' => function($query) {
+            $query->orderBy('name', 'ASC');
+        }])
+        ->whereHas('user')
+        ->get()
+        ->sortBy('user.name');
+
+        $navigation = [
+            'Orden de servicio' => route('order.edit', ['id' => $order->id]),
+            'Reporte' => route('report.review', ['id' => $order->id]),
+            'Seguimientos' => route('tracking.create.order', ['id' => $order->id]),
+        ];
+
+        // Obtener order_status
+        $order_status = OrderStatus::all();
+        $orders = Order::orderBy('id', 'desc')->get();
+
+        return view(
+            'order.edit',
+            compact(
+                'order',
+                'order_status',
+                'customer',
+                'technicians',
+                'selected_services',
+                'cost',
+                'navigation',
+                'services_configuration'
+            )
+        );
+
+    } catch (\Exception $e) {
+        \Log::error('Error en OrderController@edit: ' . $e->getMessage(), [
+            'id' => $id,
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        // Redirigir a una vista de error o a la lista de órdenes
+        return redirect()->route('order.index')
+            ->with('error', 'Error al cargar la orden: ' . 
+                (app()->environment('local') ? $e->getMessage() : 'Contacte al administrador'));
     }
-    
+}
+
     public function update(Request $request, string $id): RedirectResponse
     {
         //dd($request->all());
