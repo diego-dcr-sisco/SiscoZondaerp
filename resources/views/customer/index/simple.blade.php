@@ -9,7 +9,7 @@
             @endcan
         </div>
 
-        
+
         <div class="table-responsive">
             <!-- Tabla de clientes -->
             <table class="table table-sm table-bordered table-striped caption-top">
@@ -43,7 +43,7 @@
                             <div class="col-auto">
                                 <label for="time" class="form-label">Categoría</label>
                                 <select class="form-select form-select-sm" name="category">
-                                   @foreach ($categories as $key => $category)
+                                    @foreach ($categories as $key => $category)
                                         <option value="{{ $key }}"
                                             {{ request('category') == $key || $key == 1 ? 'selected' : '' }}>
                                             {{ $category }}
@@ -112,11 +112,13 @@
                             </td>
                             <td class="text-center">
                                 @can('write_customer')
-                                    <a href="{{ route('customer.quote', ['id' => $customer->id, 'class' => 'customer']) }}"
-                                        class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                        data-bs-title="Cotizaciones">
-                                        <i class="bi bi-clipboard-data-fill"></i>
-                                    </a>
+                                    @if ($customer->general_sedes != 0)
+                                        <a href="{{ route('customer.quote', ['id' => $customer->id, 'class' => 'customer']) }}"
+                                            class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            data-bs-title="Cotizaciones">
+                                            <i class="bi bi-clipboard-data-fill"></i>
+                                        </a>
+                                    @endif
 
                                     <a href="{{ route('customer.edit', ['id' => $customer->id]) }}"
                                         class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
