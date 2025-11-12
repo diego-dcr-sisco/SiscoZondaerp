@@ -355,6 +355,8 @@ class PagesController extends Controller
                     'cancel_url' => route('tracking.cancel', ['id' => $tracking->id]),
                     'destroy_url' => route('tracking.destroy', ['id' => $tracking->id])
                 ];
+
+                dd($trackings_data);
             }
             return view('dashboard.index', compact('trackings_data', 'services', 'count_trackings'));
         } else {
