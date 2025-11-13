@@ -837,6 +837,7 @@ class OrderController extends Controller
         $order_status = OrderStatus::all();
         $customer_ranges = Customer::where('general_sedes', '!=', 0)->orWhere('service_type_id', 1)->orderBy('name', 'asc')->get();
         $size = $this->size;
+        $navigation = $this->navigation;    
 
         return view(
             'order.index',
@@ -844,7 +845,8 @@ class OrderController extends Controller
                 'orders',
                 'order_status',
                 'size',
-                'customer_ranges'
+                'customer_ranges',
+                'navigation'
             )
         );
     }

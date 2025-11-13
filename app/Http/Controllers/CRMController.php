@@ -94,21 +94,10 @@ class CRMController extends Controller
         return $colors;
     }
 
-    private function makeAgenda($startDate, $endDate)
+    private function makeAgenda($orders)
     {
         $calendar_data = [];
 
-        $startMonth = now()->startOfMonth();
-        $endMonth = now()->endOfMonth();
-
-        $query_orders = Order::with(['customer', 'products']) // Carga relaciones necesarias
-            ->whereBetween('programmed_date', [$startMonth, $endMonth])
-            ->orderBy('programmed_date', 'asc');
-
-        $query_trackings = Tracking::whereBetween('next_date', [$startDate, $endDate])
-            ->orderBy('next_date', 'asc');
-
-        $orders = $query_orders->get();
         foreach ($orders as $order) {
             $programmed_date = is_string($order->programmed_date)
                 ? Carbon::parse($order->programmed_date)
@@ -120,7 +109,7 @@ class CRMController extends Controller
                 'title' => 'Orden #' . $order->id . ' - ' . ($order->customer->name ?? 'Cliente no disponible'),
                 'start' => $programmed_date->toIso8601String(),
                 'end' => $programmed_date->copy()->addHours(2)->toIso8601String(),
-                'color' => $this->getOrderColor($order->status_id - 1),
+                'color' => $this->getOrderColor(($order->customer->service_type_id - 1)),
                 'extendedProps' => [
                     'type' => 'order',
                     'customer' => $order->customer->name ?? 'Cliente no disponible',
@@ -132,33 +121,6 @@ class CRMController extends Controller
                     'time' => Carbon::parse($order->start_time)->format('H:i') . ' - ' . Carbon::parse($order->end_time)->format('H:i'),
                     'edit_url' => route('order.edit', ['id' => $order->id]),
                     'report_url' => route('report.review', ['id' => $order->id]),
-                ],
-            ];
-        }
-
-        $trackings = $query_trackings->get();
-        foreach ($trackings as $tracking) {
-            $date = is_string($tracking->next_date)
-                ? Carbon::parse($tracking->next_date)
-                : $tracking->next_date;
-
-            $calendar_data[] = [
-                'id' => $tracking->id,
-                'title' => 'Seg. #' . $tracking->id . ' - ' . $tracking->trackable->name,
-                'start' => $date->toIso8601String(),
-                'end' => $date->copy()->addHours(2)->toIso8601String(),
-                'color' => $this->getOrderColor($tracking->status == 'active' ? 4 : ($tracking->status == 'completed' ? 2 : 5)),
-                'extendedProps' => [
-                    'type' => 'tracking',
-                    'customer' => $tracking->trackable->name,
-                    'date' => Carbon::parse($tracking->next_date)->format('d-m-y'),
-                    'title' => $tracking->title,
-                    'description' => $tracking->description,
-                    'status' => $tracking->status,
-                    'edit_url' => route('crm.tracking.edit', ['id' => $tracking->id]),
-                    'auto_url' => route('crm.tracking.auto', ['id' => $tracking->id]),
-                    'completed_url' => route('crm.tracking.auto', ['id' => $tracking->id]),
-                    'cancel_url' => route('crm.tracking.cancel', ['id' => $tracking->id]),
                 ],
             ];
         }
@@ -185,30 +147,124 @@ class CRMController extends Controller
         return view('crm.index', compact('navigation'));
     }
 
-    public function agenda()
-    {
-        $startDate = now()->startOfWeek();
-        $endDate = now()->endOfWeek();
-        $calendar_data = $this->makeAgenda($startDate, $endDate);
+    public function agenda(Request $request)
+{
+    $data = $request->all();
 
-        $query_trackings = Tracking::whereBetween('next_date', [$startDate, $endDate])
-            ->orderBy('next_date', 'asc');
+    // Verificar si hay filtros aplicados (excluyendo paginación/ordenación)
+    $hasFilters = $this->hasAppliedFilters($request);
 
-        $quotes = Quote::whereBetween('created_at', [$startDate, $endDate])
-            ->orderBy('created_at', 'desc')
-            ->get();
+    $calendar_data = [];
+    $navigation = $this->navigation;
 
-        $navigation = $this->navigation;
-
+    // Si no hay filtros aplicados, retornar vista vacía o con datos por defecto
+    if (!$hasFilters) {
         return view('crm.agenda.calendar', [
             'calendar_events' => json_encode($calendar_data),
-            'trackings' => $query_trackings->orderByRaw("FIELD(status, '" . implode("','", ['active', 'completed', 'canceled']) . "')")->paginate($this->size),
             'order_status' => OrderStatus::all(),
-            'quotes' => $quotes,
             'navigation' => $navigation,
             'nav' => 'c',
+            'hasFilters' => false // Puedes usar esto en tu vista
         ]);
     }
+
+    // Obtener parámetros de ordenamiento
+    $size = $request->input('size');
+    $sort = $request->input('sort', 'id');
+    $direction = $request->input('direction', 'DESC');
+
+    // Construir consulta base
+    $query = Order::query();
+
+    // Aplicar filtros (mantén tus filtros existentes)
+    if ($request->filled('folio')) {
+        $query->where('folio', 'like', '%' . $request->input('folio') . '%');
+    }
+
+    if ($request->filled('customer')) {
+        $searchTerm = '%' . $request->input('customer') . '%';
+        $customerIds = Customer::where('name', 'LIKE', $searchTerm)->pluck('id');
+        $query->whereIn('customer_id', $customerIds);
+    }
+
+    if ($request->filled('status')) {
+        $query->where('status_id', $request->input('status'));
+    }
+
+    if ($request->filled('service')) {
+        $serviceName = '%' . $request->input('service') . '%';
+        $serviceIds = Service::where('name', 'LIKE', $serviceName)->pluck('id');
+        $orderIds = OrderService::whereIn('service_id', $serviceIds)->pluck('order_id');
+        $query->whereIn('id', $orderIds);
+    }
+
+    if ($request->filled('date_range')) {
+        [$startDate, $endDate] = array_map(function ($d) {
+            return Carbon::createFromFormat('d/m/Y', trim($d));
+        }, explode(' - ', $request->input('date_range')));
+
+        $query->whereBetween('programmed_date', [
+            $startDate->format('Y-m-d'),
+            $endDate->format('Y-m-d'),
+        ]);
+    }
+
+    if ($request->filled('time')) {
+        $query->whereTime('start_time', $request->input('time'));
+    }
+
+    if ($request->filled('order_type')) {
+        if ($request->input('order_type') == 'MIP') {
+            $query->where('contract_id', '>', 0);
+        } else {
+            $query->whereNull('contract_id');
+        }
+    }
+
+    if ($request->filled('signature_status')) {
+        if ($request->input('signature_status') == 'signed') {
+            $query->whereNotNull('customer_signature');
+        } elseif ($request->input('signature_status') == 'unsigned') {
+            $query->whereNull('customer_signature');
+        }
+    }
+
+    // Aplicar ordenamiento después de los filtros
+    $query->orderBy($sort, $direction);
+    $size = $size ?? $this->size;
+
+    // Paginar resultados
+    $orders = $query->get();
+    $calendar_data = $this->makeAgenda($orders);
+
+    return view('crm.agenda.calendar', [
+        'calendar_events' => json_encode($calendar_data),
+        'order_status' => OrderStatus::all(),
+        'navigation' => $navigation,
+        'nav' => 'c',
+        'hasFilters' => true // Puedes usar esto en tu vista
+    ]);
+}
+
+/**
+ * Verifica si la request tiene filtros aplicados
+ * Excluye campos de paginación y ordenación
+ */
+private function hasAppliedFilters(Request $request)
+{
+    $filterableFields = [
+        'folio', 'customer', 'service', 'date_range', 
+        'time', 'status', 'order_type', 'signature_status'
+    ];
+    
+    foreach ($filterableFields as $field) {
+        if ($request->filled($field)) {
+            return true;
+        }
+    }
+    
+    return false;
+}
 
     public function tracking(Request $request)
     {
@@ -312,12 +368,9 @@ class CRMController extends Controller
     private function getOrderColor($status)
     {
         $colors = [
-            '#f9a825',  // Amarillo - 1
-            '#ef6c00',  // Anaranjado - 2
-            '#1565c0',  // Azul - 3
-            '#0288d1 ', // Cyan - 4
-            '#198754',  // Verde - 5
-            '#EF4444',  // Rojo - 6
+            '#B71C1C',
+            '#1B5E20',
+            '#1A237E'
         ];
 
         return $colors[$status] ?? '#6B7280'; // Gris por defecto
