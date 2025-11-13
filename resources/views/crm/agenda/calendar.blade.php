@@ -17,14 +17,14 @@
             width: 100% !important;
             overflow: hidden;
         }
-        
+
         .fc-event {
             cursor: pointer;
             border: none;
             font-size: 12px;
             padding: 2px 4px;
         }
-        
+
         .event-modal {
             display: none;
             position: fixed;
@@ -33,9 +33,9 @@
             top: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
+            background-color: rgba(0, 0, 0, 0.5);
         }
-        
+
         .modal-content-custom {
             background-color: #fefefe;
             margin: 5% auto;
@@ -44,7 +44,7 @@
             width: 80%;
             max-width: 600px;
         }
-        
+
         .close {
             color: #aaa;
             float: right;
@@ -52,26 +52,26 @@
             font-weight: bold;
             cursor: pointer;
         }
-        
+
         .close:hover {
             color: black;
         }
-        
+
         .event-details {
             margin-top: 15px;
         }
-        
+
         .detail-row {
             margin-bottom: 8px;
             padding: 5px 0;
             border-bottom: 1px solid #eee;
         }
-        
+
         .action-buttons {
             margin-top: 20px;
             text-align: right;
         }
-        
+
         .btn {
             padding: 8px 16px;
             margin-left: 10px;
@@ -81,12 +81,12 @@
             text-decoration: none;
             display: inline-block;
         }
-        
+
         .btn-primary {
             background-color: #007bff;
             color: white;
         }
-        
+
         .btn-secondary {
             background-color: #6c757d;
             color: white;
@@ -104,7 +104,7 @@
         .calendar-container {
             background: white;
             padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             width: 100%;
             overflow: hidden;
         }
@@ -213,16 +213,16 @@
                 flex-direction: column;
                 gap: 10px;
             }
-            
+
             .fc-toolbar-chunk {
                 justify-content: center;
                 width: 100%;
             }
-            
+
             .calendar-container {
                 padding: 10px;
             }
-            
+
             #calendar {
                 height: 600px !important;
             }
@@ -240,6 +240,12 @@
                 <a class="nav-link {{ $nav == 'c' ? 'active' : '' }}" aria-current="page"
                     href="{{ route('crm.agenda') }}">Calendario</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $nav == 't' ? 'active' : '' }}" href="{{ route('crm.tracking') }}">Seguimientos</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $nav == 'q' ? 'active' : '' }}" href="{{ route('crm.quotation') }}">Cotizaciones</a>
+            </li>
         </ul>
 
         <div class="row">
@@ -249,107 +255,144 @@
                     <h5 class="mb-4 text-primary">
                         <i class="bi bi-funnel-fill me-2"></i>Filtros
                     </h5>
-                    
+
                     <form id="filter-form" action="{{ route('crm.agenda') }}" method="GET">
                         <!-- No. Reporte -->
                         <div class="filter-section">
                             <label for="folio" class="form-label">No. Reporte</label>
-                            <input type="text" class="form-control form-control-sm" id="folio" name="folio"
-                                value="{{ request('folio') }}" placeholder="Buscar por folio">
+                            <div class="input-group input-group-sm  mb-3">
+                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-key-fill"></i></span>
+                                <input type="text" class="form-control form-control-sm" id="folio" name="folio"
+                                    value="{{ request('folio') }}" placeholder="Buscar por folio... ">
+                            </div>
                         </div>
 
                         <!-- Cliente -->
                         <div class="filter-section">
                             <label for="customer" class="form-label">Cliente</label>
-                            <input type="text" class="form-control form-control-sm" id="customer" name="customer"
-                                value="{{ request('customer') }}" placeholder="Buscar cliente">
+                            <div class="input-group input-group-sm  mb-3">
+                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-person-circle"></i></span>
+                                <input type="text" class="form-control form-control-sm" id="customer" name="customer"
+                                    value="{{ request('customer') }}" placeholder="Buscar cliente">
+                            </div>
+
                         </div>
 
                         <!-- Servicio -->
                         <div class="filter-section">
                             <label for="service" class="form-label">Servicio</label>
-                            <input type="text" class="form-control form-control-sm" id="service" name="service"
-                                value="{{ request('service') }}" placeholder="Buscar servicio">
+                            <div class="input-group input-group-sm mb-3">
+                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-gear-fill"></i></span>
+                                <input type="text" class="form-control form-control-sm" id="service" name="service"
+                                    value="{{ request('service') }}" placeholder="Buscar servicio">
+                            </div>
                         </div>
 
                         <!-- Rango de Fechas -->
                         <div class="filter-section">
                             <label for="date_range" class="form-label">Rango de Fechas</label>
-                            <input type="text" class="form-control form-control-sm date-range-picker" id="date-range"
-                                name="date_range" value="{{ request('date_range') }}" placeholder="Selecciona un rango"
-                                autocomplete="off">
+                            <div class="input-group input-group-sm mb-3">
+                                <span class="input-group-text" id="basic-addon1"><i
+                                        class="bi bi-calendar-week-fill"></i></span>
+                                <input type="text" class="form-control form-control-sm date-range-picker" id="date-range"
+                                    name="date_range" value="{{ request('date_range') }}" placeholder="Selecciona un rango"
+                                    autocomplete="off">
+                            </div>
                         </div>
 
                         <!-- Hora -->
                         <div class="filter-section">
                             <label for="time" class="form-label">Hora Programada</label>
-                            <input type="time" class="form-control form-control-sm" id="time" name="time"
-                                value="{{ request('time') }}">
+                            <div class="input-group input-group-sm mb-3">
+                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-clock-fill"></i></span>
+                                <input type="time" class="form-control form-control-sm" id="time" name="time"
+                                    value="{{ request('time') }}">
+                            </div>
                         </div>
 
                         <!-- Estado -->
                         <div class="filter-section">
                             <label for="status" class="form-label">Estado</label>
-                            <select class="form-select form-select-sm" id="status" name="status">
-                                <option value="">Todos los estados</option>
-                                @foreach ($order_status as $status)
-                                    <option value="{{ $status->id }}"
-                                        {{ request('status') == $status->id ? 'selected' : '' }}>
-                                        {{ $status->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="input-group input-group-sm mb-3">
+                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-circle-half"></i></span>
+                                <select class="form-select form-select-sm" id="status" name="status">
+                                    <option value="">Todos los estados</option>
+                                    @foreach ($order_status as $status)
+                                        <option value="{{ $status->id }}"
+                                            {{ request('status') == $status->id ? 'selected' : '' }}>
+                                            {{ $status->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Tipo de Orden -->
                         <div class="filter-section">
                             <label for="order_type" class="form-label">Tipo de Orden</label>
-                            <select class="form-select form-select-sm" id="order_type" name="order_type">
-                                <option value="">Todos los tipos</option>
-                                <option value="MIP" {{ request('order_type') == 'MIP' ? 'selected' : '' }}>MIP</option>
-                                <option value="Seguimiento" {{ request('order_type') == 'Seguimiento' ? 'selected' : '' }}>
-                                    Seguimiento
-                                </option>
-                            </select>
+                            <div class="input-group input-group-sm mb-3">
+                                <span class="input-group-text" id="basic-addon1"><i
+                                        class="bi bi-dash-circle-fill"></i></span>
+                                <select class="form-select form-select-sm" id="order_type" name="order_type">
+                                    <option value="">Todos los tipos</option>
+                                    <option value="MIP" {{ request('order_type') == 'MIP' ? 'selected' : '' }}>MIP
+                                    </option>
+                                    <option value="Seguimiento"
+                                        {{ request('order_type') == 'Seguimiento' ? 'selected' : '' }}>
+                                        Seguimiento
+                                    </option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Firma -->
                         <div class="filter-section">
                             <label for="signature_status" class="form-label">Estado de Firma</label>
-                            <select class="form-select form-select-sm" id="signature_status" name="signature_status">
-                                <option value="">Todos</option>
-                                <option value="signed" {{ request('signature_status') == 'signed' ? 'selected' : '' }}>
-                                    Firmadas
-                                </option>
-                                <option value="unsigned" {{ request('signature_status') == 'unsigned' ? 'selected' : '' }}>
-                                    No Firmadas
-                                </option>
-                            </select>
+                            <div class="input-group input-group-sm mb-3">
+                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-pen-fill"></i></span>
+                                <select class="form-select form-select-sm" id="signature_status" name="signature_status">
+                                    <option value="">Todos</option>
+                                    <option value="signed"
+                                        {{ request('signature_status') == 'signed' ? 'selected' : '' }}>
+                                        Firmadas
+                                    </option>
+                                    <option value="unsigned"
+                                        {{ request('signature_status') == 'unsigned' ? 'selected' : '' }}>
+                                        No Firmadas
+                                    </option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Ordenación -->
                         <div class="filter-section">
-                            <label for="direction" class="form-label">Ordenar por Fecha</label>
-                            <select class="form-select form-select-sm" id="direction" name="direction">
-                                <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>
-                                    Ascendente
-                                </option>
-                                <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
-                                    Descendente
-                                </option>
-                            </select>
+                            <label for="direction" class="form-label">Direccion</label>
+                            <div class="input-group input-group-sm mb-3">
+                                <span class="input-group-text" id="basic-addon1"><i
+                                        class="bi bi-arrow-down-up"></i></span>
+                                <select class="form-select form-select-sm" id="direction" name="direction">
+                                    <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>
+                                        Ascendente
+                                    </option>
+                                    <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
+                                        Descendente
+                                    </option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Total de resultados -->
                         <div class="filter-section">
                             <label for="size" class="form-label">Resultados por página</label>
-                            <select class="form-select form-select-sm" id="size" name="size">
-                                <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
-                                <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
-                                <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
-                            </select>
+                            <div class="input-group input-group-sm mb-3">
+                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-list-ol"></i></span>
+                                <select class="form-select form-select-sm" id="size" name="size">
+                                    <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
+                                    <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
+                                    <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
+                                    <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Botones de acción -->
@@ -374,6 +417,34 @@
                         <h5 class="mb-0 text-dark">
                             <i class="bi bi-calendar-week me-2"></i>Calendario de Actividades
                         </h5>
+
+                        <div class="legend-container">
+                            <div class="d-flex align-items-center gap-3">
+                                <!-- Doméstico -->
+                                <div class="legend-item d-flex align-items-center">
+                                    <div class="legend-color"
+                                        style="background-color: #B71C1C; width: 16px; height: 16px; border-radius: 3px; margin-right: 6px;">
+                                    </div>
+                                    <small class="text-muted">Doméstico</small>
+                                </div>
+
+                                <!-- Comercial -->
+                                <div class="legend-item d-flex align-items-center">
+                                    <div class="legend-color"
+                                        style="background-color: #1B5E20; width: 16px; height: 16px; border-radius: 3px; margin-right: 6px;">
+                                    </div>
+                                    <small class="text-muted">Comercial</small>
+                                </div>
+
+                                <!-- Industrial -->
+                                <div class="legend-item d-flex align-items-center">
+                                    <div class="legend-color"
+                                        style="background-color: #1A237E; width: 16px; height: 16px; border-radius: 3px; margin-right: 6px;">
+                                    </div>
+                                    <small class="text-muted">Industrial</small>
+                                </div>
+                            </div>
+                        </div>  
                     </div>
                     <div id="calendar"></div>
                 </div>
@@ -396,7 +467,7 @@
     <!-- FullCalendar JS -->
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js'></script>
-    
+
     <script>
         let calendar; // Variable global para el calendario
         let tooltipTimeout;
@@ -413,6 +484,9 @@
                     center: 'title',
                     right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
                 },
+
+                initialDate: '{{ $initial_date }}',
+
                 buttonText: {
                     today: 'Hoy',
                     month: 'Mes',
@@ -469,27 +543,31 @@
                 `;
 
                 if (extendedProps.services) {
-                    tooltipContent += `<div class="tooltip-detail"><strong>Servicios:</strong> ${extendedProps.services}</div>`;
+                    tooltipContent +=
+                        `<div class="tooltip-detail"><strong>Servicios:</strong> ${extendedProps.services}</div>`;
                 }
 
                 if (extendedProps.technicians) {
-                    tooltipContent += `<div class="tooltip-detail"><strong>Técnicos:</strong> ${extendedProps.technicians}</div>`;
+                    tooltipContent +=
+                        `<div class="tooltip-detail"><strong>Técnicos:</strong> ${extendedProps.technicians}</div>`;
                 }
 
                 // Event listeners para mostrar/ocultar tooltip
                 eventElement.addEventListener('mouseenter', function(e) {
                     clearTimeout(tooltipTimeout);
-                    
+
                     tooltipTimeout = setTimeout(() => {
                         tooltip.innerHTML = tooltipContent;
                         tooltip.classList.add('show');
-                        
+
                         // Posicionar el tooltip
                         const rect = eventElement.getBoundingClientRect();
                         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                        
-                        tooltip.style.top = (rect.top + scrollTop - tooltip.offsetHeight - 10) + 'px';
-                        tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)) + 'px';
+
+                        tooltip.style.top = (rect.top + scrollTop - tooltip.offsetHeight - 10) +
+                            'px';
+                        tooltip.style.left = (rect.left + (rect.width / 2) - (tooltip.offsetWidth /
+                            2)) + 'px';
                     }, 300);
                 });
 
@@ -528,7 +606,8 @@
             });
 
             $('input[name="date_range"]').on('apply.daterangepicker', function(ev, picker) {
-                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
+                    'DD/MM/YYYY'));
             });
 
             // Modal functionality
@@ -548,7 +627,7 @@
             function showEventDetails(event) {
                 const extendedProps = event.extendedProps;
                 document.getElementById('modalTitle').textContent = event.title;
-                
+
                 let modalContent = `
                     <div class="detail-row">
                         <strong>Cliente:</strong> ${extendedProps.customer}

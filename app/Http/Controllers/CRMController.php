@@ -156,6 +156,7 @@ class CRMController extends Controller
 
     $calendar_data = [];
     $navigation = $this->navigation;
+    $initial_date = Carbon::today()->firstOfMonth()->format('Y-m-d');
 
     // Si no hay filtros aplicados, retornar vista vacía o con datos por defecto
     if (!$hasFilters) {
@@ -164,7 +165,8 @@ class CRMController extends Controller
             'order_status' => OrderStatus::all(),
             'navigation' => $navigation,
             'nav' => 'c',
-            'hasFilters' => false // Puedes usar esto en tu vista
+            'hasFilters' => false, // Puedes usar esto en tu vista
+            'initial_date' => $initial_date,
         ]);
     }
 
@@ -207,6 +209,8 @@ class CRMController extends Controller
             $startDate->format('Y-m-d'),
             $endDate->format('Y-m-d'),
         ]);
+
+        $initial_date = Carbon::parse($startDate)->firstOfMonth()->format('Y-m-d');
     }
 
     if ($request->filled('time')) {
@@ -242,7 +246,8 @@ class CRMController extends Controller
         'order_status' => OrderStatus::all(),
         'navigation' => $navigation,
         'nav' => 'c',
-        'hasFilters' => true // Puedes usar esto en tu vista
+        'hasFilters' => true, // Puedes usar esto en tu vista,
+        'initial_date' => $initial_date,
     ]);
 }
 
