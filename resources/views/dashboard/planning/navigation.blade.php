@@ -14,7 +14,6 @@
 <div class="col-1 m-0" style="background-color: #343a40;">
     <div class="row sticky-top" style="font-size: 85%">
         <span class="text-light border-top mb-2 pt-2">Planificacion</span>
-
         <a href="{{ Route('planning.schedule') }}" class="sidebar rounded-start py-2 pl-0 text-center  ">
             Cronograma
         </a>

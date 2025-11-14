@@ -78,13 +78,23 @@ Route::prefix('configuration')
 
 // PLANEACION
 Route::prefix('planning')->name('planning.')->middleware(['auth', 'single.session', 'can:integral'])->group(function () {
+    Route::get('/activities', [PagesController::class, 'activities'])->name('activities');
     Route::get('/schedule', [PagesController::class, 'schedule'])->name('schedule');
     Route::post('/schedule/update', [PagesController::class, 'updateSchedule'])->name('schedule.update');
-    Route::get('/activities', [PagesController::class, 'activities'])->name('activities');
     Route::post('/filter', [PagesController::class, 'filterPlanning'])->name('  filter');
 
     Route::post('/update-assignments', [PagesController::class, 'updateAssignments'])
         ->name('updateAssignments');
+
+    // Rutas para el drag and drop del calendario
+    Route::post('/update-event-date', [PagesController::class, 'updateEventDate'])
+        ->name('updateEventDate');
+
+    Route::post('/update-event-duration', [PagesController::class, 'updateEventDuration'])
+        ->name('updateEventDuration');
+
+    Route::post('/update-order', [PagesController::class, 'updateOrder'])
+        ->name('update-order');
 
 });
 
@@ -1047,7 +1057,7 @@ Route::prefix('payrolls')
         Route::get('/edit/{id}', [PayrollController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [PayrollController::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [PayrollController::class, 'destroy'])->name('destroy');
-        
+
         Route::get('/stamp/{id}', [PayrollController::class, 'stampPayroll'])->name('stamp');
         Route::get('/download/{id}', [PayrollController::class, 'downloadPayroll'])->name('download');
     });
@@ -1069,6 +1079,6 @@ Route::get('/google-drive/callback', [GoogleDriveController::class, 'handleGoogl
 Route::get('/google-drive/test', [GoogleDriveController::class, 'testConnection'])
     ->name('google.drive.test');
 
-    Route::get('/loading-erp', [PagesController::class, 'loadingERP'])->name('loading-erp');
-    
+Route::get('/loading-erp', [PagesController::class, 'loadingERP'])->name('loading-erp');
+
 require __DIR__ . '/auth.php';

@@ -174,7 +174,7 @@
                             <a href="{{ route('order.index') }}" class="btn btn-secondary btn-sm">
                                 <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                             </a>
-                        </div>
+                        </div>  
                     </div>
                 </form>
             </div>

@@ -44,7 +44,7 @@ class Order extends Model
         'created_at',
         'updated_at'
     ];
-    
+
     const STATUS_COMPLETED = 3; // Adjust this value based on your actual status codes
     const STATUS_APPROVED = 5;  // Adjust this value based on your actual status codes
 
@@ -81,17 +81,25 @@ class Order extends Model
         );
     }
 
-    public function hasTechnician($technicianId) {
+    public function techniciansScope()
+    {
+        return $this->hasMany(OrderTechnician::class);
+    }
+
+    public function hasTechnician($technicianId)
+    {
         return $this->technicians->contains($technicianId);
     }
 
-    public function getNameTechnicians() {
+    public function getNameTechnicians()
+    {
         $user_ids = $this->technicians()->pluck('user_id')->toArray();
         $technicians = User::whereIn('id', $user_ids)->get();
         return $technicians;
     }
 
-    public function allTechnicians() {
+    public function allTechnicians()
+    {
         return $this->technicians->count() == Technician::count();
     }
 
@@ -134,7 +142,8 @@ class Order extends Model
         );
     }
 
-    public function productsByService($serviceId) {
+    public function productsByService($serviceId)
+    {
         return $this->products()->where('service_id', $serviceId)->get();
     }
 
@@ -204,27 +213,33 @@ class Order extends Model
         return $this->hasOne(OrderIncidents::class, 'order_id', 'id')->where('device_id', $deviceId)->where('question_id', $questionId);
     }
 
-    public function propagate() {
+    public function propagate()
+    {
         return $this->hasMany(PropagateService::class, 'order_id', 'id');
     }
 
-    public function propagateByService($serviceId) {
+    public function propagateByService($serviceId)
+    {
         return $this->propagate()->where('contract_id', $this->contract_id)->where('setting_id', $this->setting_id)->where('service_id', $serviceId)->first();
     }
 
-    public function productsInDevices() {
+    public function productsInDevices()
+    {
         return $this->hasMany(DeviceProduct::class, 'order_id', 'id');
     }
 
-    public function setting() {
+    public function setting()
+    {
         return $this->belongsTo(ContractService::class, 'setting_id', 'id');
     }
 
-    public function closeUser() {
+    public function closeUser()
+    {
         return $this->belongsTo(User::class, 'closed_by', 'id');
-    }   
+    }
 
-    public function invoice() {
+    public function invoice()
+    {
         return $this->hasOne(Invoice::class, 'order_id', 'id');
     }
 

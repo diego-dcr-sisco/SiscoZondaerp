@@ -84,7 +84,11 @@ class PagesController extends Controller
         'Diciembre'
     ];
 
+    private $bootstrapColors = ['#ffc107', '#6610f2', '#0d6efd', '#0dcaf0', '#198754', '#dc3545'];
+
     private $size = 20;
+
+    private $navigation;
 
     private function convertToUTC($date, $time)
     {
@@ -146,83 +150,121 @@ class PagesController extends Controller
         return $data;
     }
 
-    private function getPlanningByTechnician($start_date = null, $end_date = null)
+    private function hasAppliedFilters(Request $request)
     {
-        $timelapse = $this->hrs_format;
+        $filterableFields = [
+            'folio',
+            'customer',
+            'service',
+            'date_range',
+            'time',
+            'status',
+            'order_type',
+            'signature_status'
+        ];
 
-        if (!$start_date && !$end_date) {
-            $start_date = now()->toDateString();
-            $end_date = now()->toDateString();
+        foreach ($filterableFields as $field) {
+            if ($request->filled($field)) {
+                return true;
+            }
         }
 
-        // Obtener todos los técnicos con la relación user
-        $allTechnicians = Technician::with('user')
-            ->whereIn('user_id', Technician::pluck('user_id'))
-            ->join('user', 'technician.user_id', '=', 'user.id')
-            ->orderBy('user.name', 'ASC')
-            ->select('technician.*')
+        return false;
+    }
+
+    private function getPlanningByTechnician($orders)
+    {
+        // Obtener todos los IDs de órdenes primero
+        $order_ids = $orders->pluck('id');
+
+        // Cargar todos los técnicos de una vez
+        $all_technicians = OrderTechnician::whereIn('order_id', $order_ids)
+            ->with('technician')
             ->get()
-            ->mapWithKeys(function ($tech) {
-                return [$tech->id => $tech->user->name];
-            })->toArray();
+            ->groupBy('order_id');
 
-        // Inicializar la estructura de datos
         $data = [];
-        $technicianOrders = [];
+        $custom_color = []; // ← Movido fuera del loop de horas
 
-        foreach ($timelapse as $hrs) {
-            $orders = Order::whereTime('start_time', $hrs)
-                ->whereBetween('programmed_date', [$start_date, $end_date])
-                ->with(['technicians.user', 'customer', 'status', 'customer.serviceType', 'services'])
-                ->get();
-
-            // Inicializar la fila para esta hora
-            $data[$hrs] = [];
-
-            // Para cada técnico, inicializar con array vacío
-            foreach ($allTechnicians as $techId => $techName) {
-                $data[$hrs][$techId] = [];
-            }
-
-            // Llenar con las órdenes correspondientes
-            foreach ($orders as $order) {
-                foreach ($order->technicians as $technician) {
-                    $orderData = [
-                        'customer' => $order->customer->name,
-                        'order_id' => $order->id,
-                        'order_folio' => $order->folio,
-                        'date' => $order->programmed_date,
-                        'time' => $order->start_time,
-                        'status' => $order->status->name,
-                        'type' => $order->customer->serviceType->name,
-                        'service' => $order->services->first()->name ?? 'N/A',
-                        'links' => [
-                            'edit' => route('order.edit', ['id' => $order->id]),
-                            'report' => route('report.review', ['id' => $order->id]),
-                            'tracking' => route('crm.tracking.create.order', ['customerId' => $order->customer_id, 'orderId' => $order->id]),
-                            'destroy' => route('order.destroy', ['id' => $order->id])
-                        ],
-                    ];
-
-                    $data[$hrs][$technician->id][] = $orderData;
-
-                    // También mantener un registro de todas las órdenes por técnico
-                    if (!isset($technicianOrders[$technician->id])) {
-                        $technicianOrders[$technician->id] = [
-                            'name' => $technician->user->name,
-                            'orders' => []
-                        ];
-                    }
-                    $technicianOrders[$technician->id]['orders'][] = $orderData;
-                }
-            }
+        // Primero: recolectar todos los clientes únicos y asignar colores
+        $all_customers = $orders->pluck('customer_id')->unique();
+        foreach ($all_customers as $customer_id) {
+            $custom_color[$customer_id] = $this->getRandomPastelColor();
         }
 
-        return [
-            'timelapse' => $timelapse,
-            'technicians' => $allTechnicians,
-            'data' => $data,
-            'technician_orders' => $technicianOrders
+        foreach ($this->hrs_format as $format) {
+            // Filtrar órdenes que empiecen con esta hora (ignorando segundos)
+            $orders_for_hour = $orders->filter(function ($order) use ($format) {
+                return substr($order->start_time, 0, 5) === $format;
+            });
+
+            $formatted_orders = $orders_for_hour->map(function ($order) use ($all_technicians, $custom_color) {
+                $technicians = [];
+
+                if (isset($all_technicians[$order->id])) {
+                    $technicians = $all_technicians[$order->id]->map(function ($order_tech) {
+                        return [
+                            'id' => $order_tech->technician_id,
+                            'name' => $order_tech->technician->name ?? 'Técnico no asignado',
+                        ];
+                    })->toArray();
+                }
+
+                $border_color = $this->bootstrapColors[$order->status_id - 1] ?? '#6c757d'; // Color por defecto
+
+                // Usar el color ya asignado al cliente
+                $bg_color = $custom_color[$order->customer_id] ?? $this->getRandomPastelColor();
+
+                return [
+                    'border_color' => $border_color,
+                    'bg_color' => $bg_color,
+                    'order' => $order,
+                    'technicians' => $technicians
+                ];
+            });
+
+            $data[$format] = [
+                'orders' => $formatted_orders,
+                'order_count' => $orders_for_hour->count(),
+                'technician_count' => $formatted_orders->sum(function ($item) {
+                    return count($item['technicians']);
+                })
+            ];
+        }
+
+        return $data;
+    }
+
+    private function getRandomPastelColor($format = 'hex')
+    {
+        // Colores pastel: valores entre 150-255 (más claros)
+        $red = mt_rand(150, 255);
+        $green = mt_rand(150, 255);
+        $blue = mt_rand(150, 255);
+
+        switch ($format) {
+            case 'hex':
+                return sprintf("#%02x%02x%02x", $red, $green, $blue);
+
+            case 'rgb':
+                return "rgb($red, $green, $blue)";
+
+            case 'rgba':
+                return "rgba($red, $green, $blue, 0.7)";
+
+            case 'array':
+                return ['r' => $red, 'g' => $green, 'b' => $blue];
+
+            default:
+                return sprintf("#%02x%02x%02x", $red, $green, $blue);
+        }
+    }
+
+    public function __construct()
+    {
+        $this->navigation = [
+            'Cronograma' => route('planning.schedule'),
+            'Actividades' => route('planning.activities')
         ];
     }
 
@@ -232,7 +274,7 @@ class PagesController extends Controller
         return view('loading-erp');
     }
 
-    public function schedule(Request $request): View
+    /*public function schedule(Request $request): View
     {
         $start_date = null;
         $end_date = null;
@@ -255,28 +297,305 @@ class PagesController extends Controller
             'dashboard.planning.schedule',
             compact('timelapse', 'schedule_data', 'navigation')
         );
+    }*/
+
+    public function schedule(Request $request)
+    {
+        $data = $request->all();
+
+        // Verificar si hay filtros aplicados (excluyendo paginación/ordenación)
+        $hasFilters = $this->hasAppliedFilters($request);
+
+        $calendar_data = [];
+        $navigation = $this->navigation;
+        $initial_date = Carbon::today()->firstOfMonth()->format('Y-m-d');
+
+        // Si no hay filtros aplicados, retornar vista vacía o con datos por defecto
+        if (!$hasFilters) {
+            return view('dashboard.planning.schedule', [
+                'calendar_events' => json_encode($calendar_data),
+                'order_status' => OrderStatus::all(),
+                'navigation' => $navigation,
+                'nav' => 'c',
+                'hasFilters' => false, // Puedes usar esto en tu vista
+                'initial_date' => $initial_date,
+            ]);
+        }
+
+        // Obtener parámetros de ordenamiento
+        $size = $request->input('size');
+        $sort = $request->input('sort', 'id');
+        $direction = $request->input('direction', 'DESC');
+
+        // Construir consulta base
+        $query = Order::query();
+
+        // Aplicar filtros (mantén tus filtros existentes)
+        if ($request->filled('folio')) {
+            $query->where('folio', 'like', '%' . $request->input('folio') . '%');
+        }
+
+        if ($request->filled('customer')) {
+            $searchTerm = '%' . $request->input('customer') . '%';
+            $customerIds = Customer::where('name', 'LIKE', $searchTerm)->pluck('id');
+            $query->whereIn('customer_id', $customerIds);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status_id', $request->input('status'));
+        }
+
+        if ($request->filled('service')) {
+            $serviceName = '%' . $request->input('service') . '%';
+            $serviceIds = Service::where('name', 'LIKE', $serviceName)->pluck('id');
+            $orderIds = OrderService::whereIn('service_id', $serviceIds)->pluck('order_id');
+            $query->whereIn('id', $orderIds);
+        }
+
+        if ($request->filled('date_range')) {
+            [$startDate, $endDate] = array_map(function ($d) {
+                return Carbon::createFromFormat('d/m/Y', trim($d));
+            }, explode(' - ', $request->input('date_range')));
+
+            $query->whereBetween('programmed_date', [
+                $startDate->format('Y-m-d'),
+                $endDate->format('Y-m-d'),
+            ]);
+
+            $initial_date = Carbon::parse($startDate)->firstOfMonth()->format('Y-m-d');
+        }
+
+        if ($request->filled('time')) {
+            $query->whereTime('start_time', $request->input('time'));
+        }
+
+        if ($request->filled('order_type')) {
+            if ($request->input('order_type') == 'MIP') {
+                $query->where('contract_id', '>', 0);
+            } else {
+                $query->whereNull('contract_id');
+            }
+        }
+
+        if ($request->filled('signature_status')) {
+            if ($request->input('signature_status') == 'signed') {
+                $query->whereNotNull('customer_signature');
+            } elseif ($request->input('signature_status') == 'unsigned') {
+                $query->whereNull('customer_signature');
+            }
+        }
+
+        // Aplicar ordenamiento después de los filtros
+        $query->orderBy($sort, $direction);
+        $size = $size ?? $this->size;
+
+        // Paginar resultados
+        $orders = $query->get();
+        $calendar_data = $this->makeAgenda($orders);
+
+        return view('dashboard.planning.schedule', [
+            'calendar_events' => json_encode($calendar_data),
+            'order_status' => OrderStatus::all(),
+            'navigation' => $navigation,
+            'nav' => 'c',
+            'hasFilters' => true, // Puedes usar esto en tu vista,
+            'initial_date' => $initial_date,
+        ]);
     }
 
-    public function activities()
+    private function makeAgenda($orders)
     {
-        $navigation = [
-            'Cronograma' => route('planning.schedule'),
-            'Actividades' => route('planning.activities')
+        $calendar_data = [];
+
+        foreach ($orders as $order) {
+            $programmed_date = is_string($order->programmed_date)
+                ? Carbon::parse($order->programmed_date)
+                : $order->programmed_date;
+
+            $programmed_date = substr($programmed_date, 0, 10);
+
+            $calendar_data[] = [
+                'type' => 'order',
+                'id' => $order->id,
+                'title' => 'Orden #' . $order->id . ' - ' . ($order->customer->name ?? 'Cliente no disponible'),
+                'start' => $programmed_date . 'T' . $order->start_time,
+                'end' => $programmed_date,
+                'color' => $this->getOrderColor(($order->customer->service_type_id - 1)),
+                'extendedProps' => [
+                    'type' => 'order',
+                    'customer' => $order->customer->name ?? 'Cliente no disponible',
+                    'products' => $order->products->pluck('name')->implode(', ') ?? null,
+                    'services' => $order->services->pluck('name')->implode(', ') ?? null,
+                    'technicians' => $order->getNameTechnicians()->pluck('name')->implode(', ') ?? null,
+                    'status' => $order->status->name ?? '-',
+                    'date' => Carbon::parse($order->programmed_date)->format('d-m-y'),
+                    'time' => Carbon::parse($order->start_time)->format('H:i') . ' - ' . Carbon::parse($order->end_time)->format('H:i'),
+                    'edit_url' => route('order.edit', ['id' => $order->id]),
+                    'report_url' => route('report.review', ['id' => $order->id]),
+                ],
+            ];
+        }
+
+        //dd($calendar_data);
+        return $calendar_data;
+    }
+
+    private function getOrderColor($status)
+    {
+        $colors = [
+            '#B71C1C',
+            '#1B5E20',
+            '#1A237E'
         ];
+        return $colors[$status] ?? '#6B7280'; // Gris por defecto
+    }
 
-        // Obtener los datos de planificación por técnico
-        $planningData = $this->getPlanningByTechnician();
+    public function activities(Request $request)
+    {
+        $data = $request->all();
 
-        // Extraer las variables necesarias para la vista
-        $timelapse = $planningData['timelapse'];
-        $technicians = $planningData['technicians'];
-        $data = $planningData['data'];
-        $technician_orders = $planningData['technician_orders'];
+        // Verificar si hay filtros aplicados (excluyendo paginación/ordenación)
+        $hasFilters = $this->hasAppliedFilters($request);
+
+        $planning_data = [];
+        $navigation = $this->navigation;
+        $initial_date = Carbon::today()->firstOfMonth()->format('Y-m-d');
+        $order_status = OrderStatus::all();
+
+        $technicians = Technician::all()->map(function ($tech) {
+            return [
+                'id' => $tech->id,
+                'name' => $tech->user->name,
+            ];
+        });
+        $hours = $this->hrs_format;
+
+        // Si no hay filtros aplicados, retornar vista vacía o con datos por defecto
+        if (!$hasFilters) {
+            return view('dashboard.planning.activities', [
+                'planning_data' => $planning_data,
+                'order_status' => $order_status,
+                'navigation' => $navigation,
+                'technicians' => $technicians,
+                'hours' => $hours,
+            ]);
+        }
+
+        // Obtener parámetros de ordenamiento
+        $size = $request->input('size');
+        $sort = $request->input('sort', 'id');
+        $direction = $request->input('direction', 'DESC');
+
+        // Construir consulta base
+        $query = Order::query();
+
+        // Aplicar filtros (mantén tus filtros existentes)
+        if ($request->filled('folio')) {
+            $query->where('folio', 'like', '%' . $request->input('folio') . '%');
+        }
+
+        if ($request->filled('customer')) {
+            $searchTerm = '%' . $request->input('customer') . '%';
+            $customerIds = Customer::where('name', 'LIKE', $searchTerm)->pluck('id');
+            $query->whereIn('customer_id', $customerIds);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status_id', $request->input('status'));
+        }
+
+        if ($request->filled('service')) {
+            $serviceName = '%' . $request->input('service') . '%';
+            $serviceIds = Service::where('name', 'LIKE', $serviceName)->pluck('id');
+            $orderIds = OrderService::whereIn('service_id', $serviceIds)->pluck('order_id');
+            $query->whereIn('id', $orderIds);
+        }
+
+        if ($request->filled('date_range')) {
+            [$startDate, $endDate] = array_map(function ($d) {
+                return Carbon::createFromFormat('d/m/Y', trim($d));
+            }, explode(' - ', $request->input('date_range')));
+
+            $query->whereBetween('programmed_date', [
+                $startDate->format('Y-m-d'),
+                $endDate->format('Y-m-d'),
+            ]);
+
+            $initial_date = Carbon::parse($startDate)->firstOfMonth()->format('Y-m-d');
+        }
+
+        if ($request->filled('time')) {
+            $query->whereTime('start_time', $request->input('time'));
+        }
+
+        if ($request->filled('order_type')) {
+            if ($request->input('order_type') == 'MIP') {
+                $query->where('contract_id', '>', 0);
+            } else {
+                $query->whereNull('contract_id');
+            }
+        }
+
+        if ($request->filled('signature_status')) {
+            if ($request->input('signature_status') == 'signed') {
+                $query->whereNotNull('customer_signature');
+            } elseif ($request->input('signature_status') == 'unsigned') {
+                $query->whereNull('customer_signature');
+            }
+        }
+
+        // Aplicar ordenamiento después de los filtros
+        $query->orderBy($sort, $direction);
+        $size = $size ?? $this->size;
+
+        // Paginar resultados
+        $orders = $query->whereIn('start_time', $this->hrs_format)
+            ->with('techniciansScope')
+            ->get();
+
+        //dd($orders);
+        $planning_data = $this->getPlanningByTechnician($orders);
+        $technicians = Technician::all()->map(function ($tech) {
+            return [
+                'id' => $tech->id,
+                'name' => $tech->user->name,
+            ];
+        });
+        $hours = $this->hrs_format;
+
+        //dd($planning_data, $technicians, $hour_formats);
 
         return view(
             'dashboard.planning.activities',
-            compact('navigation', 'timelapse', 'technicians', 'data', 'technician_orders')
+            compact('navigation', 'order_status', 'planning_data', 'technicians', 'hours')
         );
+    }
+
+    public function updateOrder(Request $request)
+    {
+        try {
+            $order = Order::findOrFail($request->order_id);
+            $tech_exist = OrderTechnician::where('order_id', $order->id)->where('technician_id', $request->technician_id)->exists();
+
+            if ($tech_exist) {
+                OrderTechnician::where('order_id', $order->id)->whereNot('technician_id', $request->technician_id)->delete();
+            } else {
+                OrderTechnician::where('order_id', $order->id)->delete();
+                OrderTechnician::create(['order_id' => $order->id, 'technician_id' => $request->technician_id]);
+            }
+
+            $order->update([
+                'start_time' => $request->hour,
+                //'end_time' => $request->end_time,'
+            ]);
+
+            return response()->json(['success' => true, 'exist' => $tech_exist]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
     }
 
     public function updateAssignments(Request $request)
@@ -749,6 +1068,80 @@ class PagesController extends Controller
         } catch (\Exception $e) {
             // Capturar cualquier excepción y manejarla
             return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function updateEventDate(Request $request)
+    {
+        try {
+            $eventId = $request->input('event_id');
+            $startDate = $request->input('start_date');
+            //$startTime = $request->input('start_time');
+
+            // Buscar y actualizar el evento en tu base de datos
+            $order = Order::find($eventId);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Evento no encontrado'
+                ]);
+            }
+
+            // Actualizar fecha y hora
+            $order->programmed_date = $startDate;
+            //$event->scheduled_time = $startTime;
+            $order->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evento actualizado correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
+        }
+    }
+
+    public function updateEventDuration(Request $request)
+    {
+        try {
+            $eventId = $request->input('event_id');
+            $startDate = $request->input('start_date');
+            $startTime = $request->input('start_time');
+            $endDate = $request->input('end_date');
+            $endTime = $request->input('end_time');
+
+            // Buscar y actualizar el evento
+            $event = YourEventModel::find($eventId);
+
+            if (!$event) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Evento no encontrado'
+                ]);
+            }
+
+            // Actualizar fechas y horas
+            $event->scheduled_date = $startDate;
+            $event->scheduled_time = $startTime;
+            $event->end_date = $endDate;
+            $event->end_time = $endTime;
+            $event->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Duración actualizada correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ]);
         }
     }
 
