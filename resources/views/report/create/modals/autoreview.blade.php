@@ -205,14 +205,14 @@
                                             for="clearObservs-{{ $autoreview['control_point_id'] }}">Limpiar
                                             observaciones</label>
                                     </div>
-                                    <div class="row mt-2">
+                                    {{--<div class="row mt-2">
                                         <div class="col-lg-12 col-12">
                                             <label class="form-label">Observaciones del dispositivo</label>
                                             <textarea class="form-control form-control-sm" rows="3"
                                                 oninput="setAutoreviewObservations({{ $autoreview['control_point_id'] }}, 0, this.value)"
                                                 placeholder="Escriba las observaciones"></textarea>
                                         </div>
-                                    </div>
+                                    </div>--}}
                                 </div>
                             </div>
                         </div>
