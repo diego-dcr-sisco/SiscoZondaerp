@@ -591,6 +591,7 @@
         });
 
         console.log("Datos a enviar:", JSON.stringify(data, null, 2));
+        return;
 
         const new_formdata = new FormData();
         new_formdata.append('autoreview_data', JSON.stringify(data));
