@@ -221,6 +221,7 @@ class ReportController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Autorevisión guardada correctamente',
+                'data' => $autoreview_data,
             ]);
         } catch (\Exception $e) {
             Log::error('Error en autoreview: ' . $e->getMessage());
