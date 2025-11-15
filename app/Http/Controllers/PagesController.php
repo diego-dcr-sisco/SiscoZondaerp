@@ -160,7 +160,7 @@ class PagesController extends Controller
             'time',
             'status',
             'order_type',
-            'signature_status'
+            'signature_status',
         ];
 
         foreach ($filterableFields as $field) {
@@ -461,13 +461,26 @@ class PagesController extends Controller
         $navigation = $this->navigation;
         $initial_date = Carbon::today()->firstOfMonth()->format('Y-m-d');
         $order_status = OrderStatus::all();
+        $branches = Branch::all();
 
-        $technicians = Technician::all()->map(function ($tech) {
+        /*$technicians = Technician::all()->map(function ($tech) {
+return [
+'id' => $tech->id,
+'name' => $tech->user->name,
+];
+});*/
+
+        $technicians = Technician::query()->with('user');
+        if ($request->filled('branch')) {
+            $technicians->where('branch_id', $request->input('branch'));
+        }
+        $technicians = $technicians->get()->map(function ($tech) {
             return [
                 'id' => $tech->id,
-                'name' => $tech->user->name,
+                'name' => $tech->user->name, // Ahora user está cargado eficientemente
             ];
         });
+
         $hours = $this->hrs_format;
 
         // Si no hay filtros aplicados, retornar vista vacía o con datos por defecto
@@ -478,6 +491,7 @@ class PagesController extends Controller
                 'navigation' => $navigation,
                 'technicians' => $technicians,
                 'hours' => $hours,
+                'branches' => $branches,
             ]);
         }
 
@@ -555,19 +569,12 @@ class PagesController extends Controller
 
         //dd($orders);
         $planning_data = $this->getPlanningByTechnician($orders);
-        $technicians = Technician::all()->map(function ($tech) {
-            return [
-                'id' => $tech->id,
-                'name' => $tech->user->name,
-            ];
-        });
-        $hours = $this->hrs_format;
 
         //dd($planning_data, $technicians, $hour_formats);
 
         return view(
             'dashboard.planning.activities',
-            compact('navigation', 'order_status', 'planning_data', 'technicians', 'hours')
+            compact('navigation', 'order_status', 'planning_data', 'technicians', 'hours', 'branches')
         );
     }
 
