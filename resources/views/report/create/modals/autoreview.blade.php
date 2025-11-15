@@ -756,7 +756,7 @@
             }
         });
 
-        showToast('Las preguntas se han restablecido a sus valores por defecto');
+        //showToast('Las preguntas se han restablecido a sus valores por defecto');
     }
 
     // Mostrar notificación toast
