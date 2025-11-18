@@ -573,14 +573,14 @@ class ContractController extends Controller
         }
 
 
-        Order::whereNotIn('id', $updated_orders)->where('status_id', 1)->delete();
-        OrderService::whereNotIn('order_id', $updated_orders)->delete();
-        OrderTechnician::whereNotIn('order_id', $updated_orders)->delete();
+        Order::whereNotIn('id', $updated_orders)->whereIn('setting_id', $updated_settings)->where('status_id', 1)->where('contract_id', $contract->id)->delete();
+        OrderService::whereNotIn('order_id', $updated_orders)->where('contract_id', $contract->id)->delete();
+        OrderTechnician::whereNotIn('order_id', $updated_orders)->where('contract_id', $contract->id)->delete();
         PropagateService::whereNotIn('order_id', $updated_orders)
             ->whereNotIn('setting_id', $updated_settings)
             ->where('contract_id', $contract->id)
             ->delete();
-        ContractService::whereNotIn('id', $updated_settings)->delete();
+        ContractService::whereNotIn('id', $updated_settings)->where('contract_id', $contract->id)->delete();
 
         $this->updateContractTechnicians($contract, $selected_technicians);
         $this->generateOrderFolios($contract);
