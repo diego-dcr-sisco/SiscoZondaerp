@@ -163,6 +163,8 @@
     <input type="hidden" id="customer-id" name="customer_id" value="{{ $contract->customer_id }}" />
     <input type="hidden" id="contract-configurations" name="configurations" value="{{ json_encode($configurations) }}" />
     <input type="hidden" name="technicians" id="technicians" value="{{ json_encode($contract->technicians->pluck('id')) }}" />
+    <input type="hidden" name="delete_settings" id="delete-settings" value="[]" />
+    <input type="hidden" name="was_services_updated" id="was-services-updated" value="false" />
 </form>
 
 <script>

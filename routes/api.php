@@ -3,7 +3,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AppController;
 use App\Http\Controllers\GraphicController;
 use App\Http\Controllers\LotController;
-use App\Http\Controllers\FacturacionController;
+
 
 
 /*Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -37,4 +37,4 @@ Route::get('/lots', [LotController::class, 'getLotsByProduct']);
 
 Route::post('/reports/handle', [AppController::class, 'handleReport']);
 
-Route::post('/timbrar-cfdi', [FacturacionController::class, 'timbrarCFDIApi'])->name('api.timbrar');
+

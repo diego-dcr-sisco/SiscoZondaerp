@@ -22,6 +22,6 @@
         let services_configuration = @json($services_configuration);
         selected_services = @json($selected_services);
         const new_client_account = false;
-        displaySelectedServices();
+        //displaySelectedServices();
     </script>
 @endsection

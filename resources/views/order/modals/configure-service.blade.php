@@ -54,14 +54,14 @@
                         <label class="form-label">Prefijo</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                            <input type="text" class="form-control" value="SRV-001" disabled>
+                            <input type="text" class="form-control" id="serviceModal-prefix" value="SRV-001" disabled>
                         </div>
                     </div>
                     <div class="col-md-8 mb-3">
                         <label class="form-label">Servicio</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-card-text"></i></span>
-                            <input type="text" class="form-control" value="Mantenimiento Preventivo" disabled>
+                            <input type="text" class="form-control" id="serviceModal-service" value="Mantenimiento Preventivo" disabled>
                         </div>
                     </div>
 
@@ -69,21 +69,21 @@
                         <label class="form-label">Tipo</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-tag"></i></span>
-                            <input type="text" class="form-control" value="Preventivo" disabled>
+                            <input type="text" class="form-control" id="serviceModal-type" value="Preventivo" disabled>
                         </div>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Línea de negocio</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
-                            <input type="text" class="form-control" value="Mantenimiento" disabled>
+                            <input type="text" class="form-control" id="serviceModal-bsline" value="Mantenimiento" disabled>
                         </div>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Costo</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
-                            <input type="text" class="form-control" value="$150.00" disabled>
+                            <input type="text" class="form-control" id="serviceModal-cost" value="$150.00" disabled>
                         </div>
                     </div>
                 </div>

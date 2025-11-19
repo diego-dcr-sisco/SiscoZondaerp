@@ -11,7 +11,7 @@
             .day-pill {
                 cursor: pointer;
                 transition: all 0.2s;
-                a
+                align-self: auto;
             }
 
             .day-pill.active {
@@ -23,7 +23,7 @@
                 max-height: 300px;
                 overflow-y: auto;
             }*/
-            --- IGNORE --- .modal-content {
+            .modal-content {
                 border-radius: 0.5rem;
             }
 
@@ -91,15 +91,16 @@
                                 <label class="form-label">Prefijo</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                                    <input type="text" class="form-control" value="SRV-001" disabled>
+                                    <input type="text" class="form-control" id="serviceModal-prefix" value="SRV-001"
+                                        disabled>
                                 </div>
                             </div>
                             <div class="col-md-8 mb-3">
                                 <label class="form-label">Servicio</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-card-text"></i></span>
-                                    <input type="text" class="form-control" value="Mantenimiento Preventivo"
-                                        disabled>
+                                    <input type="text" class="form-control" id="serviceModal-service"
+                                        value="Mantenimiento Preventivo" disabled>
                                 </div>
                             </div>
 
@@ -107,21 +108,24 @@
                                 <label class="form-label">Tipo</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-tag"></i></span>
-                                    <input type="text" class="form-control" value="Preventivo" disabled>
+                                    <input type="text" class="form-control" id="serviceModal-type" value="Preventivo"
+                                        disabled>
                                 </div>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Línea de negocio</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
-                                    <input type="text" class="form-control" value="Mantenimiento" disabled>
+                                    <input type="text" class="form-control" id="serviceModal-bsline"
+                                        value="Mantenimiento" disabled>
                                 </div>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Costo</label>
                                 <div class="input-group">
                                     <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
-                                    <input type="text" class="form-control" value="$150.00" disabled>
+                                    <input type="text" class="form-control" id="serviceModal-cost" value="$150.00"
+                                        disabled>
                                 </div>
                             </div>
                         </div>
@@ -163,6 +167,7 @@
 
 
         <script>
+
             $('#configureServiceModal').on('show.bs.modal', function(event) {
                 configCounter = 0;
                 configDates = {};
@@ -308,7 +313,7 @@
                                     <div class="form-text" id="days-info-${configId}">
                                         <i class="bi bi-info-circle me-1"></i> Ingrese los días separados por comas (ej: 1,15,28)
                                     </div>
-                                    
+
                                     <!-- Selector de días de la semana -->
                                     <div class="mt-2 d-none" id="week-days-selector-${configId}">
                                         <div class="d-flex flex-wrap gap-1">
@@ -321,7 +326,7 @@
                                             <span class="day-pill badge bg-secondary" data-day="D">Domingo</span>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Selector de días del mes -->
                                     <div class="mt-2 d-none" id="month-days-selector-${configId}">
                                         <div class="d-flex flex-wrap gap-1">
@@ -339,7 +344,7 @@
                                 </div>
                             </div>
                             <div class="config-actions">
-                                <button class="btn btn-sm btn-outline-danger" 
+                                <button class="btn btn-sm btn-outline-danger"
                                         onclick="clearAllDates(${configId})">
                                     <i class="bi bi-trash-fill me-1"></i> Eliminar todas las fechas
                                 </button>
@@ -347,7 +352,7 @@
                                     <i class="bi bi-check-circle-fill me-1"></i> Guardar configuración
                                 </button>
                             </div>
-                            
+
                             <!-- Collapse para fechas -->
                             <div class="accordion my-3" id="accordionDates">
                                 <div class="accordion-item">
@@ -361,7 +366,7 @@
                                             <h6 class="mb-2 fw-bold">Fechas generadas</h6>
                                         <div class="dates-list" id="dates-list-${configId}">
                                             ${generateDatesList(configId)}
-                                        </div>  
+                                        </div>
                                         </div>
                                     </div>
                                 </div>
@@ -524,15 +529,40 @@
             }
 
             function removeConfiguration(configId) {
-                configCounter--;
-                $(`[data-config-id="${configId}"]`).remove();
-                delete configDates[configId];
+                const $element = $(`[data-config-id="${configId}"]`);
 
-                // Mostrar estado vacío si no hay configuraciones
-                if ($("#configurations-list").children().length === 0) {
-                    $("#empty-config-state").show();
-                }
+                // Animación de desvanecimiento
+                $element.fadeOut(300, function() {
+                    $(this).remove();
+                    configCounter--;
+                    delete configDates[configId];
+
+                    var c_config = contract_configurations.find(
+                        (c) => c.config_id == configId
+                    );
+
+                    if (c_config && c_config.setting_id) {
+                        delete_settings.push(c_config.setting_id);
+                    }
+
+                    contract_configurations = contract_configurations.filter(
+                        (c) => c.config_id != configId
+                    );
+
+                    configurations = configurations.filter(
+                        (c) => c.config_id != configId
+                    );
+
+                    console.log(contract_configurations);
+
+                    // Mostrar estado vacío si no hay configuraciones
+                    if ($("#configurations-list").children().length === 0) {
+                        $("#empty-config-state").show();
+                    }
+                });
             }
+
+            // Uso: removeConfiguration(1, 1000); // Remueve después de 1 segundo   
 
             function handleFrequencyChange(configId) {
                 const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
@@ -908,6 +938,8 @@
 
                 contract_configurations = contract_configurations.filter(c => c.service_id != service_id);
 
+                console.log('Guardando configuraciones para el servicio ID:', service_id);
+                console.log('Configuraciones actuales del contrato antes de guardar:', configurations);
                 configElements.each(function() {
                     const configId = $(this).data('config-id');
                     const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
@@ -947,12 +979,22 @@
                 });
 
                 contract_configurations = contract_configurations.concat(configurations);
+                console.log('Configuraciones del contrato:', contract_configurations);
+                c_configs = contract_configurations.filter(c => c.service_id == service_id);
+
+                if (c_configs) {
+                    $(`#service${service_id}-count-configs`).text(c_configs.length);
+                    $(`#service${service_id}-count-dates`).text(
+                        c_configs.reduce((total, item) => total + item.dates.length, 0)
+                    );
+                }
 
                 // Aquí se enviarían todas las configuraciones al servidor
                 //console.log('Configuraciones a guardar:', configurations);
                 alert(`Se guardaron ${configurations.length} configuración(es) correctamente`);
 
                 $('#contract-configurations').val(JSON.stringify(contract_configurations));
+                $('#delete-settings').val(JSON.stringify(delete_settings));
                 // Cerrar el modal después de guardar
                 $('#configureServiceModal').modal('hide');
             }

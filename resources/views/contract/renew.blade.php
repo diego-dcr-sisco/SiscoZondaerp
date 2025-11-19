@@ -28,11 +28,6 @@
         })
     </script>
 
-    <script src="{{ asset('js/technician.min.js') }}"></script>
-    <script src="{{ asset('js/customer.min.js') }}"></script>
-    <script src="{{ asset('js/service.min.js') }}"></script>
-    <script src="{{ asset('js/contract/functions.min.js') }}"></script>
-
     <script>
         let contract_configurations = @json($configurations);
         let configurations = [];
@@ -41,10 +36,15 @@
         let configDescriptions = {};
         let intervals = @json($intervals);
         let frequencies = @json($frequencies);
-        let can_renew = true;
+        const can_renew = true;
+        const prefixes = @json($prefixes);
 
         selected_services = @json($selected_services);
-        displaySelectedServices();
-
+        //displaySelectedServices();
     </script>
+
+    <script src="{{ asset('js/technician.min.js') }}"></script>
+    <script src="{{ asset('js/customer.min.js') }}"></script>
+    <script src="{{ asset('js/service.min.js') }}"></script>
+    <script src="{{ asset('js/contract/functions.min.js') }}"></script>
 @endsection

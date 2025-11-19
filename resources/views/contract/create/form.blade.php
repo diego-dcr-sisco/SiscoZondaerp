@@ -101,7 +101,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="border rounded shadow p-3 mb-3">
         <div class="row">
             <div class="fw-bold mb-0 fs-5">Técnico(s)</div>
@@ -144,6 +144,7 @@
     <input type="hidden" id="customer-id" name="customer_id" value="" />
     <input type="hidden" id="contract-configurations" name="configurations" value="[]" />
     <input type="hidden" name="technicians" id="technicians" value="[]" />
+    <input type="hidden" name="delete_settings" id="delete-settings" value="[]" />
 </form>
 
 <script>
@@ -151,10 +152,10 @@
     let configurations = [];
     let configCounter = 0;
     let configDates = {};
-    let configDescriptions = {};  
+    let configDescriptions = {};
 
     const new_client_account = false;
-    
+
     let intervals = @json($intervals);
     let frequencies = @json($frequencies);
 </script>

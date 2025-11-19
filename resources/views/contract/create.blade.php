@@ -21,7 +21,21 @@
         @include('contract.modals.describe-service')
     </div>
 
-    <script src="{{ asset('js/technician.min.js') }}"></script>
+    <script>
+        let contract_configurations = [];
+        let configurations = [];
+        let delete_settings = [];
+        let configCounter = 0;
+        let configDates = {};
+        let configDescriptions = {};
+        let intervals = @json($intervals);
+        let frequencies = @json($frequencies);
+        const can_renew = false;
+        const prefixes = @json($prefixes);
+        const contain_selected_services = [];
+    </script>
+
+        <script src="{{ asset('js/technician.min.js') }}"></script>
     <script src="{{ asset('js/customer.min.js') }}"></script>
     <script src="{{ asset('js/service.min.js') }}"></script>
     <script src="{{ asset('js/contract/functions.min.js') }}"></script>
