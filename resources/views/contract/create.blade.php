@@ -24,7 +24,7 @@
     <script>
         let contract_configurations = [];
         let configurations = [];
-        let delete_settings = [];
+        let updated_services = [];
         let configCounter = 0;
         let configDates = {};
         let configDescriptions = {};
@@ -33,9 +33,14 @@
         const can_renew = false;
         const prefixes = @json($prefixes);
         const contain_selected_services = [];
-    </script>
+        const view = @json($view);
 
-        <script src="{{ asset('js/technician.min.js') }}"></script>
+        // Tooltips
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+    </script>   
+
+    <script src="{{ asset('js/technician.min.js') }}"></script>
     <script src="{{ asset('js/customer.min.js') }}"></script>
     <script src="{{ asset('js/service.min.js') }}"></script>
     <script src="{{ asset('js/contract/functions.min.js') }}"></script>

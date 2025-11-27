@@ -13,7 +13,7 @@
             <i class="bi bi-plus-lg"></i> Agregar revision especial
         </button>
 
-        @if ($service->prefix == 1)
+        @if (!empty($devices))
             <button class="btn btn-warning btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#autoreviewModal">
                 <i class="bi bi-tools"></i> Configurar autorevision
             </button>
@@ -93,7 +93,7 @@
             @else
                 <tr id="table-row-empty">
                     <td class="text-danger" colspan="9">
-                        Sin revisiones necesarias
+                        No se encuentran dispositivos asociados a este servicio.
                     </td>
                 </tr>
             @endif

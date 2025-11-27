@@ -144,7 +144,7 @@
     <input type="hidden" id="customer-id" name="customer_id" value="" />
     <input type="hidden" id="contract-configurations" name="configurations" value="[]" />
     <input type="hidden" name="technicians" id="technicians" value="[]" />
-    <input type="hidden" name="delete_settings" id="delete-settings" value="[]" />
+    <input type="hidden" name="updated_services" id="updated-services" value="[]" />
 </form>
 
 <script>

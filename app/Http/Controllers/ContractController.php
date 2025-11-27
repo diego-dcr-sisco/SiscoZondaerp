@@ -112,6 +112,7 @@ class ContractController extends Controller
         $can_renew = false;
 
         $prefixes = ServicePrefix::pluck('name', 'id');
+        $view = 'contract';
 
         return view(
             'contract.create',
@@ -122,6 +123,7 @@ class ContractController extends Controller
                 'intervals',
                 'can_renew',
                 'prefixes',
+                'view'
             )
         );
     }
@@ -454,13 +456,11 @@ class ContractController extends Controller
         }
 
         foreach ($contract_services as $index => $cs) {
-
             if (!isset($count_indexs[$cs->service_id])) {
                 $count_indexs[$cs->service_id] = 1;
             } else {
                 $count_indexs[$cs->service_id]++;
             }
-
 
             $orders = Order::where('setting_id', $cs->id)->get();
             $configurations[] = [
@@ -472,9 +472,19 @@ class ContractController extends Controller
                 'interval' => $this->intervals[$cs->interval],
                 'interval_id' => $cs->interval,
                 'days' => explode(',', json_decode($cs->days)[0] ?? ''),
-                'dates' => array_map(function ($date) {
+                /*'dates' => array_map(function ($date) {
                     return $date . 'T00:00:00.000Z';
-                }, $orders->pluck('programmed_date')->toArray())
+                }, $orders->pluck('programmed_date')->toArray()),*/
+                'orders' => $orders->map(function ($order) {
+                    return [
+                        'id' => $order->id,
+                        'folio' => $order->folio,
+                        'programmed_date' => $order->programmed_date . 'T00:00:00.000Z',
+                        'status_id' => $order->status_id,
+                        'status_name' => $order->status->name,
+                        'url' => route('order.edit', ['id' => $order->id])
+                    ];
+                })
             ];
         }
 
@@ -488,6 +498,8 @@ class ContractController extends Controller
 
         $prefixes = ServicePrefix::pluck('name', 'id');
         $can_renew = false;
+        $view = 'contract';
+
         return view(
             'contract.edit',
             compact(
@@ -500,6 +512,7 @@ class ContractController extends Controller
                 'configurations',
                 'can_renew',
                 'prefixes',
+                'view'
             )
         );
     }
@@ -507,19 +520,36 @@ class ContractController extends Controller
     public function update(Request $request, string $id)
     {
         //dd($request->all());
+        //dd(json_decode($request->all()['configurations']));
         $updated_settings = [];
         $updated_orders = [];
+        $has_services_updated = false;
         $configurations = json_decode($request->input('configurations'));
         $selected_technicians = json_decode($request->input('technicians'));
-        $delete_settings = json_decode($request->input('delete_settings'));
-        $was_services_updated = $request->input('was_services_updated') === 'true';
+        $updated_services = json_decode($request->input('updated_services'));
+        //$delete_settings = json_decode($request->input('delete_settings'));
+        //$was_services_updated = $request->input('was_services_updated') === 'true';
 
         $contract = Contract::findOrFail($id);
         $contract->update($request->only(['startdate', 'enddate']));
 
-        if ($was_services_updated) {
-            foreach ($configurations as $data) {
+        if (count($updated_services) > 0) {
+            $has_services_updated = true;
+        }
+
+        if ($has_services_updated) {
+            $aux_configurations = array_filter($configurations, function ($config) use ($updated_services) {
+                return in_array($config->service_id, $updated_services);
+            });
+
+            //dd($aux_configurations);
+
+            foreach ($aux_configurations as $data) {
                 $contract_service = ContractService::find($data->setting_id);
+                //dd($contract_service);
+                //$allSettingsIds = array_column($configurations, 'setting_id');
+                //dd($allSettingsIds);
+
                 if (!$contract_service) {
                     $contract_service = ContractService::create([
                         'contract_id' => $contract->id,
@@ -535,107 +565,106 @@ class ContractController extends Controller
 
                 $updated_settings[] = $contract_service->id;
 
-                foreach ($data->dates as $date) {
-                    $formattedDate = Carbon::parse($date)->format('Y-m-d');
-                    $order = Order::where('contract_id', $contract->id)
-                        ->where('setting_id', $contract_service->id)
-                        ->where('programmed_date', $formattedDate)
-                        ->first();
-
-                    if (!$order) {
-                        $order = Order::create(
+                foreach ($data->orders as $order) {
+                    if (str_starts_with($order->id, 'temp_')) {
+                        $existing_order = Order::create(
                             [
                                 'contract_id' => $contract->id,
                                 'setting_id' => $contract_service->id,
-                                'programmed_date' => $formattedDate,
+                                'programmed_date' => Carbon::parse($order->programmed_date)->format('Y-m-d'),
                                 'administrative_id' => Administrative::where('user_id', auth()->user()->id)->first()->id,
                                 'customer_id' => $contract->customer_id,
-                                'status_id' => '1',
+                                'status_id' => $order->status_id,
                                 'start_time' => '00:00',
-                                //'folio' => $customer->code . '-' . $count_orders,
-                                //'folio' => $customer->code . '.' . ($contract->id ? ('MIP' . $contract->id) : 'SEG') . '-' . $count_orders,
                             ]
                         );
 
-                        OrderService::insert([
-                            'order_id' => $order->id,
+                        OrderService::create([
+                            'order_id' => $existing_order->id,
                             'service_id' => $data->service_id,
                         ]);
 
-                        foreach ($selected_technicians as $id) {
-                            OrderTechnician::insert([
-                                'technician_id' => $id,
-                                'order_id' => $order->id,
+                        PropagateService::create([
+                            'order_id' => $existing_order->id,
+                            'service_id' => $data->service_id,
+                            'contract_id' => $contract->id,
+                            'setting_id' => $contract_service->id,
+                            'text' => $data->description ?? null
+                        ]);
+
+                    } else {
+                        $existing_order = Order::find($order->id);
+                        if ($existing_order && $existing_order->status_id == 1) {
+                            $existing_order->update([
+                                'setting_id' => $contract_service->id,
+                                'programmed_date' => Carbon::parse($order->programmed_date)->format('Y-m-d'),
                             ]);
+
+                            $s_propagate = PropagateService::where('order_id', $existing_order->id)
+                            ->where('service_id', $data->service_id)
+                            ->where('contract_id', $contract->id)
+                            ->where('setting_id', $contract_service->id)
+                            ->first();
+                            
+                            if (!$s_propagate) {
+                                PropagateService::create([
+                                    'order_id' => $existing_order->id,
+                                    'service_id' => $data->service_id,
+                                    'contract_id' => $contract->id,
+                                    'setting_id' => $contract_service->id,
+                                    'text' => $data->description ?? null
+                                ]);
+                            } else {
+                                $s_propagate->update([
+                                    'text' => $data->description ?? null
+                                ]);
+                            }
                         }
+
+                        /*$s_order = OrderService::where('order_id', $existing_order->id)
+                            ->where('service_id', $data->service_id)
+                            ->first();
+                        if (!$s_order) {
+                            OrderService::create([
+                                'order_id' => $existing_order->id,
+                                'service_id' => $data->service_id,
+                            ]); 
+                        }*/
                     }
-
-                    PropagateService::updateOrCreate([
-                        'order_id' => $order->id,
-                        'service_id' => $data->service_id,
-                        'contract_id' => $contract->id,
-                        'setting_id' => $contract_service->id
-                    ], [
-                        'text' => $data->description ?? null
-                    ]);
-
-                    $updated_orders[] = $order->id;
+                    $updated_orders[] = $existing_order->id;
                 }
             }
-
-
-            $delete_orders = Order::whereNotIn('id', $updated_orders)->whereIn('setting_id', $updated_settings)->where('status_id', 1)->where('contract_id', $contract->id)->get();
-            //dd($delete_orders->pluck('id')->toArray());
-
-            if ($delete_orders->isNotEmpty()) {
-                OrderService::whereIn('order_id', $delete_orders->pluck('id'))->delete();
-                OrderTechnician::whereIn('order_id', $delete_orders->pluck('id'))->delete();
-                PropagateService::whereIn('order_id', $delete_orders->pluck('id'))
-                    //->whereIn('setting_id', $updated_settings)
-                    ->where('contract_id', $contract->id)
-                    ->delete();
-
-                $delete_orders->each->delete();
-            }
-
-            if (!empty($delete_settings)) {
-                foreach ($delete_settings as $setting_id) {
-                    $orders_in_setting = Order::where('setting_id', $setting_id)
-                        ->where('contract_id', $contract->id)
-                        ->where('status_id', '!=', 1)
-                        ->exists();
-
-                    if (!$orders_in_setting) {
-                        OrderService::whereIn('order_id', function ($query) use ($setting_id, $contract) {
-                            $query->select('id')
-                                ->from('order')
-                                ->where('setting_id', $setting_id)
-                                ->where('contract_id', $contract->id);
-                        })->delete();
-
-                        OrderTechnician::whereIn('order_id', function ($query) use ($setting_id, $contract) {
-                            $query->select('id')
-                                ->from('order')
-                                ->where('setting_id', $setting_id)
-                                ->where('contract_id', $contract->id);
-                        })->delete();
-
-                        PropagateService::whereIn('order_id', function ($query) use ($setting_id, $contract) {
-                            $query->select('id')
-                                ->from('order')
-                                ->where('setting_id', $setting_id)
-                                ->where('contract_id', $contract->id);
-                        })->where('contract_id', $contract->id)->delete();
-
-                        ContractService::where('id', $setting_id)->where('contract_id', $contract->id)->delete();
-                        Order::where('setting_id', $setting_id)->where('contract_id', $contract->id)->delete();
-                    }
-                }
-            }
-
-            $this->generateOrderFolios($contract);
         }
 
+        $delete_settings = ContractService::where('contract_id', $contract->id)
+            ->whereNotIn('id', $updated_settings)
+            ->whereIn('service_id', $updated_services)
+            ->get();
+
+        $delete_orders = Order::where('contract_id', $contract->id)
+            ->whereNotIn('id', $updated_orders)
+            ->whereIn('setting_id', $updated_settings)
+            ->orWhereIn('setting_id', $delete_settings->pluck('id'))
+            ->where('status_id', 1)
+            ->get();
+
+
+        if ($delete_settings->isNotEmpty()) {
+            $delete_settings->each(function ($setting) {
+                $setting->delete();
+            });
+        }
+
+        if ($delete_orders->isNotEmpty()) {
+            $delete_orders->each(function ($order) {
+                $order->delete();
+            });
+
+            OrderService::whereIn('order_id', $delete_orders->pluck('id'))->delete();
+            OrderTechnician::whereIn('order_id', $delete_orders->pluck('id'))->delete();
+        }
+
+        $this->generateOrderFolios($contract);
         $this->updateContractTechnicians($contract, $selected_technicians);
         return back()->with('success', 'Contrato y órdenes actualizados correctamente');
     }
@@ -725,6 +754,7 @@ class ContractController extends Controller
 
         return $order_to_keep;
     }
+
     // Método auxiliar para crear/actualizar órdenes
     protected function createOrder($contract, $contract_service, $date, $service_id, $selected_technicians)
     {
@@ -794,6 +824,7 @@ class ContractController extends Controller
 
         //$orders = Order::where('contract_id', $contract->id)->get();
         $highestNumber = Order::where('contract_id', $contract->id)
+            ->whereNotNull('folio')
             ->selectRaw('MAX(CAST(SUBSTRING_INDEX(folio, "-", -1) AS UNSIGNED)) as max_number')
             ->value('max_number');
 
@@ -802,7 +833,7 @@ class ContractController extends Controller
             ->orderBy('programmed_date', 'asc')
             ->get();
 
-        $current_index = $highestNumber ? $highestNumber + 1 : 1;
+        $current_index = $highestNumber ? ($highestNumber + 1) : 1;
 
         foreach ($orders as $order) {
             $folio = $base_folio . '-' . $current_index;

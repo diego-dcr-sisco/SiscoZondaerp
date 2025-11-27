@@ -301,9 +301,24 @@
                 </div>
             </div>
         </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseEvidence" aria-expanded="false" aria-controls="collapseEvidence">
+                    Evidencia fotográfica
+                </button>
+            </h2>
+            <div id="collapseEvidence" class="accordion-collapse collapse" data-bs-parent="#accordionReview">
+                <div class="accordion-body">
+                    @include('report.create.evidence')
+                </div>
+            </div>
+        </div>
     </div>
 
-    <button type="submit" class="btn btn-primary my-3" onclick="setSummary()">{{ __('buttons.generate') }}</button>
+    <button type="submit" class="btn btn-primary my-3" id="generate-report-btn">
+        {{ __('buttons.generate') }}
+    </button>
     </div>
 </form>
 
@@ -375,20 +390,40 @@
         return html;
     }
 
-    function setSummary() {
-        services.forEach(service => {
-            console.log($(`#service${service.id}-text`).val())
-            summaryData[service.id] = {
-                recs: service.prefix != 2 ?
-                    $('.recommendations:checked').map(function() {
-                        return $(this).val();
-                    }).get() : $(`#summary-recs${service.id}`).summernote('code'),
+    $(document).ready(function() {
+        $('#generate-report-btn').on('click', function(e) {
+            e.preventDefault();
+
+            // Asegurar que el botón tenga foco
+            $(this).focus();
+
+            if (setSummary()) {
+                // Pequeño delay para asegurar procesamiento
+                setTimeout(() => {
+                    $('#report_form').submit();
+                }, 100);
             }
-
-            return
         });
+    });
 
-        $('#summary-services').val(JSON.stringify(summaryData));
+    function setSummary() {
+        try {
+            services.forEach(service => {
+                console.log($(`#service${service.id}-text`).val());
+                summaryData[service.id] = {
+                    recs: $(`#summary-recs${service.id}`).summernote('code'),
+                };
+            });
+
+            $('#summary-services').val(JSON.stringify(summaryData));
+            console.log('Summary data guardado correctamente');
+            return true;
+
+        } catch (error) {
+            console.error('Error en setSummary:', error);
+            alert('Error al preparar los datos del reporte');
+            return false;
+        }
     }
 
     function cleanAddProductForm() {

@@ -70,7 +70,6 @@
                         No Firmadas</option>
                 </select>
             </div>
-
             <!-- Direccion y orden -->
             <div class="col-auto">
                 <label for="signature_status" class="form-label">Dirección</label>

@@ -712,6 +712,8 @@ Route::prefix('report')
 
         Route::post('/search/devices', [ReportController::class, 'searchDevices'])->name('search.devices');
         Route::post('/devices/assign', [ReportController::class, 'assignDevices'])->name('assign.devices');
+
+        Route::post('/evidence/store/{orderId}', [ReportController::class, 'storeEvidence'])->name('evidence.store');
     });
 
 Route::prefix('report')

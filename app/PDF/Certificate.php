@@ -1,6 +1,7 @@
 <?php
 namespace App\PDF;
 
+use App\Models\EvidencePhoto;
 use Carbon\Carbon;
 
 use App\Models\Order;
@@ -127,6 +128,7 @@ class Certificate
             'reviews' => [],
             'notes' => [],
             'recommendations' => [],
+            'photo_evidences' => []
         ];
     }
 
@@ -393,6 +395,29 @@ class Certificate
                 }
             }
         }
+    }
+
+    public function photoEvidences()
+    {
+        $photo_evidences = [];
+        $evidences = EvidencePhoto::where('order_id', $this->order_id)->get();
+
+        foreach ($evidences as $evidence) {
+            $area = $evidence->area;
+
+            // Inicializar el array del área si no existe
+            if (!isset($photo_evidences[$area])) {
+                $photo_evidences[$area] = [];
+            }
+
+            // Agregar la evidencia con solo imagen y descripción
+            $photo_evidences[$area][] = [
+                'image' => $evidence->evidence_data['image'] ?? '',
+                'description' => $evidence->description
+            ];
+        }
+
+        $this->data['photo_evidences'] = $photo_evidences;
     }
 
     public function getData(): array

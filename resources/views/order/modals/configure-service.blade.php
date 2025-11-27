@@ -54,14 +54,14 @@
                         <label class="form-label">Prefijo</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                            <input type="text" class="form-control" id="serviceModal-prefix" value="SRV-001" disabled>
+                            <input type="text" class="form-control form-control-sm" id="serviceModal-prefix" value="SRV-001" disabled>
                         </div>
                     </div>
                     <div class="col-md-8 mb-3">
                         <label class="form-label">Servicio</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-card-text"></i></span>
-                            <input type="text" class="form-control" id="serviceModal-service" value="Mantenimiento Preventivo" disabled>
+                            <input type="text" class="form-control form-control-sm" id="serviceModal-service" value="Mantenimiento Preventivo" disabled>
                         </div>
                     </div>
 
@@ -69,21 +69,21 @@
                         <label class="form-label">Tipo</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-tag"></i></span>
-                            <input type="text" class="form-control" id="serviceModal-type" value="Preventivo" disabled>
+                            <input type="text" class="form-control form-control-sm" id="serviceModal-type" value="Preventivo" disabled>
                         </div>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Línea de negocio</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
-                            <input type="text" class="form-control" id="serviceModal-bsline" value="Mantenimiento" disabled>
+                            <input type="text" class="form-control form-control-sm" id="serviceModal-bsline" value="Mantenimiento" disabled>
                         </div>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Costo</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
-                            <input type="text" class="form-control" id="serviceModal-cost" value="$150.00" disabled>
+                            <input type="text" class="form-control form-control-sm" id="serviceModal-cost" value="$150.00" disabled>
                         </div>
                     </div>
                 </div>
@@ -148,41 +148,26 @@
             let service_id = $('#service-id').val();
             let config = services_configuration.find(sc => sc.service_id == service_id);
             $("#service-description-editor").summernote('code', config.description);
-            // Aquí podrías cargar una descripción existente si la hay
-            // Por ejemplo: $('#service-description-editor').summernote('code', existingDescription);
         });
     });
 
     // Función para guardar la descripción
     function saveServiceDescription() {
         const service_id = $('#service-id').val();
-
-        // Validar que haya una descripción
-        if (!serviceDescription || serviceDescription.trim() === '') {
-            alert('Por favor, ingresa una descripción para el servicio.');
-            return;
-        }
-
-        // Aquí iría la lógica para guardar la descripción
-        // Por ejemplo, enviarla al servidor mediante AJAX
-        console.log('Guardando descripción para el servicio:', service_id);
-        console.log('Descripción:', serviceDescription);
-
-        let config_index = services_configuration.findIndex(sc => sc.service_id == service_id);
-
-        if (config_index != -1) {
-            services_configuration[config_index].description = serviceDescription;
+        let config = services_configuration.find(sc => sc.service_id == service_id);
+        if (config) {
+            config.description = serviceDescription;
         } else {
             services_configuration.push({
                 service_id: service_id,
+                setting_id: null,
+                contract_id: null,
                 description: serviceDescription
             });
         }
-
-        // Simular guardado exitoso
         alert('Descripción guardada correctamente.');
-
-        // Cerrar el modal
         $('#configureServiceModal').modal('hide');
+
+        console.log(services_configuration); 
     }
 </script>

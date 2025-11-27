@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ContractService;
+use App\Models\EvidencePhoto;
 use App\Models\FloorplanArea;
 use App\Models\WarehouseOrder;
 use App\Models\Warehouse;
@@ -30,6 +31,7 @@ use App\Models\ServiceType;
 use App\Models\WarehouseProductOrder;
 use App\PDF\MyPDF;
 
+use Aws\EventBridge\EventBridgeEndpointMiddleware;
 use Carbon\Carbon;
 use Illuminate\Contracts\Database\Eloquent\DeviatesCastableAttributes;
 use Illuminate\Support\Facades\Validator;
@@ -37,6 +39,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 use App\Models\Dosage;
 use App\Models\Metric;
@@ -66,6 +70,21 @@ class ReportController extends Controller
     private $file_answers_path = 'datas/json/answers.json';
     private $temp_bulk = 'temp/bulk_certificates/';
 
+    private $recommendations = [
+        'Mantener puertas, accesos cerrados, cuando la operación no lo requiera, para evitar el ingreso de organismos al interior.',
+        'Limpieza constante, respetar programas existentes, para evitar acumulamientos de residuos que sean atrayentes de insectos rastreros, voladores y roedores.',
+        'No mantener aguas superficiales o retenidas, encharcamientos que sean atrayentes o sirven para generación de plagas.',
+        'Mantener áreas verdes, jardines y/o vegetación con el mantenimiento adecuado, evitar maleza alta que sea refugio de insectos.',
+        'Sellar huecos, hendiduras y/o grietas en piso y paredes, que sirvan de refugio para insectos rastreros y/o roedores.',
+        'Realizar mantenimiento a puertas, consiguiendo un sello hermético, evitando el ingreso de organismos (guardapolvos en condiciones, empalme de puertas).',
+        'Colocación de malla mosquitera en ventanas, extractores, o zonas de ventilación, para evitar el ingreso de organismos rastreros, voladores, roedores y/o aves.',
+        'Inspección de materia prima, materiales (tarimas, cajas), unidades de transporte, antes de ingresar a áreas de producción, evitando el arribo de plagas, omitiendo los controles establecidos.',
+        'No realizar comportamientos y hábitos higiénicos que generen atrayentes de organismos, tales como ingerir alimentos en áreas inadecuadas, restos de comida, etc.',
+    ];
+
+    public function __construct()
+    {
+    }
 
     private function getOptions($id, $answers)
     {
@@ -376,7 +395,14 @@ class ReportController extends Controller
                 'control_point_id' => $control_point->id,
                 'control_point_name' => $control_point->name,
                 'questions' => $questions_data,
-                'devices' => $devices->where('type_control_point_id', $control_point->id)->pluck('id')->toArray(),
+                //'devices' => $devices->where('type_control_point_id', $control_point->id)->pluck('id')->toArray(),
+                'devices' => $devices->where('type_control_point_id', $control_point->id)->map(function ($device) {
+                    return [
+                        'id' => $device->id,
+                        'code' => $device->code,
+                        'name' => $device->controlPoint->name
+                    ];
+                })->toArray(),
                 'pests' => PestCatalog::all()->map(function ($pest) {
                     return [
                         'id' => $pest->id,
@@ -503,11 +529,11 @@ class ReportController extends Controller
         $order_status = OrderStatus::all();
         $user_technicians = User::where('role_id', 3)->orWhere('work_department_id', 8)->orderBy('name')->get();
         $service_types = ServiceType::all();
-        $recommendations = Recommendations::all();
         $metrics = Metric::all();
         $lots = Lot::all();
 
         $devices = $devices_data;
+        $recommendations = $this->recommendations;
 
         $navigation = [
             'Orden de servicio' => route('order.edit', ['id' => $order->id]),
@@ -673,13 +699,13 @@ class ReportController extends Controller
                 })
             ], 200);
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Orden no encontrada.'
             ], 404);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Datos inválidos',
@@ -936,7 +962,7 @@ class ReportController extends Controller
             ]);
 
         }
-        
+
         $dps = DeviceProduct::where('order_id', $order->id)->get();
         $groupedProducts = $dps->groupBy('product_id');
 
@@ -1059,7 +1085,7 @@ class ReportController extends Controller
     public function print(string $orderId)
     {
         $tempDir = storage_path('app/temp/signatures');
-        
+
         $data = [];
         $certificate = new Certificate($orderId);
         $certificate->order();
@@ -1071,10 +1097,11 @@ class ReportController extends Controller
         $certificate->devices();
         $certificate->notes();
         $certificate->recommendations();
+        $certificate->photoEvidences();
         $data = $certificate->getData();
         // Obtener la configuración de apariencia
         $appearance = AppearanceSetting::first();
-        
+
         // Si no existe, crear una instancia con valores por defecto
         if (!$appearance) {
             $appearance = new AppearanceSetting();
@@ -1098,7 +1125,12 @@ class ReportController extends Controller
             $data['notes'] = 'Sin notas';
         }
 
-        $pdf = Pdf::loadView('report.pdf.certificate', $data);
+        $pdf = Pdf::loadView('report.pdf.certificate', $data)->setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            //'dpi' => 150,
+            'defaultFont' => $data['font_family'] ?? 'Arial'
+        ]);
 
         register_shutdown_function(function () use ($tempDir) {
             if (File::exists($tempDir)) {
@@ -1147,7 +1179,13 @@ class ReportController extends Controller
                     $tempPath = $this->temp_bulk . $timer . '/' . $filename;
 
                     // Generar PDF
-                    $pdf = Pdf::loadView('report.pdf.certificate', $data);
+                    $pdf = Pdf::loadView('report.pdf.certificate', $data)
+                        ->setOptions([
+                            'isHtml5ParserEnabled' => true,
+                            'isRemoteEnabled' => true,
+                            //'dpi' => 150,
+                            'defaultFont' => $data['font_family'] ?? 'Arial'
+                        ]);
                     Storage::put($tempPath, $pdf->output());
 
                 } catch (\Exception $e) {
@@ -1636,6 +1674,257 @@ class ReportController extends Controller
         return response()->json([
             'devices' => $devices_data
         ]);
+    }
+
+    public function storeEvidence(Request $request, $orderId)
+    {
+        try {
+            // Validar que el order existe
+            $order = Order::findOrFail($orderId);
+
+            // Validar los datos de entrada
+            /*$validated = $request->validate([
+                'evidences' => 'required|array',
+                'evidences.*.image' => 'required|string', // base64
+                'evidences.*.description' => 'required|string|max:500',
+                'evidences.*.area' => 'required|in:servicio,notas,recomendaciones,evidencias',
+                'evidences.*.filename' => 'required|string|max:255',
+                'evidences.*.filetype' => 'required|string|in:image/jpeg,image/jpg,image/png,image/webp',
+                'evidences.*.service_id' => 'nullable|exists:services,id',
+                'evidences.*.timestamp' => 'nullable|date',
+            ]);*/
+
+            DB::beginTransaction();
+
+            $savedEvidences = [];
+            $evidences = $request->input('evidences');
+
+            if ($evidences) {
+                foreach ($evidences as $evidenceData) {
+                    // Preparar los datos para evidence_data
+                    $evidenceDataArray = [
+                        'image' => $evidenceData['image'],
+                        'description' => $evidenceData['description'],
+                        'area' => $evidenceData['area'],
+                        'filename' => $evidenceData['filename'],
+                        'filetype' => $evidenceData['filetype'],
+                        'timestamp' => $evidenceData['timestamp'] ?? now()->toISOString(),
+                        'service_id' => $evidenceData['service_id'] ?? null,
+                        'original_name' => $evidenceData['filename'],
+                        'file_size' => $this->getBase64FileSize($evidenceData['image']),
+                    ];
+
+                    // Si la evidencia tiene ID (ya existe), actualizarla
+                    if (isset($evidenceData['id']) && !empty($evidenceData['id'])) {
+                        $evidence = EvidencePhoto::where('id', $evidenceData['id'])
+                            ->where('order_id', $orderId)
+                            ->first();
+
+                        if ($evidence) {
+                            $evidence->update([
+                                'service_id' => $evidenceData['service_id'] ?? null,
+                                'evidence_data' => $evidenceDataArray,
+                                'filename' => $evidenceData['filename'],
+                                'filetype' => $evidenceData['filetype'],
+                                'description' => $evidenceData['description'],
+                                'area' => $evidenceData['area'],
+                            ]);
+
+                            $savedEvidences[] = $evidence->id;
+                            continue;
+                        }
+                    }
+
+                    // Crear nueva evidencia
+                    $evidence = EvidencePhoto::create([
+                        'order_id' => $orderId,
+                        'service_id' => $evidenceData['service_id'] ?? null,
+                        'evidence_data' => $evidenceDataArray,
+                        'filename' => $evidenceData['filename'],
+                        'filetype' => $evidenceData['filetype'],
+                        'description' => $evidenceData['description'],
+                        'area' => $evidenceData['area'],
+                    ]);
+
+                    $savedEvidences[] = $evidence->id;
+                }
+            }
+
+            EvidencePhoto::whereNotIn('id', $savedEvidences)->where('order_id', $orderId)->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evidencias guardadas correctamente',
+                'saved_evidences' => $savedEvidences,
+                'total_saved' => count($savedEvidences)
+            ]);
+
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (ModelNotFoundException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Orden no encontrada'
+            ], 404);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error al guardar evidencias: ' . $e->getMessage(), [
+                'order_id' => $orderId,
+                'evidence_data' => $request->input('evidences')
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor al guardar las evidencias'
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener el tamaño del archivo base64 en bytes
+     */
+    private function getBase64FileSize($base64String)
+    {
+        // Eliminar el prefijo data:image/...;base64,
+        $base64 = preg_replace('/^data:image\/\w+;base64,/', '', $base64String);
+
+        // Calcular tamaño aproximado en bytes
+        return (int) (strlen($base64) * 3 / 4);
+    }
+
+    /**
+     * Obtener evidencias existentes de una orden
+     */
+    public function getEvidences($orderId)
+    {
+        try {
+            // Validar que el order existe
+            $order = Order::findOrFail($orderId);
+
+            $evidences = EvidencePhoto::where('order_id', $orderId)
+                ->with(['service:id,name']) // Cargar relación con servicio si existe
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($evidence) {
+                    return [
+                        'id' => $evidence->id,
+                        'index' => 'evidence_' . $evidence->id, // Para compatibilidad con frontend
+                        'order_id' => $evidence->order_id,
+                        'service_id' => $evidence->service_id,
+                        'service_name' => $evidence->service ? $evidence->service->name : 'Ninguno',
+                        'image' => $evidence->evidence_data['image'] ?? '',
+                        'description' => $evidence->description,
+                        'area' => $evidence->area,
+                        'filename' => $evidence->filename,
+                        'filetype' => $evidence->filetype,
+                        'timestamp' => $evidence->evidence_data['timestamp'] ?? $evidence->created_at->toISOString(),
+                        'created_at' => $evidence->created_at,
+                        'updated_at' => $evidence->updated_at,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'evidences' => $evidences,
+                'total' => $evidences->count()
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Orden no encontrada'
+            ], 404);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al obtener evidencias: ' . $e->getMessage(), [
+                'order_id' => $orderId
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor al obtener las evidencias'
+            ], 500);
+        }
+    }
+
+    /**
+     * Eliminar una evidencia específica
+     */
+    public function deleteEvidence($evidenceId)
+    {
+        try {
+            $evidence = EvidencePhoto::findOrFail($evidenceId);
+            $evidence->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Evidencia eliminada correctamente'
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Evidencia no encontrada'
+            ], 404);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al eliminar evidencia: ' . $e->getMessage(), [
+                'evidence_id' => $evidenceId
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor al eliminar la evidencia'
+            ], 500);
+        }
+    }
+
+    /**
+     * Eliminar múltiples evidencias
+     */
+    public function deleteMultipleEvidences(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'evidence_ids' => 'required|array',
+                'evidence_ids.*' => 'required|exists:evidence_photos,id'
+            ]);
+
+            $deletedCount = EvidencePhoto::whereIn('id', $request->evidence_ids)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$deletedCount} evidencias eliminadas correctamente",
+                'deleted_count' => $deletedCount
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al eliminar múltiples evidencias: ' . $e->getMessage(), [
+                'evidence_ids' => $request->evidence_ids
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor al eliminar las evidencias'
+            ], 500);
+        }
     }
 }
 

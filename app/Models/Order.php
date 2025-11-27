@@ -243,4 +243,49 @@ class Order extends Model
         return $this->hasOne(Invoice::class, 'order_id', 'id');
     }
 
+    public function photoEvidences()
+    {
+        return $this->hasMany(EvidencePhoto::class, 'order_id');
+    }
+
+    // En el modelo EvidencePhoto
+    public function photoEvidencesToJsonArray()
+    {
+        return $this->photoEvidences->map(function ($evidence) {
+            // Calcular el tamaño del archivo si no existe en evidence_data
+            $fileSize = $evidence->evidence_data['file_size'] ?? $this->calculateBase64Size(
+                $evidence->evidence_data['image'] ?? ''
+            );
+
+            return [
+                'image' => $evidence->evidence_data['image'] ?? $evidence->image_base64,
+                'description' => $evidence->description,
+                'area' => $evidence->area,
+                'filename' => $evidence->filename,
+                'filetype' => $evidence->filetype,
+                'timestamp' => $evidence->evidence_data['timestamp'] ?? $evidence->created_at->toISOString(),
+                'service_id' => $evidence->service_id,
+                'original_name' => $evidence->evidence_data['original_name'] ?? $evidence->filename,
+                'file_size' => $fileSize,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Calcular el tamaño de una cadena base64
+     */
+    private function calculateBase64Size($base64String)
+    {
+        if (empty($base64String)) {
+            return 0;
+        }
+
+        // Si es una data URL, extraer solo la parte base64
+        if (strpos($base64String, 'data:image') === 0) {
+            $base64String = preg_replace('/^data:image\/\w+;base64,/', '', $base64String);
+        }
+
+        // Calcular tamaño aproximado en bytes
+        return (int) (strlen($base64String) * 3 / 4);
+    }
 }

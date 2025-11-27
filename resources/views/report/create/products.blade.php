@@ -1,7 +1,7 @@
 <div class="row">
     <div class="col-12 mb-3">
-        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#productModal"
-            onclick="cleanForm()"><i class="bi bi-plus-lg"></i> {{ __('buttons.add') }} </button>
+        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#productModal"
+            onclick="cleanForm()"><i class="bi bi-plus-lg"></i> {{ __('buttons.add') }} Producto </button>
     </div>
     <div class="col-12">
         <table class="table table-bordered table-striped table-sm">

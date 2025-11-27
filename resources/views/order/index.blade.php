@@ -72,27 +72,27 @@
                 <form id="filter-form" action="{{ route('order.filter') }}" method="GET">
                     <div class="row g-2 mb-0">
                         <!-- Cliente -->
-                        <div class="col-lg-2">
+                        <div class="col-lg-1">
                             <label for="customer" class="form-label">No. Reporte</label>
                             <input type="text" class="form-control form-control-sm" id="customer" name="folio"
-                                value="{{ request('folio') }}" placeholder="Buscar cliente">
+                                value="{{ request('folio') }}" placeholder="Folio">
                         </div>
 
-                        <div class="col-lg-4">
+                        <div class="col-lg-3">
                             <label for="customer" class="form-label">Cliente</label>
                             <input type="text" class="form-control form-control-sm" id="customer" name="customer"
                                 value="{{ request('customer') }}" placeholder="Buscar cliente">
                         </div>
 
                         <!-- Servicio -->
-                        <div class="col-lg-4">
+                        <div class="col-lg-3">
                             <label for="service" class="form-label">Servicio</label>
                             <input type="text" class="form-control form-control-sm" id="service" name="service"
                                 value="{{ request('service') }}" placeholder="Buscar servicio">
                         </div>
 
                         <!-- Rango de Fechas -->
-                        <div class="col-2">
+                        <div class="col-lg-2">
                             <label for="date_range" class="form-label">Rango de Fechas</label>
                             <input type="text" class="form-control form-control-sm date-range-picker" id="date-range"
                                 name="date_range" value="{{ request('date_range') }}" placeholder="Selecciona un rango"
@@ -100,14 +100,14 @@
                         </div>
 
                         <!-- Hora -->
-                        <div class="col-lg-2 col-6">
+                        <div class="col-lg-1">
                             <label for="time" class="form-label">Hora Programada</label>
                             <input type="time" class="form-control form-control-sm" id="time" name="time"
                                 value="{{ request('time') }}">
                         </div>
 
                         <!-- Estado -->
-                        <div class="col-lg-2 col-6">
+                        <div class="col-lg-2">
                             <label for="status" class="form-label">Estado</label>
                             <select class="form-select form-select-sm" id="status" name="status">
                                 <option value="">Todos</option>
@@ -120,20 +120,34 @@
                             </select>
                         </div>
 
+                        <!-- Técnico -->
+                        <div class="col-lg-3">
+                            <label for="technician" class="form-label">Técnico asignado</label>
+                            <select class="form-select form-select-sm" id="technician" name="technician">
+                                @foreach ($technicians as $technician)
+                                    <option value="{{ $technician->id }}"
+                                        {{ request('technician') == $technician->id ? 'selected' : '' }}>
+                                        {{ $technician->user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <!-- Tipo de Orden -->
-                        <div class="col-lg-2 col-6">
+                        <div class="col-lg-2">
                             <label for="order_type" class="form-label">Tipo de Orden</label>
                             <select class="form-select form-select-sm" id="order_type" name="order_type">
                                 <option value="">Todos</option>
                                 <option value="MIP" {{ request('order_type') == 'MIP' ? 'selected' : '' }}>MIP
                                 </option>
-                                <option value="Seguimiento" {{ request('order_type') == 'Seguimiento' ? 'selected' : '' }}>
+                                <option value="Seguimiento"
+                                    {{ request('order_type') == 'Seguimiento' ? 'selected' : '' }}>
                                     Seguimiento</option>
                             </select>
                         </div>
 
                         <!-- Firma -->
-                        <div class="col-lg-2 col-6">
+                        <div class="col-lg-2">
                             <label for="signature_status" class="form-label">Estado de Firma</label>
                             <select class="form-select form-select-sm" id="signature_status" name="signature_status">
                                 <option value="">Todos</option>
@@ -146,16 +160,19 @@
                         </div>
 
                         <!-- Direccion y orden -->
-                        <div class="col-auto">
+                        <div class="col-lg-1">
                             <label for="signature_status" class="form-label">Dirección</label>
-                            <input type="text" class="form-control form-control-sm"
-                                value="{{ request('direction', 'ASC') }}" readonly>
+                            <select class="form-select form-select-sm" id="direction_select" name="direction_select">
+                                <option value="ASC" {{ request('direction', 'ASC') == 'ASC' ? 'selected' : '' }}>ASC
+                                </option>
+                                <option value="DESC" {{ request('direction', 'ASC') == 'DESC' ? 'selected' : '' }}>DESC
+                                </option>
+                            </select>
                         </div>
 
-                        <div class="col-auto">
+                        <div class="col-lg-1">
                             <label for="order_type" class="form-label">Total</label>
                             <select class="form-select form-select-sm" id="size" name="size">
-                                <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
                                 <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
                                 <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
                                 <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
@@ -174,7 +191,7 @@
                             <a href="{{ route('order.index') }}" class="btn btn-secondary btn-sm">
                                 <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                             </a>
-                        </div>  
+                        </div>
                     </div>
                 </form>
             </div>

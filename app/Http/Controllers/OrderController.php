@@ -79,6 +79,13 @@ class OrderController extends Controller
         $customer_ranges = Customer::where('general_sedes', '!=', 0)->orWhere('service_type_id', 1)->orderBy('name', 'asc')->get();
         $navigation = $this->navigation;
 
+        $technicians = Technician::with('user')
+            ->whereIn('user_id', Technician::pluck('user_id'))
+            ->join('user', 'technician.user_id', '=', 'user.id')
+            ->orderBy('user.name', 'ASC')
+            ->select('technician.*')
+            ->get();
+
         return view(
             'order.index',
             compact(
@@ -86,6 +93,7 @@ class OrderController extends Controller
                 'order_status',
                 'size',
                 'customer_ranges',
+                'technicians',
                 'navigation'
             )
         );
@@ -110,6 +118,7 @@ class OrderController extends Controller
 
         // Guarda en sesión por si el usuario refresca la página
         session()->put('prev_url', $prevUrl);
+        $view = 'order';
 
         return view(
             'order.create',
@@ -120,7 +129,8 @@ class OrderController extends Controller
                     'technicians',
                     'contracts',
                     'order_status',
-                    'prevUrl'
+                    'prevUrl',
+                    'view',
                 )
             )
         );
@@ -531,6 +541,7 @@ class OrderController extends Controller
                 $selected_services[] = [
                     'id' => $service->id,
                     'prefix' => $service->prefix,
+                    'prefix_name' => $service->prefixType->name,
                     'name' => $service->name,
                     'type' => [$service->serviceType->name],
                     'line' => [$service->businessLine->name],
@@ -540,6 +551,8 @@ class OrderController extends Controller
 
                 $services_configuration[] = [
                     'service_id' => $service->id,
+                    'setting_id' => $order->setting_id,
+                    'contract_id' => $order->contract_id,
                     'description' => $order->propagateByService($service->id)->text ?? null,
                 ];
 
@@ -561,6 +574,7 @@ class OrderController extends Controller
 
             // Si necesitas order_status para la vista, cargar solo lo necesario
             $order_status = OrderStatus::select('id', 'name')->get();
+            $view = 'order';
 
             return view(
                 'order.edit',
@@ -572,7 +586,8 @@ class OrderController extends Controller
                     'selected_services',
                     'cost',
                     'navigation',
-                    'services_configuration'
+                    'services_configuration',
+                    'view'
                 )
             );
 
@@ -628,11 +643,12 @@ class OrderController extends Controller
                 [
                     'order_id' => $order->id,
                     'service_id' => $service_data->service_id,
+                    'contract_id' => $service_data->contract_id ?? null,
+                    'setting_id' => $service_data->setting_id ?? null,
                 ],
                 [
-                    'contract_id' => null,
-                    'setting_id' => null,
                     'text' => $service_data->description ?? null,
+                    'updated_at' => now(),
                 ]
             );
 
@@ -826,6 +842,12 @@ class OrderController extends Controller
             }
         }
 
+        if ($request->filled('technician')) {
+            $technicianId = $request->input('technician');
+            $orderIds = OrderTechnician::where('technician_id', $technicianId)->pluck('order_id');
+            $query->whereIn('id', $orderIds);
+        }
+
         // Aplicar ordenamiento después de los filtros
         $query->orderBy($sort, $direction);
         $size = $size ?? $this->size;
@@ -837,7 +859,14 @@ class OrderController extends Controller
         $order_status = OrderStatus::all();
         $customer_ranges = Customer::where('general_sedes', '!=', 0)->orWhere('service_type_id', 1)->orderBy('name', 'asc')->get();
         $size = $this->size;
-        $navigation = $this->navigation;    
+        $navigation = $this->navigation;
+
+        $technicians = Technician::with('user')
+            ->whereIn('user_id', Technician::pluck('user_id'))
+            ->join('user', 'technician.user_id', '=', 'user.id')
+            ->orderBy('user.name', 'ASC')
+            ->select('technician.*')
+            ->get();
 
         return view(
             'order.index',
@@ -846,6 +875,7 @@ class OrderController extends Controller
                 'order_status',
                 'size',
                 'customer_ranges',
+                'technicians',
                 'navigation'
             )
         );

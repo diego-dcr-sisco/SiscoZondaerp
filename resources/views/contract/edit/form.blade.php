@@ -69,15 +69,16 @@
                 <label for="client" class="form-label is-required">
                     {{ __('contract.data.start_date') }}
                 </label>
-                <input type="date" class="form-control" name="startdate" id="startdate" value="{{ $contract->startdate }}" oninput="set_endDate()"
-                    required />
+                <input type="date" class="form-control" name="startdate" id="startdate"
+                    value="{{ $contract->startdate }}" oninput="set_endDate()" required />
             </div>
 
             <div class="col-3 mb-3">
                 <label for="client" class="form-label">
                     {{ __('contract.data.end_date') }}
                 </label>
-                <input type="date" class="form-control" name="enddate" id="enddate" value="{{ $contract->enddate }}"/>
+                <input type="date" class="form-control" name="enddate" id="enddate"
+                    value="{{ $contract->enddate }}" />
             </div>
         </div>
     </div>
@@ -144,7 +145,8 @@
                                 <div class="form-check mb-0 w-100"> <!-- w-100 para que ocupe todo el ancho -->
                                     <input class="form-check-input me-2 technician" type="checkbox"
                                         value="{{ $technician->id }}" id="technician-{{ $technician->id }}"
-                                        onchange="setTechnician(this)"  {{ $contract->hasTechnician($technician->id) ? 'checked' : '' }}/>
+                                        onchange="setTechnician(this)"
+                                        {{ $contract->hasTechnician($technician->id) ? 'checked' : '' }} />
                                     <label class="form-check-label d-block" for="technician-{{ $technician->id }}">
                                         {{ $technician->user->name }}
                                     </label>
@@ -161,10 +163,11 @@
         {{ __('buttons.update') }}
     </button>
     <input type="hidden" id="customer-id" name="customer_id" value="{{ $contract->customer_id }}" />
-    <input type="hidden" id="contract-configurations" name="configurations" value="{{ json_encode($configurations) }}" />
-    <input type="hidden" name="technicians" id="technicians" value="{{ json_encode($contract->technicians->pluck('id')) }}" />
-    <input type="hidden" name="delete_settings" id="delete-settings" value="[]" />
-    <input type="hidden" name="was_services_updated" id="was-services-updated" value="false" />
+    <input type="hidden" id="contract-configurations" name="configurations"
+        value="{{ json_encode($configurations) }}" />
+    <input type="hidden" name="technicians" id="technicians"
+        value="{{ json_encode($contract->technicians->pluck('id')) }}" />
+    <input type="hidden" name="updated_services" id="updated-services" value="[]" />
 </form>
 
 <script>

@@ -61,7 +61,7 @@
         }
 
         .logo {
-            width: 49%;
+            width: 40%;
             float: right;
             text-align: center;
             margin: 0;
@@ -89,8 +89,8 @@
         }
 
         .bg-blue {
-            background-color: #79C4F2; 
-            /* background-color: {{ $primaryColor  }}; */
+            background-color: #79C4F2;
+            /* background-color: {{ $primaryColor }}; */
             font-weight: bold;
             padding-left: 5px;
             width: 100%;
@@ -259,12 +259,57 @@
             top: 50%;
             transform: translateY(-50%);
         }
+
+
+        /* Nuevos estilos para evidencias fotográficas */
+        .photo-evidence-section {
+            margin-top: 15px;
+            page-break-inside: avoid;
+        }
+
+        .photo-evidence-grid {
+            display: block;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .photo-evidence-item {
+            display: inline-block;
+            width: 48%;
+            margin: 1%;
+            vertical-align: top;
+            page-break-inside: avoid;
+        }
+
+        .photo-evidence-image {
+            width: 100%;
+            max-width: 200px;
+            height: 150px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+            display: block;
+            margin: 0 auto 5px auto;
+        }
+
+        .photo-evidence-description {
+            font-size: 9px;
+            text-align: center;
+            padding: 5px;
+            word-wrap: break-word;
+        }
+
+        .evidence-placeholder {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 10px;
+        }
     </style>
 </head>
 
 <body>
     <div class="watermark">
-        <img src="file://{{ public_path('images/siscoplagas/watermark.png') }}">
+        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/watermark.png'))) }}">
     </div>
 
     <div class="row">
@@ -272,7 +317,7 @@
             <h1 style="font-size: 22px; margin: 0;">{{ $title }}</h1>
         </div>
         <div class="logo">
-            <img src="file://{{ public_path('images/siscoplagas/landscape_logo.png') }}" style="width: 250px; margin: 0;">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/landscape_logo.png'))) }} style="width: 150px; margin: 0;">
         </div>
     </div>
 
@@ -321,6 +366,7 @@
         </div>
     </div>
 
+    <!-- SERVICIOS con evidencias -->
     <div class="row">
         <div class="bg-blue">SERVICIOS</div>
         @foreach ($services as $service)
@@ -331,6 +377,25 @@
             <div class="render-html">
                 {!! $service['text'] !!}
             </div>
+            
+            <!-- Evidencias del área "servicio" para este servicio específico -->
+            @if(isset($photo_evidences['servicio']) && count($photo_evidences['servicio']) > 0)
+                <div class="photo-evidence-section">
+                    <div style="font-weight: bold; margin-top: 10px; color: #0d6efd;">
+                        EVIDENCIAS FOTOGRÁFICAS - SERVICIO
+                    </div>
+                    <div class="photo-evidence-grid">
+                        @foreach($photo_evidences['servicio'] as $evidence)
+                            <div class="photo-evidence-item">
+                                <img src="{{ $evidence['image'] }}" class="photo-evidence-image" alt="Evidencia">
+                                <div class="photo-evidence-description">
+                                    {{ $evidence['description'] }}
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         @endforeach
     </div>
 
@@ -413,19 +478,89 @@
         @endforelse
     </div>
 
+    <!-- NOTAS DEL CLIENTE con evidencias -->
     <div class="row">
         <div class="bg-blue">NOTAS DEL CLIENTE</div>
         <div class="text-justify">
             {!! $notes !!}
         </div>
+        
+        <!-- Evidencias del área "notas" -->
+        @if(isset($photo_evidences['notas']) && count($photo_evidences['notas']) > 0)
+            <div class="photo-evidence-section">
+                <div style="font-weight: bold; margin-top: 10px; color: #6c757d;">
+                    EVIDENCIAS FOTOGRÁFICAS
+                </div>
+                <div class="photo-evidence-grid">
+                    @foreach($photo_evidences['notas'] as $evidence)
+                        <div class="photo-evidence-item">
+                            <img src="{{ $evidence['image'] }}" class="photo-evidence-image" alt="Evidencia">
+                            <div class="photo-evidence-description">
+                                {{ $evidence['description'] }}
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </div>
 
+    <!-- RECOMENDACIONES con evidencias -->
     <div class="row">
         <div class="bg-blue">RECOMENDACIONES</div>
         <div class="text-justify">
             {!! $recommendations !!}
         </div>
+        
+        <!-- Evidencias del área "recomendaciones" -->
+        @if(isset($photo_evidences['recomendaciones']) && count($photo_evidences['recomendaciones']) > 0)
+            <div class="photo-evidence-section">
+                <div style="font-weight: bold; margin-top: 10px; color: #198754;">
+                    EVIDENCIAS FOTOGRÁFICAS - RECOMENDACIONES
+                </div>
+                <div class="photo-evidence-grid">
+                    @foreach($photo_evidences['recomendaciones'] as $evidence)
+                        <div class="photo-evidence-item">
+                            <img src="{{ $evidence['image'] }}" class="photo-evidence-image" alt="Evidencia">
+                            <div class="photo-evidence-description">
+                                {{ $evidence['description'] }}
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </div>
+
+    <!-- EVIDENCIAS FOTOGRÁFICAS (área general) -->
+    @if(isset($photo_evidences['evidencias']) && count($photo_evidences['evidencias']) > 0)
+        <div class="row">
+            <div class="bg-blue" style="background-color: #6f42c1;">EVIDENCIAS FOTOGRÁFICAS</div>
+            <div class="photo-evidence-grid">
+                @foreach($photo_evidences['evidencias'] as $evidence)
+                    <div class="photo-evidence-item">
+                        <img src="{{ $evidence['image'] }}" class="photo-evidence-image" alt="Evidencia">
+                        <div class="photo-evidence-description">
+                            {{ $evidence['description'] }}
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    <!-- Mensaje si no hay evidencias en ninguna área -->
+    {{--@if(empty($photo_evidences) || 
+        (empty($photo_evidences['servicio']) && 
+         empty($photo_evidences['notas']) && 
+         empty($photo_evidences['recomendaciones']) && 
+         empty($photo_evidences['evidencias'])))
+        <div class="row">
+            <div class="evidence-placeholder">
+                No hay evidencias fotográficas para mostrar
+            </div>
+        </div>
+    @endif--}}  
 
     <div class="signature-section">
         <table class="signature-table">

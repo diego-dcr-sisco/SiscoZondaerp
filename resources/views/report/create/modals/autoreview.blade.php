@@ -16,7 +16,38 @@
                                     {{ $autoreview['control_point_name'] }}</span>
                             </div>
                             <div class="card-body p-3">
-
+                                <!-- Seleccionar dispositivos -->
+                                <div class="accordion mb-3" id="accordionExample">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header">
+                                            <button class="accordion-button collapsed bg-light" type="button" data-bs-toggle="collapse"
+                                                data-bs-target="#collapseOne" aria-expanded="false"
+                                                aria-controls="collapseOne">
+                                                Dispositivos asignados
+                                            </button>
+                                        </h2>
+                                        <div id="collapseOne" class="accordion-collapse collapse"
+                                            data-bs-parent="#accordionExample">
+                                            <div class="accordion-body">
+                                                <ul class="row">
+                                                    @foreach ($autoreview['devices'] as $device)
+                                                        <div class="col-md-4">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox"
+                                                                    value="{{ $device['id'] }}"
+                                                                    id="deviceCheck{{ $device['id'] }}" onchange="handleCheckDevices(this.value, this.checked)" checked>
+                                                                <label class="form-check-label"
+                                                                    for="deviceCheck{{ $device['id'] }}">
+                                                                    {{ $device['code'] }}
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <!-- Preguntas -->
                                 <div class="border rounded p-2 bg-light mb-3">
                                     <div class="mb-1">
@@ -62,7 +93,8 @@
                                                     <label class="form-label">Producto aplicado</label>
                                                     <select class="form-select form-select-sm product-select"
                                                         onchange="handleAutoreviewProduct({{ $autoreview['control_point_id'] }}, this.value, 0)">
-                                                        <option value="" selected>Selecciona un producto</option>
+                                                        <option value="" selected>Selecciona un producto
+                                                        </option>
                                                         @foreach ($autoreview['products'] as $product)
                                                             <option value="{{ $product['id'] }}">
                                                                 {{ $product['name'] }}
@@ -91,7 +123,8 @@
                                                         disabled>
                                                         <option value="" selected>Selecciona método</option>
                                                         @foreach ($application_methods as $method)
-                                                            <option value="{{ $method['id'] }}">{{ $method['name'] }}
+                                                            <option value="{{ $method['id'] }}">
+                                                                {{ $method['name'] }}
                                                             </option>
                                                         @endforeach
                                                     </select>
@@ -137,7 +170,8 @@
                                                     <label class="form-label">Plaga/Incidencias</label>
                                                     <select class="form-select form-select-sm pest-select"
                                                         onchange="updateAutoreviewPest({{ $autoreview['control_point_id'] }}, 0)">
-                                                        <option value="" selected>Selecciona una plaga</option>
+                                                        <option value="" selected>Selecciona una plaga
+                                                        </option>
                                                         @if (isset($autoreview['pests']))
                                                             @foreach ($autoreview['pests'] as $pest)
                                                                 <option value="{{ $pest['id'] }}">
@@ -205,14 +239,14 @@
                                             for="clearObservs-{{ $autoreview['control_point_id'] }}">Limpiar
                                             observaciones</label>
                                     </div>
-                                    {{--<div class="row mt-2">
+                                    {{-- <div class="row mt-2">
                                         <div class="col-lg-12 col-12">
                                             <label class="form-label">Observaciones del dispositivo</label>
                                             <textarea class="form-control form-control-sm" rows="3"
                                                 oninput="setAutoreviewObservations({{ $autoreview['control_point_id'] }}, 0, this.value)"
                                                 placeholder="Escriba las observaciones"></textarea>
                                         </div>
-                                    </div>--}}
+                                    </div> --}}
                                 </div>
                             </div>
                         </div>
@@ -235,6 +269,7 @@
 
 <script>
     // Variables globales para manejar los datos
+    var devicesToCheck = @json(array_map(fn($device) => $device['id'], $autoreview['devices']));
     var autoreview_data = @json($autoreview_data ?? []);
     var productsData = {}; // Almacenará los productos por control_point_id
     var observationsData = {}; // Almacenará las observaciones por control_point_id
@@ -309,6 +344,16 @@
         if (newIndex > 0) {
             const firstDeleteBtn = document.querySelector(`#product-row-${controlPointId}-0 .btn-danger`);
             if (firstDeleteBtn) firstDeleteBtn.disabled = false;
+        }
+    }
+
+    function handleCheckDevices(device_id, isChecked) {
+        if (isChecked) {
+            if (!devicesToCheck.includes(device_id)) {
+                devicesToCheck.push(device_id);
+            }
+        } else {
+            devicesToCheck = devicesToCheck.filter(id => id != device_id);
         }
     }
 
@@ -580,7 +625,7 @@
                 products: products,
                 pests: pests,
                 observations: observations,
-                devices: autoreview.devices ?? [],
+                devices: devicesToCheck ?? [],
                 clear: {
                     questions: $(`#clearQuestions-${controlPointId}`).is(':checked'),
                     products: $(`#clearProducts-${controlPointId}`).is(':checked'),
@@ -597,12 +642,14 @@
 
         var csrfToken = $('meta[name="csrf-token"]').attr("content");
 
+        showSpinner();
+
         alert("✅ Autorevisión enviada correctamente\n\n" +
             `• Puntos de control: ${data.control_points.length}\n` +
             `• Hora: ${new Date().toLocaleTimeString()}`);
 
         console.log("Datos enviados", JSON.stringify(data, null, 2));
-        showSpinner();
+        
 
         $.ajax({
             url: "{{ route('report.autoreview', ['orderId' => $order['id']]) }}",
