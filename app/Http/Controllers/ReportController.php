@@ -1084,7 +1084,7 @@ class ReportController extends Controller
 
     public function print(string $orderId)
     {
-        $tempDir = storage_path('app/temp/signatures');
+        //$tempDir = storage_path('app/temp/signatures');
 
         $data = [];
         $certificate = new Certificate($orderId);
@@ -1132,11 +1132,11 @@ class ReportController extends Controller
             'defaultFont' => $data['font_family'] ?? 'Arial'
         ]);
 
-        register_shutdown_function(function () use ($tempDir) {
+        /*register_shutdown_function(function () use ($tempDir) {
             if (File::exists($tempDir)) {
                 File::cleanDirectory($tempDir);
             }
-        });
+        });*/
 
         return $pdf->stream('Archivo.pdf');
     }

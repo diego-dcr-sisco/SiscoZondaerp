@@ -291,19 +291,6 @@
         <div class="accordion-item">
             <h2 class="accordion-header">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapseRecoms" aria-expanded="false" aria-controls="collapseRecoms">
-                    Recomendaciones
-                </button>
-            </h2>
-            <div id="collapseRecoms" class="accordion-collapse collapse" data-bs-parent="#accordionReview">
-                <div class="accordion-body">
-                    @include('report.create.recommendations')
-                </div>
-            </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                     data-bs-target="#collapseEvidence" aria-expanded="false" aria-controls="collapseEvidence">
                     Evidencia fotográfica
                 </button>
@@ -311,6 +298,19 @@
             <div id="collapseEvidence" class="accordion-collapse collapse" data-bs-parent="#accordionReview">
                 <div class="accordion-body">
                     @include('report.create.evidence')
+                </div>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <h2 class="accordion-header">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                    data-bs-target="#collapseRecoms" aria-expanded="false" aria-controls="collapseRecoms">
+                    Recomendaciones
+                </button>
+            </h2>
+            <div id="collapseRecoms" class="accordion-collapse collapse" data-bs-parent="#accordionReview">
+                <div class="accordion-body">
+                    @include('report.create.recommendations')
                 </div>
             </div>
         </div>
