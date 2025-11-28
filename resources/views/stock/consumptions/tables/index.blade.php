@@ -25,13 +25,13 @@
                 <td>
                     <div class="fw-bold text-center">{{ $consumption->month_spanish }} {{ $consumption->year }}</div>
                 </td>
-                <td class="text-center">
+                <td>
                     <div class="fw-bold text-primary">{{ $consumption->products_count }} productos</div>
                     <small class="text-muted d-block" title="{{ $consumption->products_summary }}">
                         {{ Str::limit($consumption->products_summary, 50) }}
                     </small>
                 </td>
-                <td class="text-center">
+                <td>
                     @switch($consumption->status)
                         @case('pending')
                             <span class="badge bg-warning">{{ $consumption->status_formatted }}</span>
@@ -50,7 +50,7 @@
                     <div>{{ $consumption->created_at->format('d/m/Y') }}</div>
                     <small class="text-muted">{{ $consumption->created_at->format('H:i') }}</small>
                 </td>
-                <td class="text-center">
+                <td>
                     <div class="btn-group" role="group">
                         <!-- Ver detalles del consumo agrupado -->
                         <a href="{{ route('consumptions.show-grouped', [

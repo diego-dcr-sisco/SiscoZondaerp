@@ -15,7 +15,7 @@
             @if(count($products) > 0)
                 @foreach($products as $i => $product)
                     <tr class="product-row">
-                        <td class="text-center">
+                        <td>
                             @if($product->photo)
                                 <img src="{{ asset($product->photo) }}" style="width: 48px; height: 48px; object-fit: cover; border-radius: 8px;" alt="Miniatura de imagen">
                             @else
@@ -25,14 +25,14 @@
                         <td class="text-start">
                             <div class="fw-semibold text-dark">{{ $product->name }}</div>
                         </td>
-                        <td class="text-center">
+                        <td>
                             @if($product->status == 1)
                                 <span class="badge bg-success"><i class="bi bi-check2"></i> Activo</span>
                             @else
                                 <span class="badge bg-danger"><i class="bi bi-x"></i> Inactivo</span>
                             @endif
                         </td>
-                        <td class="text-center">
+                        <td>
                             @php
                                 $lineName = '-';
                                 if(isset($lineBs)) {
@@ -46,21 +46,21 @@
                             @endphp
                             <span class="fw-semibold">{{ $lineName }}</span>
                         </td>
-                        <td class="text-center">
+                        <td>
                             @if($product->obsolete == 1)
                                 <span class="badge bg-danger"><i class="bi bi-x"></i> Sí</span>
                             @else
                                 <span class="badge bg-success"><i class="bi bi-check2"></i> No</span>
                             @endif
                         </td>
-                        <td class="text-center">
+                        <td>
                             @if($product->basic == 1)
                                 <span class="badge bg-success"><i class="bi bi-check2"></i> Sí</span>
                             @else
                                 <span class="badge bg-danger"><i class="bi bi-x"></i> No</span>
                             @endif
                         </td>
-                        <td class="text-center">
+                        <td>
                             <div class="btn-group" role="group">
                                 <a href="{{ route('pesticide.show', $product->id) }}" class="btn btn-outline-info btn-sm" data-bs-toggle="tooltip" title="Ver producto">
                                     <i class="bi bi-eye-fill"></i>

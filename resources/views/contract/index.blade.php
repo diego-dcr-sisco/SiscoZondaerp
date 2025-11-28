@@ -130,7 +130,7 @@
                                     </span>
                                 </span>
                             </td>
-                            <td class="text-center">
+                            <td>
                                 <a class="btn btn-info btn-sm"
                                     href="{{ route('contract.show', ['id' => $contract->id, 'section' => 1]) }}"
                                     data-bs-toggle="tooltip" data-bs-placement="top" title="Ordenes de servicio">

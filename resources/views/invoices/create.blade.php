@@ -308,7 +308,7 @@
                                             {{ number_format($subtotal, 2) }}
                                         </span>
                                     </td>
-                                    <td class="text-center">
+                                    <td>
                                         $<span class="taxes-amount-cell" id="taxes-amount-{{ $index }}">
                                             {{ number_format($taxesAmount, 2) }}
                                         </span>
@@ -318,7 +318,7 @@
                                             {{ number_format($total, 2) }}
                                         </span>
                                     </td>
-                                    <td class="text-center">
+                                    <td>
                                         <button type="button" class="btn btn-sm btn-danger remove-concept-btn"
                                             title="Eliminar">
                                             <i class="bi bi-trash-fill"></i>
@@ -375,13 +375,13 @@
                                 <td class="text-center fw-semibold">
                                     $<span class="subtotal-cell" id="subtotal-0">0.00</span>
                                 </td>
-                                <td class="text-center">
+                                <td>
                                     $<span class="taxes-amount-cell" id="taxes-amount-0">0.00</span>
                                 </td>
                                 <td class="text-center fw-semibold">
                                     $<span class="total-cell" id="total-0">0.00</span>
                                 </td>
-                                <td class="text-center">
+                                <td>
                                     <button type="button" class="btn btn-sm btn-danger remove-concept-btn"
                                         title="Eliminar" disabled>
                                         <i class="bi bi-trash-fill"></i>
@@ -721,13 +721,13 @@
         <td class="text-center fw-semibold">
             $<span class="subtotal-cell" id="subtotal-${index}">0.00</span>
         </td>
-        <td class="text-center">
+        <td>
             $<span class="taxes-amount-cell" id="taxes-amount-${index}">0.00</span>
         </td>
         <td class="text-center fw-semibold">
             $<span class="total-cell" id="total-${index}">0.00</span>
         </td>
-        <td class="text-center">
+        <td>
             <button type="button" class="btn btn-sm btn-danger remove-concept-btn" title="Eliminar">
                 <i class="bi bi-trash-fill"></i>
             </button>

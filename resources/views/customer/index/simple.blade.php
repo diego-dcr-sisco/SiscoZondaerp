@@ -110,7 +110,7 @@
                                 {{ Carbon\Carbon::parse($customer->created_at, 'UTC')->setTimezone('America/Mexico_City')->format('Y-m-d H:i:s') }}
                                 {{-- $customer->created_at --}}
                             </td>
-                            <td class="text-center">
+                            <td>
                                 @can('write_customer')
                                     @if (!$customer->hasSedes() && $customer->service_type_id != 3)
                                         <a href="{{ route('customer.quote', ['id' => $customer->id, 'class' => 'customer']) }}"

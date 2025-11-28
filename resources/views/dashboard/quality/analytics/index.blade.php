@@ -710,7 +710,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const val = parseFloat(rowData[key] || 0);
                 total += val;
                 const badgeClass = getBadgeClassJS(val);
-                row += `<td class="text-center"><span class="badge ${badgeClass}">${val.toFixed(2)}</span></td>`;
+                row += `<td><span class="badge ${badgeClass}">${val.toFixed(2)}</span></td>`;
             });
             
             row += `<td class="text-center fw-bold">${total.toFixed(2)}</td></tr>`;

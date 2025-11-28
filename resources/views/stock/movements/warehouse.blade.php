@@ -149,7 +149,7 @@
                                 <td>{{ $movement->observations ?? '-' }}</td>
                                 <td>{{ \Carbon\Carbon::parse($movement->date)->format('d/m/Y') }} -
                                     {{ $movement->time }}</td>
-                                <td class="text-center">
+                                <td>
                                     <a href="{{ route('stock.movement', ['id' => $movement->id]) }}"
                                         class="btn btn-dark btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                                         title="Generar voucher">

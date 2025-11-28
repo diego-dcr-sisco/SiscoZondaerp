@@ -97,7 +97,7 @@
                     @forelse ($products as $index => $product)
                         <tr class="table-row-hover">
                             <td class="text-center fw-bold" scope="row">{{ ($products->currentPage() - 1) * $products->perPage() + $index + 1 }}</td>
-                            <td class="text-center">
+                            <td>
                                 @if ($product->image_path)
                                     <img src="{{ route('image.show', ['path' => $product->image_path]) }}"
                                          class="rounded shadow-sm border"
@@ -125,7 +125,7 @@
                             <td>{{ $product->active_ingredient ?? '-' }}</td>
                             <td>{{ $product->dosage ?? '-' }}</td>
                             <!-- <td>{{ $product->metric->value ?? '-' }}</td> -->
-                            <td class="text-center">
+                            <td>
                                 @can('write_product')
                                     <div class="d-flex justify-content-center g-2" role="group" aria-label="Acciones">
                                         <a href="{{ route('product.edit', ['id' => $product->id, 'section' => 1]) }}"

@@ -96,10 +96,10 @@
                                         <div class="fw-bold">{{ $product->product->name }}</div>
                                         <small class="text-muted">{{ $product->units }}</small>
                                     </td>
-                                    <td class="text-center">
+                                    <td>
                                         <span class="fw-bold text-primary">{{ $product->amount }}</span>
                                     </td>
-                                    <td class="text-center">
+                                    <td>
                                         <input type="hidden" name="supplies[{{ $loop->index }}][consumption_id]" value="{{ $product->id }}">
                                         <div class="form-check form-switch d-flex justify-content-center">
                                             <input class="form-check-input supply-checkbox" 
@@ -111,7 +111,7 @@
                                                    data-index="{{ $loop->index }}">
                                         </div>
                                     </td>
-                                    <td class="text-center">
+                                    <td>
                                         <input type="number" 
                                                class="form-control text-center supply-amount" 
                                                name="supplies[{{ $loop->index }}][supplied_amount]" 

@@ -32,7 +32,7 @@
                         <td>{{ $order_product->dosage ?? ($order_product->product->dosage ?? '-') }}
                         </td>
                         <td>{{ $order_product->lot->registration_number ?? ($order_product->possible_lot ?? '-') }}</td>
-                        <td class="text-center">
+                        <td>
                             {{-- <a href="#"
                                 class="btn btn-warning btn-sm"
                                 onclick="return confirm('{{ __('messages.are_you_sure') }}')">

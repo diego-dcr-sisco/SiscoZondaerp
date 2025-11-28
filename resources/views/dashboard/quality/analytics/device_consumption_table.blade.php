@@ -65,11 +65,11 @@
                         @foreach($typeDevices->sortBy('code') as $device)
                             <tr>
                                 <td>{{ $device['name'] ?? 'Dispositivo sin nombre' }}</td>
-                                <td class="text-center">
+                                <td>
                                     <span class="badge bg-info">{{ $device['code'] }}</span>
                                 </td>
-                                <td class="text-center">{{ $device['type'] }}</td>
-                                <td class="text-center">
+                                <td>{{ $device['type'] }}</td>
+                                <td>
                                     @if(!empty($device['consumptions']))
                                         <div class="d-flex justify-content-center gap-1">
                                             @foreach($device['consumptions'] as $consumption)

@@ -147,7 +147,7 @@
                                      {{ $order->signature_name ?? 'Sin firma' }}</td>
                                  <td> <img class="border" style="width: 75px;" src="{{ $signature }}" alt="img_firma">
                                  </td>
-                                 <td class="text-center">
+                                 <td>
                                      <button type="button" class="btn btn-warning btn-sm mb-1"
                                          onclick="openModal({{ $order->id }})">
                                          <i class="bi bi-pencil-fill"></i>

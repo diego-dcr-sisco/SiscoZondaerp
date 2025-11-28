@@ -82,7 +82,7 @@
                         <td>${d.title}</td>
                         <td>${d.description}</td>
                         <td class="${handleColorStatus(d.status)} fw-bold">${handleTranslate(d.status)}</td>
-                        <td class="text-center">
+                        <td>
                             <button type="button" class="btn btn-sm btn-secondary" onclick="editTracking(${i}, ${j})" data-bs-toggle="tooltip" data-bs-placement="top" title="Reprogramar Seguimiento">
                                 <i class="bi bi-pencil-square"></i>
                             </button>

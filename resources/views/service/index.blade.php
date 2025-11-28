@@ -104,7 +104,7 @@
                             <td class="fw-bold {{ $service->has_application_methods ? 'text-success' : 'text-danger' }}">
                                 {{ $service->has_application_methods ? 'Si' : 'No' }}
                             </td>
-                            <td class="text-center">
+                            <td>
                                 @can('write_service')
                                     <a href="{{ route('service.edit', ['id' => $service->id]) }}" data-bs-toggle="tooltip"
                                         data-bs-placement="top" data-bs-title="Editar servicio"

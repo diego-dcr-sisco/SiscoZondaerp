@@ -319,7 +319,7 @@
 
             const tableRow = `
             <tr id="evidence-row-${evidenceData.index}">
-                <td class="text-center">
+                <td>
                     <img src="${evidenceData.image}" 
                          class="evidence-thumbnail" 
                          alt="Miniatura"

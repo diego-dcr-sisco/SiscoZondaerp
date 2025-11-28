@@ -391,7 +391,7 @@
                                             class="text-{{ $statusMap[$tracking['status']]['color'] }} fw-bold">
                                             {{ $statusMap[$tracking['status']]['text'] }}
                                         </td>
-                                        <td class="text-center">
+                                        <td>
                                             <button type="button" class="btn btn-sm btn-success"
                                                 onclick="updateTrackingStatus({{ $tracking['id'] }}, 'active')"
                                                 data-bs-toggle="tooltip" data-bs-placement="top"

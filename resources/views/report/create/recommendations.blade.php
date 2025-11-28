@@ -21,7 +21,7 @@
                         <tbody>
                             @foreach ($recommendations as $index => $description)
                             <tr class="recommendation-item">
-                                <td class="text-center">
+                                <td>
                                     <input class="form-check-input recommendation-checkbox" type="checkbox" 
                                            value="{{ $index }}" id="rec{{ $index }}">
                                 </td>

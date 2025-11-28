@@ -71,7 +71,7 @@
                                     </span>
                                 </td>
                                 <td class="fw-bold">{{ formatCurrency($quote->value) }}</td>
-                                <td class="text-center">
+                                <td>
                                     @if (!$quote->file)
                                         <span class="text-danger fw-bold">Sin archivo PDF</span>
                                     @else
@@ -82,7 +82,7 @@
                                         </a>
                                     @endif
                                 </td>
-                                <td class="text-center">
+                                <td>
                                     <a href="{{ route('customer.quote.edit', ['id' => $quote->id]) }}" class="btn btn-sm btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
                                         title="Editar cotización">
                                         <i class="bi bi-pencil-square"></i>

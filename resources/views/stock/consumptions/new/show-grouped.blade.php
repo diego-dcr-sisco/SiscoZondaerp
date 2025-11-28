@@ -112,14 +112,14 @@
                                 <td>
                                     <div class="fw-bold">{{ $product->product->name }}</div>
                                 </td>
-                                <td class="text-center">
+                                <td>
                                     <span class="fw-bold text-primary">{{ $product->amount }} {{ $product->units }}</span>
                                 </td>
                                 <!-- <td>
                                     <div>{{ $product->created_at->format('d/m/Y') }}</div>
                                     <small class="text-muted">{{ $product->created_at->format('H:i') }}</small>
                                 </td> -->
-                                <td class="text-center">
+                                <td>
                                     <div class="btn-group" role="group">
                                         <a href="{{ route('consumptions.edit', $product->id) }}" 
                                            class="btn btn-sm btn-outline-secondary"

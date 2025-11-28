@@ -74,15 +74,15 @@
                                         value="{{ $opportunity_area->id }}">
                                 </div>
                             </th>
-                            <td class="text-center">{{ $offset + $index + 1 }}</th>
-                            <td class="text-center">{{ $opportunity_area->date }}</td>
-                            <td class="text-center">{{ $opportunity_area->applicationArea->name }}</td>
+                            <td>{{ $offset + $index + 1 }}</th>
+                            <td>{{ $opportunity_area->date }}</td>
+                            <td>{{ $opportunity_area->applicationArea->name }}</td>
                             <!--td>{{ $opportunity_area->estimated_date }}</td-->
                             <td>{{ $opportunity_area->opportunity }}</td>
                             <td>{{ $opportunity_area->recommendation }}</td>
                             <td class="text-center fw-bold {{ $opportunity_area->tracing == 0 ? 'text-warning' : ($opportunity_area->tracing == 1 ? 'text-primary' : 'text-success')  }}">{{ $opportunity_area->getTracing() }}</td>
                             <td class="text-center fw-bold {{ $opportunity_area->status == 0 ? 'text-success' : 'text-danger'  }}"">{{ $opportunity_area->getStatus() }}</td>
-                            <td class="text-center">
+                            <td>
                                 <a class="btn btn-info btn-sm" href="">
                                     <i class="bi bi-eye-fill"></i> {{ __('buttons.show') }}
                                 </a>

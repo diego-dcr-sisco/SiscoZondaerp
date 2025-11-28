@@ -326,7 +326,7 @@
                                                     </a>
                                                 </td>
                                                 <td>{{ $file->expirated_at ?? '-' }}</td>
-                                                <td class="text-center">
+                                                <td>
                                                     <a href="{{ route('user.file.destroy', ['fileId' => $file->id]) }}" class="btn btn-danger btn-sm" onclick="return confirm('Estas seguro de eliminar el archivo?')">
                                                         <i class="bi bi-trash-fill"></i>
                                                     </a>

@@ -113,7 +113,7 @@
                     <td>${question.text}</td>
                     <td>${question.options}</td>
                     <td>${question.answer_default}</td>
-                    <td class="text-center">
+                    <td>
                         <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar pregunta"
                             onclick="deleteQuestion('${question.key}')">
                             <i class="bi bi-trash-fill"></i>

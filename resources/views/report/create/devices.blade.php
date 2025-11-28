@@ -66,7 +66,7 @@
                                 @endforeach     
                             </ul>
                         </td>
-                        <td class="text-center">
+                        <td>
                             <span id="device{{ $device['id'] }}-is_checked"
                                 class="{{ $device['states']['is_checked'] ? 'text-success' : 'text-danger' }} m-1"
                                 data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip"
@@ -81,7 +81,7 @@
                                 <i class="bi bi-qr-code"></i>
                             </span>
                         </td>
-                        <td class="text-center">
+                        <td>
                                 <button type="button" class="btn btn-secondary btn-sm"
                                     data-device="{{ json_encode($device) }}"
                                     onclick="openReviewModal(this, {{ $service->id }})">

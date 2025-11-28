@@ -107,7 +107,7 @@
                                 {{ $warehouse->products_count }}
                             </td>
                             @if ($hasActionPermission)
-                                <td class="text-center">
+                                <td>
                                     <a href="{{ route('stock.show', ['id' => $warehouse->id]) }}"
                                         class="btn btn-info btn-sm" data-bs-toggle="tooltip" title="Ver almacén">
                                         <i class="bi bi-eye-fill"></i>

@@ -204,7 +204,7 @@
                             <td class="fw-bold {{ $statusColors[$order->status_id] ?? $statusColors['default'] }}">
                                 {{ $order->status->name ?? '' }}
                             </td>
-                            <td class="text-center">
+                            <td>
                                 @can('write_order')
                                     <button class="btn btn-warning btn-sm" data-order="{{ $order }}"
                                         onclick="openModal(this)" data-bs-toggle="tooltip" data-bs-placement="top"

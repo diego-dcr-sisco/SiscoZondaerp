@@ -136,7 +136,7 @@
 
                         <!-- Acciones -->
 
-                        <td class="text-center">
+                        <td>
                             <a href="{{ route('lot.edit', $lot->id) }}" class="btn btn-secondary btn-sm"
                                 title="Editar lote">
                                 <i class="bi bi-pencil-square"></i>

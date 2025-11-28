@@ -19,7 +19,7 @@
                 <td>{{ $branch->phone }}</td>
                 <td>{{ $branch->city }}</td>
                 <td>{{ $branch->license_number }}</td>
-                <td class="text-center">
+                <td>
                     <a href="{{ route('branch.edit', ['id' => $branch->id, 'section' => 1]) }}"
                         class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                         title="Editar sucursal"><i class="bi bi-pencil-square"></i></a>

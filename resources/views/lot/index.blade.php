@@ -209,7 +209,7 @@
                             </td>
 
                             <!-- Acciones -->
-                            <td class="text-center">
+                            <td>
                                 <a class="btn btn-info btn-sm"
                                     href="{{ route('lot.traceability', $lot->id) }}"
                                     title="Ver">

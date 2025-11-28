@@ -111,7 +111,7 @@
                                 <td class="{{ $ic->getStatusTextColorAttribute()['color'] }} fw-bold"> {{ $ic->status }} </td>
                                 <td> ${{ $ic->credit_limit ?? '0' }} </td>
                                 <td> {{ $ic->credit_days ?? '-' }} </td>
-                                <td class="text-center">
+                                <td>
                                     <a href="{{  route('invoices.customer.edit', ['id' => $ic->id])  }}" class="btn btn-secondary btn-sm"><i class="bi bi-pencil-square"></i></a>
                                     <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="tooltip"
                                         data-bs-placement="top" data-bs-custom-class="custom-tooltip"

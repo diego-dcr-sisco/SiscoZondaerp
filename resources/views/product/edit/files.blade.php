@@ -50,7 +50,7 @@
                                 </td>
                                 <td>{{ $file->updated_at ? Carbon\Carbon::parse($file->updated_at)->format('d-m-Y H:i:s') : '-' }}
                                 </td>
-                                <td class="text-center">
+                                <td>
                                     <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal"
                                         data-bs-target="#filesModal" onclick="setFileId({{ $file->id }})">
                                         <i class="bi bi-pencil-square"></i>

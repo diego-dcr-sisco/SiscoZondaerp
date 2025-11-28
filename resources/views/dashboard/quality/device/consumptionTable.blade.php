@@ -111,7 +111,7 @@
                                     $val = (float)($row[$day] ?? 0);
                                     $badge = getBadgeClass($val); // Llamada a la función local
                                 @endphp
-                                <td class="text-center">
+                                <td>
                                     <span class="badge {{ $badge }}">{{ number_format($val, 2) }}</span>
                                 </td>
                             @endforeach
@@ -156,7 +156,7 @@
                                     $val = (float)($row[$week] ?? 0);
                                     $badge = getBadgeClass($val); 
                                 @endphp
-                                <td class="text-center">
+                                <td>
                                     <span class="badge {{ $badge }}">{{ number_format($val, 2) }}</span>
                                 </td>
                             @endforeach

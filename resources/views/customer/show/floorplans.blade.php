@@ -49,7 +49,7 @@
                                         ? $floorplan->devices($floorplan->versions()->latest()->first()->version)->get()->count()
                                         : 0 }}</span>
                             </td>
-                            <td class="text-center">
+                            <td>
                                 <a class="btn btn-sm btn-secondary"
                                     href="{{ route('floorplan.edit', ['id' => $floorplan->id]) }}" data-bs-toggle="tooltip"
                                     data-bs-placement="top" data-bs-title="Editar plano">

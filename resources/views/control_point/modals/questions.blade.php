@@ -25,7 +25,7 @@
                                 <td><input type="radio" name="option_id" value="{{ $option->id }}"
                                         onchange="handleOption()">
                                     {{ $option->value }} </td>
-                                <td class="text-center">{{ $option->description }} </td>
+                                <td>{{ $option->description }} </td>
                             </tr>
                         @endforeach
                     </tbody>

@@ -50,7 +50,7 @@
                                 <td>{{ $payroll->days_paid }} días</td>
                                 <td>{{ $payroll->department ?? 'N/A' }}</td>
                                 <td>{{ $payroll->position ?? 'N/A' }}</td>
-                                <td class="text-center">
+                                <td>
                                     <a href="{{ route('payrolls.show', ['id' => $payroll->id]) }}"
                                         class="btn btn-sm btn-info"><i class="bi bi-eye-fill"></i></a>
                                     <a href="{{ route('payrolls.edit', ['id' => $payroll->id]) }}"

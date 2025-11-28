@@ -91,7 +91,7 @@
                             </td>
                             <td>{{ $point->product->purpose->type ?? '-' }}</td>
                             <td>{{ count($point->questions) }}</td>
-                            <td class="text-center">
+                            <td>
                                 <a href="{{ route('point.edit', ['id' => $point->id]) }}"
                                     class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                                     title="Editar punto de control">

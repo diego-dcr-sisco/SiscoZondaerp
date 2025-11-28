@@ -98,7 +98,7 @@
                             <td>{{ $pest->name ?? '-' }}</td>
                             <td>{{ $pest->pest_code ?? '-' }}</td>
                             <td>{{ $pest->pestCategory->category ?? '-' }}</td>
-                            <td class="text-center">
+                            <td>
                                 <a href="{{ route('pest.edit', ['id' => $pest->id]) }}" class="btn btn-secondary btn-sm"
                                     data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Editar plaga"><i
                                         class="bi bi-pencil-square"></i></a>

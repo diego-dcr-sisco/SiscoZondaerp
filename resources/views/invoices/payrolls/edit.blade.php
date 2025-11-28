@@ -606,7 +606,7 @@
                         <input type="number" class="form-control form-control-sm perception-total" 
                             value="${perceptionData.total || 0}" step="0.01" min="0" readonly>
                     </td>
-                    <td class="text-center">
+                    <td>
                         <button type="button" class="btn btn-sm btn-danger remove-perception-btn" 
                                 data-perception-id="${perceptionId}">
                             <i class="bi bi-trash-fill"></i>
@@ -670,7 +670,7 @@
                         <input type="number" class="form-control form-control-sm deduction-amount" 
                             value="${deductionData.amount || 0}" step="0.01" min="0" required>
                     </td>
-                    <td class="text-center">
+                    <td>
                         <button type="button" class="btn btn-sm btn-danger remove-deduction-btn" 
                                 data-deduction-id="${deductionId}">
                             <i class="bi bi-trash-fill"></i>
@@ -729,7 +729,7 @@
                         <input type="number" class="form-control form-control-sm other-payment-subsidy" 
                             value="${otherPaymentData.subsidy || 0}" step="0.01" min="0">
                     </td>
-                    <td class="text-center">
+                    <td>
                         <button type="button" class="btn btn-sm btn-danger remove-other-payment-btn" 
                                 data-other-payment-id="${otherPaymentId}">
                             <i class="bi bi-trash-fill"></i>
@@ -800,7 +800,7 @@
                         <input type="number" class="form-control form-control-sm perception-total" 
                             value="0" step="0.01" min="0" readonly>
                     </td>
-                    <td class="text-center">
+                    <td>
                         <button type="button" class="btn btn-sm btn-danger remove-perception-btn" 
                                 data-perception-id="${perceptionId}">
                             <i class="bi bi-trash-fill"></i>
@@ -860,7 +860,7 @@
                         <input type="number" class="form-control form-control-sm deduction-amount" 
                             value="0" step="0.01" min="0" required>
                     </td>
-                    <td class="text-center">
+                    <td>
                         <button type="button" class="btn btn-sm btn-danger remove-deduction-btn" 
                                 data-deduction-id="${deductionId}">
                             <i class="bi bi-trash-fill"></i>
@@ -915,7 +915,7 @@
                         <input type="number" class="form-control form-control-sm other-payment-subsidy" 
                             value="0" step="0.01" min="0">
                     </td>
-                    <td class="text-center">
+                    <td>
                         <button type="button" class="btn btn-sm btn-danger remove-other-payment-btn" 
                                 data-other-payment-id="${otherPaymentId}">
                             <i class="bi bi-trash-fill"></i>

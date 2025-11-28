@@ -151,7 +151,7 @@
                                                                 : 'text-secondary')) }}">
                                  {{ $spanish_status[$tracking->status] }}
                              </td>
-                             <td class="text-center">
+                             <td>
                                  <a href="{{ route('crm.tracking.edit', ['id' => $tracking->id]) }}"
                                      class="btn btn-sm btn-secondary"
                                      onclick="return confirm('📅 EDITAR Seguimiento\n\n¿Deseas reprogramar esta actividad?')"

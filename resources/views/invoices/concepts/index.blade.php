@@ -116,7 +116,7 @@
                                 <td> ${{ $concept->amount }} </td>
                                 <td> {{ $concept->tax_rate * 100 }}% </td>
                                 <td> {{ $concept->unit_name ? $unitCodes[$concept->unit_name] : '-' }} </td>
-                                <td class="text-center">
+                                <td>
                                     <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="tooltip"
                                         data-bs-placement="top" data-bs-custom-class="custom-tooltip"
                                         data-bs-title="Editar concepto" data-concept="{{ $concept }}" onclick="editConcept(this)"><i class="bi bi-pencil-square"></i></button>

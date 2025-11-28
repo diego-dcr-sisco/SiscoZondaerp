@@ -146,7 +146,7 @@
                         <td>
                             {{ $status[$invoice->status] ?? 'Desconocido' }}
                         </td>
-                        <td class="text-center">
+                        <td>
                             @if ($invoice->facturama_token)
                                 <a href="{{-- --}}" class="btn btn-warning btn-sm"
                                     data-bs-toggle="tooltip" title="Traspaso(s) (T - Traspaso)">
