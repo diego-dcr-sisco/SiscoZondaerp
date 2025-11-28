@@ -191,7 +191,7 @@
                         <table class="table table-bordered table-sm table-striped">
                             <thead>
                                 <tr>
-                                    <th class="" scope="col">Color</th>
+                                    <th class="col-1" scope="col">Color</th>
                                     <th scope="col">Tipo</th>
                                     <th scope="col">Código</th>
                                     <th class="col-2" scope="col">Área</th>
