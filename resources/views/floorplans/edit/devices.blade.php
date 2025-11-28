@@ -191,11 +191,11 @@
                         <table class="table table-bordered table-sm table-striped">
                             <thead>
                                 <tr>
-                                    <th class="col-1" scope="col">Color</th>
+                                    <th class="" scope="col">Color</th>
                                     <th scope="col">Tipo</th>
                                     <th scope="col">Código</th>
-                                    <th scope="col">Área</th>
-                                    <th scope="col">Producto</th>
+                                    <th class="col-2" scope="col">Área</th>
+                                    <th class="col-2" scope="col">Producto</th>
                                     <th scope="col">Cantidad</th>
                                     <th scope="col">Rangos</th>
                                 </tr>
