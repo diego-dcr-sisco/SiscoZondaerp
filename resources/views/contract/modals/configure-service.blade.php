@@ -622,33 +622,33 @@
                 ordersCount.text(orders.length);
 
                 const ordersHTML = orders.map(order => `
-        <tr>
-            <td>${order.folio || 'Sin folio'}</td>
-            <td>${formatDate(order.programmed_date)}</td>
-            <td>
-                <span class="fw-bold ${getStatusBadgeClass(order.status_id)}">
-                    ${order.status_name}
-                </span>
-            </td>
-            <td>
-                <a class="btn btn-sm btn-info" href="${order.url || '#'}" target="_blank" ${!order.url ? 'disabled' : ''} >
-                    <i class="bi bi-eye-fill"></i>
-                </a>
-                ${order.status_id == 1 ? 
-                    `<button class="btn btn-sm btn-secondary" onclick="editOrder(${order.id}, '${order.programmed_date}', ${configId})"
-                                                                                                                        data-bs-toggle="tooltip"    
-                                                                                                                        data-bs-title="This top tooltip is themed via CSS variables.">
-                                                                                                                        <i class="bi bi-calendar2-check-fill"></i>
-                                                                                                                    </button>
-                                                                                                                    <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
-                                                                                                                        <i class="bi bi-trash-fill"></i>
-                                                                                                                    </button>` 
-                    : 
-                    `<span class="text-muted fw-bold">No editable</span>`
-                }
-            </td>
-        </tr>
-    `).join('');
+                <tr>
+                    <td>${order.folio || 'Sin folio'}</td>
+                    <td>${formatDate(order.programmed_date)}</td>
+                    <td>
+                        <span class="fw-bold ${getStatusBadgeClass(order.status_id)}">
+                            ${order.status_name}
+                        </span>
+                    </td>
+                    <td>
+                        <a class="btn btn-sm btn-info" href="${order.url || '#'}" target="_blank" ${!order.url ? 'disabled' : ''} >
+                            <i class="bi bi-eye-fill"></i>
+                        </a>
+                        ${order.status_id == 1 ? 
+                            `<button class="btn btn-sm btn-secondary" onclick="editOrder(${order.id}, '${order.programmed_date}', ${configId})"
+                                data-bs-toggle="tooltip"    
+                                data-bs-title="This top tooltip is themed via CSS variables.">
+                                <i class="bi bi-calendar2-check-fill"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>` 
+                            : 
+                            `<span class="text-muted fw-bold">No editable</span>`
+                        }
+                    </td>
+                </tr>
+            `).join('');
 
                 ordersTable.html(ordersHTML);
             }
@@ -725,8 +725,9 @@
                 const statusClasses = {
                     1: 'text-warning', // Pendiente
                     2: 'text-info', // En proceso
-                    3: 'text-success', // Completado
-                    4: 'text-danger' // Cancelado
+                    3: 'text-primary', // Completado
+                    5: 'text-success', // Aceptarlo
+                    6: 'text-danger' // Cancelado
                 };
                 return statusClasses[statusId] || 'bg-secondary';
             }
