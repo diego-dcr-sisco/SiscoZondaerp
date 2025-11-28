@@ -110,7 +110,7 @@
                                 </td>
                                 <td id="{{ $device->type_control_point_id }}">{{ $device->controlPoint->name }}
                                 </td>
-                                <td id="{{ $device->application_area_id }}">{{ $device->applicationArea->name }}
+                                <td id="{{ $device->application_area_id ?? 0 }}">{{ $device->applicationArea->name ?? '-' }}
                                 </td>
                                 <td>{{ $device->version }}</td>
                             </tr>

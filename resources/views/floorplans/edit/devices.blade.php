@@ -269,7 +269,7 @@
                                 <select class="form-select" id="point-size" name="point_size">
                                     <option value="6">Muy Pequeño (6px)</option>
                                     <option value="8">Pequeño (8px)</option>
-                                    <option value="10">Normal (10px)</option>
+                                    <option value="10" selected>Normal (10px)</option>
                                     <option value="12">Grande (12px)</option>
                                     <option value="16">Muy Grande (16px)</option>
                                 </select>
