@@ -903,7 +903,7 @@
                     html += `
                 <tr>
                     <td>
-                        <input type="color" class="form-control" style="height: 2em;" value="${s.color}" data-legend='${JSON.stringify(s)}' onchange="updateColor(this)" />
+                        <input type="color" class="form-control" style="height: 2em !important;" value="${s.color}" data-legend='${JSON.stringify(s)}' onchange="updateColor(this)" />
                     </td>
                     <td>${findPointName(s.point_id)}</td>
                     <td class="fw-bold text-primary">${findCode(s.point_id)}</td>
