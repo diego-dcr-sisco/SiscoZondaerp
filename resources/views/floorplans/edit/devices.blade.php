@@ -903,7 +903,15 @@
                     html += `
                 <tr>
                     <td>
-                        <input type="color" class="form-control" style="height: 2em !important;" value="${s.color}" data-legend='${JSON.stringify(s)}' onchange="updateColor(this)" />
+                        <input type="color" class="form-control" style="
+                            height: 2em !important; 
+                            width: 100% !important;
+                            min-height: 2em !important;
+                            max-height: 2em !important;
+                            padding: 0 !important;
+                            border: 1px solid #ccc !important;
+                            box-sizing: border-box !important;
+                        " value="${s.color}" data-legend='${JSON.stringify(s)}' onchange="updateColor(this)" />
                     </td>
                     <td>${findPointName(s.point_id)}</td>
                     <td class="fw-bold text-primary">${findCode(s.point_id)}</td>
