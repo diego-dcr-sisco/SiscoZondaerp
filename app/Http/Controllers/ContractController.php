@@ -523,6 +523,8 @@ class ContractController extends Controller
         //dd(json_decode($request->all()['configurations']));
         $updated_settings = [];
         $updated_orders = [];
+        $keep_settings = [];
+
         $has_services_updated = false;
         $configurations = json_decode($request->input('configurations'));
         $selected_technicians = json_decode($request->input('technicians'));
@@ -621,6 +623,10 @@ class ContractController extends Controller
                             }
                         }
 
+                        if($existing_order && $existing_order->status_id != 1) {
+                            $keep_settings[] = $existing_order->setting_id;
+                        }
+
                         /*$s_order = OrderService::where('order_id', $existing_order->id)
                             ->where('service_id', $data->service_id)
                             ->first();
@@ -638,6 +644,7 @@ class ContractController extends Controller
 
         $delete_settings = ContractService::where('contract_id', $contract->id)
             ->whereNotIn('id', $updated_settings)
+            ->whereNotIn('id', $keep_settings)
             ->whereIn('service_id', $updated_services)
             ->get();
 
