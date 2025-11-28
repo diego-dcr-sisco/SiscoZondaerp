@@ -404,6 +404,7 @@
             $(document).ready(function() {
                 resetInputs();
                 setDevices();
+                resizePointsToNewCanvas();
             });
 
             function resetInputs() {
@@ -1148,6 +1149,62 @@
                 });
 
                 canvas.renderAll();
+            }
+
+            // FUNCIÓN PARA OBTENER DIMENSIONES ORIGINALES DEL CANVAS
+            function getOriginalCanvasDimensions() {
+                const isWide = img_sizes[0] > img_sizes[1];
+                const width = isWide ? 1100 : 800;
+                const height = isWide ? 800 : 1100;
+
+                return [width, height];
+            }
+
+            // FUNCIÓN PARA REAJUSTAR PUNTOS A NUEVAS DIMENSIONES
+            function resizePointsToNewCanvas() {
+                // Obtener dimensiones originales y actuales
+                const [originalWidth, originalHeight] = getOriginalCanvasDimensions();
+                const currentWidth = canvas.getWidth();
+                const currentHeight = canvas.getHeight();
+
+                // Si las dimensiones no han cambiado, no hacer nada
+                if (originalWidth === currentWidth && originalHeight === currentHeight) {
+                    console.log('Las dimensiones del canvas no han cambiado');
+                    return;
+                }
+
+                // Calcular factores de escala
+                const scaleX = currentWidth / originalWidth;
+                const scaleY = currentHeight / originalHeight;
+
+                console.log(`Reajustando puntos de ${originalWidth}x${originalHeight} a ${currentWidth}x${currentHeight}`);
+                console.log(`Factores de escala: X=${scaleX.toFixed(4)}, Y=${scaleY.toFixed(4)}`);
+
+                // Actualizar todos los puntos en el array y en el canvas
+                points.forEach(point => {
+                    // Escalar las coordenadas
+                    const newX = point.x * scaleX;
+                    const newY = point.y * scaleY;
+
+                    // Actualizar el punto en el array
+                    point.x = newX;
+                    point.y = newY;
+
+                    // Buscar y actualizar el objeto visual en el canvas
+                    canvas.getObjects().forEach(obj => {
+                        if (obj.type === 'group' && obj.metadata && obj.metadata.index === point.index) {
+                            obj.set({
+                                left: newX,
+                                top: newY
+                            });
+                            obj.setCoords(); // Actualizar coordenadas para interacción
+                        }
+                    });
+                });
+
+                // Renderizar los cambios
+                canvas.renderAll();
+                console.log(`Puntos reajustados: ${points.length}`);
             }
         </script>
 
