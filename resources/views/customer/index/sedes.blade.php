@@ -21,13 +21,17 @@
                         @csrf
                         <input type="hidden" id="customer-type" name="customer_type" value="2">
                         <div class="row g-3 mb-0">
-                            <div class="col-lg-6 col-12">
+                            <div class="col-lg-4">
                                 <label for="customer" class="form-label">Nombre</label>
                                 <input type="text" class="form-control form-control-sm" id="name" name="name"
                                     value="{{ request('name') }}" placeholder="Buscar nombre">
                             </div>
-
-                            <div class="col-auto">
+                            <div class="col-lg-2">
+                                <label for="code" class="form-label">Código</label>
+                                <input type="text" class="form-control form-control-sm" id="code" name="code"
+                                    value="{{ request('code') }}" placeholder="Buscar por código (#)">
+                            </div>
+                            <div class="col-lg-2">
                                 <label for="date_range" class="form-label">Tipo</label>
                                 <select class="form-select form-select-sm" name="service_type">
                                     <option value="">Todos</option>
@@ -40,8 +44,8 @@
                                 </select>
                             </div>
 
-                            <div class="col-auto">
-                                <label for="time" class="form-label">Categoria</label>
+                            <div class="col-lg-2">
+                                <label for="time" class="form-label">Categoría</label>
                                 <select class="form-select form-select-sm" name="category">
                                     @foreach ($categories as $key => $category)
                                         <option value="{{ $key }}"
@@ -52,7 +56,7 @@
                                 </select>
                             </div>
 
-                            <div class="col-auto">
+                            <div class="col-lg-1">
                                 <label for="signature_status" class="form-label">Dirección</label>
                                 <select class="form-select form-select-sm" id="direction" name="direction">
                                     <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
@@ -63,7 +67,7 @@
                                 </select>
                             </div>
 
-                            <div class="col-auto">
+                            <div class="col-lg-1">
                                 <label for="order_type" class="form-label">Total</label>
                                 <select class="form-select form-select-sm" id="size" name="size">
                                     <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
@@ -75,8 +79,8 @@
                             </div>
 
                             <!-- Botones -->
-                            <div class="col-lg-12 d-flex justify-content-end m-0">
-                                <button type="submit" class="btn btn-primary btn-sm me-2">
+                            <div class="col-lg-12 d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary btn-sm">
                                     <i class="bi bi-funnel-fill"></i> Filtrar
                                 </button>
                             </div>

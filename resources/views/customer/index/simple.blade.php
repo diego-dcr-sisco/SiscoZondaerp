@@ -9,7 +9,7 @@
             @endcan
         </div>
 
-        <div class="border rounded-top p-2 text-dark bg-light">
+        <div class="border rounded text-dark bg-light p-2 mb-3">
             <form action="{{ route('customer.search') }}" method="GET">
                 @csrf
                 <input type="hidden" id="customer-type" name="customer_type" value="1">
@@ -22,7 +22,7 @@
                     <div class="col-lg-2">
                         <label for="code" class="form-label">Código</label>
                         <input type="text" class="form-control form-control-sm" id="code" name="code"
-                            value="{{ request('name') }}" placeholder="Buscar por código">
+                            value="{{ request('code') }}" placeholder="Buscar por código (#)">
                     </div>
                     <div class="col-lg-2">
                         <label for="date_range" class="form-label">Tipo</label>

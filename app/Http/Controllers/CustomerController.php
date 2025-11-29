@@ -405,7 +405,7 @@ class CustomerController extends Controller
 
     public function index(): View
     {
-        $customers = Customer::where('general_sedes', 0)->where('status', '!=', 0)->orderBy('id', 'desc')->paginate($this->size);
+        $customers = Customer::where('general_sedes', 0)->where('status', '!=', 0)->orderBy('name', 'desc')->paginate($this->size);
         $service_types = ServiceType::all();
 
         $categories = [
@@ -1086,6 +1086,11 @@ class CustomerController extends Controller
             });
         }
 
+        if($request->filled('code')) {
+            $searchTerm = '%' . $request->code . '%';
+            $query->where('code', 'LIKE', $searchTerm);
+        }
+
         // Filtro por tipo de servicio (solo para clientes)
         if ($request->filled('service_type')) {
             $query->where('service_type_id', $request->service_type);
@@ -1104,7 +1109,7 @@ class CustomerController extends Controller
         }
 
         // Ordenar y paginar
-        $customers = $query->orderBy('id', 'desc')
+        $customers = $query->orderBy('name', 'desc')
             ->paginate($this->size)
             ->appends($request->query());
 
