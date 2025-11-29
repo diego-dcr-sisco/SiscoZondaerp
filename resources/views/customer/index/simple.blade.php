@@ -79,8 +79,8 @@
                             </div>
 
                             <!-- Botones -->
-                            <div class="col-lg-12 d-flex justify-content-end m-0">
-                                <button type="submit" class="btn btn-primary btn-sm me-2">
+                            <div class="col-lg-12 d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary btn-sm">
                                     <i class="bi bi-funnel-fill"></i> Filtrar
                                 </button>
                             </div>
