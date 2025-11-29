@@ -9,84 +9,84 @@
             @endcan
         </div>
 
+        <div class="border rounded-top p-2 text-dark bg-light">
+            <form action="{{ route('customer.search') }}" method="GET">
+                @csrf
+                <input type="hidden" id="customer-type" name="customer_type" value="1">
+                <div class="row g-3 mb-0">
+                    <div class="col-lg-4">
+                        <label for="customer" class="form-label">Nombre</label>
+                        <input type="text" class="form-control form-control-sm" id="name" name="name"
+                            value="{{ request('name') }}" placeholder="Buscar nombre">
+                    </div>
+                    <div class="col-lg-2">
+                        <label for="code" class="form-label">Código</label>
+                        <input type="text" class="form-control form-control-sm" id="code" name="code"
+                            value="{{ request('name') }}" placeholder="Buscar por código">
+                    </div>
+                    <div class="col-lg-2">
+                        <label for="date_range" class="form-label">Tipo</label>
+                        <select class="form-select form-select-sm" name="service_type">
+                            <option value="">Todos</option>
+                            @foreach ($service_types as $service_type)
+                                <option value="{{ $service_type->id }}"
+                                    {{ request('service_type') == $service_type->id ? 'selected' : '' }}>
+                                    {{ $service_type->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-lg-2">
+                        <label for="time" class="form-label">Categoría</label>
+                        <select class="form-select form-select-sm" name="category">
+                            @foreach ($categories as $key => $category)
+                                <option value="{{ $key }}"
+                                    {{ request('category') == $key || $key == 1 ? 'selected' : '' }}>
+                                    {{ $category }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-lg-1">
+                        <label for="signature_status" class="form-label">Dirección</label>
+                        <select class="form-select form-select-sm" id="direction" name="direction">
+                            <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
+                                DESC
+                            </option>
+                            <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-lg-1">
+                        <label for="order_type" class="form-label">Total</label>
+                        <select class="form-select form-select-sm" id="size" name="size">
+                            <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
+                            <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
+                            <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
+                            <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
+                            <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
+                        </select>
+                    </div>
+
+                    <!-- Botones -->
+                    <div class="col-lg-12 d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-funnel-fill"></i> Filtrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
 
         <div class="table-responsive">
             <!-- Tabla de clientes -->
-            <table class="table table-sm table-bordered table-striped caption-top">
+            <table class="table table-sm table-bordered table-striped">
                 @php
                     $offset = ($customers->currentPage() - 1) * $customers->perPage();
                 @endphp
-                <caption class="border rounded-top p-2 text-dark bg-light">
-                    <form action="{{ route('customer.search') }}" method="GET">
-                        @csrf
-                        <input type="hidden" id="customer-type" name="customer_type" value="1">
-                        <div class="row g-3 mb-0">
-                            <div class="col-lg-4">
-                                <label for="customer" class="form-label">Nombre</label>
-                                <input type="text" class="form-control form-control-sm" id="name" name="name"
-                                    value="{{ request('name') }}" placeholder="Buscar nombre">
-                            </div>
-                            <div class="col-lg-2">
-                                <label for="code" class="form-label">Código</label>
-                                <input type="text" class="form-control form-control-sm" id="code" name="code"
-                                    value="{{ request('name') }}" placeholder="Buscar por código">
-                            </div>
-                            <div class="col-lg-2">
-                                <label for="date_range" class="form-label">Tipo</label>
-                                <select class="form-select form-select-sm" name="service_type">
-                                    <option value="">Todos</option>
-                                    @foreach ($service_types as $service_type)
-                                        <option value="{{ $service_type->id }}"
-                                            {{ request('service_type') == $service_type->id ? 'selected' : '' }}>
-                                            {{ $service_type->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-lg-2">
-                                <label for="time" class="form-label">Categoría</label>
-                                <select class="form-select form-select-sm" name="category">
-                                    @foreach ($categories as $key => $category)
-                                        <option value="{{ $key }}"
-                                            {{ request('category') == $key || $key == 1 ? 'selected' : '' }}>
-                                            {{ $category }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-lg-1">
-                                <label for="signature_status" class="form-label">Dirección</label>
-                                <select class="form-select form-select-sm" id="direction" name="direction">
-                                    <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
-                                        DESC
-                                    </option>
-                                    <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="col-lg-1">
-                                <label for="order_type" class="form-label">Total</label>
-                                <select class="form-select form-select-sm" id="size" name="size">
-                                    <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
-                                    <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
-                                    <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
-                                    <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
-                                    <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
-                                </select>
-                            </div>
-
-                            <!-- Botones -->
-                            <div class="col-lg-12 d-flex justify-content-end">
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-funnel-fill"></i> Filtrar
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </caption>
                 <thead>
                     <tr>
                         <th class="fw-bold" scope="col">#</th>
