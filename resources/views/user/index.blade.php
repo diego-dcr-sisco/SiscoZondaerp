@@ -9,7 +9,7 @@
                 @endcan
             </div>
 
-            
+
             <div class="table-responsive">
                 <table class="table table-sm table-bordered table-striped caption-top">
                     <caption class="border rounded-top p-2 text-dark bg-light">
@@ -116,21 +116,19 @@
                                     class="fw-bold {{ $user->status->id == 2 ? 'text-success' : ($user->status->id == 3 ? 'text-danger' : 'text-warning') }}">
                                     {{ $user->status->name }} </td>
                                 <td>
-                                    <div class="text-center" role="group" aria-label="Basic example">
-                                        @can('write_user')
-                                            <a href="{{ $user->role_id != 5 ? route('user.edit', ['id' => $user->id]) : route('user.edit.client', ['id' => $user->id]) }}"
-                                                class="btn btn-secondary btn-sm" data-bs-toggle="tooltip"
-                                                data-bs-placement="top" title="Editar usuario">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </a>
-                                            <a href="{{ route('user.destroy', ['id' => $user->id]) }}"
-                                                onclick="return confirm('¿Estás seguro de eliminar este usuario?');"
-                                                class="btn btn-danger btn-sm" data-bs-toggle="tooltip"
-                                                data-bs-placement="top" title="Eliminar usuario">
-                                                <i class="bi bi-trash-fill"></i>
-                                            </a>
-                                        @endcan
-                                    </div>
+                                    @can('write_user')
+                                        <a href="{{ $user->role_id != 5 ? route('user.edit', ['id' => $user->id]) : route('user.edit.client', ['id' => $user->id]) }}"
+                                            class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            title="Editar usuario">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <a href="{{ route('user.destroy', ['id' => $user->id]) }}"
+                                            onclick="return confirm('¿Estás seguro de eliminar este usuario?');"
+                                            class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            title="Eliminar usuario">
+                                            <i class="bi bi-trash-fill"></i>
+                                        </a>
+                                    @endcan
                                 </td>
                             </tr>
                         @endforeach
