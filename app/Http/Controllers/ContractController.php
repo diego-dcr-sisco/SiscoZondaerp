@@ -231,9 +231,9 @@ class ContractController extends Controller
         $direction = $request->input('direction', 'DESC');
         $query = Contract::query();
 
-        if ($request->name) {
+        if ($request->filled('customer')) {
             $customers = Customer::where('name', 'LIKE', '%' . $request->name . '%')->get();
-            $query = $query->whereIn('id', $customers->pluck('id'));
+            $query = $query->whereIn('customer_id', $customers->pluck('id'));
         }
 
         if ($request->filled('date_range')) {

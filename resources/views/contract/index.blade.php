@@ -43,7 +43,7 @@
                         <div class="row g-3 mb-0">
                             <div class="col-lg-4 col-12">
                                 <label for="customer" class="form-label">Cliente</label>
-                                <input type="text" class="form-control form-control-sm" id="name" name="name"
+                                <input type="text" class="form-control form-control-sm" id="customer" name="customer"
                                     value="{{ request('name') }}" placeholder="Buscar nombre">
                             </div>
 
