@@ -288,7 +288,7 @@
                             </td>
                             <td>
                                 @can('write_order')
-                                    <div class="d-flex gap-2">
+                                    <div class="d-flex gap-1">
                                         <button class="btn btn-warning btn-sm" data-order="{{ $order }}"
                                             onclick="openModal(this)" data-bs-toggle="tooltip" data-bs-placement="top"
                                             data-bs-title="Firmar orden">
