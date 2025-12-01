@@ -574,7 +574,7 @@
                         'noscript'], // Etiquetas prohibidas (se eliminan con su contenido)
                         badAttributes: ['style', 'start', 'dir',
                             'class'] // Atributos prohibidos (se eliminan de las etiquetas restantes)
-                    }
+                    },
 
                     callbacks: {
                         onPaste: function(e) {
