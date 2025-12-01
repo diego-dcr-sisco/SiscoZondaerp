@@ -15,8 +15,9 @@ class DatabaseLog extends Model
      * @var array
      */
 
-     protected $table = 'database_log';
-     
+     //protected $table = 'database_log_siscoplagas';
+     protected $table = 'database_log_siscoplagas';
+
     protected $fillable = [
         'user_id',
         'model_type',

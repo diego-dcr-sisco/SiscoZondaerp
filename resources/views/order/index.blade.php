@@ -124,6 +124,7 @@
                         <div class="col-lg-3">
                             <label for="technician" class="form-label">Técnico asignado</label>
                             <select class="form-select form-select-sm" id="technician" name="technician">
+                                <option value="">Todos</option>
                                 @foreach ($technicians as $technician)
                                     <option value="{{ $technician->id }}"
                                         {{ request('technician') == $technician->id ? 'selected' : '' }}>

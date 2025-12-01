@@ -1052,7 +1052,7 @@
                             device.application_area_id,
                             device.product_id,
                             device.color,
-                            device.code
+                            device.code,
                         );
                     })
                     createLegend();
