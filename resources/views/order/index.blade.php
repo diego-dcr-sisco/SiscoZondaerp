@@ -254,7 +254,7 @@
                                     value="{{ $order->id }}" id="checkbox-order-{{ $order->id }}" />
                             </td>
                             <td class="text-decoration-underline" scope="row">{{ $offset + $index + 1 }}</td>
-                            <td><span class="fw-bold text-decoration-underline">{{ $order->customer->name }}</span>
+                            <td><span class="fw-bold text-decoration-underline">{{ $order->customer->name ?? '-' }}</span>
                                 ({{ $order->folio }})
                             </td>
                             <td class="fw-bold text-decoration-underline">{{ $order->id }}</td>
