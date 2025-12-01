@@ -254,7 +254,8 @@
                                     value="{{ $order->id }}" id="checkbox-order-{{ $order->id }}" />
                             </td>
                             <td class="text-decoration-underline" scope="row">{{ $offset + $index + 1 }}</td>
-                            <td><span class="fw-bold text-decoration-underline">{{ $order->customer->name ?? '-' }}</span>
+                            <td><span
+                                    class="fw-bold text-decoration-underline">{{ $order->customer->name ?? 'Cliente Desconocido' }}</span>
                                 ({{ $order->folio }})
                             </td>
                             <td class="fw-bold text-decoration-underline">{{ $order->id }}</td>
@@ -287,53 +288,57 @@
                             </td>
                             <td>
                                 @can('write_order')
-                                    <button class="btn btn-warning btn-sm" data-order="{{ $order }}"
-                                        onclick="openModal(this)" data-bs-toggle="tooltip" data-bs-placement="top"
-                                        data-bs-title="Firmar orden">
-                                        <i class="bi bi-pen-fill"></i>
-                                    </button>
-                                    <a href="{{ Route('tracking.create.order', ['id' => $order->id]) }}"
-                                        class="btn btn-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                        data-bs-title="Seguimiento de la orden">
-                                        <i class="bi bi-person-fill-gear"></i>
-                                    </a>
-                                    <a class="btn btn-secondary btn-sm"
-                                        href="{{ route('order.edit', ['id' => $order->id]) }}" data-bs-toggle="tooltip"
-                                        data-bs-placement="top" data-bs-title="Editar orden">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    <a class="btn btn-dark btn-sm" href="{{ route('report.review', ['id' => $order->id]) }}"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Generar reporte">
-                                        <i class="bi bi-file-pdf-fill"></i>
-                                    </a>
-                                    @if ($order->invoice)
-                                        <a class="btn btn-success btn-sm"
-                                            href="{{ route('invoices.show', ['id' => $order->invoice->id]) }}"
-                                            data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Ver factura">
-                                            <i class="bi bi-file-earmark-text-fill"></i>
+                                    <div class="d-flex gap-2">
+                                        <button class="btn btn-warning btn-sm" data-order="{{ $order }}"
+                                            onclick="openModal(this)" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            data-bs-title="Firmar orden">
+                                            <i class="bi bi-pen-fill"></i>
+                                        </button>
+                                        <a href="{{ Route('tracking.create.order', ['id' => $order->id]) }}"
+                                            class="btn btn-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            data-bs-title="Seguimiento de la orden">
+                                            <i class="bi bi-person-fill-gear"></i>
                                         </a>
-                                    @else
-                                        <a class="btn btn-success btn-sm"
-                                            href="{{ route('invoices.create', ['order_id' => $order->id]) }}"
-                                            data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Crear factura">
-                                            <i class="bi bi-file-earmark-plus-fill"></i>
+                                        <a class="btn btn-secondary btn-sm"
+                                            href="{{ route('order.edit', ['id' => $order->id]) }}" data-bs-toggle="tooltip"
+                                            data-bs-placement="top" data-bs-title="Editar orden">
+                                            <i class="bi bi-pencil-square"></i>
                                         </a>
-                                    @endif
-                                    @if ($order->status_id != 6)
-                                        <a href="{{ route('order.destroy', ['id' => $order->id]) }}"
-                                            class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                            data-bs-title="Cancelar orden"
-                                            onclick="return confirm('{{ __('messages.are_you_sure') }}')">
-                                            <i class="bi bi-x-lg"></i>
+                                        <a class="btn btn-dark btn-sm"
+                                            href="{{ route('report.review', ['id' => $order->id]) }}"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Generar reporte">
+                                            <i class="bi bi-file-pdf-fill"></i>
                                         </a>
+                                        @if ($order->invoice)
+                                            <a class="btn btn-success btn-sm"
+                                                href="{{ route('invoices.show', ['id' => $order->invoice->id]) }}"
+                                                data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Ver factura">
+                                                <i class="bi bi-file-earmark-text-fill"></i>
+                                            </a>
+                                        @else
+                                            <a class="btn btn-success btn-sm"
+                                                href="{{ route('invoices.create', ['order_id' => $order->id]) }}"
+                                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                                data-bs-title="Crear factura">
+                                                <i class="bi bi-file-earmark-plus-fill"></i>
+                                            </a>
+                                        @endif
+                                        @if ($order->status_id != 6)
+                                            <a href="{{ route('order.destroy', ['id' => $order->id]) }}"
+                                                class="btn btn-danger btn-sm" data-bs-toggle="tooltip"
+                                                data-bs-placement="top" data-bs-title="Cancelar orden"
+                                                onclick="return confirm('{{ __('messages.are_you_sure') }}')">
+                                                <i class="bi bi-x-lg"></i>
+                                            </a>
 
-                                        {{-- <a href="{{ route('order.destroy', ['id' => $order->id]) }}"
+                                            {{-- <a href="{{ route('order.destroy', ['id' => $order->id]) }}"
                                     class="btn btn-outline-danger "
                                     onclick="return confirm('{{ __('messages.are_you_sure') }}')">
                                     <i class="bi bi-trash-fill"></i>
                                 </a> --}}
-                                    @endif
-                                @endcan
+                                        @endif
+                                    @endcan
+                                </div>
                             </td>
                         </tr>
                     @endforeach
