@@ -562,13 +562,27 @@
                     fontSize: ['8', '10', '12', '14', '16'],
                     lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
 
+                    cleaner: {
+                        action: 'both', // 'both' | 'button' | 'paste'
+                        newline: '<br>', // Formato para saltos de línea
+                        notStyle: 'position:absolute;top:0;left:0;right:0', // Estilo de notificación
+                        keepHtml: true, // Activa el modo de "lista blanca" (whitelist)
+                        keepOnlyTags: ['<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>',
+                        '<strong>'], // Etiquetas permitidas
+                        keepClasses: false, // Remueve todas las clases CSS
+                        badTags: ['style', 'script', 'applet', 'embed', 'noframes',
+                        'noscript'], // Etiquetas prohibidas (se eliminan con su contenido)
+                        badAttributes: ['style', 'start', 'dir',
+                            'class'] // Atributos prohibidos (se eliminan de las etiquetas restantes)
+                    }
+
                     callbacks: {
                         onPaste: function(e) {
                             var thisNote = $(this);
                             var updatePaste = function() {
                                 // Get the current HTML code FROM the Summernote editor
                                 var original = thisNote.summernote('code');
-                                var cleaned = cleanPaste(original);
+                                var cleaned = original;
                                 // Set the cleaned code BACK to the editor
                                 thisNote.summernote('code', cleaned);
                             };
@@ -635,13 +649,13 @@
                         </a>
                         ${order.status_id == 1 ? 
                             `<button class="btn btn-sm btn-secondary" onclick="editOrder(${order.id}, '${order.programmed_date}', ${configId})"
-                                        data-bs-toggle="tooltip"    
-                                        data-bs-title="This top tooltip is themed via CSS variables.">
-                                        <i class="bi bi-calendar2-check-fill"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>` 
+                                                data-bs-toggle="tooltip"    
+                                                data-bs-title="This top tooltip is themed via CSS variables.">
+                                                <i class="bi bi-calendar2-check-fill"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>` 
                             : 
                             `<span class="text-muted fw-bold">No editable</span>`
                         }
@@ -819,7 +833,8 @@
 
                     if ($has_orders) {
                         alert(
-                        'No se puede eliminar esta configuración porque tiene órdenes en estado diferente a "Pendiente".');
+                            'No se puede eliminar esta configuración porque tiene órdenes en estado diferente a "Pendiente".'
+                            );
                         return;
                     } else {
                         if (!confirm('Esta configuración tiene órdenes generadas. ¿Está seguro de que desea eliminarla?')) {
