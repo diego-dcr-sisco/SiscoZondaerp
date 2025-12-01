@@ -232,7 +232,7 @@ class ContractController extends Controller
         $query = Contract::query();
 
         if ($request->filled('customer')) {
-            $customers = Customer::where('name', 'LIKE', '%' . $request->name . '%')->get();
+            $customers = Customer::where('name', 'LIKE', '%' . $request->customer . '%')->get();
             $query = $query->whereIn('customer_id', $customers->pluck('id'));
         }
 

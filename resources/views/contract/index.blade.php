@@ -44,7 +44,7 @@
                             <div class="col-lg-4 col-12">
                                 <label for="customer" class="form-label">Cliente</label>
                                 <input type="text" class="form-control form-control-sm" id="customer" name="customer"
-                                    value="{{ request('name') }}" placeholder="Buscar nombre">
+                                    value="{{ request('customer') }}" placeholder="Buscar nombre">
                             </div>
 
                             <div class="col-lg-4 col-12">
