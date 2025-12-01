@@ -219,7 +219,7 @@
                         $(`#service-frequency-${config.config_id}`).val(config.frequency_id).trigger('change');
                         if (config.frequency_id == 3) {
                             $(`#service-interval-${config.config_id}`).val(config.interval_id).trigger(
-                            'change');
+                                'change');
                         }
                         $(`#service-days-${config.config_id}`).val(config.days);
                         if (config.frequency_id == 1) {
@@ -565,16 +565,15 @@
                     callbacks: {
                         onPaste: function(e) {
                             var thisNote = $(this);
-                            var updatePaste = function(someNote) {
-                                var original = someNote.code();
+                            var updatePaste = function() {
+                                // Get the current HTML code FROM the Summernote editor
+                                var original = thisNote.summernote('code');
                                 var cleaned = cleanPaste(original);
-                                someNote.code('').code(cleaned);
+                                // Set the cleaned code BACK to the editor
+                                thisNote.summernote('code', cleaned);
                             };
-
-                            // Espera a que Summernote procese el pegado
-                            setTimeout(function() {
-                                updatePaste(thisNote.summernote('code'));
-                            }, 10);
+                            // Wait for Summernote to process the paste
+                            setTimeout(updatePaste, 10);
                         },
 
                         onChange: function(contents) {
@@ -636,13 +635,13 @@
                         </a>
                         ${order.status_id == 1 ? 
                             `<button class="btn btn-sm btn-secondary" onclick="editOrder(${order.id}, '${order.programmed_date}', ${configId})"
-                                data-bs-toggle="tooltip"    
-                                data-bs-title="This top tooltip is themed via CSS variables.">
-                                <i class="bi bi-calendar2-check-fill"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
-                                <i class="bi bi-trash-fill"></i>
-                            </button>` 
+                                        data-bs-toggle="tooltip"    
+                                        data-bs-title="This top tooltip is themed via CSS variables.">
+                                        <i class="bi bi-calendar2-check-fill"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>` 
                             : 
                             `<span class="text-muted fw-bold">No editable</span>`
                         }
@@ -814,13 +813,15 @@
                     (c) => c.config_id == configId && c.service_id == service_id
                 );
 
-                if(c_config) {
-                    $has_orders = configurations.find(c => c.config_id == configId && c.orders && c.orders.length > 0 && c.orders.some(o => o.status_id != 1));
+                if (c_config) {
+                    $has_orders = configurations.find(c => c.config_id == configId && c.orders && c.orders.length > 0 && c
+                        .orders.some(o => o.status_id != 1));
 
                     if ($has_orders) {
-                        alert('No se puede eliminar esta configuración porque tiene órdenes en estado diferente a "Pendiente".');
+                        alert(
+                        'No se puede eliminar esta configuración porque tiene órdenes en estado diferente a "Pendiente".');
                         return;
-                    }else {
+                    } else {
                         if (!confirm('Esta configuración tiene órdenes generadas. ¿Está seguro de que desea eliminarla?')) {
                             return;
                         }
@@ -1051,12 +1052,12 @@
                 const generatedOrders = generateOrdersFromDates(dates, configId);
 
                 //if (!config) {
-                    config = {
-                        config_id: configId,
-                        service_id: $('#service-id').val(),
-                        orders: generatedOrders
-                    };
-                    configurations.push(config);
+                config = {
+                    config_id: configId,
+                    service_id: $('#service-id').val(),
+                    orders: generatedOrders
+                };
+                configurations.push(config);
                 //} else {
                 //    config.orders = generatedOrders;
                 //}
@@ -1377,7 +1378,8 @@
 
                     if (frequency_id !== 0 && days.trim() !== '') {
                         // Crear nueva configuración para este servicio
-                        const c_config = contract_configurations.find(c => c.config_id == configId && c.service_id == service_id) ?? null;
+                        const c_config = contract_configurations.find(c => c.config_id == configId && c.service_id ==
+                            service_id) ?? null;
                         const newConfig = {
                             config_id: configId,
                             setting_id: c_config ? c_config.setting_id : null,
@@ -1388,7 +1390,8 @@
                             interval_id: interval_id,
                             days: [days],
                             dates: configDates[configId] || [],
-                            orders: generateOrdersFromDates(configDates[configId] || [], configId, c_config ? c_config.orders : []),
+                            orders: generateOrdersFromDates(configDates[configId] || [], configId, c_config ?
+                                c_config.orders : []),
                             description: configDescriptions[configId] || null
                         };
 

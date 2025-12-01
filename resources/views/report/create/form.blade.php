@@ -355,17 +355,16 @@
             callbacks: {
                 onPaste: function(e) {
                     var thisNote = $(this);
-                    var updatePaste = function(someNote) {
-                        var original = someNote.code();
+                    var updatePaste = function() {
+                        // Get the current HTML code FROM the Summernote editor
+                        var original = thisNote.summernote('code');
                         var cleaned = cleanPaste(original);
-                        someNote.code('').code(cleaned);
+                        // Set the cleaned code BACK to the editor
+                        thisNote.summernote('code', cleaned);
                     };
-
-                    // Espera a que Summernote procese el pegado
-                    setTimeout(function() {
-                        updatePaste(thisNote.summernote('code'));
-                    }, 10);
-                }
+                    // Wait for Summernote to process the paste
+                    setTimeout(updatePaste, 10);
+                },
             }
 
         });
