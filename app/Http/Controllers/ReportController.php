@@ -461,7 +461,7 @@ class ReportController extends Controller
                 ],
                 'application_area' => [
                     'id' => $device->application_area_id,
-                    'name' => $device->applicationArea->name ?? 'Area Desconocida'
+                    'name' => $device->applicationArea->name ?? '-'
                 ],
                 'questions' => $questions_data,
                 'pests' => $device->pests($order->id)->map(function ($dp) {
@@ -1581,7 +1581,7 @@ class ReportController extends Controller
                     'code' => $device->code,
                     'nplan' => $device->nplan,
                     'version' => $device->version,
-                    'area' => $device->applicationArea->name ?? 'Area Desconocida',
+                    'area' => $device->applicationArea->name ?? '-',
                     'floorplan' => [
                         'id' => $device->floorplan_id,
                         'name' => $device->floorplan->filename
@@ -1637,7 +1637,7 @@ class ReportController extends Controller
                 ],
                 'application_area' => [
                     'id' => $device->application_area_id,
-                    'name' => $device->applicationArea->name ?? 'Area Desconocida'
+                    'name' => $device->applicationArea->name ?? '-'
                 ],
                 'questions' => $questions_data,
                 'pests' => $device->pests($order->id)->map(function ($dp) {

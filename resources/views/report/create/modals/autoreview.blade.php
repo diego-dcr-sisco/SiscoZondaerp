@@ -20,22 +20,45 @@
                                 <div class="accordion mb-3" id="accordionExample">
                                     <div class="accordion-item">
                                         <h2 class="accordion-header">
-                                            <button class="accordion-button collapsed bg-light" type="button" data-bs-toggle="collapse"
-                                                data-bs-target="#collapseOne" aria-expanded="false"
-                                                aria-controls="collapseOne">
+                                            <button class="accordion-button collapsed bg-light" type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#collapse-control-point{{ $autoreview['control_point_id'] }}"
+                                                aria-expanded="false"
+                                                aria-controls="collapse-control-point{{ $autoreview['control_point_id'] }}">
                                                 Dispositivos asignados
                                             </button>
                                         </h2>
-                                        <div id="collapseOne" class="accordion-collapse collapse"
-                                            data-bs-parent="#accordionExample">
+                                        <div id="collapse-control-point{{ $autoreview['control_point_id'] }}"
+                                            class="accordion-collapse collapse" data-bs-parent="#accordionExample">
                                             <div class="accordion-body">
+                                                <div class="d-flex justify-content-between">
+                                                    <span class="is-required">Selecciona los dispositivos a
+                                                        revisar</span>
+                                                    <div class="btn-group" role="group" aria-label="Basic example">
+                                                        <button type="button" class="btn btn-sm btn-success me-1"
+                                                            onclick="selectAllDevices({{ $autoreview['control_point_id'] }})">
+                                                            <i class="bi bi-check-square-fill"></i> Todos
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-danger"
+                                                            onclick="clearAllDevices({{ $autoreview['control_point_id'] }})">
+                                                            <i class="bi bi-x-square-fill"></i> Limpiar
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <p class="fw-bold text-danger mb-3">* Para modificar elementos de forma
+                                                    individual, basta con seleccionar los que quieras incluir en el
+                                                    proceso de autorevisión.</p>
+
                                                 <ul class="row">
                                                     @foreach ($autoreview['devices'] as $device)
-                                                        <div class="col-md-4">
+                                                        <div class="col-md-3">
                                                             <div class="form-check">
-                                                                <input class="form-check-input" type="checkbox"
-                                                                    value="{{ $device['id'] }}"
-                                                                    id="deviceCheck{{ $device['id'] }}" onchange="handleCheckDevices(this.value, this.checked)" checked>
+                                                                <input class="form-check-input device-checkbox"
+                                                                    type="checkbox" value="{{ $device['id'] }}"
+                                                                    id="deviceCheck{{ $device['id'] }}"
+                                                                    onchange="handleCheckDevices({{ $autoreview['control_point_id'] }}, this.value, this.checked)"
+                                                                    checked>
                                                                 <label class="form-check-label"
                                                                     for="deviceCheck{{ $device['id'] }}">
                                                                     {{ $device['code'] }}
@@ -269,7 +292,7 @@
 
 <script>
     // Variables globales para manejar los datos
-    var devicesToCheck = @json(array_map(fn($device) => $device['id'], $autoreview['devices']));
+    var devicesToCheck = {};
     var autoreview_data = @json($autoreview_data ?? []);
     var productsData = {}; // Almacenará los productos por control_point_id
     var observationsData = {}; // Almacenará las observaciones por control_point_id
@@ -279,7 +302,19 @@
     autoreview_data.forEach(function(controlPoint) {
         productsData[controlPoint.control_point_id] = controlPoint.products || [];
         observationsData[controlPoint.control_point_id] = ''; // Inicializar observaciones vacías
+        devicesToCheck[controlPoint.control_point_id] = controlPoint.devices.map(device => device.id);
     });
+
+    // Versión ultra-concisa
+    function selectAllDevices(id) {
+        $(`#collapse-control-point${id} .device-checkbox`).prop('checked', true).each((i, el) =>
+            devicesToCheck[id].includes(+el.value) || devicesToCheck[id].push(+el.value));
+    }
+
+    function clearAllDevices(id) {
+        $(`#collapse-control-point${id} .device-checkbox`).prop('checked', false);
+        devicesToCheck[id] = [];
+    }
 
     // Función para añadir un nuevo campo de producto
     function addNewProductField(controlPointId) {
@@ -347,14 +382,26 @@
         }
     }
 
-    function handleCheckDevices(device_id, isChecked) {
+    function handleCheckDevices(controlPointId, device_id, isChecked) {
+        // Asegurar que el array para este controlPointId existe
+        if (!devicesToCheck[controlPointId]) {
+            devicesToCheck[controlPointId] = [];
+        }
+
+        // Convertir device_id a número
+        const deviceIdNum = parseInt(device_id);
+
         if (isChecked) {
-            if (!devicesToCheck.includes(device_id)) {
-                devicesToCheck.push(device_id);
+            // Agregar si no existe
+            if (!devicesToCheck[controlPointId].includes(deviceIdNum)) {
+                devicesToCheck[controlPointId].push(deviceIdNum);
             }
         } else {
-            devicesToCheck = devicesToCheck.filter(id => id != device_id);
+            // Filtrar para remover
+            devicesToCheck[controlPointId] = devicesToCheck[controlPointId].filter(id => id !== deviceIdNum);
         }
+
+        console.log(`Dispositivos para punto ${controlPointId}:`, devicesToCheck[controlPointId]);
     }
 
     // Generar opciones de métodos de aplicación
@@ -625,7 +672,7 @@
                 products: products,
                 pests: pests,
                 observations: observations,
-                devices: devicesToCheck ?? [],
+                devices: devicesToCheck[controlPointId] || [],
                 clear: {
                     questions: $(`#clearQuestions-${controlPointId}`).is(':checked'),
                     products: $(`#clearProducts-${controlPointId}`).is(':checked'),
@@ -649,7 +696,7 @@
             `• Hora: ${new Date().toLocaleTimeString()}`);
 
         console.log("Datos enviados", JSON.stringify(data, null, 2));
-        
+
 
         $.ajax({
             url: "{{ route('report.autoreview', ['orderId' => $order['id']]) }}",
