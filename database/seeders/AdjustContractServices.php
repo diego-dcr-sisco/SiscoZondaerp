@@ -40,7 +40,7 @@ class AdjustContractServices extends Seeder
             $cs->update([
                 'execution_frequency_id' => $new_exec_freq_id,
                 'interval' => $new_interval,
-                'days' => json_encode($days)
+                'days' => json_encode($days ? [$days[0]] : [""])
             ]);
         }
     }
