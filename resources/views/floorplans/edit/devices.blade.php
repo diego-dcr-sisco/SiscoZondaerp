@@ -534,7 +534,7 @@
                 });
 
                 const pointText = new fabric.Text(`${count}`, {
-                    fontSize: currentPointSize + 2,
+                    fontSize: 6,
                     fill: getContrastColor(color || '#fff'),
                     selectable: false,
                     fontWeight: 'bold',
