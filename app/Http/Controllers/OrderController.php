@@ -21,6 +21,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -164,7 +165,7 @@ class OrderController extends Controller
         $count_orders = Order::where('customer_id', $customer->id)->count();
 
         $order = new Order();
-        $order->administrative_id = Administrative::where('user_id', auth()->user()->id)->first()->id;
+        $order->administrative_id = Administrative::where('user_id', $user = Auth::user()->id)->first()->id;
         $order->customer_id = $customer->id;
         $order->start_time = $request->input('start_time');
         $order->end_time = $request->input('end_time');
@@ -604,7 +605,7 @@ class OrderController extends Controller
 
         } catch (\Exception $e) {
             // Log del error
-            \Log::error('Error en OrderController@edit - ID: ' . $id . ' - Error: ' . $e->getMessage());
+            Log::error('Error en OrderController@edit - ID: ' . $id . ' - Error: ' . $e->getMessage());
 
             $error = 'Ocurrió un error al cargar la orden. Por favor, intente nuevamente.';
             return view('order.index', compact('error'));
@@ -778,7 +779,7 @@ class OrderController extends Controller
                 'deviceID' => $device->id,
                 'nplan' => $device->nplan,
                 'name' => optional($device->controlPoint->product)->name,
-                'zone' => $device->applicationArea()->first()->name,
+                'zone' => $device->applicationArea()->first()->name ?? '-',
                 'questions' => !empty($questions) ? $questions : $device->questions()->get(),
             ];
         }
@@ -961,7 +962,7 @@ class OrderController extends Controller
 
         } catch (\Exception $e) {
             // Log del error (recomendado)
-            \Log::error('Error en getTechniciansInRange: ' . $e->getMessage());
+            Log::error('Error en getTechniciansInRange: ' . $e->getMessage());
 
             return response()->json([
                 'error' => 'Ocurrió un error al procesar la solicitud',

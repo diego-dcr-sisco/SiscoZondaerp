@@ -35,6 +35,7 @@ use Aws\EventBridge\EventBridgeEndpointMiddleware;
 use Carbon\Carbon;
 use Illuminate\Contracts\Database\Eloquent\DeviatesCastableAttributes;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -232,8 +233,9 @@ class ReportController extends Controller
                 ];
             }
 
-            $user = auth()->user();
+            $user = Auth::user();
             $technician = $order->closed_by ? Technician::where('user_id', $order->closed_by)->first() : null;
+            $this->handleStock($order, $products_data, $technician, $user);
             $this->handleStock($order, $products_data, $technician, $user);
 
 
@@ -459,7 +461,7 @@ class ReportController extends Controller
                 ],
                 'application_area' => [
                     'id' => $device->application_area_id,
-                    'name' => $device->applicationArea->name
+                    'name' => $device->applicationArea->name ?? 'Area Desconocida'
                 ],
                 'questions' => $questions_data,
                 'pests' => $device->pests($order->id)->map(function ($dp) {
@@ -656,7 +658,7 @@ class ReportController extends Controller
                 ];
             }
 
-            $user = auth()->user();
+            $user = Auth::user();
             $technician = $order->closed_by ? Technician::where('user_id', $order->closed_by)->first() : null;
             $this->handleStock($order, $products_data, $technician, $user);
 
@@ -995,13 +997,13 @@ class ReportController extends Controller
             ];
         }
 
-        $user = auth()->user();
+        $user = Auth::user();
         $technician = $order->closed_by ? Technician::where('user_id', $order->closed_by)->first() : null;
         $this->handleStock($order, $products_data, $technician, $user);
         return redirect()->route('report.review', ['id' => $order->id]);
     }
 
-    protected function createNewOrderProduct($orderId, $data, $lot = null)
+    /*protected function createNewOrderProduct($orderId, $data, $lot = null)
     {
         $orderProduct = OrderProduct::create([
             'order_id' => $orderId,
@@ -1039,7 +1041,7 @@ class ReportController extends Controller
         $movement->warehouse_id = $warehouseId;
         $movement->save();
 
-    }
+    }*/
 
     public function destroyProduct(string $dataId)
     {
@@ -1255,7 +1257,7 @@ class ReportController extends Controller
                     Storage::deleteDirectory($storage_relative_path);
                 }
             } catch (\Exception $e) {
-                \Log::error("Cleanup failed: " . $e->getMessage());
+                       Log::error("Cleanup failed: " . $e->getMessage());
             }
         });
 
@@ -1579,7 +1581,7 @@ class ReportController extends Controller
                     'code' => $device->code,
                     'nplan' => $device->nplan,
                     'version' => $device->version,
-                    'area' => $device->applicationArea->name,
+                    'area' => $device->applicationArea->name ?? 'Area Desconocida',
                     'floorplan' => [
                         'id' => $device->floorplan_id,
                         'name' => $device->floorplan->filename
@@ -1635,7 +1637,7 @@ class ReportController extends Controller
                 ],
                 'application_area' => [
                     'id' => $device->application_area_id,
-                    'name' => $device->applicationArea->name
+                    'name' => $device->applicationArea->name ?? 'Area Desconocida'
                 ],
                 'questions' => $questions_data,
                 'pests' => $device->pests($order->id)->map(function ($dp) {
@@ -1778,7 +1780,7 @@ class ReportController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error al guardar evidencias: ' . $e->getMessage(), [
+            Log::error('Error al guardar evidencias: ' . $e->getMessage(), [
                 'order_id' => $orderId,
                 'evidence_data' => $request->input('evidences')
             ]);
@@ -1846,7 +1848,7 @@ class ReportController extends Controller
             ], 404);
 
         } catch (\Exception $e) {
-            \Log::error('Error al obtener evidencias: ' . $e->getMessage(), [
+            Log::error('Error al obtener evidencias: ' . $e->getMessage(), [
                 'order_id' => $orderId
             ]);
 
@@ -1878,7 +1880,7 @@ class ReportController extends Controller
             ], 404);
 
         } catch (\Exception $e) {
-            \Log::error('Error al eliminar evidencia: ' . $e->getMessage(), [
+            Log::error('Error al eliminar evidencia: ' . $e->getMessage(), [
                 'evidence_id' => $evidenceId
             ]);
 
@@ -1916,7 +1918,7 @@ class ReportController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
-            \Log::error('Error al eliminar múltiples evidencias: ' . $e->getMessage(), [
+            Log::error('Error al eliminar múltiples evidencias: ' . $e->getMessage(), [
                 'evidence_ids' => $request->evidence_ids
             ]);
 

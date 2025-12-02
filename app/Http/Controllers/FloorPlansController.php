@@ -463,7 +463,7 @@ class FloorPlansController extends Controller
                     'color' => $device->color,
                     'code' => $device->code,
                     'type' => $device->controlPoint->name,
-                    'app_area' => $device->applicationArea->name,
+                    'app_area' => $device->applicationArea->name ?? '-',
                     'version' => $device->version
                 ];
             }

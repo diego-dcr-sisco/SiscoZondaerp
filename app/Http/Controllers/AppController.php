@@ -185,7 +185,7 @@ class AppController extends Controller
 							'code' => $device->code,
 							'area' => [
 								'id' => $device->application_area_id,
-								'name' => $device->applicationArea->name
+								'name' => $device->applicationArea->name ?? '-'
 							],
 							'control_point' => [
 								'id' => $device->type_control_point_id,
