@@ -173,9 +173,12 @@
 
                 const service_id = $('#service-id').val();
 
+                console.log('Service ID: ', service_id);
+                console.log('Configuraciones guardadas', contract_configurations);
+                
                 // CORRECCIÓN 1: Reiniciar configurations solo para este servicio
                 configurations = contract_configurations.filter(c => c.service_id == service_id);
-
+                
                 if (configurations.length != 0) {
                     $("#empty-config-state").hide();
 
