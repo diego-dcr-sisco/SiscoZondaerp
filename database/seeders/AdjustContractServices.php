@@ -15,8 +15,11 @@ class AdjustContractServices extends Seeder
     public function run(): void
     {
         $contract_id = 231;
-        $execution_frequency_id = 4;
-        $interval = 1;
+        //$execution_frequency_id = 4;
+        //$interval = 1;
+
+        $execution_frequency_id = 1;
+        $interval = 0;
 
         $new_exec_freq_id = 1;
         $new_interval = 0;
@@ -37,7 +40,7 @@ class AdjustContractServices extends Seeder
             $cs->update([
                 'execution_frequency_id' => $new_exec_freq_id,
                 'interval' => $new_interval,
-                'days' => json_encode($days[0])
+                'days' => json_encode($days)
             ]);
         }
     }
