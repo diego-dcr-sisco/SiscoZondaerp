@@ -627,7 +627,7 @@ class FloorPlansController extends Controller
     public function updateDevices(Request $request, string $id)
     {
         $pointsData = json_decode($request->input('points'));
-        dd($pointsData);
+        //dd($pointsData);
         $create_version = $request->input('create_version');
         $floorplan = FloorPlans::find($id);
 
