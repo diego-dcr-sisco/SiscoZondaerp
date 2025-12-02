@@ -173,9 +173,6 @@
 
                 const service_id = $('#service-id').val();
 
-                console.log('Service ID: ', service_id);
-                console.log('Configuraciones guardadas', contract_configurations);
-                
                 // CORRECCIÓN 1: Reiniciar configurations solo para este servicio
                 configurations = contract_configurations.filter(c => c.service_id == service_id);
                 
@@ -461,7 +458,7 @@
 
                 initializeSummernote(configId);
 
-                // Configurar eventos con jQuery
+                // Configurar execution_frequency_ideventos con jQuery
                 $(`#service-frequency-${configId}`).on("change", function() {
                     handleFrequencyChange(configId);
                 });
