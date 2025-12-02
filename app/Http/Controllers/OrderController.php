@@ -862,7 +862,7 @@ class OrderController extends Controller
             ->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")
             ->orderBy('programmed_date')
             ->orderBy('customer.name', 'ASC')
-            ->orderBy($sort, $direction);
+            ->orderBy($sort, $direction)
             ->select('order.*')
             ->with('customer') // Para cargar la relación
 
