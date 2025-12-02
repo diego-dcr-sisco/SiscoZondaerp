@@ -533,8 +533,9 @@
                     originY: 'center',
                 });
 
+                const baseFontSize = 10; // Tamaño base para texto
                 const pointText = new fabric.Text(`${count}`, {
-                    fontSize: 6,
+                    fontSize: baseFontSize * (currentPointSize / 8),
                     fill: getContrastColor(color || '#fff'),
                     selectable: false,
                     fontWeight: 'bold',
