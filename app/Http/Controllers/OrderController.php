@@ -864,7 +864,7 @@ class OrderController extends Controller
             ->orderBy('customer.name', 'ASC')
             ->orderBy($sort, $direction)
             ->select('order.*')
-            ->with('customer') // Para cargar la relación
+            ->with('customer');
 
         // Paginar resultados
         $orders = $query->paginate($size)
