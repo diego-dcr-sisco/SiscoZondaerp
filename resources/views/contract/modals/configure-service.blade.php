@@ -266,7 +266,10 @@
                     configurations = [];
                     $("#empty-config-state").show();
                 }
+
+                console.log('Configuraciones cargadas:', configurations);
             });
+
             // Manejar clic en el botón de agregar configuración
             $("#add-configuration").on("click", function() {
                 addConfiguration();
@@ -574,7 +577,7 @@
                         'noscript'], // Etiquetas prohibidas (se eliminan con su contenido)
                         badAttributes: ['style', 'start', 'dir',
                             'class'] // Atributos prohibidos (se eliminan de las etiquetas restantes)
-                    },
+                    },                  
 
                     callbacks: {
                         onPaste: function(e) {
@@ -858,8 +861,6 @@
                     configurations = configurations.filter(
                         (c) => !(c.config_id == configId && c.service_id == service_id)
                     );
-
-                    //console.log('Configuraciones después de eliminar:', contract_configurations);
 
                     // Actualizar el campo hidden
                     $('#contract-configurations').val(JSON.stringify(contract_configurations));
@@ -1188,8 +1189,6 @@
 
 
             function clearAllDates(configId) {
-                //console.log(configurations);
-                //console.log(configDates);
 
                 // Obtener información para el mensaje
                 const config = configurations.find(c => c.config_id === configId);
@@ -1375,10 +1374,6 @@
             function saveAllConfigurations() {
                 const configElements = $('.configuration-item');
                 const service_id = $('#service-id').val();
-
-                //console.log('Guardando configuraciones para el servicio ID:', service_id);
-                //console.log('Configuraciones actuales antes de guardar:', configurations);
-                //console.log('Todas las configuraciones del contrato:', contract_configurations);
 
                 // Array temporal para las nuevas configuraciones de ESTE servicio
                 const newConfigurationsForThisService = [];

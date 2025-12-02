@@ -471,7 +471,7 @@ class CustomerController extends Controller
             'Ordenes de servicio' => route('order.index'),
             'Facturacion' => route('invoices.index'),
         ];
-
+        
         return view('customer.index.leads', compact('customers', 'service_types', 'navigation', 'categories'));
     }
 
