@@ -344,13 +344,17 @@
             height: 250, // altura del editor
             toolbar: [
                 ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['insert', ['table', 'link', 'picture']],
+                ['insert', ['table', 'link']],
                 ['para', ['ul', 'ol', 'paragraph']],
                 ['height', ['height']],
-                ['fontsize', ['fontsize']],
+                ['font', ['fontname', 'fontsize']],
+            ],
+            fontNames: [
+                'Arial', 'Courier New',
+                'Helvetica', 'Times New Roman'
             ],
             fontSize: ['8', '10', '12', '14', '16'],
-            lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
+            lineHeights: ['0.25', '0.5', '1', '1.5', '2', '2.5', '3', '4'],
 
             callbacks: {
                 onPaste: function(e) {
