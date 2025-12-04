@@ -156,8 +156,6 @@ class Certificate
             'signed_by' => $this->order->signature_name ?? '-',
             'signature_base64' => $this->order->customer_signature ?? '' // Mantener original
         ];
-
-        dd($this->data['customer']);
     }
 
     public function technician()
@@ -179,7 +177,7 @@ class Certificate
 
         if ($userfile && $userfile->path) {
             $signature_img = Storage::disk('public')->get(ltrim($userfile->path, '/'));
-            $signature_base64 = base64_encode($signature_img);
+            $signature_base64 = 'data:image/png;base64,' . base64_encode($signature_img);
         }
 
         $this->data['technician'] = [
