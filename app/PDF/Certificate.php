@@ -44,15 +44,13 @@ class Certificate
         return $text;
     }
 
-    function cleanBase64Prefix($base64String)
+    function addBase64Prefix($base64String)
     {
-        // Look for the pattern data:image/...;base64, and remove everything up to the comma
-        if (preg_match('/^data:image\/[a-zA-Z]+;base64,/', $base64String)) {
-            return preg_replace('/^data:image\/[a-zA-Z]+;base64,/', '', $base64String);
-        }
+        $prefix = 'data:image/png;base64,';
 
-        // If it doesn't have the expected format, return the original string
-        return $base64String;
+        return preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $base64String) 
+            ? $prefix . $base64String
+            : $base64String;
     }
 
     private function ensureTempSignatureDir()
@@ -154,7 +152,7 @@ class Certificate
             'state' => $this->order->customer->state ?? '-',
             'rfc' => $this->order->customer->rfc ?? '-',
             'signed_by' => $this->order->signature_name ?? '-',
-            'signature_base64' => $this->order->customer_signature ?? '' // Mantener original
+            'signature_base64' => $this->addBase64Prefix($this->order->customer_signature ?? '') // Mantener original
         ];
     }
 
