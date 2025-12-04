@@ -26,7 +26,7 @@
                             <h6><strong>Punto de Control:</strong> <span id="modal-control-point"></span></h6>
                         </div>
                         <div class="col-md-6 mb-2">
-                            <h6><strong>Área de Aplicación:</strong> <span id="modal-application-area"></span></h6>
+                          Supervisión de áreas de oportunidad.     <h6><strong>Área de Aplicación:</strong> <span id="modal-application-area"></span></h6>
                         </div>
                     </div>
                 </div>
