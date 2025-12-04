@@ -66,31 +66,6 @@ class Certificate
         return $tempDir;
     }
 
-    private function createSignatureImage($base64Signature)
-    {
-        // Limpiar el base64 y decodificar
-        $cleanBase64 = $this->cleanBase64Prefix($base64Signature);
-        $signatureData = base64_decode($cleanBase64);
-
-        if (!$signatureData) {
-            return null;
-        }
-
-        // Asegurar que el directorio existe
-        $tempDir = $this->ensureTempSignatureDir();
-
-        // Crear nombre de archivo único
-        $filename = uniqid('signature_', true) . '.png';
-        $tempImage = $tempDir . '/' . $filename;
-
-        // Guardar la imagen decodificada
-        if (file_put_contents($tempImage, $signatureData) !== false) {
-            return $tempImage;
-        }
-
-        return null;
-    }
-
     private function getOptions($id, $answers)
     {
         foreach ($answers as $answer) {
@@ -168,12 +143,6 @@ class Certificate
 
     public function customer()
     {
-        $signaturePath = null;
-
-        // Crear imagen temporal si existe firma
-        if ($this->order->customer_signature) {
-            $signaturePath = $this->createSignatureImage($this->order->customer_signature);
-        }
 
         $this->data['customer'] = [
             'name' => $this->order->customer->name ?? '-',
@@ -185,9 +154,10 @@ class Certificate
             'state' => $this->order->customer->state ?? '-',
             'rfc' => $this->order->customer->rfc ?? '-',
             'signed_by' => $this->order->signature_name ?? '-',
-            'signature' => $signaturePath ? 'file://' . $signaturePath : '', // Guardar también la ruta relativa
-            'signature_base64' => $this->order->customer_signature // Mantener original
+            'signature_base64' => $this->order->customer_signature ?? '' // Mantener original
         ];
+
+        dd($this->data['customer']);
     }
 
     public function technician()
@@ -217,8 +187,6 @@ class Certificate
             'rfc' => $user->roleData->rfc ?? '-',
             'signature' => $signature_base64
         ];
-
-        dd($this->data['technician']);
     }
 
     public function services()
