@@ -7,6 +7,8 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Customer;
+use App\Models\Order;
+use App\Models\OrderRecommendation;
 use Illuminate\Support\Facades\DB; // Asegúrate de importar DB
 use App\Models\Question;
 
@@ -92,13 +94,21 @@ class MakerDataSeeder extends Seeder
 {
     public function run(): void
     {
-        $trackings = Tracking::all();
+        /*$trackings = Tracking::all();
         foreach ($trackings as $tracking) {
             $tracking->trackable_id = $tracking->customer_id;
             $tracking->trackable_type = Customer::class;
             $tracking->save();
         }
         $this->command->info("¡Copia actualizados! Se actualizaron {$trackings->count()} usuarios.");
+        */
+ 
+        $start_date = '2025-10-01';
+        $end_date = '2025-12-31';
+        $customer_id = 120;
+
+        $orders = Order::where('customer_id', $customer_id)->whereBetween('programmed_date', [$start_date, $end_date])->get();
+        OrderRecommendation::where('order_id', $orders->pluck('id'))->whereNotNull('recommendation_id')->delete();
     }
 }
 
