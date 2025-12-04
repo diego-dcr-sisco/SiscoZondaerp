@@ -203,6 +203,8 @@ class Certificate
             ->where('filename_id', 15)
             ->first();
 
+        dd($userfile);
+
         $this->data['technician'] = [
             'name' => $user->name ?? '-',
             'rfc' => $user->roleData->rfc ?? '-',

@@ -1101,6 +1101,7 @@ class ReportController extends Controller
         $certificate->recommendations();
         $certificate->photoEvidences();
         $data = $certificate->getData();
+        
         // Obtener la configuración de apariencia
         $appearance = AppearanceSetting::first();
 
