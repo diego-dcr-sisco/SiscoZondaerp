@@ -493,7 +493,7 @@ class ReportController extends Controller
                     'order_id' => $order->id,
                     'device_id' => $device->id,
                     'is_scanned' => $device_states->is_scanned ?? false,
-                    'is_checked' => $device_states->is_checked ?? false,
+                    'is_checked' => (($device_states?->is_checked ?? false) || count($questions_data) > 0),
                     'observations' => $device_states->observations ?? null,
                     'device_image' => $device_states->device_image ?? null
                 ]
@@ -1101,7 +1101,7 @@ class ReportController extends Controller
         $certificate->recommendations();
         $certificate->photoEvidences();
         $data = $certificate->getData();
-        
+
         // Obtener la configuración de apariencia
         $appearance = AppearanceSetting::first();
 
@@ -1258,7 +1258,7 @@ class ReportController extends Controller
                     Storage::deleteDirectory($storage_relative_path);
                 }
             } catch (\Exception $e) {
-                       Log::error("Cleanup failed: " . $e->getMessage());
+                Log::error("Cleanup failed: " . $e->getMessage());
             }
         });
 

@@ -70,7 +70,7 @@
                             <span id="device{{ $device['id'] }}-is_checked"
                                 class="{{ $device['states']['is_checked'] ? 'text-success' : 'text-danger' }} m-1"
                                 data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip"
-                                data-bs-title="{{ $device['states']['is_checked'] ? 'Revisado' : 'No revisado' }}">
+                                data-bs-title="{{ $device['states']['is_checked']  ? 'Revisado' : 'No revisado' }}">
                                 <i class="bi bi-check-circle-fill"></i>
                             </span>
 
