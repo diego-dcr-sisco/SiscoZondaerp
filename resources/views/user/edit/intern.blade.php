@@ -321,8 +321,7 @@
                                                 <td>
                                                     <a href="{{ route('user.file.download', ['id' => $file->id]) }}"
                                                         class="btn btn-link{{ $file->verifyPath() ? '' : ' disabled' }}">
-                                                        {{ $file->verifyPath() ? basename($file->path) : '-' }}
-                                                        
+                                                        {{ basename($file->path) ?? '-' }}
                                                     </a>
                                                 </td>
                                                 <td>{{ $file->expirated_at ?? '-' }}</td>

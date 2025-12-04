@@ -23,7 +23,7 @@ use App\Models\Technician;
 use App\Models\User;
 use App\Models\UserContract;
 use App\Models\UserFile;
-use App\Models\WorkDepartment;
+use App\Models\WorkDepartment; 
 use App\Models\Filenames;
 use App\Models\UserCustomer;
 use App\Models\DirectoryPermission;
