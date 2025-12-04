@@ -18,6 +18,8 @@ use App\Models\OrderIncidents;
 use App\Models\OrderRecommendation;
 use App\Models\FloorplanVersion;
 
+use Illuminate\Support\Facades\Storage;
+
 //require_once 'vendor/autoload.php';
 
 class Certificate
@@ -191,6 +193,8 @@ class Certificate
     public function technician()
     {
         $user_id = null;
+        $signature_base64 = null;
+
         if ($this->order->closed_by != null) {
             $user_id = $this->order->closed_by;
         } else {
@@ -203,15 +207,18 @@ class Certificate
             ->where('filename_id', 15)
             ->first();
 
-        dd($userfile);
+        if ($userfile && $userfile->path) {
+            $signature_img = Storage::disk('public')->get(ltrim($userfile->path, '/'));
+            $signature_base64 = base64_encode($signature_img);
+        }
 
         $this->data['technician'] = [
             'name' => $user->name ?? '-',
             'rfc' => $user->roleData->rfc ?? '-',
-            'signature' => $userfile->path ?? false
-                ? storage_path('app/public/' . ltrim($userfile->path, '/'))
-                : null,
+            'signature' => $signature_base64
         ];
+
+        $this->data['technician'];
     }
 
     public function services()
