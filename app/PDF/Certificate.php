@@ -218,7 +218,7 @@ class Certificate
             'signature' => $signature_base64
         ];
 
-        $this->data['technician'];
+        dd($this->data['technician']);
     }
 
     public function services()
