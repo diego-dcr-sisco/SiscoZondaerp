@@ -601,7 +601,7 @@ class UserController extends Controller
 			}
 
 			if (Storage::disk('public')->exists($userfile->path)) {
-				return Storage::disk('public')->download($userfile->path);
+				return response()->download(Storage::disk('public')->path($userfile->path));
 			}
 			return response()->json(['error' => 'File not found.'], 404);
 		} catch (\Exception $e) {

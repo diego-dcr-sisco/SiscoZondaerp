@@ -320,7 +320,7 @@
                                                 <td>{{ $file->filename->name ??  $file->file_name}}</td>
                                                 <td>
                                                     <a href="{{ route('user.file.download', ['id' => $file->id]) }}"
-                                                        class="btn btn-link{{ $file->verifyPath() ? '' : ' disabled' }}">
+                                                        class="btn btn-link{{ $file->path ? '' : ' disabled' }}">
                                                         {{ basename($file->path) ?? '-' }}
                                                     </a>
                                                 </td>
