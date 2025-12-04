@@ -183,7 +183,7 @@ class Certificate
         $this->data['technician'] = [
             'name' => $user->name ?? '-',
             'rfc' => $user->roleData->rfc ?? '-',
-            'signature' => $signature_base64
+            'signature_base64' => $signature_base64
         ];
     }
 
