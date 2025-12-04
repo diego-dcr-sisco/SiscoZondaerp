@@ -859,11 +859,15 @@ class OrderController extends Controller
         // Aplicar ordenamiento después de los filtros
         $size = $size ?? $this->size;
 
-        $orders = $query->join('customer', 'order.customer_id', '=', 'customer.id')
+        $orders = $query->join('customer as c', 'order.customer_id', '=', 'c.id')
             ->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")
             ->orderBy('programmed_date')
-            ->orderBy('customer.name', $direction)
-            ->select('order.*')
+            ->orderBy('c.name', $direction)
+            ->select([
+                'order.*', // Todas las columnas de order
+                'c.name as customer_name', // Columnas específicas de customer
+                //'c.email as customer_email'
+            ])
             ->with('customer');
 
         // Paginar resultados
