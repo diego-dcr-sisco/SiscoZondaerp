@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 use Spatie\SimpleExcel\SimpleExcelWriter;
 
@@ -23,7 +24,7 @@ use App\Models\Technician;
 use App\Models\User;
 use App\Models\UserContract;
 use App\Models\UserFile;
-use App\Models\WorkDepartment; 
+use App\Models\WorkDepartment;
 use App\Models\Filenames;
 use App\Models\UserCustomer;
 use App\Models\DirectoryPermission;
@@ -31,13 +32,19 @@ use App\Models\OrderTechnician;
 
 class UserController extends Controller
 {
-	private $files_path = 'users/files/';
+	private $files_path = 'userfiles/';
 	private static $states_route = 'datas/json/Mexico_states.json';
 	private static $cities_route = 'datas/json/Mexico_cities.json';
 	private $path = 'client_system/';
-	private $user_path = 'users/';
 
-	private $size = 25;
+	private $size = 50;
+
+	private $disk;
+
+	public function __construct()
+	{
+		$this->disk = Storage::disk('public');
+	}
 
 	public static function verifyData($user, $hasContract)
 	{
@@ -100,7 +107,7 @@ class UserController extends Controller
 
 	public function create(): View
 	{
-		$disk = Storage::disk('public');
+		$disk = $this->disk;
 		$local_dirs = $disk->directories($this->path);
 		sort($local_dirs);
 		$statuses = Status::all();
@@ -525,70 +532,113 @@ class UserController extends Controller
 
 	public function uploadFile(Request $request, string $userId)
 	{
-		$request->validate([
-			'file' => 'required|mimes:jpeg,png,jpg,pdf|max:5120'
-		]);
+		try {
+			$request->validate([
+				'file' => 'required|mimes:jpeg,png,jpg,pdf|max:5120',
+				'filename_id' => 'required'
+			], [
+				'file.required' => 'Debe seleccionar un archivo',
+				'file.mimes' => 'El archivo debe ser JPEG, PNG, JPG o PDF',
+				'file.max' => 'El archivo no debe exceder los 5MB',
+				'filename_id.required' => 'El tipo de archivo es requerido'
+			]);
 
-		$file = $request->file('file');
+			$file = $request->file('file');
+			$user = User::findOrFail($userId);
 
-		$disk = Storage::disk('public');
-		$user = User::find($userId);
+			$user_file = UserFile::updateOrCreate([
+				'user_id' => $user->id,
+				'filename_id' => $request->filename_id
+			], [
+				'expirated_at' => $request->expirated_at,
+				'updated_at' => now()
+			]);
 
-		$user_file = UserFile::updateOrCreate([
-			'user_id' => $user->id,
-			'filename_id' => $request->filename_id
-		], [
-			'expirated_at' => $request->expirated_at,
-			'updated_at' => now()
-		]);
+			if ($user_file->path && $this->disk->exists($user_file->path)) {
+				$this->disk->delete($user_file->path);
+			}
 
-		if ($user_file->path && $disk->exists($user_file->path)) {
-			$disk->delete($user_file->path);
+			$extension = $file->getClientOriginalExtension();
+			//$originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+			//$newFileName = $user_file->filename->name . "_{$user->id}_" . Str::slug($originalName) . time() . ".{$extension}";
+			$newFileName = "{$user->id}_" . time() . ".{$extension}";
+			$folder_path = $user_file->filename->name . '/';
+			$filePath = $this->files_path . $folder_path . "{$newFileName}";
+
+			$this->disk->put($filePath, file_get_contents($file));
+			$user_file->update(['path' => $filePath]);
+			session()->flash('success', 'Archivo subido correctamente');
+
+		} catch (\Illuminate\Validation\ValidationException $e) {
+			session()->flash('error', $e->validator->errors()->first());
+		} catch (\Exception $e) {
+			session()->flash('error', 'Error al subir el archivo: ' . $e->getMessage());
 		}
-
-		$fileName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-		$extension = $file->getClientOriginalExtension();
-		$newFileName = $fileName . '_' . time() . '.' . $extension;
-
-		$filePath = $this->files_path . $newFileName;
-
-		$disk->put($filePath, file_get_contents($file));
-
-		$user_file->update(['path' => $filePath]);
 
 		return back();
 	}
 
 	public function uploadFileByName(Request $request, string $userId)
 	{
-		$request->validate([
-			'file'         => 'required|mimes:jpeg,png,jpg,pdf|max:5120',
-			'filename'     => 'required|string|max:255',
-			'expirated_at' => 'nullable|date',
-		]);
+		try {
+			// Validación
+			$request->validate([
+				'file' => 'required|mimes:jpeg,png,jpg,pdf|max:5120',
+				'filename' => 'required|string|max:255',
+				'expirated_at' => 'nullable|date',
+			]);
 
-		$user = User::findOrFail($userId);
-		$disk = Storage::disk('public');
+			$user = User::findOrFail($userId);
+			$file = $request->file('file');
 
-		$file = $request->file('file');
-		$fileName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-		$extension = $file->getClientOriginalExtension();
-		$newFileName = $fileName . '_' . time() . '.' . $extension;
+			// Buscar archivo existente
+			$user_file = UserFile::where('user_id', $user->id)
+				->where('file_name', $request->input('filename'))
+				->first();
 
-		$filePath = $this->files_path . $newFileName;
+			// Eliminar archivo anterior si existe
+			if ($user_file && $user_file->path && $this->disk->exists($user_file->path)) {
+				$this->disk->delete($user_file->path);
+			}
 
-		$disk->put($filePath, file_get_contents($file));
+			// Crear nuevo registro si no existe
+			if (!$user_file) {
+				$user_file = new UserFile();
+				$user_file->user_id = $user->id;
+				$user_file->file_name = $request->input('filename');
+			}
 
-		
+			// Generar nombre del archivo
+			$extension = $file->getClientOriginalExtension();
+			$newFileName = Str::slug($request->input('filename')) . "_{$user->id}_" . time() . ".{$extension}";
 
-		UserFile::create([
-			'user_id'     => $user->id,
-			'file_name'   => $request->input('filename'),
-			'path'        => $filePath,
-			'expirated_at'=> $request->input('expirated_at'),
-		]);
+			// Usar el mismo directorio base
+			$folder_path = $this->files_path . 'adicionales/';
+			$filePath = $folder_path . "{$newFileName}";
 
-    return back();
+			// Crear directorio si no existe
+			if (!$this->disk->exists($folder_path)) {
+				$this->disk->makeDirectory($folder_path);
+			}
+
+			// Guardar archivo
+			$this->disk->put($filePath, file_get_contents($file));
+
+			// Actualizar o crear registro
+			$user_file->path = $filePath;
+			$user_file->expirated_at = $request->input('expirated_at');
+			$user_file->updated_at = now();
+			$user_file->save();
+
+			session()->flash('success', 'Archivo subido correctamente');
+
+		} catch (\Illuminate\Validation\ValidationException $e) {
+			session()->flash('error', $e->validator->errors()->first());
+		} catch (\Exception $e) {
+			session()->flash('error', 'Error al subir el archivo: ' . $e->getMessage());
+		}
+
+		return back();
 	}
 
 	public function downloadFile(string $id)
@@ -600,8 +650,8 @@ class UserController extends Controller
 				abort(404);
 			}
 
-			if (Storage::disk('public')->exists($userfile->path)) {
-				return response()->download(Storage::disk('public')->path($userfile->path));
+			if ($this->disk->exists($userfile->path)) {
+				return response()->download($this->disk->path($userfile->path));
 			}
 			return response()->json(['error' => 'File not found.'], 404);
 		} catch (\Exception $e) {
@@ -611,16 +661,12 @@ class UserController extends Controller
 
 	public function destroyFile(string $fileId)
 	{
-		$disk = Storage::disk('public');
-
+		$disk = $this->disk;
 		$userFile = UserFile::find($fileId);
-
 		if ($userFile->path && $disk->exists($userFile->path)) {
 			$disk->delete($userFile->path);
 		}
-
 		$userFile->delete();
-
 		return back()->with('success', 'File deleted successfully');
 	}
 
@@ -755,9 +801,7 @@ class UserController extends Controller
 				}
 			}
 		}
-
 		$user->delete();
-
 		return redirect()->route('user.index');
 	}
 }
