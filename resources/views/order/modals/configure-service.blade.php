@@ -54,14 +54,16 @@
                         <label class="form-label">Prefijo</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                            <input type="text" class="form-control form-control-sm" id="serviceModal-prefix" value="SRV-001" disabled>
+                            <input type="text" class="form-control form-control-sm" id="serviceModal-prefix"
+                                value="SRV-001" disabled>
                         </div>
                     </div>
                     <div class="col-md-8 mb-3">
                         <label class="form-label">Servicio</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-card-text"></i></span>
-                            <input type="text" class="form-control form-control-sm" id="serviceModal-service" value="Mantenimiento Preventivo" disabled>
+                            <input type="text" class="form-control form-control-sm" id="serviceModal-service"
+                                value="Mantenimiento Preventivo" disabled>
                         </div>
                     </div>
 
@@ -69,21 +71,24 @@
                         <label class="form-label">Tipo</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-tag"></i></span>
-                            <input type="text" class="form-control form-control-sm" id="serviceModal-type" value="Preventivo" disabled>
+                            <input type="text" class="form-control form-control-sm" id="serviceModal-type"
+                                value="Preventivo" disabled>
                         </div>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Línea de negocio</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
-                            <input type="text" class="form-control form-control-sm" id="serviceModal-bsline" value="Mantenimiento" disabled>
+                            <input type="text" class="form-control form-control-sm" id="serviceModal-bsline"
+                                value="Mantenimiento" disabled>
                         </div>
                     </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Costo</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
-                            <input type="text" class="form-control form-control-sm" id="serviceModal-cost" value="$150.00" disabled>
+                            <input type="text" class="form-control form-control-sm" id="serviceModal-cost"
+                                value="$150.00" disabled>
                         </div>
                     </div>
                 </div>
@@ -119,19 +124,50 @@
 
     // Inicializar Summernote
     $(document).ready(function() {
-        $('#service-description-editor').summernote({
+        $('#service-description-editor').summernote({   
             height: 250,
             lang: 'es-ES',
             toolbar: [
                 ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['insert', ['table', 'link', 'picture']],
+                ['font', ['fontsize', 'fontname']],
                 ['para', ['ul', 'ol', 'paragraph']],
                 ['height', ['height']],
-                ['fontsize', ['fontsize']],
+                ['insert', ['table', 'link']],
             ],
             fontSize: ['8', '10', '12', '14', '16'],
             lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
+
+            cleaner: {
+                action: 'both', // 'both' | 'button' | 'paste'
+                newline: '<br>', // Formato para saltos de línea
+                notStyle: 'position:absolute;top:0;left:0;right:0', // Estilo de notificación
+                keepHtml: true, // Activa el modo de "lista blanca" (whitelist)
+                keepOnlyTags: ['<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>',
+                    '<strong>'
+                ], // Etiquetas permitidas
+                keepClasses: false, // Remueve todas las clases CSS
+                badTags: ['style', 'script', 'applet', 'embed', 'noframes',
+                    'noscript'
+                ], // Etiquetas prohibidas (se eliminan con su contenido)
+                badAttributes: ['style', 'start', 'dir',
+                    'class'
+                ] // Atributos prohibidos (se eliminan de las etiquetas restantes)
+            },
+
             callbacks: {
+                onPaste: function(e) {
+                    var thisNote = $(this);
+                    var updatePaste = function() {
+                        // Get the current HTML code FROM the Summernote editor
+                        var original = thisNote.summernote('code');
+                        var cleaned = original;
+                        // Set the cleaned code BACK to the editor
+                        thisNote.summernote('code', cleaned);
+                    };
+                    // Wait for Summernote to process the paste
+                    setTimeout(updatePaste, 10);
+                },
+
                 onChange: function(contents) {
                     serviceDescription = contents;
                 }
@@ -168,6 +204,6 @@
         alert('Descripción guardada correctamente.');
         $('#configureServiceModal').modal('hide');
 
-        console.log(services_configuration); 
+        console.log(services_configuration);
     }
 </script>

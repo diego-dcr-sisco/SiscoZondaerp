@@ -404,6 +404,23 @@
                     setTimeout(updatePaste, 10);
                 }
             }
+
+            cleaner: {
+                action: 'both', // 'both' | 'button' | 'paste'
+                newline: '<br>', // Formato para saltos de línea
+                notStyle: 'position:absolute;top:0;left:0;right:0', // Estilo de notificación
+                keepHtml: true, // Activa el modo de "lista blanca" (whitelist)
+                keepOnlyTags: ['<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>',
+                    '<strong>'
+                ], // Etiquetas permitidas
+                keepClasses: false, // Remueve todas las clases CSS
+                badTags: ['style', 'script', 'applet', 'embed', 'noframes',
+                    'noscript'
+                ], // Etiquetas prohibidas (se eliminan con su contenido)
+                badAttributes: ['style', 'start', 'dir',
+                    'class'
+                ] // Atributos prohibidos (se eliminan de las etiquetas restantes)
+            },
         };
 
         // Función para inicializar el editor
@@ -454,12 +471,12 @@
         function enableFontNames() {
             updateSummernoteOptions({
                 toolbar: [
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['font', ['fontsize', 'fontname']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['height', ['height']],
-                ['insert', ['table', 'link']],
-            ],
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['fontsize', 'fontname']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['height', ['height']],
+                    ['insert', ['table', 'link']],
+                ],
                 fontNames: ['Arial', 'Courier New', 'Helvetica', 'Times New Roman']
             });
         }
@@ -489,14 +506,15 @@
         function addFullToolbar() {
             updateSummernoteOptions({
                 toolbar: [
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['font', ['fontsize', 'fontname']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['height', ['height']],
-                ['insert', ['table', 'link']],
-            ],
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['fontsize', 'fontname']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['height', ['height']],
+                    ['insert', ['table', 'link']],
+                ],
                 fontNames: ['Arial', 'Courier New', 'Helvetica', 'Times New Roman', 'Georgia',
-                    'Verdana'],
+                    'Verdana'
+                ],
                 colors: [
                     ['#000000', '#424242', '#636363', '#9C9C94', '#CEC6CE', '#EFEFEF', '#F7F7F7',
                         '#FFFFFF'
@@ -514,12 +532,12 @@
                 height: 250,
                 lang: 'es-ES',
                 toolbar: [
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['font', ['fontsize', 'fontname']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['height', ['height']],
-                ['insert', ['table', 'link']],
-            ],
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['fontsize', 'fontname']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['height', ['height']],
+                    ['insert', ['table', 'link']],
+                ],
                 fontSize: ['8', '10', '12', '14', '16'],
                 lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
                 callbacks: {
