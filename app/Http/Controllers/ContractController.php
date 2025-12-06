@@ -8,6 +8,7 @@ use App\Models\PropagateService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 use App\Models\Contract;
 use App\Models\Customer;
@@ -152,7 +153,7 @@ class ContractController extends Controller
 
         $contract = Contract::create([
             'customer_id' => $customer->id,
-            'user_id' => auth()->user()->id,
+            'user_id' => Auth::user()->id,
             'startdate' => $request->input('startdate'),
             'enddate' => $request->input('enddate'),
             'status' => 1,
@@ -189,7 +190,7 @@ class ContractController extends Controller
             foreach ($data->dates as $date) {
                 $formattedDate = Carbon::parse($date)->format('Y-m-d');
                 $order = Order::create([
-                    'administrative_id' => Administrative::where('user_id', auth()->id())->first()->id,
+                    'administrative_id' => Administrative::where('user_id', Auth::user()->id)->first()->id,
                     'customer_id' => $customer->id,
                     'contract_id' => $contract->id,
                     'setting_id' => $contract_service->id,
@@ -500,8 +501,6 @@ class ContractController extends Controller
         $can_renew = false;
         $view = 'contract';
 
-        dd($configurations);
-
         return view(
             'contract.edit',
             compact(
@@ -576,7 +575,7 @@ class ContractController extends Controller
                                 'contract_id' => $contract->id,
                                 'setting_id' => $contract_service->id,
                                 'programmed_date' => Carbon::parse($order->programmed_date)->format('Y-m-d'),
-                                'administrative_id' => Administrative::where('user_id', auth()->user()->id)->first()->id,
+                                'administrative_id' => Administrative::where('user_id', Auth::user()->id)->first()->id,
                                 'customer_id' => $contract->customer_id,
                                 'status_id' => $order->status_id,
                                 'start_time' => '00:00',
@@ -769,7 +768,7 @@ class ContractController extends Controller
     {
         // Crear la nueva orden
         $new_order = Order::create([
-            'administrative_id' => Administrative::where('user_id', auth()->id())->first()->id,
+            'administrative_id' => Administrative::where('user_id', Auth::user()->id)->first()->id,
             'customer_id' => $contract->customer_id,
             'contract_id' => $contract->id,
             'setting_id' => $contract_service->id,
