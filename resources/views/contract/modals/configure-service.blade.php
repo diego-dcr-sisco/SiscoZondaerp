@@ -655,13 +655,13 @@
                         </a>
                         ${order.status_id == 1 ? 
                             `<button class="btn btn-sm btn-secondary" onclick="editOrder(${order.id}, '${order.programmed_date}', ${configId})"
-                                                        data-bs-toggle="tooltip"    
-                                                        data-bs-title="This top tooltip is themed via CSS variables.">
-                                                        <i class="bi bi-calendar2-check-fill"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
-                                                        <i class="bi bi-trash-fill"></i>
-                                                    </button>` 
+                                                                data-bs-toggle="tooltip"    
+                                                                data-bs-title="This top tooltip is themed via CSS variables.">
+                                                                <i class="bi bi-calendar2-check-fill"></i>
+                                                            </button>
+                                                            <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
+                                                                <i class="bi bi-trash-fill"></i>
+                                                            </button>` 
                             : 
                             `<span class="text-muted fw-bold">No editable</span>`
                         }
@@ -799,17 +799,18 @@
             }
 
             function formatDate(date) {
-                // Asegurarse de que date es un objeto Date válido
                 const dateObj = new Date(date);
                 if (isNaN(dateObj.getTime())) {
                     return 'Fecha inválida';
                 }
 
+                // Forzar zona horaria UTC en la conversión
                 return dateObj.toLocaleDateString('es-ES', {
                     weekday: 'long',
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
+                    timeZone: 'UTC' // ¡Clave aquí!
                 });
             }
 

@@ -189,7 +189,7 @@ class ContractController extends Controller
             foreach ($data->dates as $date) {
                 $formattedDate = Carbon::parse($date)->format('Y-m-d');
                 $order = Order::create([
-                    'administrative_id' => Administrative::where('user_id', auth()->user()->id)->first()->id,
+                    'administrative_id' => Administrative::where('user_id', auth()->id())->first()->id,
                     'customer_id' => $customer->id,
                     'contract_id' => $contract->id,
                     'setting_id' => $contract_service->id,
@@ -499,6 +499,8 @@ class ContractController extends Controller
         $prefixes = ServicePrefix::pluck('name', 'id');
         $can_renew = false;
         $view = 'contract';
+
+        dd($configurations);
 
         return view(
             'contract.edit',
