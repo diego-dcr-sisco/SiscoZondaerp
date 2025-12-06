@@ -403,7 +403,7 @@
                     };
                     setTimeout(updatePaste, 10);
                 }
-            }
+            },
 
             cleaner: {
                 action: 'both', // 'both' | 'button' | 'paste'
@@ -420,7 +420,7 @@
                 badAttributes: ['style', 'start', 'dir',
                     'class'
                 ] // Atributos prohibidos (se eliminan de las etiquetas restantes)
-            },
+            }
         };
 
         // Función para inicializar el editor
