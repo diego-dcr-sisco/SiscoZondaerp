@@ -409,7 +409,7 @@ class FloorPlansController extends Controller
 
         $navigation = $this->getNavigation($floorplan);
         $f_version = FloorplanVersion::where('floorplan_id', $id)->where('version', $version)->first();
-        $can_resize = $devices->whereNull('size')->exists();
+        $can_resize = $devices->whereNull('size')->isNotEmpty();
 
         return view('floorplans.edit.devices', compact(
             'ctrlPoints',

@@ -130,25 +130,25 @@
                         <div class="col-lg-4 col-12 mb-3">
                             <label class="form-label">
                                 Área de aplicación
-                                </label>
-                                @if (!$customer->applicationAreas->isEmpty())
-                                    <select class="form-select" id="area" name="area">
-                                        @foreach ($customer->applicationAreas as $area)
-                                            @php
-                                                $areaNames[] = [
-                                                    'id' => $area->id,
-                                                    'name' => $area->name,
-                                                ];
-                                            @endphp
-                                            <option value="{{ $area->id }}">
-                                                {{ $area->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                @else
-                                    <input type="text" class="form-control" value="Sin zonas o áreas disponibles"
-                                        id="area" disabled>
-                                @endif
+                            </label>
+                            @if (!$customer->applicationAreas->isEmpty())
+                                <select class="form-select" id="area" name="area">
+                                    @foreach ($customer->applicationAreas as $area)
+                                        @php
+                                            $areaNames[] = [
+                                                'id' => $area->id,
+                                                'name' => $area->name,
+                                            ];
+                                        @endphp
+                                        <option value="{{ $area->id }}">
+                                            {{ $area->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <input type="text" class="form-control" value="Sin zonas o áreas disponibles"
+                                    id="area" disabled>
+                            @endif
                         </div>
 
                         <div class="col-lg-4 col-12 mb-3">
@@ -405,10 +405,9 @@
             $(document).ready(function() {
                 resetInputs();
                 setDevices();
-                console.log(can_resize); 
-
-                //if(can_resize)
-                //resizePointsToNewCanvas();
+                if (can_resize) {
+                    resizePointsToNewCanvas();
+                }
             });
 
             function resetInputs() {
