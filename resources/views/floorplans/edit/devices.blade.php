@@ -404,7 +404,7 @@
             $(document).ready(function() {
                 resetInputs();
                 setDevices();
-                resizePointsToNewCanvas();
+                //resizePointsToNewCanvas();
             });
 
             function resetInputs() {
