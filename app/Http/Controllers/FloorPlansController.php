@@ -65,7 +65,7 @@ class FloorPlansController extends Controller
             'QRs' => route('floorplan.qr', ['id' => $floorplan->id]),
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $floorplan->customer_id])
         ];
-        
+
         return $navigation;
     }
 
@@ -408,9 +408,8 @@ class FloorPlansController extends Controller
         }
 
         $navigation = $this->getNavigation($floorplan);
-
-
         $f_version = FloorplanVersion::where('floorplan_id', $id)->where('version', $version)->first();
+        $can_resize = $devices->whereNull('size')->exists();
 
         return view('floorplans.edit.devices', compact(
             'ctrlPoints',
@@ -429,7 +428,8 @@ class FloorPlansController extends Controller
             'f_version',
             'legend',
             'logoBase64',
-            'print_data'
+            'print_data',
+            'can_resize'
         ));
     }
 

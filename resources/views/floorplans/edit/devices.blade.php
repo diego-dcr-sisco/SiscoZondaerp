@@ -384,6 +384,7 @@
 
             let currentPointSize = 10;
             let currentBase64 = '';
+            let can_resize = @json($can_resize);
 
 
             const img = new Image();
@@ -404,7 +405,9 @@
             $(document).ready(function() {
                 resetInputs();
                 setDevices();
-                console.log(img_sizes);
+                console.log(can_resize); 
+
+                //if(can_resize)
                 //resizePointsToNewCanvas();
             });
 
