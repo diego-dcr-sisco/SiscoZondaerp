@@ -404,6 +404,7 @@
             $(document).ready(function() {
                 resetInputs();
                 setDevices();
+                console.log(img_sizes);
                 //resizePointsToNewCanvas();
             });
 
