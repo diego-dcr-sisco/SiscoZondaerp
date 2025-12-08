@@ -623,7 +623,6 @@ class FloorPlansController extends Controller
 
     public function updateDevices(Request $request, string $id)
     {
-        dd($request->all());
         $pointsData = json_decode($request->input('points'));
         $create_version = $request->input('create_version');
         $floorplan = FloorPlans::find($id);
@@ -636,8 +635,6 @@ class FloorPlansController extends Controller
             $latestVersionNumber = 1;
         }
 
-        dd($version, $latestVersionNumber); 
-
         if ($create_version) {
             FloorplanVersion::insert([
                 'floorplan_id' => $floorplan->id,
@@ -649,7 +646,6 @@ class FloorPlansController extends Controller
             FloorplanVersion::where('floorplan_id', $floorplan->id)->where('version', $version)->update(['updated_at' => $request->input('version_updated_at') . ' 00:00:00']);
         }
 
-        $nplans = [];
         foreach ($pointsData as $point) {
             $found_point = ControlPoint::find($point->point_id);
             $code = $point->code ?? ($found_point->code . '-' . $found_point->nplan);
@@ -682,7 +678,6 @@ class FloorPlansController extends Controller
                 $device->qr = QrCode::format('png')->size(200)->generate($code);
                 $device->save();
             }
-            $nplans[] = $point->count;
         }
 
         return redirect()->route('floorplan.devices', ['id' => $floorplan->id, 'version' => $latestVersionNumber]);
