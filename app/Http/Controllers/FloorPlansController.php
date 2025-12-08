@@ -74,14 +74,11 @@ class FloorPlansController extends Controller
     public function getImage(string $path)
     {
         $url = /*$this->path*/ '/' . $path;
-
         if (!Storage::disk('public')->exists($url)) {
             abort(404);
         }
-
         $file = Storage::disk('public')->get($url);
-        $type = Storage::disk('public')->mimeType($url);
-
+        $type = mime_content_type(Storage::disk('public')->path($url));
         return response($file, 200)->header('Content-Type', $type);
     }
 
@@ -626,8 +623,8 @@ class FloorPlansController extends Controller
 
     public function updateDevices(Request $request, string $id)
     {
+        dd($request->all());
         $pointsData = json_decode($request->input('points'));
-        //dd($pointsData);
         $create_version = $request->input('create_version');
         $floorplan = FloorPlans::find($id);
 
@@ -639,11 +636,13 @@ class FloorPlansController extends Controller
             $latestVersionNumber = 1;
         }
 
+        dd($version, $latestVersionNumber); 
 
         if ($create_version) {
             FloorplanVersion::insert([
                 'floorplan_id' => $floorplan->id,
                 'version' => $latestVersionNumber,
+                'created_at' => now(),
                 'updated_at' => now(),
             ]);
         } else {
