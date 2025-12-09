@@ -226,14 +226,6 @@ class Customer extends Model
     }
 
     /**
-     * Relación directa con customer_zones
-     */
-    public function customerZones()
-    {
-        return $this->hasMany(CustomerZone::class, 'customer_id');
-    }
-
-    /**
      * Relación con zonas activas solamente
      */
     public function activeZones()
