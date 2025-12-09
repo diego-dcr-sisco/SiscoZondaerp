@@ -336,6 +336,36 @@ class ReportController extends Controller
         WarehouseOrder::where('order_id', $order->id)->whereNotIn('id', $updated_wos)->delete();
     }
 
+    private function getDevicesByVersion($order_id, $version = null)
+    {
+        $found_devices = [];
+        $order = Order::find($order_id);
+        $floorplans = FloorPlans::where('customer_id', $order->customer_id)
+            ->whereIn('service_id', $order->services()->pluck('service.id'))
+            ->get();
+
+        if ($floorplans->isNotEmpty()) {
+            if (!$version) {
+                $versions = FloorplanVersion::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
+                if ($versions->isNotEmpty()) {
+                    $version = $versions->where('updated_at', '<=', $order->programmed_date)->last();
+
+                    if (!$version) {
+                        $version = $versions->last()?->version;
+                    }
+                }
+            }
+
+            $found_devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'))
+                ->where('version', $version)
+                ->pluck('id')
+                ->toArray();
+        }
+
+
+        return $found_devices;
+    }
+
     public function create(string $id)
     {
         $answers = json_decode(file_get_contents(public_path($this->file_answers_path)), true);
@@ -351,32 +381,21 @@ class ReportController extends Controller
             return back()->withErrors(['error' => 'Order not found.']);
         }
 
-        $devices_1 = Device::whereIn('id', OrderIncidents::where('order_id', $order->id)->pluck('device_id'))
-            ->pluck('id')
-            ->toArray();
+        $incidents = OrderIncidents::where('order_id', $order->id)->get();
 
-        $floorplans = FloorPlans::where('customer_id', $order->customer_id)
-            ->whereIn('service_id', $order->services()->pluck('service.id'))
-            ->get();
+        if ($incidents->isNotEmpty()) {
+            $devices_incidents = $incidents->pluck('device_id')->toArray();
+            $devices_1 = Device::where('id', $devices_incidents)->get();
 
-        if ($floorplans->isNotEmpty()) {
-            $versions = FloorplanVersion::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
-            if ($versions->isNotEmpty()) {
-                $version = $versions->where('updated_at', '<=', $order->programmed_date)->last();
-
-                if (!$version) {
-                    $version = $versions->last();
-                }
-
-                $devices_2 = Device::whereIn('floorplan_id', $floorplans->pluck('id'))
-                    ->where('version', $version->version)
-                    ->pluck('id')
-                    ->toArray();
-            }
+            $count = array_count_values($devices_1->pluck('version')->toArray());
+            $maxsum = max($count);
+            $version = array_search($maxsum, $count);
+            $found_devices = $this->getDevicesByVersion($id, $version);
+            $devices = Device::whereIn('id', $found_devices)->get();
+        } else {
+            $found_devices = $this->getDevicesByVersion($id);
+            $devices = Device::whereIn('id', $found_devices)->get();
         }
-
-        $device_ids = array_unique(array_merge($devices_1, $devices_2));
-        $devices = Device::whereIn('id', $device_ids)->get();
 
         $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique())->get();
 
