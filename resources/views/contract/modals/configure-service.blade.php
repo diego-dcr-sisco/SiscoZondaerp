@@ -172,6 +172,7 @@
                 configDescriptions = {};
 
                 const service_id = $('#service-id').val();
+                //setServiceVisualData(service_id);
 
                 // CORRECCIÓN 1: Reiniciar configurations solo para este servicio
                 configurations = contract_configurations.filter(c => c.service_id == service_id);
@@ -295,6 +296,15 @@
                     updateDaysInputFromPills(configId, 'week-days');
                 }
             });
+
+            /*function setServiceVisualData(service_id) {
+                var contain_ss = contain_selected_services.find(contain_service => contain_service.id == service_id);
+                $('#serviceModal-prefix').val(prefixes[contain_ss.prefix]);
+                $('#serviceModal-service').val(contain_ss.name);
+                $('#serviceModal-type').val(contain_ss.type);
+                $('#serviceModal-bsline').val(contain_ss.line);
+                $('#serviceModal-cost').val(contain_ss.cost);
+            }*/
 
             function addConfiguration() {
                 configCounter++;
@@ -655,13 +665,13 @@
                         </a>
                         ${order.status_id == 1 ? 
                             `<button class="btn btn-sm btn-secondary" onclick="editOrder(${order.id}, '${order.programmed_date}', ${configId})"
-                                                                data-bs-toggle="tooltip"    
-                                                                data-bs-title="This top tooltip is themed via CSS variables.">
-                                                                <i class="bi bi-calendar2-check-fill"></i>
-                                                            </button>
-                                                            <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
-                                                                <i class="bi bi-trash-fill"></i>
-                                                            </button>` 
+                                                                        data-bs-toggle="tooltip"    
+                                                                        data-bs-title="This top tooltip is themed via CSS variables.">
+                                                                        <i class="bi bi-calendar2-check-fill"></i>
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
+                                                                        <i class="bi bi-trash-fill"></i>
+                                                                    </button>` 
                             : 
                             `<span class="text-muted fw-bold">No editable</span>`
                         }
