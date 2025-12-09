@@ -64,6 +64,7 @@ use App\PDF\Certificate;
 use App\Models\Customer;
 
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\Rules\In;
 
 class ReportController extends Controller
 {
@@ -113,9 +114,9 @@ class ReportController extends Controller
                 $devices = $controlPoint['devices'];
                 $observations = $controlPoint['observations'];
                 $clear = $controlPoint['clear'];
+                $questions = $controlPoint['questions'];
 
                 $products_data = [];
-
 
                 if ($clear['questions']) {
                     OrderIncidents::where('order_id', $order->id)->whereIn('device_id', $devices)->delete();
@@ -136,18 +137,20 @@ class ReportController extends Controller
                     $updated_pests = [];
 
                     foreach ($answers as $questionId => $answer) {
-                        $oi = OrderIncidents::updateOrCreate(
-                            [
-                                'order_id' => $order->id,
-                                'question_id' => $questionId,
-                                'device_id' => $deviceId,
-                            ],
-                            [
-                                'answer' => $answer
-                            ]
-                        );
+                        if (in_array($questionId, $questions)) {
+                            $oi = OrderIncidents::updateOrCreate(
+                                [
+                                    'order_id' => $order->id,
+                                    'question_id' => $questionId,
+                                    'device_id' => $deviceId,
+                                ],
+                                [
+                                    'answer' => $answer
+                                ]
+                            );
 
-                        $updated_incidents[] = $oi->id;
+                            $updated_incidents[] = $oi->id;
+                        }
                     }
 
                     foreach ($products as $product) {
@@ -211,9 +214,9 @@ class ReportController extends Controller
                         }
                     }
 
-                    OrderIncidents::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_incidents)->delete();
-                    DeviceProduct::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_products)->delete();
-                    DevicePest::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_pests)->delete();
+                    //OrderIncidents::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_incidents)->delete();
+                    //DeviceProduct::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_products)->delete();
+                    //DevicePest::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_pests)->delete();
                 }
             }
 
@@ -349,8 +352,7 @@ class ReportController extends Controller
                 $versions = FloorplanVersion::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
                 if ($versions->isNotEmpty()) {
                     $version = $versions->where('updated_at', '<=', $order->programmed_date)->last();
-
-                    if (!$version) {
+                    if ($version) {
                         $version = $versions->last()?->version;
                     }
                 }
@@ -512,7 +514,8 @@ class ReportController extends Controller
                     'order_id' => $order->id,
                     'device_id' => $device->id,
                     'is_scanned' => $device_states->is_scanned ?? false,
-                    'is_checked' => (($device_states?->is_checked ?? false) || count($questions_data) > 0),
+                    //'is_checked' => (($device_states?->is_checked ?? false) || count($questions_data) > 0),
+                    'is_checked' => $device_states?->is_checked ?? false,
                     'observations' => $device_states->observations ?? null,
                     'device_image' => $device_states->device_image ?? null
                 ]
