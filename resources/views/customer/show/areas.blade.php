@@ -1,5 +1,14 @@
 @extends('layouts.app')
 @section('content')
+
+@php
+    $area_colors = [
+        'F5F5F4',
+        'A6A09B',
+        '0C0A09'
+    ]    
+@endphp
+
     <div class="container-fluid p-0">
         <div class="d-flex align-items-center border-bottom ps-4 p-2">
             <a href="{{ route('customer.index.sedes') }}" class="text-decoration-none pe-3">

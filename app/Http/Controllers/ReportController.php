@@ -393,10 +393,10 @@ class ReportController extends Controller
             $maxsum = max($count);
             $version = array_search($maxsum, $count);
             $found_devices = $this->getDevicesByVersion($id, $version);
-            $devices = Device::whereIn('id', $found_devices)->get();
+            $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
         } else {
             $found_devices = $this->getDevicesByVersion($id);
-            $devices = Device::whereIn('id', $found_devices)->get();
+            $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
         }
 
         $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique())->get();
