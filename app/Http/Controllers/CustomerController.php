@@ -893,7 +893,7 @@ class CustomerController extends Controller
     public function showSedeAreas(string $id)
     {
         $zone_types = ZoneType::all();
-        $customer = Customer::find($id);
+        $customer = Customer::with('applicationAreas')->find($id);
         $service_types = ServiceType::all();
         $navigation = [
             'Sede' => route('customer.edit.sede', ['id' => $customer->id]),
