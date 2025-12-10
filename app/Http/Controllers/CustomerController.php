@@ -904,7 +904,7 @@ class CustomerController extends Controller
             //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
         ];
-        dd($customer->applicationAreas);
+        
         return view('customer.show.areas', compact('customer', 'zone_types', 'navigation', 'service_types'));
     }
 

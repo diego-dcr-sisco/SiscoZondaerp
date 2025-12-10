@@ -27,28 +27,23 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($customer->applicationAreas as $index => $app_area)
+                        @foreach ($customer->applicationAreas as $index => $area)
                             <tr>
                                 <td>{{ $index + 1 }}</td>
-                                <td class="">{{ $app_area->name }}</td>
-                                <td class="">{{ $app_area->zoneType->name ?? '-' }}</td>
-                                <td class="">{{ $app_area->m2 }}</td>
+                                <td class="">{{ $area->name }}</td>
+                                <td class="">{{ $area->zoneType->name ?? '-' }}</td>
+                                <td class="">{{ $area->m2 }}</td>
                                 <td>
-                                    <div class="text-center" role="group" aria-label="Basic example">
-                                        <span data-bs-toggle="tooltip" data-bs-placement="top" title="Editar área">
-                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal"
-                                                data-area="{{ $app_area }}" data-bs-target="#areaEditModal"
-                                                onclick="setInputs(this)">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </button>
-                                        </span>
-                                        <a href="{{ route('area.destroy', ['id' => $app_area->id]) }}"
-                                            class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                            title="Eliminar área"
-                                            onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')">
-                                            <i class="bi bi-trash-fill"></i>
-                                        </a>
-                                    </div>
+                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal"
+                                        data-area="{{ $area }}" data-bs-target="#areaEditModal"
+                                        onclick="setInputs(this)">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                    <a href="{{ route('area.destroy', ['id' => $area->id]) }}" class="btn btn-danger btn-sm"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar área"
+                                        onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </a>
                                 </td>
                             </tr>
                         @endforeach
