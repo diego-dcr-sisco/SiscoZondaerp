@@ -336,7 +336,7 @@
             [];
     });
 
-    console.log(devicesToCheck);
+    console.log('Datos en devicesCheck: ', devicesToCheck);
 
     function handleQuestions(control_point_id, question_id, isChecked) {
         var value = parseInt($(`#controlpoint${control_point_id}-question${question_id}`).val());
