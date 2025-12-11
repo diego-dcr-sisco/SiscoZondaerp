@@ -10,7 +10,7 @@
         </ul>
     </div>
     <div class="col-8 p-5 pt-3">
-        <form class="row border -subtle shadow rounded p-3" action="{{ route('floorplan.store') }}"
+        <form class="row border shadow rounded p-3" action="{{ route('floorplan.store') }}"
             method="POST" enctype="multipart/form-data">
             @csrf
             <div class="col-12 mb-3">
@@ -33,7 +33,7 @@
                     <p class="text-danger">
                         Los archivos deben ser menores a 3MB.
                     </p>
-                    <input type="hidden" name="customer->id" name="customer->id" value="{{ $customer->id }}">
+                    <input type="hidden" name="customer_id" value="{{ $customer->id }}">
                     <input accept=".png, .jpg, .jpeg" type="file" name="file" required>
                 </div>
             </div>
@@ -48,7 +48,7 @@
     <ul class="list-group col-4 mb-5">
         @if (!$customer->floorplans->isEmpty())
             @foreach ($customer->floorplans as $item)
-                <li class="list-group-item -subtle">
+                <li class="list-group-item ">
                     <div class="row">
                         <strong>{{ $item->filename }}</strong>
                     </div>

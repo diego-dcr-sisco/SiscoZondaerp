@@ -26,11 +26,11 @@
         </div>
         <div class="row p-5 pt-3">
             @if ($section == 1)
-                @include('floorplan.edit.form')
+                @include('floorplans.edit.form')
             @endif
 
             @if ($section == 2)
-                @include('floorplan.edit.devices')
+                @include('floorplans.edit.devices')
             @endif
         </div>
     </div>

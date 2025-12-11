@@ -22,7 +22,7 @@
                     </div>
                     <div class="col-lg-8 col-12 mb-3">
                         <div class="mb-3">
-                            <label for="file" class="form-label">Subir nuevo plano:</label>
+                            <label for="file" accept=".png, .jpg, .jpeg" class="form-label">Subir nuevo plano:</label>
                             <input type="file" class="form-control" id="file" name="file"
                                  accept=".png, .jpg, .jpeg">
                             <div class="form-text">Formatos aceptados: .png, .jpg, .jpeg</div>

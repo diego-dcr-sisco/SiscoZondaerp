@@ -128,7 +128,7 @@
                         </div>
 
                         <div class="col-lg-4 col-12 mb-3">
-                            <label" class="form-label">
+                            <label class="form-label">
                                 Área de aplicación
                                 </label>
                                 @if (!$customer->applicationAreas->isEmpty())
@@ -319,7 +319,7 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label is-required"> rea </label>
+                        <label class="form-label is-required"> Area </label>
                         <select class="form-select " id="update-area" name="update_area">
                             @foreach ($customer->applicationAreas as $area)
                                 <option value="{{ $area->id }}">
