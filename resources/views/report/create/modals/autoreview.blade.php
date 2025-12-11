@@ -323,6 +323,7 @@
     autoreview_data.forEach(function(controlPoint) {
         productsData[controlPoint.control_point_id] = controlPoint.products || [];
         observationsData[controlPoint.control_point_id] = ''; // Inicializar observaciones vacías
+        console.log(controlPoint);
         devicesToCheck[controlPoint.control_point_id] = controlPoint.devices.map(device => device.id);
         cPointsQuestionsToCheck[controlPoint.control_point_id] = controlPoint.questions.map(queston => queston
             .id);

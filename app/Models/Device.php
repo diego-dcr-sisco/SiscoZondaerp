@@ -87,15 +87,23 @@ class Device extends Model
         return DevicePest::where('device_id', $this->id)->where('order_id', $orderId)->get();
     }
 
-    public function states($order_id) {
+    public function states($order_id)
+    {
         return $this->hasOne(DeviceStates::class, 'device_id')->where('order_id', $order_id);
     }
 
-    public function incidentsByOrder($order_id) {
+    public function incidentsByOrder($order_id)
+    {
         return $this->incidents()->where('order_id', $order_id)->get();
     }
 
-    public function incident($order_id, $question_id) {
+    public function incident($order_id, $question_id)
+    {
         return $this->incidents()->where('order_id', $order_id)->where('question_id', $question_id)->first();
+    }
+
+    public function detections()
+    {
+        return $this->hasMany(DevicePest::class, 'device_id');
     }
 }

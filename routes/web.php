@@ -454,6 +454,8 @@ Route::prefix('customers')
         Route::get('/quote/destroy/{id}', [QuoteController::class, 'destroy'])->name('quote.destroy');
         Route::get('/quote/download/{id}', [QuoteController::class, 'download'])->name('quote.download');
         Route::get('/quote/search', [QuoteController::class, 'search'])->name('quote.search');
+
+        Route::get('/graphics/{id}', [CustomerController::class, 'showGraphics'])->name('graphics');
     });
 
 // Leads, Clientes potenciales    

@@ -10,14 +10,19 @@ use App\Enums\TaxRegime as EnumTaxRegime;
 use App\Models\ApplicationArea;
 use App\Models\Branch;
 use App\Models\Company;
+use App\Models\Order;
 use App\Models\CompanyCategory;
 use App\Models\Customer;
 use App\Models\CustomerFile;
 use App\Models\CustomerReference;
+use App\Models\Device;
+use App\Models\DevicePest;
 use App\Models\Filenames;
+use App\Models\FloorplanVersion;
 use App\Models\Floortype;
 use App\Models\InvoiceCustomer;
 use App\Models\Lead;
+use App\Models\PestCatalog;
 use App\Models\Reference_type;
 use App\Models\Service;
 use App\Models\ServiceType;
@@ -405,7 +410,7 @@ class CustomerController extends Controller
 
     public function index(): View
     {
-        $customers = Customer::where('general_sedes', 0)->where('status', '!=', 0)->orderBy('name', 'desc')->paginate($this->size);
+        $customers = Customer::where('general_sedes', 0)->where('status', '!=', 0)->orderBy('name')->paginate($this->size);
         $service_types = ServiceType::all();
 
         $categories = [
@@ -429,7 +434,7 @@ class CustomerController extends Controller
 
     public function indexSedes(): View
     {
-        $customers = Customer::where('general_sedes', '!=', 0)->where('status', '!=', 0)->orderBy('id', 'desc')->paginate($this->size);
+        $customers = Customer::where('general_sedes', '!=', 0)->where('status', '!=', 0)->orderBy('name')->paginate($this->size);
         $service_types = ServiceType::all();
 
         $categories = [
@@ -453,7 +458,7 @@ class CustomerController extends Controller
 
     public function indexLeads(): View
     {
-        $customers = Lead::orderBy('id', 'desc')->paginate($this->size);
+        $customers = Lead::orderBy('name')->paginate($this->size);
         $service_types = ServiceType::all();
 
         $categories = [
@@ -471,7 +476,7 @@ class CustomerController extends Controller
             'Ordenes de servicio' => route('order.index'),
             'Facturacion' => route('invoices.index'),
         ];
-        
+
         return view('customer.index.leads', compact('customers', 'service_types', 'navigation', 'categories'));
     }
 
@@ -849,6 +854,7 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
+            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
         ];
         return view('customer.show.files', compact('customer', 'filenames', 'navigation', 'service_types'));
     }
@@ -866,6 +872,7 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
+            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
         ];
         return view('customer.show.floorplans', compact('customer', 'navigation', 'service_types', 'services'));
     }
@@ -887,6 +894,7 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
+            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
         ];
         return view('customer.show.portal', compact('customer', 'navigation', 'service_types', 'services', 'access'));
     }
@@ -903,8 +911,9 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
+            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
         ];
-        
+
         return view('customer.show.areas', compact('customer', 'zone_types', 'navigation', 'service_types'));
     }
 
@@ -973,6 +982,7 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
+            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
         ];
 
         return view(
@@ -1087,7 +1097,7 @@ class CustomerController extends Controller
             });
         }
 
-        if($request->filled('code')) {
+        if ($request->filled('code')) {
             $searchTerm = '%' . $request->code . '%';
             $query->where('code', 'LIKE', $searchTerm);
         }
@@ -1368,5 +1378,94 @@ class CustomerController extends Controller
         $customer = Customer::findOrFail($id);
         $customer->delete();
         return redirect()->route('invoices.customers')->with('success', 'Cliente eliminado correctamente');
+    }
+
+    public function showGraphics(Request $request, string $id)
+    {
+        $pests_headers = [];
+        $data = [];
+        $version = 0;
+        $customer = Customer::with(['applicationAreas.devices'])->find($id);
+
+        $order_query = Order::query();
+        if ($request->filled('date_range')) {
+            [$startDate, $endDate] = array_map(function ($d) {
+                return Carbon::createFromFormat('d/m/Y', trim($d));
+            }, explode(' - ', $request->input('date_range')));
+
+            $order_query->whereBetween('programmed_date', [
+                $startDate->format('Y-m-d'),
+                $endDate->format('Y-m-d'),
+            ]);
+        }
+
+        $orders = $order_query->where('customer_id', $id)->get();
+        $orderIds = $orders->pluck('id');
+
+        // Obtener todos los device_id de las áreas del cliente
+        $deviceIds = $customer->applicationAreas->flatMap->devices->pluck('id');
+
+        // Obtener todas las DevicePest relevantes de una sola consulta
+        $allDevicePests = DevicePest::whereIn('device_id', $deviceIds)
+            ->whereIn('order_id', $orderIds)
+            ->with(['pest', 'device.applicationArea'])  // Cambiado de deviceArea a area
+            ->get();
+
+        $versions = array_unique(Device::whereIn('id', $allDevicePests->pluck('device_id'))->get()->pluck('version')->toArray());
+
+        if (count($versions) == 1) {
+            $version = $versions[0];
+        } else {
+            return view('customer.show.graphics', compact('customer', 'pests_headers', 'data'));
+        }
+
+        // Obtener todos los nombres de plagas únicos para los headers
+        $pests_headers = $allDevicePests->pluck('pest.name')
+            ->unique()
+            ->filter()
+            ->sort()
+            ->values()
+            ->toArray();
+
+        // Inicializar array de datos
+        $data = [];
+
+        // Agrupar por dispositivo
+        $devicePestsByDevice = $allDevicePests->groupBy('device_id');
+
+        foreach ($customer->applicationAreas as $area) {
+            foreach ($area->devicesByVersion($version) as $device) {
+                // Obtener detecciones para este dispositivo
+                $dpests = $devicePestsByDevice->get($device->id, collect());
+
+                // Crear array asociativo para las detecciones de plagas
+                $pest_totals = array_fill_keys($pests_headers, 0);
+
+                // Sumar las detecciones reales
+                $total_detections = 0;
+                if (!$dpests->isEmpty()) {
+                    $detectionsByPest = $dpests->groupBy('pest.name');
+
+                    foreach ($detectionsByPest as $pest_name => $group) {
+                        $total = $group->sum('total');
+                        $pest_totals[$pest_name] = $total;
+                        $total_detections += $total;
+                    }
+                }
+
+                // Agregar al array de datos
+                $data[] = [
+                    'area_id' => $area->id,
+                    'area_name' => $area->name,
+                    'device_id' => $device->id,
+                    'device_name' => $device->code,
+                    'version' => $device->version,
+                    'pest_total_detections' => $pest_totals,
+                    'total_detections' => $total_detections
+                ];
+            }
+        }
+        
+        return view('customer.show.graphics', compact('customer', 'pests_headers', 'data'));
     }
 }
