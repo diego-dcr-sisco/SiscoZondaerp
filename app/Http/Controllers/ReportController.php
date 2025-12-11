@@ -419,14 +419,13 @@ class ReportController extends Controller
                 'control_point_id' => $control_point->id,
                 'control_point_name' => $control_point->name,
                 'questions' => $questions_data,
-                //'devices' => $devices->where('type_control_point_id', $control_point->id)->pluck('id')->toArray(),
                 'devices' => $devices->where('type_control_point_id', $control_point->id)->map(function ($device) {
                     return [
                         'id' => $device->id,
                         'code' => $device->code,
                         'name' => $device->controlPoint->name
                     ];
-                })->toArray(),
+                })->values()->toArray(),
                 'pests' => PestCatalog::all()->map(function ($pest) {
                     return [
                         'id' => $pest->id,

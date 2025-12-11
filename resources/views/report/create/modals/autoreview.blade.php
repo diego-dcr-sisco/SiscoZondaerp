@@ -331,14 +331,12 @@
         console.log(`------------------ P: ${controlPoint.control_point_id} -----------------`)
         devicesToCheck[controlPoint.control_point_id] = Array.isArray(controlPoint.devices) ?
             controlPoint.devices.map(device => device.id) : [];
+        console.log('Datos en devicesCheck: ', devicesToCheck);
+
 
         cPointsQuestionsToCheck[controlPoint.control_point_id] = Array.isArray(controlPoint.questions) ?
-            controlPoint.questions.map(question => question.id) :
-            [];
+            controlPoint.questions.map(question => question.id) : [];
     });
-
-    console.log('Autoreview Data: ', autoreview_data);
-    console.log('Datos en devicesCheck: ', devicesToCheck);
 
     function handleQuestions(control_point_id, question_id, isChecked) {
         var value = parseInt($(`#controlpoint${control_point_id}-question${question_id}`).val());
