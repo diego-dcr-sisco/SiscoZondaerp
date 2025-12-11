@@ -324,10 +324,11 @@
     var appMethods = @json($application_methods);
 
     // Inicializar productsData
-    autoreview_data.forEach(function(controlPoint) {
+    autoreview_data.forEach((controlPoint) => {
         productsData[controlPoint.control_point_id] = controlPoint.products || [];
         observationsData[controlPoint.control_point_id] = '';
 
+        console.log(`------------------ P: ${controlPoint.control_point_id} -----------------`)
         devicesToCheck[controlPoint.control_point_id] = Array.isArray(controlPoint.devices) ?
             controlPoint.devices.map(device => device.id) : [];
 
