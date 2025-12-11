@@ -336,6 +336,8 @@
             [];
     });
 
+    console.log(devicesToCheck);
+
     function handleQuestions(control_point_id, question_id, isChecked) {
         var value = parseInt($(`#controlpoint${control_point_id}-question${question_id}`).val());
         if (!cPointsQuestionsToCheck[control_point_id]) {
