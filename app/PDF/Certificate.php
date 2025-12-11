@@ -236,26 +236,6 @@ class Certificate
             ->pluck('id')
             ->toArray();
 
-        $floorplans = FloorPlans::where('customer_id', $this->order->customer_id)
-            ->whereIn('service_id', $this->order->services()->pluck('service.id'))
-            ->get();
-
-        if ($floorplans->isNotEmpty()) {
-            $versions = FloorplanVersion::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
-            if ($versions->isNotEmpty()) {
-                $version = $versions->where('updated_at', '<=', $this->order->programmed_date)->last();
-
-                if (!$version) {
-                    $version = $versions->last();
-                }
-
-                $devices_2 = Device::whereIn('floorplan_id', $floorplans->pluck('id'))
-                    ->where('version', $version->version)
-                    ->pluck('id')
-                    ->toArray();
-            }
-        }
-
         $device_ids = array_unique(array_merge($devices_1, $devices_2));
         $devices_query = Device::whereIn('id', $device_ids);
 

@@ -132,9 +132,9 @@ class ReportController extends Controller
 
                 // Procesar cada elemento
                 foreach ($devices as $deviceId) {
-                    $updated_incidents = [];
-                    $updated_products = [];
-                    $updated_pests = [];
+                    //$updated_incidents = [];
+                    //$updated_products = [];
+                    //$updated_pests = [];
 
                     foreach ($answers as $questionId => $answer) {
                         if (in_array($questionId, $questions)) {
