@@ -393,7 +393,8 @@ class ReportController extends Controller
             $maxsum = max($count);
             $version = array_search($maxsum, $count);
             $found_devices = $this->getDevicesByVersion($id, $version);
-            dd($found_devices, $devices_1->pluck('id')->toArray());
+            $add_devices = array_merge($devices_1->pluck('id')->toArray(), $found_devices);
+            dd($add_devices);
             $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
         } else {
             $found_devices = $this->getDevicesByVersion($id);
