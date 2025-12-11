@@ -79,11 +79,15 @@
                                                 Preguntas
                                             </div>
                                             <div class="">
-                                                <button type="button" class="btn btn-success btn-sm" id="btn-allQuesions{{ $autoreview['control_point_id'] }}"
-                                                    onclick="selectAllQuestions({{ $autoreview['control_point_id'] }})"><i class="bi bi-check2-square"></i> Seleccionar
+                                                <button type="button" class="btn btn-success btn-sm"
+                                                    id="btn-allQuesions{{ $autoreview['control_point_id'] }}"
+                                                    onclick="selectAllQuestions({{ $autoreview['control_point_id'] }})"><i
+                                                        class="bi bi-check2-square"></i> Seleccionar
                                                     Todas</button>
-                                                <button type="button" class="btn btn-danger btn-sm" id="btn-flushQuesions{{ $autoreview['control_point_id'] }}"
-                                                    onclick="flushQuestions({{ $autoreview['control_point_id'] }})"><i class="bi bi-arrow-clockwise"></i> Limpiar</button>
+                                                <button type="button" class="btn btn-danger btn-sm"
+                                                    id="btn-flushQuesions{{ $autoreview['control_point_id'] }}"
+                                                    onclick="flushQuestions({{ $autoreview['control_point_id'] }})"><i
+                                                        class="bi bi-arrow-clockwise"></i> Limpiar</button>
                                             </div>
                                         </div>
                                     </div>
@@ -322,11 +326,14 @@
     // Inicializar productsData
     autoreview_data.forEach(function(controlPoint) {
         productsData[controlPoint.control_point_id] = controlPoint.products || [];
-        observationsData[controlPoint.control_point_id] = ''; // Inicializar observaciones vacías
-        console.log(controlPoint);
-        devicesToCheck[controlPoint.control_point_id] = controlPoint.devices.map(device => device.id);
-        cPointsQuestionsToCheck[controlPoint.control_point_id] = controlPoint.questions.map(queston => queston
-            .id);
+        observationsData[controlPoint.control_point_id] = '';
+
+        devicesToCheck[controlPoint.control_point_id] = Array.isArray(controlPoint.devices) ?
+            controlPoint.devices.map(device => device.id) : [];
+
+        cPointsQuestionsToCheck[controlPoint.control_point_id] = Array.isArray(controlPoint.questions) ?
+            controlPoint.questions.map(question => question.id) :
+            [];
     });
 
     function handleQuestions(control_point_id, question_id, isChecked) {
@@ -346,7 +353,7 @@
     }
 
     function selectAllQuestions(control_point_id) {
-        
+
         var allCheckboxes = $(`.checkbox-cp${control_point_id}`);
         allCheckboxes.prop('checked', true).trigger('change');
 
