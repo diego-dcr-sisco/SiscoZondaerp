@@ -336,6 +336,7 @@
             [];
     });
 
+    console.log('Autoreview Data: ', autoreview_data);
     console.log('Datos en devicesCheck: ', devicesToCheck);
 
     function handleQuestions(control_point_id, question_id, isChecked) {
