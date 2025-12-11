@@ -387,7 +387,7 @@ class ReportController extends Controller
 
         if ($incidents->isNotEmpty()) {
             $devices_incidents = $incidents->pluck('device_id')->toArray();
-            $devices_1 = Device::where('id', $devices_incidents)->get();
+            $devices_1 = Device::whereIn('id', $devices_incidents)->get();
 
             $count = array_count_values($devices_1->pluck('version')->toArray());
             $maxsum = max($count);
