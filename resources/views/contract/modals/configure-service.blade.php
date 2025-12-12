@@ -263,6 +263,8 @@
                         return acc;
                     }, {});
 
+                    console.log('Config-Descrip: ', configDescriptions);
+
                 } else {
                     configurations = [];
                     $("#empty-config-state").show();
