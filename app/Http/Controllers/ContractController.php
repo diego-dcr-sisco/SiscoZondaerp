@@ -457,8 +457,6 @@ class ContractController extends Controller
             ];
         }
 
-        dd($selected_services);
-
         foreach ($contract_services as $index => $cs) {
             if (!isset($count_indexs[$cs->service_id])) {
                 $count_indexs[$cs->service_id] = 1;
