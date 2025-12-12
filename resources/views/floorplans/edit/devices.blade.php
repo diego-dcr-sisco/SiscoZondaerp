@@ -112,8 +112,8 @@
                             <label class="form-label">Versión seleccionada: </label>
                             @if ($f_version)
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="version"
-                                        value="{{ $f_version?->version }}" disabled>
+                                    <input type="number" class="form-control bg-secondary-subtle" name="version"
+                                        value="{{ $f_version?->version }}" readonly>
                                     <input type="date" class="form-control" name="version_updated_at"
                                         value="{{ $f_version?->updated_at->format('Y-m-d') }}">
                                 </div>
@@ -129,7 +129,7 @@
 
                         <div class="col-lg-4 col-12 mb-3">
                             <label class="form-label">
-                                Área de aplicación
+                                Área de aplicación 
                             </label>
                             @if (!$customer->applicationAreas->isEmpty())
                                 <select class="form-select" id="area" name="area">

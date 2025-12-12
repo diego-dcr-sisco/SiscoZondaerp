@@ -106,4 +106,24 @@ class Device extends Model
     {
         return $this->hasMany(DevicePest::class, 'device_id');
     }
+
+    public function deviceProducts()
+    {
+        return $this->hasMany(DeviceProduct::class, 'device_id');
+    }
+
+    public function devicePests()
+    {
+        return $this->hasMany(DevicePest::class, 'device_id');
+    }
+
+    public function deviceStates()
+    {
+        return $this->hasMany(DeviceStates::class, 'device_id', 'id');
+    }
+
+    public function statesForOrder($order_id)
+    {
+        return $this->deviceStates()->where('order_id', $order_id);
+    }
 }

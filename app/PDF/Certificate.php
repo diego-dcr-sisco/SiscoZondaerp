@@ -48,7 +48,7 @@ class Certificate
     {
         $prefix = 'data:image/png;base64,';
 
-        return preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $base64String) 
+        return preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $base64String)
             ? $prefix . $base64String
             : $base64String;
     }
@@ -222,56 +222,118 @@ class Certificate
         ];
     }
 
+    private function getDevicesByVersion($order_id, $version = null)
+    {
+        $found_devices = [];
+        $f_versions = [];
+        $order = Order::find($order_id);
+        $floorplans = FloorPlans::where('customer_id', $order->customer_id)
+            ->whereIn('service_id', $order->services()->pluck('service.id'))
+            ->get();
+
+        if ($floorplans->isNotEmpty()) {
+            foreach ($floorplans as $floorplan) {
+                $versions = FloorplanVersion::where('floorplan_id', $floorplan->id)->get();
+                $version = $versions->where('updated_at', '<=', $order->programmed_date)->last();
+                if ($version) {
+                    $f_versions[] = [
+                        'floorplan_id' => $floorplan->id,
+                        'version' => $version->version,
+                    ];
+                } else {
+                    $f_versions[] = [
+                        'floorplan_id' => $floorplan->id,
+                        'version' => $versions->last()?->version,
+                    ];
+                }
+            }
+
+            $found_devices = [];
+            foreach ($f_versions as $fv) {
+                $devices = Device::where('floorplan_id', $fv['floorplan_id'])
+                    ->where('version', $fv['version'])
+                    ->pluck('id')
+                    ->toArray();
+                $found_devices = array_merge($found_devices, $devices);
+            }
+        }
+
+        return $found_devices;
+    }
+
+
     public function devices()
     {
         $_reviews = [];
-        $devices_1 = [];
-        $devices_2 = [];
-        $review_devices = [];
 
         $answers = json_decode(file_get_contents(public_path($this->file_answers_path)), true);
         $services = $this->order->services;
+        $incidents = OrderIncidents::where('order_id', $this->order->id)->get();
 
-        $devices_1 = Device::whereIn('id', OrderIncidents::where('order_id', $this->order->id)->pluck('device_id'))
-            ->pluck('id')
-            ->toArray();
+        // Obtener dispositivos con version correcta
+        $found_device_ids = $this->getDevicesByVersion($this->order_id);
 
-        $device_ids = array_unique(array_merge($devices_1, $devices_2));
-        $devices_query = Device::whereIn('id', $device_ids);
+        // Obtener todos los dispositivos necesarios con sus relaciones
+        $devices = Device::whereIn('id', $found_device_ids)
+            ->with([
+                'applicationArea',
+                'controlPoint',
+                'floorplan.customer',
+                'deviceProducts' => function ($query) {
+                    $query->where('order_id', $this->order->id)
+                        ->with('product.metric');
+                },
+                'devicePests' => function ($query) {
+                    $query->where('order_id', $this->order->id)
+                        ->with('pest');
+                },
+                'incidents' => function ($query) {
+                    $query->where('order_id', $this->order->id);
+                },
+                'deviceStates' => function ($query) {
+                    $query->where('order_id', $this->order->id);
+                }
+            ])
+            ->orderBy('nplan', 'ASC')
+            ->get();
 
-        $devices = $devices_query->get();
-        $floorplans = FloorPlans::whereIn('id', $devices->pluck('floorplan_id'))->get();
+        // Agrupar dispositivos por floorplan_id
+        $devicesByFloorplan = $devices->groupBy('floorplan_id');
 
-        foreach ($floorplans as $floorplan) {
+        foreach ($devicesByFloorplan as $floorplan_id => $floorplanDevices) {
+            // Obtener el floorplan desde el primer dispositivo
+            $floorplan = $floorplanDevices->first()->floorplan;
             $control_point_data = [];
-            $fds = $devices_query->where('floorplan_id', $floorplan->id)->get();
-            $control_points = ControlPoint::whereIn('id', $fds->pluck('type_control_point_id')
-                ->unique())
-                ->get();
 
-            foreach ($control_points as $control_point) {
+            // Agrupar dispositivos por control point dentro de este floorplan
+            $devicesByControlPoint = $floorplanDevices->groupBy('type_control_point_id');
+
+            foreach ($devicesByControlPoint as $control_point_id => $controlPointDevices) {
+                $control_point = ControlPoint::find($control_point_id);
+
+                // Obtener preguntas para este control point
                 $questions = Question::whereIn(
                     'id',
-                    ControlPointQuestion::where('control_point_id', $control_point->id)
+                    ControlPointQuestion::where('control_point_id', $control_point_id)
                         ->pluck('question_id')
                         ->unique()
                 )->get();
-                $question_headers = $questions->pluck('question')->toArray();
 
+                $question_headers = $questions->pluck('question')->toArray();
                 $headers = array_merge(['Zona', 'Código', 'Producto y consumo', 'Valor revisión'], $question_headers);
 
-                $found_devices = $devices_query->where('type_control_point_id', $control_point->id)
-                    ->where('floorplan_id', $floorplan->id)
-                    ->orderBy('nplan')->get();
+                // Inicializar array para dispositivos de este control point
+                $devices_data = [];
 
-                foreach ($found_devices as $found_device) {
-                    $device_products = DeviceProduct::where('order_id', $this->order->id)->where('device_id', $found_device->id)->get();
-                    $device_pests = DevicePest::where('order_id', $this->order->id)->where('device_id', $found_device->id)->get();
+                foreach ($controlPointDevices->sortBy('nplan') as $device) {
+                    // Obtener productos y plagas desde las relaciones cargadas
+                    $device_products = $device->deviceProducts;
+                    $device_pests = $device->devicePests;
 
+                    // Preparar datos de preguntas
                     $question_data = [];
                     foreach ($questions as $question) {
-                        $incident = OrderIncidents::where('order_id', $this->order->id)
-                            ->where('device_id', $found_device->id)
+                        $incident = $device->incidents
                             ->where('question_id', $question->id)
                             ->first();
 
@@ -281,50 +343,60 @@ class Certificate
                         ];
                     }
 
-                    $device_state = $found_device->states($this->order->id);
+                    // Obtener observaciones
+                    $device_state = $device->states($this->order_id)->first();
                     $observation = $device_state->observations ?? null;
 
                     if (!$observation) {
-                        $observation = OrderIncidents::where('order_id', $this->order->id)
-                            ->where('device_id', $found_device->id)
+                        $observation = $device->incidents
                             ->whereIn('question_id', [33, 34, 35])
                             ->first()
                             ->answer ?? null;
                     }
 
-                    $devices_data[] = [
-                        'zone' => $found_device->applicationArea->name ?? '-',
-                        'code' => $found_device->code,
-                        'intake' => $device_products->map(function ($device_product) {
-                            return $device_product
-                                ? $device_product->product->name . ' (' . $device_product->quantity . ' ' . $this->extractUnits($device_product->product->metric->value) . ')'
-                                : '-';
-                        })->implode(', '),
-                        'pests' => $device_pests->map(function ($device_pest) {
+                    // Preparar string de productos
+                    $intake_string = $device_products->map(function ($device_product) {
+                        if ($device_product && $device_product->product) {
+                            $unit = $this->extractUnits($device_product->product->metric->value ?? '');
+                            return $device_product->product->name . ' (' . $device_product->quantity . ' ' . $unit . ')';
+                        }
+                        return '-';
+                    })->implode(', ');
+
+                    // Preparar string de plagas
+                    $pests_string = $device_pests->map(function ($device_pest) {
+                        if ($device_pest && $device_pest->pest) {
                             return '(' . $device_pest->total . ') ' . $device_pest->pest->name;
-                        })->implode(', '),
+                        }
+                        return '';
+                    })->filter()->implode(', ');
+
+                    $devices_data[] = [
+                        'zone' => $device->applicationArea->name ?? '-',
+                        'code' => $device->code,
+                        'intake' => $intake_string ?: '-',
+                        'pests' => $pests_string ?: '-',
                         'questions' => $question_data,
                         'observations' => $observation
                     ];
                 }
 
                 $control_point_data[] = [
-                    'name' => $control_point->name,
+                    'name' => $control_point->name ?? 'Sin nombre',
                     'headers' => $headers,
                     'devices' => $devices_data,
                 ];
             }
 
             $_reviews[] = [
-                'sede' => $floorplan->customer->name,
-                'floorplan' => $floorplan->filename,
+                'sede' => $floorplan->customer->name ?? 'Sin sede',
+                'floorplan' => $floorplan->filename ?? 'Sin archivo',
                 'control_points' => $control_point_data
             ];
         }
 
         $this->data['reviews'] = $_reviews;
     }
-
     public function notes()
     {
         $this->data['notes'] = !empty($this->order->notes) && trim($this->order->notes) != '<br>'

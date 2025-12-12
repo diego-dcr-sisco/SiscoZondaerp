@@ -104,7 +104,6 @@ class ReportController extends Controller
             $autoreview_data = json_decode($request->input('autoreview_data'), true);
             $order = Order::find($orderId);
 
-
             foreach ($autoreview_data['control_points'] as $controlPoint) {
                 // Acceder a los datos de cada control point
                 $controlPointId = $controlPoint['control_point_id'];
@@ -342,28 +341,38 @@ class ReportController extends Controller
     private function getDevicesByVersion($order_id, $version = null)
     {
         $found_devices = [];
+        $f_versions = [];
         $order = Order::find($order_id);
         $floorplans = FloorPlans::where('customer_id', $order->customer_id)
             ->whereIn('service_id', $order->services()->pluck('service.id'))
             ->get();
 
         if ($floorplans->isNotEmpty()) {
-            if (!$version) {
-                $versions = FloorplanVersion::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
-                if ($versions->isNotEmpty()) {
-                    $version = $versions->where('updated_at', '<=', $order->programmed_date)->last();
-                    if ($version) {
-                        $version = $versions->last()?->version;
-                    }
+            foreach ($floorplans as $floorplan) {
+                $versions = FloorplanVersion::where('floorplan_id', $floorplan->id)->get();
+                $version = $versions->where('updated_at', '<=', $order->programmed_date)->last();
+                if ($version) {
+                    $f_versions[] = [
+                        'floorplan_id' => $floorplan->id,
+                        'version' => $version->version,
+                    ];
+                } else {
+                    $f_versions[] = [
+                        'floorplan_id' => $floorplan->id,
+                        'version' => $versions->last()?->version,
+                    ];
                 }
             }
 
-            $found_devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'))
-                ->where('version', $version)
-                ->pluck('id')
-                ->toArray();
+            $found_devices = [];
+            foreach ($f_versions as $fv) {
+                $devices = Device::where('floorplan_id', $fv['floorplan_id'])
+                    ->where('version', $fv['version'])
+                    ->pluck('id')
+                    ->toArray();
+                $found_devices = array_merge($found_devices, $devices);
+            }
         }
-
 
         return $found_devices;
     }
@@ -385,16 +394,19 @@ class ReportController extends Controller
 
         $incidents = OrderIncidents::where('order_id', $order->id)->get();
 
-        if ($incidents->isNotEmpty()) {
+        if ($order->status_id == 5 && $incidents->isNotEmpty()) {
             $devices_incidents = $incidents->pluck('device_id')->toArray();
-            $devices_1 = Device::whereIn('id', $devices_incidents)->get();
+            $devices = Device::whereIn('id', $devices_incidents)->orderBy('nplan', 'ASC')->get();
 
-            $count = array_count_values($devices_1->pluck('version')->toArray());
+            /*$count = array_count_values($devices_1->pluck('version')->toArray());
             $maxsum = max($count);
             $version = array_search($maxsum, $count);
-            $found_devices = $this->getDevicesByVersion($id, $version);
-            $found_devices = array_merge($devices_1->pluck('id')->toArray(), array_diff($found_devices, $devices_1->pluck('id')->toArray()));
-            $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
+
+            $found_devices = $this->getDevicesByVersion($id);
+            //dd($found_devices);
+            //$found_devices = array_merge($devices_1->pluck('id')->toArray(), array_diff($found_devices, $devices_1->pluck('id')->toArray()));
+            $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();*/
+            
         } else {
             $found_devices = $this->getDevicesByVersion($id);
             $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
@@ -448,6 +460,7 @@ class ReportController extends Controller
             ];
         }
 
+        //dd($devices->pluck('id'));
         foreach ($devices as $device) {
             $questions_data = [];
             $questions = $device->controlPoint->questions()->get();

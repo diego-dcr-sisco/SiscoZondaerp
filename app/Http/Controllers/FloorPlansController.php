@@ -630,7 +630,7 @@ class FloorPlansController extends Controller
         $version = FloorplanVersion::where('floorplan_id', $floorplan->id)->max('version');
 
         if ($version) {
-            $latestVersionNumber = ++$version;
+            $latestVersionNumber = $create_version ? $version + 1 : $version;
         } else {
             $latestVersionNumber = 1;
         }
@@ -643,7 +643,12 @@ class FloorPlansController extends Controller
                 'updated_at' => now(),
             ]);
         } else {
-            FloorplanVersion::where('floorplan_id', $floorplan->id)->where('version', $version)->update(['updated_at' => $request->input('version_updated_at') . ' 00:00:00']);
+            $updateDate = Carbon::createFromFormat('Y-m-d', $request->input('version_updated_at'));
+            $updateDate->startOfDay();
+
+            FloorplanVersion::where('floorplan_id', $floorplan->id)
+                ->where('version', $version)
+                ->update(['updated_at' => $updateDate]);
         }
 
         foreach ($pointsData as $point) {

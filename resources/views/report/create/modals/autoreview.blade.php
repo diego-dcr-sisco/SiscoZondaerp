@@ -328,11 +328,8 @@
         productsData[controlPoint.control_point_id] = controlPoint.products || [];
         observationsData[controlPoint.control_point_id] = '';
 
-        console.log(`------------------ P: ${controlPoint.control_point_id} -----------------`)
         devicesToCheck[controlPoint.control_point_id] = Array.isArray(controlPoint.devices) ?
             controlPoint.devices.map(device => device.id) : [];
-        console.log('Datos en devicesCheck: ', devicesToCheck);
-
 
         cPointsQuestionsToCheck[controlPoint.control_point_id] = Array.isArray(controlPoint.questions) ?
             controlPoint.questions.map(question => question.id) : [];
