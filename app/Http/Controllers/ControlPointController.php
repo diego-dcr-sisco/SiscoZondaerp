@@ -16,6 +16,7 @@ use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\ControlPointQuestion;
 use App\Models\ProductCatalog;
+use App\Models\FloorPlans;
 use Illuminate\Support\Str;
 
 class ControlPointController extends Controller
@@ -235,4 +236,13 @@ class ControlPointController extends Controller
             )
         );
     }
+
+    public function geolocateDevices($floorplan_id)
+    {
+        $floorplan = FloorPlans::find($floorplan_id);
+        $devices = $floorplan->devices($floorplan->lastVersion() ?? 1)->get();
+
+        return view('floorplan.geolocation.index', compact('floorplan', 'devices'));
+    }
+
 }

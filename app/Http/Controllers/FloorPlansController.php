@@ -63,6 +63,7 @@ class FloorPlansController extends Controller
             'Plano' => route('floorplan.edit', ['id' => $floorplan->id]),
             'Dispositivos' => route('floorplan.devices', ['id' => $floorplan->id, 'version' => $floorplan->lastVersion() ?? '0']),
             'QRs' => route('floorplan.qr', ['id' => $floorplan->id]),
+            'Geolocalización' => route('floorplan.geolocation', ['id' => $floorplan->id]),
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $floorplan->customer_id])
         ];
         
@@ -318,8 +319,8 @@ class FloorPlansController extends Controller
                 'mimes:jpeg,png,jpg',
                 'max:5120'
             ],
-            'service_id' => 'nullable|exists:services,id',
-            'customer_id' => 'required|exists:customers,id'
+            'service_id' => 'nullable|exists:service,id',
+            'customer_id' => 'required|exists:customer,id'
         ], [
             'filename.required' => 'El nombre del plano es obligatorio',
             'filename.min' => 'El nombre debe tener al menos 3 caracteres',
