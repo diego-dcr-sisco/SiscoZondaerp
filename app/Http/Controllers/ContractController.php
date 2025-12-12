@@ -444,6 +444,7 @@ class ContractController extends Controller
         $services = Service::whereIn('id', $service_ids)->get();
 
         foreach ($services as $service) {
+            $setting = $contract->setting($service->id);
             $selected_services[] = [
                 'id' => $service->id,
                 'prefix' => $service->prefix,
@@ -451,7 +452,7 @@ class ContractController extends Controller
                 'type' => $service->serviceType->name,
                 'line' => $service->businessLine->name,
                 'cost' => $service->cost,
-                'description' => $service->description,
+                'description' => $setting->service_description ?? $service->description ?? null,
                 #settings: [],
             ];
         }
