@@ -181,7 +181,6 @@
                     $("#empty-config-state").hide();
 
                     configurations.forEach(config => {
-                        console.log('Config - Ciclo: ', config);
                         addConfiguration();
 
                         // CORRECCIÓN 2: Cargar fechas desde las órdenes existentes MANTENIENDO IDs
@@ -264,14 +263,11 @@
                         return acc;
                     }, {});
 
-                    console.log('Config-Descrip: ', configDescriptions);
-
                 } else {
                     configurations = [];
                     $("#empty-config-state").show();
                 }
 
-                console.log('Configuraciones cargadas:', configurations);
             });
 
             // Manejar clic en el botón de agregar configuración
