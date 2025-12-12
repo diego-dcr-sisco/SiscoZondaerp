@@ -11,6 +11,80 @@
         </div>
 
         <div class="p-3">
+            <div class="border rounded p-3 text-dark bg-light mb-3">
+                <form id="filter-form" action="{{ route('customer.graphics', ['id' => $customer->id]) }}" method="GET">
+                    <div class="row g-2 mb-0">
+                        <!-- Cliente -->
+                        <div class="col-lg-3">
+                            <label for="customer" class="form-label">Cliente</label>
+                            <input type="text"
+                                class="form-control form-control-sm {{ isset($customer) ? 'bg-secondary-subtle' : '' }}"
+                                id="customer" name="customer"
+                                value="{{ request('customer') ?? isset($customer) ? $customer->name : '' }}"
+                                placeholder="Nombre del cliente" {{ isset($customer) ? 'readonly' : '' }}>
+                        </div>
+
+                        <!-- Rango de fecha -->
+                        <div class="col-lg-3">
+                            <label for="date_range" class="form-label">Rango de Fechas</label>
+                            <input type="text" class="form-control form-control-sm date-range-picker" id="date-range"
+                                name="date_range" value="{{ request('date_range') }}" placeholder="Selecciona un rango"
+                                autocomplete="off">
+                        </div>
+
+                        <!-- Servicio -->
+                        <div class="col-lg-3">
+                            <label for="service" class="form-label">Servicio</label>
+                            <input type="text" class="form-control form-control-sm" id="service" name="service"
+                                value="{{ request('service') }}" placeholder="Buscar servicio">
+                        </div>
+
+                        <!-- Area -->
+                        <div class="col-lg-3">
+                            <label for="area" class="form-label">Area</label>
+                            <select class="form-select form-select-sm" id="area" name="area">
+                                <option value="" {{ request('area') == null ? 'selected' : '' }}>Todas</option>
+                                @foreach ($app_areas as $area)
+                                    <option value="{{ $area->id }}"
+                                        {{ request('area') == $area->name ? 'selected' : '' }}>{{ $area->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Punto de Control -->
+                        <div class="col-lg-2">
+                            <label for="device_type" class="form-label">Tipo de dispositivo</label>
+                            <select class="form-select form-select-sm" id="control_point" name="control_point">
+                                <option value="" {{ request('control_point') == null ? 'selected' : '' }}>Todas</option>
+                                @foreach ($control_points as $cp)
+                                    <option value="{{ $cp->id }}"
+                                        {{ request('control_point') == $cp->code ? 'selected' : '' }}>{{ $cp->code }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Plaga -->
+                        <div class="col-lg-2">
+                            <label for="pest" class="form-label">Plaga</label>
+                            <input type="text" class="form-control form-control-sm" id="pest" name="pest"
+                                value="{{ request('pest') }}" placeholder="Buscar por plaga">
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="col-lg-12 d-flex justify-content-end m-0 mt-3">
+                            <button type="submit" class="btn btn-primary btn-sm me-2">
+                                <i class="bi bi-funnel-fill"></i> Filtrar
+                            </button>
+                            <a href="{{ route('order.index') }}" class="btn btn-secondary btn-sm">
+                                <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-sm table-bordered table-striped">
                     <thead>
@@ -18,19 +92,19 @@
                             <th class="fw-bold" scope="col">#</th>
                             <th class="fw-bold" scope="col">Area</th>
                             <th class="fw-bold" scope="col">Dispositivo</th>
-                            @foreach ($pests_headers as $pest_header)
-                                <th class="fw-bold" scope="col">{{ $pest_header }}</th>
+                            @foreach ($data['headers'] as $header)
+                                <th class="fw-bold" scope="col">{{ $header }}</th>
                             @endforeach
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($data as $index => $d)
+                        @foreach ($data['detections'] as $index => $d)
                             <tr>
                                 <td>{{ $index + 1 }}</td>
                                 <td>{{ $d['area_name'] }}</td>
                                 <td>{{ $d['device_name'] }}</td>
-                                @foreach ($pests_headers as $pest_header)
-                                    <td>{{ $d['pest_total_detections'][$pest_header] }}</td>
+                                @foreach ($data['headers'] as $header)
+                                    <td>{{ $d['pest_total_detections'][$header] }}</td>
                                 @endforeach
                             </tr>
                         @endforeach
@@ -45,5 +119,39 @@
         const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl, {
             trigger: 'hover',
         }))
+
+        $(function() {
+            // Configuración común para ambos datepickers
+            const commonOptions = {
+                opens: 'left',
+                locale: {
+                    format: 'DD/MM/YYYY'
+                },
+                ranges: {
+                    'Hoy': [moment(), moment()],
+                    'Esta semana': [moment().startOf('week'), moment().endOf('week')],
+                    'Últimos 7 días': [moment().subtract(6, 'days'), moment()],
+                    'Este mes': [moment().startOf('month'), moment().endOf('month')],
+                    'Últimos 30 días': [moment().subtract(29, 'days'), moment()],
+                    'Este año': [moment().startOf('year'), moment().endOf('year')],
+                },
+                showDropdowns: true,
+                alwaysShowCalendars: true,
+                autoUpdateInput: false
+            };
+
+            $('#date-range').daterangepicker(commonOptions);
+            $('#date-range-technician').daterangepicker(commonOptions);
+
+            $('#date-range').on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
+                    'DD/MM/YYYY'));
+            });
+
+            $('#date-range-technician').on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
+                    'DD/MM/YYYY'));
+            });
+        });
     </script>
 @endsection

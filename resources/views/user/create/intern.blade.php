@@ -43,8 +43,8 @@
                         </label>
                         <div class="input-group">
                             <input type="text" class="form-control" id="email-text" name="email-text"
-                                placeholder="example" onblur="$('#email').val(this.value + '@zonda');" required />
-                            <span class="input-group-text" id="email-type">@zonda</span>
+                                placeholder="example" onblur="$('#email').val(this.value + '@siscoplagas');" required />
+                            <span class="input-group-text" id="email-type">@siscoplagas</span>
                         </div>
                     </div>
 

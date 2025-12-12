@@ -11,17 +11,21 @@ use App\Models\ApplicationArea;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Order;
+use App\Models\OrderService;
 use App\Models\CompanyCategory;
+use App\Models\ControlPoint;
 use App\Models\Customer;
 use App\Models\CustomerFile;
 use App\Models\CustomerReference;
 use App\Models\Device;
 use App\Models\DevicePest;
 use App\Models\Filenames;
+use App\Models\FloorPlans;
 use App\Models\FloorplanVersion;
 use App\Models\Floortype;
 use App\Models\InvoiceCustomer;
 use App\Models\Lead;
+use App\Models\OrderIncidents;
 use App\Models\PestCatalog;
 use App\Models\Reference_type;
 use App\Models\Service;
@@ -1382,12 +1386,41 @@ class CustomerController extends Controller
 
     public function showGraphics(Request $request, string $id)
     {
-        $pests_headers = [];
-        $data = [];
-        $version = 0;
-        $customer = Customer::with(['applicationAreas.devices'])->find($id);
+        $req_areas = [];
+        $req_pests = [];
 
+        $data = [];
+        $pests_headers = [];
+        $control_points = [];
+
+        $customer = Customer::with(['applicationAreas.devices'])->find($id);
+        $app_areas = ApplicationArea::where('customer_id', $customer->id)->select('id', 'name')->get();
+
+        $floorplans = FloorPlans::where('customer_id', $customer->id)->get();
+        if ($floorplans) {
+            $devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
+            if ($devices) {
+                $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id'))->get();
+            } else {
+                return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'))
+                    ->with('error', 'No se encontraron dispositivos');
+            }
+        } else {
+            return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'))->with('error', 'No se encontraron planos');
+        }
+
+        // Aplica los filtros segun la request
+        if ($request->filled('area')) {
+            $req_areas = ApplicationArea::where('name', 'like', '%' . $request->input('area') . '%')->pluck('id')->toArray();
+        }
+
+        if ($request->filled('pest')) {
+            $req_pests = PestCatalog::where('name', 'like', '%' . $request->input('pest') . '%')->pluck('id')->toArray();
+        }
+
+        // Obtener las ordenes bajo los filtros de la request
         $order_query = Order::query();
+
         if ($request->filled('date_range')) {
             [$startDate, $endDate] = array_map(function ($d) {
                 return Carbon::createFromFormat('d/m/Y', trim($d));
@@ -1399,11 +1432,22 @@ class CustomerController extends Controller
             ]);
         }
 
-        $orders = $order_query->where('customer_id', $id)->get();
-        $orderIds = $orders->pluck('id');
+        if ($request->filled('service')) {
+            $found_services = Service::where('name', 'like', '%' . $request->input('service') . '%')->get()->pluck('id')->toArray();
+            $order_ids = OrderService::whereIn('service_id', $found_services)->get()->pluck('order_id')->toArray();
+            $order_query->whereIn('id', $order_ids);
+        }
 
-        // Obtener todos los device_id de las áreas del cliente
-        $deviceIds = $customer->applicationAreas->flatMap->devices->pluck('id');
+        $orders = $order_query->where('customer_id', $customer->id)->get();
+        $data = $this->getGraphicDataWithDevices($customer, $orders, $req_areas, $req_pests);
+
+        return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'));
+    }
+
+    private function getGraphicDataWithDevices($customer, $orders, $areas, $pests)
+    {
+        $orderIds = $orders->pluck('id');
+        $deviceIds = OrderIncidents::whereIn('order_id', $orders->pluck('id'))->pluck('device_id')->toArray();
 
         // Obtener todas las DevicePest relevantes de una sola consulta
         $allDevicePests = DevicePest::whereIn('device_id', $deviceIds)
@@ -1411,15 +1455,6 @@ class CustomerController extends Controller
             ->with(['pest', 'device.applicationArea'])  // Cambiado de deviceArea a area
             ->get();
 
-        $versions = array_unique(Device::whereIn('id', $allDevicePests->pluck('device_id'))->get()->pluck('version')->toArray());
-
-        if (count($versions) == 1) {
-            $version = $versions[0];
-        } else {
-            return view('customer.show.graphics', compact('customer', 'pests_headers', 'data'));
-        }
-
-        // Obtener todos los nombres de plagas únicos para los headers
         $pests_headers = $allDevicePests->pluck('pest.name')
             ->unique()
             ->filter()
@@ -1427,14 +1462,14 @@ class CustomerController extends Controller
             ->values()
             ->toArray();
 
-        // Inicializar array de datos
         $data = [];
 
         // Agrupar por dispositivo
         $devicePestsByDevice = $allDevicePests->groupBy('device_id');
+        $devices = Device::whereIn('id', $deviceIds)->get();
 
         foreach ($customer->applicationAreas as $area) {
-            foreach ($area->devicesByVersion($version) as $device) {
+            foreach ($devices as $device) {
                 // Obtener detecciones para este dispositivo
                 $dpests = $devicePestsByDevice->get($device->id, collect());
 
@@ -1465,7 +1500,10 @@ class CustomerController extends Controller
                 ];
             }
         }
-        
-        return view('customer.show.graphics', compact('customer', 'pests_headers', 'data'));
+
+        return [
+            'detections' => $data,
+            'headers' => $pests_headers
+        ];
     }
 }
