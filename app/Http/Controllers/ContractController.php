@@ -486,7 +486,8 @@ class ContractController extends Controller
                         'status_name' => $order->status->name,
                         'url' => route('order.edit', ['id' => $order->id])
                     ];
-                })
+                }),
+                'description' =>  $setting->service_description ?? null,
             ];
         }
 
