@@ -568,7 +568,7 @@
                 <!-- Firma Cliente -->
                 <td class="signature-cell">
                     <div class="signature-container">
-                        <img src="{{ $customer['signature'] }}" class="signature-image">
+                        <img src="{{ $customer['signature_base64'] }}" class="signature-image">
                         <div class="signature-title">Nombre y firma del cliente</div>
                         <div class="signature-name">{{ $customer['signed_by'] }}</div>
                         <div class="signature-name">{{ $customer['name'] }}</div>
@@ -579,7 +579,7 @@
                 <!-- Firma Técnico -->
                 <td class="signature-cell">
                     <div class="signature-container">
-                        <img src="{{ $technician['signature'] }}" class="signature-image" alt="Firma">
+                        <img src="{{ $technician['signature_base64'] }}" class="signature-image" alt="Firma">
                         <div class="signature-title">Nombre y firma del técnico aplicador</div>
                         <div class="signature-name">{{ $technician['name'] }}</div>
                         <div class="signature-rfc">RFC: {{ $technician['rfc'] }}</div>

@@ -148,14 +148,6 @@
 </form>
 
 <script>
-    let contract_configurations = [];
-    let configurations = [];
-    let configCounter = 0;
-    let configDates = {};
-    let configDescriptions = {};
-
     const new_client_account = false;
-
-    let intervals = @json($intervals);
-    let frequencies = @json($frequencies);
 </script>
+ 

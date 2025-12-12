@@ -84,22 +84,17 @@
     <script>
         $(document).ready(function() {
             $('.summernote').summernote({
-                height: 200, // altura del editor
+                height: 250,
+                lang: 'es-ES',
                 toolbar: [
-                    ['style', ['bold', 'italic', 'underline']],
-                    ['font', ['fontname', 'fontsize', 'color']], // Fuente y color
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
                     ['insert', ['table', 'link', 'picture']],
                     ['para', ['ul', 'ol', 'paragraph']],
                     ['height', ['height']],
+                    ['fontsize', ['fontsize']],
                 ],
-                lineHeights: ['0.25', '0.5', '1', '1.5', '2', '2.5', '3', '4'],
-                styleTags: [
-                    'p', 'blockquote', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
-                ],
-                fontNames: [
-                    'Arial', 'Courier New',
-                    'Helvetica', 'Times New Roman'
-                ],
+                fontSize: ['8', '10', '12', '14', '16'],
+                lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
                 callbacks: {
                     onChange: function(contents, $editable) {
                         $('#description').val(contents);

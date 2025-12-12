@@ -74,18 +74,42 @@
                                 <!-- Preguntas -->
                                 <div class="border rounded p-2 bg-light mb-3">
                                     <div class="mb-1">
-                                        <span class="fw-bold fs-5">Preguntas</span>
+                                        <div class="d-flex justify-content-between">
+                                            <div class="fw-bold fs-5">
+                                                Preguntas
+                                            </div>
+                                            <div class="">
+                                                <button type="button" class="btn btn-success btn-sm"
+                                                    id="btn-allQuesions{{ $autoreview['control_point_id'] }}"
+                                                    onclick="selectAllQuestions({{ $autoreview['control_point_id'] }})"><i
+                                                        class="bi bi-check2-square"></i> Seleccionar
+                                                    Todas</button>
+                                                <button type="button" class="btn btn-danger btn-sm"
+                                                    id="btn-flushQuesions{{ $autoreview['control_point_id'] }}"
+                                                    onclick="flushQuestions({{ $autoreview['control_point_id'] }})"><i
+                                                        class="bi bi-arrow-clockwise"></i> Limpiar</button>
+                                            </div>
+                                        </div>
                                     </div>
                                     @foreach ($autoreview['questions'] as $question)
                                         <div class="mb-3">
-                                            <label for="question-{{ $question['id'] }}" class="form-label is-required">
-                                                {{ $question['question'] }}
-                                            </label>
+                                            <div class="form-check">
+                                                <input
+                                                    class="form-check-input border-secondary checkbox-cp{{ $autoreview['control_point_id'] }}"
+                                                    type="checkbox"
+                                                    id="controlpoint{{ $autoreview['control_point_id'] }}-question{{ $question['id'] }}"
+                                                    value="{{ $question['id'] }}" id="checkDefault"
+                                                    onchange="handleQuestions({{ $autoreview['control_point_id'] }}, {{ $question['id'] }}, this.checked)"
+                                                    checked>
+                                                <label class="form-check-label" for="question-{{ $question['id'] }}">
+                                                    {{ $question['question'] }}
+                                                </label>
+                                            </div>
                                             <select class="form-select form-select-sm question-select"
                                                 id="question-{{ $autoreview['control_point_id'] }}-{{ $question['id'] }}"
                                                 data-question-id="{{ $question['id'] }}"
                                                 onchange="updateQuestionAnswer({{ $autoreview['control_point_id'] }}, {{ $question['id'] }}, this.value)">
-                                                <option value="">Sin respuesta</option>
+                                                <option value="">Sin Respuesta</option>
                                                 @if (isset($question['answers']))
                                                     @foreach ($question['answers'] as $answer)
                                                         <option value="{{ $answer }}">{{ $answer }}
@@ -103,7 +127,7 @@
                                         <span class="fw-bold fs-5">Productos</span>
                                         <button type="button" class="btn btn-success btn-sm"
                                             onclick="addNewProductField({{ $autoreview['control_point_id'] }})">
-                                            <i class="bi bi-plus-square-fill"></i> Añadir producto
+                                            <i class="bi bi-plus-lg"></i> Añadir producto
                                         </button>
                                     </div>
 
@@ -180,7 +204,7 @@
                                         <span class="fw-bold fs-5">Plagas e incidencias</span>
                                         <button type="button" class="btn btn-success btn-sm"
                                             onclick="addNewPestField({{ $autoreview['control_point_id'] }})">
-                                            <i class="bi bi-plus-square-fill"></i> Añadir plaga
+                                            <i class="bi bi-plus-lg"></i> Añadir plaga
                                         </button>
                                     </div>
 
@@ -293,17 +317,57 @@
 <script>
     // Variables globales para manejar los datos
     var devicesToCheck = {};
+    var cPointsQuestionsToCheck = {};
     var autoreview_data = @json($autoreview_data ?? []);
     var productsData = {}; // Almacenará los productos por control_point_id
     var observationsData = {}; // Almacenará las observaciones por control_point_id
     var appMethods = @json($application_methods);
 
     // Inicializar productsData
-    autoreview_data.forEach(function(controlPoint) {
+    autoreview_data.forEach((controlPoint) => {
         productsData[controlPoint.control_point_id] = controlPoint.products || [];
-        observationsData[controlPoint.control_point_id] = ''; // Inicializar observaciones vacías
-        devicesToCheck[controlPoint.control_point_id] = controlPoint.devices.map(device => device.id);
+        observationsData[controlPoint.control_point_id] = '';
+
+        devicesToCheck[controlPoint.control_point_id] = Array.isArray(controlPoint.devices) ?
+            controlPoint.devices.map(device => device.id) : [];
+
+        cPointsQuestionsToCheck[controlPoint.control_point_id] = Array.isArray(controlPoint.questions) ?
+            controlPoint.questions.map(question => question.id) : [];
     });
+
+    function handleQuestions(control_point_id, question_id, isChecked) {
+        var value = parseInt($(`#controlpoint${control_point_id}-question${question_id}`).val());
+        if (!cPointsQuestionsToCheck[control_point_id]) {
+            cPointsQuestionsToCheck[control_point_id] = [];
+        }
+
+        var arrayActual = cPointsQuestionsToCheck[control_point_id];
+        if (isChecked) {
+            if (!arrayActual.includes(value)) {
+                arrayActual.push(value);
+            }
+        } else {
+            cPointsQuestionsToCheck[control_point_id] = arrayActual.filter(cp_id => cp_id != value);
+        }
+    }
+
+    function selectAllQuestions(control_point_id) {
+
+        var allCheckboxes = $(`.checkbox-cp${control_point_id}`);
+        allCheckboxes.prop('checked', true).trigger('change');
+
+        allCheckboxes.each(function() {
+            var value = $(this).val();
+            if (value) {
+                cPointsQuestionsToCheck[control_point_id].push(parseInt(value));
+            }
+        });
+    }
+
+    function flushQuestions(control_point_id) {
+        $(`.checkbox-cp${control_point_id}`).prop('checked', false).trigger('change');
+        cPointsQuestionsToCheck[control_point_id] = [];
+    }
 
     // Versión ultra-concisa
     function selectAllDevices(id) {
@@ -673,6 +737,7 @@
                 pests: pests,
                 observations: observations,
                 devices: devicesToCheck[controlPointId] || [],
+                questions: cPointsQuestionsToCheck[controlPointId] || [],
                 clear: {
                     questions: $(`#clearQuestions-${controlPointId}`).is(':checked'),
                     products: $(`#clearProducts-${controlPointId}`).is(':checked'),
@@ -691,10 +756,6 @@
 
         showSpinner();
 
-        alert("✅ Autorevisión enviada correctamente\n\n" +
-            `• Puntos de control: ${data.control_points.length}\n` +
-            `• Hora: ${new Date().toLocaleTimeString()}`);
-
         console.log("Datos enviados", JSON.stringify(data, null, 2));
 
 
@@ -710,6 +771,9 @@
             success: function(response) {
                 console.log(response);
                 if (response.success) {
+                    alert("✅ Autorevisión guardada correctamente\n\n" +
+                        `• Puntos de control: ${data.control_points.length}\n` +
+                        `• Hora: ${new Date().toLocaleTimeString()}`);
                     location.reload();
                 }
             },

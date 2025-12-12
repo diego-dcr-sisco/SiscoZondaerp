@@ -339,15 +339,16 @@
     const services = @json($order->services);
     var summaryData = [];
 
-    $(document).ready(function() {
+    /*$(document).ready(function() {
         $('.smnote').summernote({
-            height: 250, // altura del editor
+            height: 250,
+            lang: 'es-ES',
             toolbar: [
                 ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['insert', ['table', 'link', 'picture']],
+                ['insert', ['table', 'link']],
                 ['para', ['ul', 'ol', 'paragraph']],
                 ['height', ['height']],
-                ['fontsize', ['fontsize']],
+                ['font', ['fontsize']],
             ],
             fontSize: ['8', '10', '12', '14', '16'],
             lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
@@ -368,6 +369,235 @@
             }
 
         });
+    });
+*/
+
+    $(document).ready(function() {
+        // Función para limpiar contenido pegado (si la necesitas)
+        function cleanPaste(html) {
+            // Tu lógica de limpieza aquí
+            return html.replace(/ style="[^"]*"/gi, '')
+                .replace(/ class="[^"]*"/gi, '');
+        }
+
+        // Configuración base del Summernote
+        let summernoteConfig = {
+            height: 250,
+            lang: 'es-ES',
+            toolbar: [
+                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['font', ['fontsize', 'fontname']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['height', ['height']],
+                ['insert', ['table', 'link']],
+            ],
+            fontSize: ['8', '10', '12', '14', '16'],
+            lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
+            callbacks: {
+                onPaste: function(e) {
+                    var thisNote = $(this);
+                    var updatePaste = function() {
+                        var original = thisNote.summernote('code');
+                        var cleaned = cleanPaste(original);
+                        thisNote.summernote('code', cleaned);
+                    };
+                    setTimeout(updatePaste, 10);
+                }
+            },
+
+            cleaner: {
+                action: 'both', // 'both' | 'button' | 'paste'
+                newline: '<br>', // Formato para saltos de línea
+                notStyle: 'position:absolute;top:0;left:0;right:0', // Estilo de notificación
+                keepHtml: true, // Activa el modo de "lista blanca" (whitelist)
+                keepOnlyTags: ['<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>',
+                    '<strong>'
+                ], // Etiquetas permitidas
+                keepClasses: false, // Remueve todas las clases CSS
+                badTags: ['style', 'script', 'applet', 'embed', 'noframes',
+                    'noscript'
+                ], // Etiquetas prohibidas (se eliminan con su contenido)
+                badAttributes: ['style', 'start', 'dir',
+                    'class'
+                ] // Atributos prohibidos (se eliminan de las etiquetas restantes)
+            }
+        };
+
+        // Función para inicializar el editor
+        function initializeSummernote() {
+            // Si ya existe, destruirlo primero
+            if ($('.smnote').length && $('.smnote').data('summernote')) {
+                $('.smnote').summernote('destroy');
+            }
+
+            // Inicializar con la configuración actual
+            $('.smnote').summernote(summernoteConfig);
+        }
+
+        // Función para actualizar opciones específicas
+        function updateSummernoteOptions(newOptions) {
+            // Guardar el contenido actual si existe
+            let currentContent = '';
+            if ($('.smnote').length && $('.smnote').data('summernote')) {
+                currentContent = $('.smnote').summernote('code');
+            }
+
+            // Actualizar la configuración
+            summernoteConfig = {
+                ...summernoteConfig,
+                ...newOptions,
+                // Mantener siempre los callbacks
+                callbacks: {
+                    ...summernoteConfig.callbacks,
+                    ...(newOptions.callbacks || {})
+                }
+            };
+
+            // Reinicializar
+            initializeSummernote();
+
+            // Restaurar contenido si había
+            if (currentContent) {
+                $('.smnote').summernote('code', currentContent);
+            }
+        }
+
+        // Inicializar por primera vez
+        initializeSummernote();
+
+        // Ejemplos de cómo actualizar dinámicamente:
+
+        // 1. Para agregar selector de nombres de fuente
+        function enableFontNames() {
+            updateSummernoteOptions({
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['fontsize', 'fontname']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['height', ['height']],
+                    ['insert', ['table', 'link']],
+                ],
+                fontNames: ['Arial', 'Courier New', 'Helvetica', 'Times New Roman']
+            });
+        }
+
+        // 2. Para cambiar los tamaños de fuente
+        function updateFontSizes(newSizes) {
+            updateSummernoteOptions({
+                fontSize: newSizes
+            });
+        }
+
+        // 3. Para cambiar la altura
+        function updateHeight(newHeight) {
+            updateSummernoteOptions({
+                height: newHeight
+            });
+        }
+
+        // 4. Para cambiar las opciones de interlineado
+        function updateLineHeights(newLineHeights) {
+            updateSummernoteOptions({
+                lineHeights: newLineHeights
+            });
+        }
+
+        // 5. Para agregar más funcionalidades a la toolbar
+        function addFullToolbar() {
+            updateSummernoteOptions({
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['fontsize', 'fontname']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['height', ['height']],
+                    ['insert', ['table', 'link']],
+                ],
+                fontNames: ['Arial', 'Courier New', 'Helvetica', 'Times New Roman', 'Georgia',
+                    'Verdana'
+                ],
+                colors: [
+                    ['#000000', '#424242', '#636363', '#9C9C94', '#CEC6CE', '#EFEFEF', '#F7F7F7',
+                        '#FFFFFF'
+                    ],
+                    ['#FF0000', '#FF9C00', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF', '#9C00FF',
+                        '#FF00FF'
+                    ]
+                ]
+            });
+        }
+
+        // 6. Para volver a la configuración básica
+        function resetToBasic() {
+            summernoteConfig = {
+                height: 250,
+                lang: 'es-ES',
+                toolbar: [
+                    ['style', ['bold', 'italic', 'underline', 'clear']],
+                    ['font', ['fontsize', 'fontname']],
+                    ['para', ['ul', 'ol', 'paragraph']],
+                    ['height', ['height']],
+                    ['insert', ['table', 'link']],
+                ],
+                fontSize: ['8', '10', '12', '14', '16'],
+                lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
+                callbacks: {
+                    onPaste: function(e) {
+                        var thisNote = $(this);
+                        var updatePaste = function() {
+                            var original = thisNote.summernote('code');
+                            var cleaned = cleanPaste(original);
+                            thisNote.summernote('code', cleaned);
+                        };
+                        setTimeout(updatePaste, 10);
+                    }
+                }
+            };
+            initializeSummernote();
+        }
+
+        // Función para cambiar el idioma
+        function changeLanguage(langCode) {
+            updateSummernoteOptions({
+                lang: langCode
+            });
+        }
+
+        // Función para agregar callback adicional
+        function addOnChangeCallback() {
+            const newCallbacks = {
+                ...summernoteConfig.callbacks,
+                onChange: function(contents) {
+                    console.log('Contenido cambiado:', contents.length, 'caracteres');
+                    // Aquí puedes agregar lógica adicional
+                }
+            };
+
+            updateSummernoteOptions({
+                callbacks: newCallbacks
+            });
+        }
+
+        // Hacer las funciones disponibles globalmente si es necesario
+        window.summernoteFunctions = {
+            enableFontNames,
+            updateFontSizes,
+            updateHeight,
+            updateLineHeights,
+            addFullToolbar,
+            resetToBasic,
+            changeLanguage,
+            addOnChangeCallback,
+            updateSummernoteOptions
+        };
+
+        // Ejemplos de uso (puedes llamarlas desde botones o eventos):
+        /*
+        <button onclick="summernoteFunctions.enableFontNames()">Agregar fuentes</button>
+        <button onclick="summernoteFunctions.updateFontSizes(['10', '12', '14', '18', '24'])">Tamaños grandes</button>
+        <button onclick="summernoteFunctions.updateHeight(350)">Altura 350px</button>
+        <button onclick="summernoteFunctions.addFullToolbar()">Toolbar completa</button>
+        <button onclick="summernoteFunctions.resetToBasic()">Reset básico</button>
+        */
     });
 
     function cleanPaste(html) {

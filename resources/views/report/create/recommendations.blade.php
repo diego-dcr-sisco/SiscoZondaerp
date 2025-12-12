@@ -121,7 +121,7 @@ $(document).ready(function() {
     const recommendations = @json($recommendations);
 
     // Inicializar Summernote en cada textarea
-    $('.smnote').each(function() {
+    /*$('.smnote').each(function() {
         $(this).summernote({
             height: 300,
             toolbar: [
@@ -132,7 +132,7 @@ $(document).ready(function() {
                 ['view', ['fullscreen', 'codeview', 'help']]
             ]
         });
-    });
+    });*/
 
     // Abrir modal para agregar recomendaciones
     $('.add-recommendation-btn').click(function() {

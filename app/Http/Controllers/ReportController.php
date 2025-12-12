@@ -64,6 +64,7 @@ use App\PDF\Certificate;
 use App\Models\Customer;
 
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Validation\Rules\In;
 
 class ReportController extends Controller
 {
@@ -103,7 +104,6 @@ class ReportController extends Controller
             $autoreview_data = json_decode($request->input('autoreview_data'), true);
             $order = Order::find($orderId);
 
-
             foreach ($autoreview_data['control_points'] as $controlPoint) {
                 // Acceder a los datos de cada control point
                 $controlPointId = $controlPoint['control_point_id'];
@@ -113,9 +113,9 @@ class ReportController extends Controller
                 $devices = $controlPoint['devices'];
                 $observations = $controlPoint['observations'];
                 $clear = $controlPoint['clear'];
+                $questions = $controlPoint['questions'];
 
                 $products_data = [];
-
 
                 if ($clear['questions']) {
                     OrderIncidents::where('order_id', $order->id)->whereIn('device_id', $devices)->delete();
@@ -131,23 +131,25 @@ class ReportController extends Controller
 
                 // Procesar cada elemento
                 foreach ($devices as $deviceId) {
-                    $updated_incidents = [];
-                    $updated_products = [];
-                    $updated_pests = [];
+                    //$updated_incidents = [];
+                    //$updated_products = [];
+                    //$updated_pests = [];
 
                     foreach ($answers as $questionId => $answer) {
-                        $oi = OrderIncidents::updateOrCreate(
-                            [
-                                'order_id' => $order->id,
-                                'question_id' => $questionId,
-                                'device_id' => $deviceId,
-                            ],
-                            [
-                                'answer' => $answer
-                            ]
-                        );
+                        if (in_array($questionId, $questions)) {
+                            $oi = OrderIncidents::updateOrCreate(
+                                [
+                                    'order_id' => $order->id,
+                                    'question_id' => $questionId,
+                                    'device_id' => $deviceId,
+                                ],
+                                [
+                                    'answer' => $answer
+                                ]
+                            );
 
-                        $updated_incidents[] = $oi->id;
+                            $updated_incidents[] = $oi->id;
+                        }
                     }
 
                     foreach ($products as $product) {
@@ -211,9 +213,9 @@ class ReportController extends Controller
                         }
                     }
 
-                    OrderIncidents::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_incidents)->delete();
-                    DeviceProduct::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_products)->delete();
-                    DevicePest::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_pests)->delete();
+                    //OrderIncidents::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_incidents)->delete();
+                    //DeviceProduct::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_products)->delete();
+                    //DevicePest::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_pests)->delete();
                 }
             }
 
@@ -336,6 +338,45 @@ class ReportController extends Controller
         WarehouseOrder::where('order_id', $order->id)->whereNotIn('id', $updated_wos)->delete();
     }
 
+    private function getDevicesByVersion($order_id, $version = null)
+    {
+        $found_devices = [];
+        $f_versions = [];
+        $order = Order::find($order_id);
+        $floorplans = FloorPlans::where('customer_id', $order->customer_id)
+            ->whereIn('service_id', $order->services()->pluck('service.id'))
+            ->get();
+
+        if ($floorplans->isNotEmpty()) {
+            foreach ($floorplans as $floorplan) {
+                $versions = FloorplanVersion::where('floorplan_id', $floorplan->id)->get();
+                $version = $versions->where('updated_at', '<=', $order->programmed_date)->last();
+                if ($version) {
+                    $f_versions[] = [
+                        'floorplan_id' => $floorplan->id,
+                        'version' => $version->version,
+                    ];
+                } else {
+                    $f_versions[] = [
+                        'floorplan_id' => $floorplan->id,
+                        'version' => $versions->last()?->version,
+                    ];
+                }
+            }
+
+            $found_devices = [];
+            foreach ($f_versions as $fv) {
+                $devices = Device::where('floorplan_id', $fv['floorplan_id'])
+                    ->where('version', $fv['version'])
+                    ->pluck('id')
+                    ->toArray();
+                $found_devices = array_merge($found_devices, $devices);
+            }
+        }
+
+        return $found_devices;
+    }
+
     public function create(string $id)
     {
         $answers = json_decode(file_get_contents(public_path($this->file_answers_path)), true);
@@ -351,32 +392,25 @@ class ReportController extends Controller
             return back()->withErrors(['error' => 'Order not found.']);
         }
 
-        $devices_1 = Device::whereIn('id', OrderIncidents::where('order_id', $order->id)->pluck('device_id'))
-            ->pluck('id')
-            ->toArray();
+        $incidents = OrderIncidents::where('order_id', $order->id)->get();
 
-        $floorplans = FloorPlans::where('customer_id', $order->customer_id)
-            ->whereIn('service_id', $order->services()->pluck('service.id'))
-            ->get();
+        if ($order->status_id == 5 && $incidents->isNotEmpty()) {
+            $devices_incidents = $incidents->pluck('device_id')->toArray();
+            $devices = Device::whereIn('id', $devices_incidents)->orderBy('nplan', 'ASC')->get();
 
-        if ($floorplans->isNotEmpty()) {
-            $versions = FloorplanVersion::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
-            if ($versions->isNotEmpty()) {
-                $version = $versions->where('updated_at', '<=', $order->programmed_date)->last();
+            /*$count = array_count_values($devices_1->pluck('version')->toArray());
+            $maxsum = max($count);
+            $version = array_search($maxsum, $count);
 
-                if (!$version) {
-                    $version = $versions->last();
-                }
-
-                $devices_2 = Device::whereIn('floorplan_id', $floorplans->pluck('id'))
-                    ->where('version', $version->version)
-                    ->pluck('id')
-                    ->toArray();
-            }
+            $found_devices = $this->getDevicesByVersion($id);
+            //dd($found_devices);
+            //$found_devices = array_merge($devices_1->pluck('id')->toArray(), array_diff($found_devices, $devices_1->pluck('id')->toArray()));
+            $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();*/
+            
+        } else {
+            $found_devices = $this->getDevicesByVersion($id);
+            $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
         }
-
-        $device_ids = array_unique(array_merge($devices_1, $devices_2));
-        $devices = Device::whereIn('id', $device_ids)->get();
 
         $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique())->get();
 
@@ -397,14 +431,13 @@ class ReportController extends Controller
                 'control_point_id' => $control_point->id,
                 'control_point_name' => $control_point->name,
                 'questions' => $questions_data,
-                //'devices' => $devices->where('type_control_point_id', $control_point->id)->pluck('id')->toArray(),
                 'devices' => $devices->where('type_control_point_id', $control_point->id)->map(function ($device) {
                     return [
                         'id' => $device->id,
                         'code' => $device->code,
                         'name' => $device->controlPoint->name
                     ];
-                })->toArray(),
+                })->values()->toArray(),
                 'pests' => PestCatalog::all()->map(function ($pest) {
                     return [
                         'id' => $pest->id,
@@ -427,6 +460,7 @@ class ReportController extends Controller
             ];
         }
 
+        //dd($devices->pluck('id'));
         foreach ($devices as $device) {
             $questions_data = [];
             $questions = $device->controlPoint->questions()->get();
@@ -493,7 +527,8 @@ class ReportController extends Controller
                     'order_id' => $order->id,
                     'device_id' => $device->id,
                     'is_scanned' => $device_states->is_scanned ?? false,
-                    'is_checked' => $device_states->is_checked ?? false,
+                    //'is_checked' => (($device_states?->is_checked ?? false) || count($questions_data) > 0),
+                    'is_checked' => $device_states?->is_checked ?? false,
                     'observations' => $device_states->observations ?? null,
                     'device_image' => $device_states->device_image ?? null
                 ]
@@ -1101,6 +1136,7 @@ class ReportController extends Controller
         $certificate->recommendations();
         $certificate->photoEvidences();
         $data = $certificate->getData();
+
         // Obtener la configuración de apariencia
         $appearance = AppearanceSetting::first();
 
@@ -1257,7 +1293,7 @@ class ReportController extends Controller
                     Storage::deleteDirectory($storage_relative_path);
                 }
             } catch (\Exception $e) {
-                       Log::error("Cleanup failed: " . $e->getMessage());
+                Log::error("Cleanup failed: " . $e->getMessage());
             }
         });
 

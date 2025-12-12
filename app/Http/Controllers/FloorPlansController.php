@@ -66,7 +66,7 @@ class FloorPlansController extends Controller
             'Geolocalización' => route('floorplan.geolocation', ['id' => $floorplan->id]),
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $floorplan->customer_id])
         ];
-        
+
         return $navigation;
     }
 
@@ -75,14 +75,11 @@ class FloorPlansController extends Controller
     public function getImage(string $path)
     {
         $url = /*$this->path*/ '/' . $path;
-
         if (!Storage::disk('public')->exists($url)) {
             abort(404);
         }
-
         $file = Storage::disk('public')->get($url);
-        $type = Storage::disk('public')->mimeType($url);
-
+        $type = mime_content_type(Storage::disk('public')->path($url));
         return response($file, 200)->header('Content-Type', $type);
     }
 
@@ -439,9 +436,8 @@ class FloorPlansController extends Controller
         }
 
         $navigation = $this->getNavigation($floorplan);
-
-
         $f_version = FloorplanVersion::where('floorplan_id', $id)->where('version', $version)->first();
+        $can_resize = $devices->whereNull('size')->isNotEmpty();
 
         return view('floorplans.edit.devices', compact(
             'ctrlPoints',
@@ -460,7 +456,8 @@ class FloorPlansController extends Controller
             'f_version',
             'legend',
             'logoBase64',
-            'print_data'
+            'print_data',
+            'can_resize'
         ));
     }
 
@@ -681,30 +678,33 @@ class FloorPlansController extends Controller
     public function updateDevices(Request $request, string $id)
     {
         $pointsData = json_decode($request->input('points'));
-        //dd($pointsData);
         $create_version = $request->input('create_version');
         $floorplan = FloorPlans::find($id);
 
         $version = FloorplanVersion::where('floorplan_id', $floorplan->id)->max('version');
 
         if ($version) {
-            $latestVersionNumber = ++$version;
+            $latestVersionNumber = $create_version ? $version + 1 : $version;
         } else {
             $latestVersionNumber = 1;
         }
-
 
         if ($create_version) {
             FloorplanVersion::insert([
                 'floorplan_id' => $floorplan->id,
                 'version' => $latestVersionNumber,
+                'created_at' => now(),
                 'updated_at' => now(),
             ]);
         } else {
-            FloorplanVersion::where('floorplan_id', $floorplan->id)->where('version', $version)->update(['updated_at' => $request->input('version_updated_at') . ' 00:00:00']);
+            $updateDate = Carbon::createFromFormat('Y-m-d', $request->input('version_updated_at'));
+            $updateDate->startOfDay();
+
+            FloorplanVersion::where('floorplan_id', $floorplan->id)
+                ->where('version', $version)
+                ->update(['updated_at' => $updateDate]);
         }
 
-        $nplans = [];
         foreach ($pointsData as $point) {
             $found_point = ControlPoint::find($point->point_id);
             $code = $point->code ?? ($found_point->code . '-' . $found_point->nplan);
@@ -737,7 +737,6 @@ class FloorPlansController extends Controller
                 $device->qr = QrCode::format('png')->size(200)->generate($code);
                 $device->save();
             }
-            $nplans[] = $point->count;
         }
 
         return redirect()->route('floorplan.devices', ['id' => $floorplan->id, 'version' => $latestVersionNumber]);

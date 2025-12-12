@@ -77,4 +77,12 @@ class Contract extends Model
     public function invoice() {
         return $this->hasOne(Invoice::class, 'contract_id', 'id');
     }
+
+    public function settings() {
+        return $this->hasMany(ContractService::class, 'contract_id');
+    }
+
+    public function setting($service_id) {
+        return $this->settings()->where('service_id', $service_id)->first();
+    }
 }

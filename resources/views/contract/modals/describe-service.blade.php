@@ -24,32 +24,27 @@
   <script>
       $(document).ready(function() {
           $('.summernote').summernote({
-              height: 200, // altura del editor
+              height: 250, // altura del editor
               toolbar: [
                   ['style', ['bold', 'italic', 'underline', 'clear']],
-                  ['insert', ['table', 'link', 'picture']],
+                  ['font', ['fontsize', 'fontname']],
                   ['para', ['ul', 'ol', 'paragraph']],
                   ['height', ['height']],
-                  ['fontsize', ['fontsize']],
+                  ['insert', ['table', 'link']],
               ],
               fontSize: ['8', '10', '12', '14', '16'],
               lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
-
               callbacks: {
                   onPaste: function(e) {
                       var thisNote = $(this);
                       var updatePaste = function() {
-                          // Get the current HTML code FROM the Summernote editor
                           var original = thisNote.summernote('code');
                           var cleaned = cleanPaste(original);
-                          // Set the cleaned code BACK to the editor
                           thisNote.summernote('code', cleaned);
                       };
-                      // Wait for Summernote to process the paste
                       setTimeout(updatePaste, 10);
-                  },
+                  }
               }
-
           });
       });
   </script>

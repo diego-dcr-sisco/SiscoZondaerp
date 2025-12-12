@@ -112,8 +112,8 @@
                             <label class="form-label">Versión seleccionada: </label>
                             @if ($f_version)
                                 <div class="input-group">
-                                    <input type="number" class="form-control" name="version"
-                                        value="{{ $f_version?->version }}" disabled>
+                                    <input type="number" class="form-control bg-secondary-subtle" name="version"
+                                        value="{{ $f_version?->version }}" readonly>
                                     <input type="date" class="form-control" name="version_updated_at"
                                         value="{{ $f_version?->updated_at->format('Y-m-d') }}">
                                 </div>
@@ -129,26 +129,26 @@
 
                         <div class="col-lg-4 col-12 mb-3">
                             <label class="form-label">
-                                Área de aplicación
-                                </label>
-                                @if (!$customer->applicationAreas->isEmpty())
-                                    <select class="form-select " id="area" name="area">
-                                        @foreach ($customer->applicationAreas as $area)
-                                            @php
-                                                $areaNames[] = [
-                                                    'id' => $area->id,
-                                                    'name' => $area->name,
-                                                ];
-                                            @endphp
-                                            <option value="{{ $area->id }}">
-                                                {{ $area->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                @else
-                                    <input type="text" class="form-control" value="Sin zonas o áreas disponibles"
-                                        id="area" disabled>
-                                @endif
+                                Área de aplicación 
+                            </label>
+                            @if (!$customer->applicationAreas->isEmpty())
+                                <select class="form-select" id="area" name="area">
+                                    @foreach ($customer->applicationAreas as $area)
+                                        @php
+                                            $areaNames[] = [
+                                                'id' => $area->id,
+                                                'name' => $area->name,
+                                            ];
+                                        @endphp
+                                        <option value="{{ $area->id }}">
+                                            {{ $area->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <input type="text" class="form-control" value="Sin zonas o áreas disponibles"
+                                    id="area" disabled>
+                            @endif
                         </div>
 
                         <div class="col-lg-4 col-12 mb-3">
@@ -209,7 +209,7 @@
                     <div class="fw-bold mb-2 fs-5">Layout (Plano) dinamico</div>
                     <div class="row">
                         <div class="col-12">
-                            <div class="border border-dark rounded bg-secondary-subtle p-2 mb-3">
+                            <div class="border border-dark rounded bg-info-subtle p-2 mb-3">
                                 <span class="fw-bold" id="count-points">Puntos generados: 0</span>
                             </div>
                         </div>
@@ -384,6 +384,7 @@
 
             let currentPointSize = 10;
             let currentBase64 = '';
+            let can_resize = @json($can_resize);
 
 
             const img = new Image();
@@ -404,7 +405,9 @@
             $(document).ready(function() {
                 resetInputs();
                 setDevices();
-                resizePointsToNewCanvas();
+                if (can_resize) {
+                    resizePointsToNewCanvas();
+                }
             });
 
             function resetInputs() {
@@ -475,7 +478,6 @@
             }
 
             function findCode(id) {
-                console.log(data);
                 return data.find(item => item.id == id)?.code ?
                     data.find(item => item.id == id).code : 'Sin código';
             }
@@ -487,6 +489,7 @@
                 var aux = count;
                 var message = reviewList && reviewList.length > 0 ?
                     'La existencia de revisiones en el dispositivo exige la creación obligatoria de una nueva versión, ' : '';
+
                 if (i != -1) {
                     message += '¿Deseas eliminar el dispositivo?';
                     if (reviewList && reviewList.length > 0) {
@@ -509,12 +512,11 @@
                         canvas.renderAll();
                         createLegend();
 
-                        countPoints++;
-                        count = --aux;
-                        $('#count-points').text(`Puntos generados: ${countPoints}`);
+                        //countPoints++;
+                        //count = --aux;
+                        //$('#count-points').text(`Puntos generados: ${countPoints}`);
                     }
                 }
-                console.log(points)
                 $('#pointModal').modal('hide');
             }
 
@@ -668,16 +670,18 @@
                     return;
                 }
 
+                var type_point_name = pointNames.find(pn => pn.id == control_point_id).name ?? '';
+
                 if (!inRange(min_range, max_range)) {
                     countPoints = 0;
                     var ranges = generateRanges(nplans);
-                    $('#count-points').text(`Puntos generados: ${countPoints}`);
+                    $('#count-points').text(`Puntos generados: ${countPoints} ${type_point_name}`);
                     alert(`No se permiten valores entre: ${ranges}`);
                     return
                 } else {
                     countPoints = max_range - min_range + 1;
                     count = min_range;
-                    $('#count-points').text(`Puntos generados: ${countPoints}`);
+                    $('#count-points').text(`Puntos generados: ${countPoints} ${type_point_name}`);
                 }
             }
 
@@ -1205,7 +1209,6 @@
 
                 // Renderizar los cambios
                 canvas.renderAll();
-                console.log(`Puntos reajustados: ${points.length}`);
             }
         </script>
 
@@ -1325,7 +1328,6 @@
                     };
 
                     $('#pdfJsonData').val(JSON.stringify(pdfData));
-                    console.log("Datos para PDF almacenados en input JSON");
 
                     // Aquí puedes proceder con el envío del formulario
                     // Por ejemplo:

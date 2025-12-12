@@ -26,7 +26,7 @@
                             <h6><strong>Punto de Control:</strong> <span id="modal-control-point"></span></h6>
                         </div>
                         <div class="col-md-6 mb-2">
-                            <h6><strong>Área de Aplicación:</strong> <span id="modal-application-area"></span></h6>
+                          Supervisión de áreas de oportunidad.     <h6><strong>Área de Aplicación:</strong> <span id="modal-application-area"></span></h6>
                         </div>
                     </div>
                 </div>
@@ -266,8 +266,9 @@
                 questionDiv.innerHTML = `
                     <label class="form-label">${question.question}</label>
                     <select class="form-select form-select-sm question-answer" data-question-id="${question.id}">
+                        <option value="" ${!question.answer ? 'selected' : ''}>Sin Responder</option>
                         ${question.answers.map(answer => 
-                            `<option value="${answer}" ${answer === question.answer ? 'selected' : ''}>${answer}</option>`
+                            `<option value="${answer}" ${answer == question.answer ? 'selected' : ''}>${answer}</option>`
                         ).join('')}
                     </select>
                 `;
@@ -380,7 +381,7 @@
     /*document.getElementById('modal-pests-container').addEventListener('click', (e) => {
         if (e.target.closest('.remove-pest')) {
             e.target.closest('.border.rounded').remove();
-            if (document.getElementById('modal-pests-container').children.length === 0) {
+            if (document.getElementById('modal-pests-container').children.length == 0) {
                 document.getElementById('modal-pests-container').innerHTML =
                     '<p class="text-muted">No hay plagas asignadas</p>';
             }
@@ -395,7 +396,7 @@
             pestItem.remove();
 
             // Mostrar mensaje si no hay plagas
-            if (document.getElementById('modal-pests-container').children.length === 0) {
+            if (document.getElementById('modal-pests-container').children.length == 0) {
                 document.getElementById('modal-pests-container').innerHTML =
                     '<p class="text-muted">No hay plagas asignadas</p>';
             }
@@ -420,7 +421,7 @@
                 products.splice(index, 1);
             }
             // Mostrar mensaje si no hay productos
-            if (document.getElementById('modal-products-container').children.length === 0) {
+            if (document.getElementById('modal-products-container').children.length == 0) {
                 document.getElementById('modal-products-container').innerHTML =
                     '<p class="text-muted">No hay productos asignados</p>';
             }
