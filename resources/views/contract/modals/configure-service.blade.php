@@ -181,6 +181,7 @@
                     $("#empty-config-state").hide();
 
                     configurations.forEach(config => {
+                        console.log('Config - Ciclo: ', config);
                         addConfiguration();
 
                         // CORRECCIÓN 2: Cargar fechas desde las órdenes existentes MANTENIENDO IDs
