@@ -497,6 +497,7 @@ Route::prefix('floorplans')
 
         // Geolocalización de dispositivos en plano - logica se maneja en ControlPointController
         Route::get('/geolocation/{id}', [ControlPointController::class, 'geolocateDevices'])->name('geolocation');
+        Route::post('/geolocation/update', [ControlPointController::class, 'updateDeviceCoordinates'])->name('geolocation.update');
     });
 
 // SERVICIOS
