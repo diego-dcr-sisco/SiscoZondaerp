@@ -1395,63 +1395,80 @@ class CustomerController extends Controller
         return redirect()->route('invoices.customers')->with('success', 'Cliente eliminado correctamente');
     }
 
+    private function hasRequiredFields(array $data): bool
+    {
+        // Filtrar campos con valor real
+        $filled = array_filter($data, fn($value) => !is_null($value) && $value !== '');
+
+        // Verificar que exista 'customer' y al menos otro campo
+        return isset($filled['customer']) && count($filled) >= 2;
+    }
+
     public function showGraphics(Request $request, string $id)
     {
         $req_areas = [];
         $req_pests = [];
 
-        $data = [];
+        $data = [
+            'detections' => [],
+            'headers' => []
+        ];
+        $app_areas = [];
         $pests_headers = [];
         $control_points = [];
 
         $customer = Customer::with(['applicationAreas.devices'])->find($id);
-        $app_areas = ApplicationArea::where('customer_id', $customer->id)->select('id', 'name')->get();
 
-        $floorplans = FloorPlans::where('customer_id', $customer->id)->get();
-        if ($floorplans) {
-            $devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
-            if ($devices) {
-                $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id'))->get();
+        if ($this->hasRequiredFields($request->all())) {
+
+            $app_areas = ApplicationArea::where('customer_id', $customer->id)->select('id', 'name')->get();
+
+            $floorplans = FloorPlans::where('customer_id', $customer->id)->get();
+            if ($floorplans) {
+                $devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
+                if ($devices) {
+                    $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id'))->get();
+                } else {
+                    return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'))
+                        ->with('error', 'No se encontraron dispositivos');
+                }
             } else {
-                return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'))
-                    ->with('error', 'No se encontraron dispositivos');
+                return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'))->with('error', 'No se encontraron planos');
             }
-        } else {
-            return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'))->with('error', 'No se encontraron planos');
+
+            // Aplica los filtros segun la request
+            if ($request->filled('area')) {
+                $req_areas = ApplicationArea::where('name', 'like', '%' . $request->input('area') . '%')->pluck('id')->toArray();
+            }
+
+            if ($request->filled('pest')) {
+                $req_pests = PestCatalog::where('name', 'like', '%' . $request->input('pest') . '%')->pluck('id')->toArray();
+            }
+
+            // Obtener las ordenes bajo los filtros de la request
+            $order_query = Order::query();
+
+            if ($request->filled('date_range')) {
+                [$startDate, $endDate] = array_map(function ($d) {
+                    return Carbon::createFromFormat('d/m/Y', trim($d));
+                }, explode(' - ', $request->input('date_range')));
+
+                $order_query->whereBetween('programmed_date', [
+                    $startDate->format('Y-m-d'),
+                    $endDate->format('Y-m-d'),
+                ]);
+            }
+
+            if ($request->filled('service')) {
+                $found_services = Service::where('name', 'like', '%' . $request->input('service') . '%')->get()->pluck('id')->toArray();
+                $order_ids = OrderService::whereIn('service_id', $found_services)->get()->pluck('order_id')->toArray();
+                $order_query->whereIn('id', $order_ids);
+            }
+
+            $orders = $order_query->where('customer_id', $customer->id)->get();
+            //$data = $this->getGraphicDataWithDevicesByPests($customer, $orders, $req_areas, $req_pests);
+            $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orders, $req_areas);
         }
-
-        // Aplica los filtros segun la request
-        if ($request->filled('area')) {
-            $req_areas = ApplicationArea::where('name', 'like', '%' . $request->input('area') . '%')->pluck('id')->toArray();
-        }
-
-        if ($request->filled('pest')) {
-            $req_pests = PestCatalog::where('name', 'like', '%' . $request->input('pest') . '%')->pluck('id')->toArray();
-        }
-
-        // Obtener las ordenes bajo los filtros de la request
-        $order_query = Order::query();
-
-        if ($request->filled('date_range')) {
-            [$startDate, $endDate] = array_map(function ($d) {
-                return Carbon::createFromFormat('d/m/Y', trim($d));
-            }, explode(' - ', $request->input('date_range')));
-
-            $order_query->whereBetween('programmed_date', [
-                $startDate->format('Y-m-d'),
-                $endDate->format('Y-m-d'),
-            ]);
-        }
-
-        if ($request->filled('service')) {
-            $found_services = Service::where('name', 'like', '%' . $request->input('service') . '%')->get()->pluck('id')->toArray();
-            $order_ids = OrderService::whereIn('service_id', $found_services)->get()->pluck('order_id')->toArray();
-            $order_query->whereIn('id', $order_ids);
-        }
-
-        $orders = $order_query->where('customer_id', $customer->id)->get();
-        //$data = $this->getGraphicDataWithDevicesByPests($customer, $orders, $req_areas, $req_pests);
-        $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orders, $req_areas);
 
         return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'));
     }
@@ -1528,14 +1545,18 @@ class CustomerController extends Controller
 
         foreach ($customer->applicationAreas as $area) {
             foreach ($devices as $device) {
-                $aux_incident = $incidents->where('device_id', $device->id)->where('question_id', $question_id);
+                $aux_incident = $incidents
+                    ->where('device_id', $device->id)
+                    ->where('question_id', $question_id)
+                    ->first();
+
                 $data[] = [
                     'area_id' => $area->id,
                     'area_name' => $area->name,
                     'device_id' => $device->id,
                     'device_name' => $device->code,
                     'version' => $device->version,
-                    'consumption_value' => $aux_incident->answer ? $this->consumption_value[$aux_incident->answer] : 0,
+                    'consumption_value' => $aux_incident?->answer ? $this->consumption_value[$aux_incident->answer] : 0,
                 ];
             }
         }
