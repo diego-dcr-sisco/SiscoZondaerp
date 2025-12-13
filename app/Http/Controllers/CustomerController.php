@@ -1492,7 +1492,7 @@ class CustomerController extends Controller
             ])->with('error', 'No se encontraron dispositivos');
         }
 
-        $control_points = $devices->pluck('controlPoint')->unique()->filter();
+        $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique()->toArray())->get();
 
         // Aplica filtros usando like solo si es necesario
         if ($request->filled('area')) {
