@@ -956,8 +956,8 @@ class QualityController extends Controller
             $start_date = Carbon::parse($defaultStartDate)->startOfDay();
             $end_date = Carbon::parse($defaultEndDate)->endOfDay();
             $serviceId = null;
-            $weekDay = $defaultWeekDay;//Día de corte por defecto viernes
-            $reportType = 'weekly';//Tipo de reporte por defecto semanal
+            $weekDay = $defaultWeekDay; // Día de corte por defecto viernes
+            $reportType = 'weekly'; // Tipo de reporte por defecto semanal
         }
 
 

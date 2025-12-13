@@ -56,7 +56,8 @@
                         <div class="col-lg-2">
                             <label for="device_type" class="form-label">Tipo de dispositivo</label>
                             <select class="form-select form-select-sm" id="control_point" name="control_point">
-                                <option value="" {{ request('control_point') == null ? 'selected' : '' }}>Todas</option>
+                                <option value="" {{ request('control_point') == null ? 'selected' : '' }}>Todas
+                                </option>
                                 @foreach ($control_points as $cp)
                                     <option value="{{ $cp->id }}"
                                         {{ request('control_point') == $cp->code ? 'selected' : '' }}>{{ $cp->code }}
@@ -103,9 +104,11 @@
                                 <td>{{ $index + 1 }}</td>
                                 <td>{{ $d['area_name'] }}</td>
                                 <td>{{ $d['device_name'] }}</td>
-                                @foreach ($data['headers'] as $header)
+                                {{-- @foreach ($data['headers'] as $header)
                                     <td>{{ $d['pest_total_detections'][$header] }}</td>
                                 @endforeach
+                                --}}
+                                <td>{{ $d['consumption_value']  }}</td>
                             </tr>
                         @endforeach
                     </tbody>

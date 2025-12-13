@@ -74,6 +74,8 @@ class CustomerController extends Controller
 
     private $cfdiUsages;
 
+    private $consumption_value;
+
     public function __construct()
     {
         $this->navigation_invoices = [
@@ -86,6 +88,15 @@ class CustomerController extends Controller
             'Nomina' => route('payrolls.index'),
             'Ordenes de Servicio' => route('order.index'),
             'Contratos' => route('contract.index'),
+        ];
+
+        // Mapeo de respuestas -> valor decimal
+        $this->consumption_value = [
+            'Nulo' => 0,
+            'Bajo' => 0.25,
+            'Medio' => 0.5,
+            'Alto' => 0.75,
+            'Consumo Total' => 1,
         ];
 
         $this->creditTimes = [
@@ -1439,15 +1450,16 @@ class CustomerController extends Controller
         }
 
         $orders = $order_query->where('customer_id', $customer->id)->get();
-        $data = $this->getGraphicDataWithDevices($customer, $orders, $req_areas, $req_pests);
+        //$data = $this->getGraphicDataWithDevicesByPests($customer, $orders, $req_areas, $req_pests);
+        $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orders, $req_areas);
 
         return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'));
     }
 
-    private function getGraphicDataWithDevices($customer, $orders, $areas, $pests)
+    private function getGraphicDataWithDevicesByPests($customer, $orders, $areas, $pests)
     {
         $orderIds = $orders->pluck('id');
-        $deviceIds = OrderIncidents::whereIn('order_id', $orders->pluck('id'))->pluck('device_id')->toArray();
+        $deviceIds = OrderIncidents::whereIn('order_id', $orders->pluck('id'))->pluck('device_id')->unique()->toArray();
 
         // Obtener todas las DevicePest relevantes de una sola consulta
         $allDevicePests = DevicePest::whereIn('device_id', $deviceIds)
@@ -1504,6 +1516,35 @@ class CustomerController extends Controller
         return [
             'detections' => $data,
             'headers' => $pests_headers
+        ];
+    }
+
+    public function getGraphicDataWithDevicesByAnswer($customer, $orders, $areas)
+    {
+        $question_id = 13;
+        $incidents = OrderIncidents::whereIn('order_id', $orders->pluck('id'))->get();
+        $deviceIds = $incidents->pluck('device_id')->unique()->toArray();
+        $devices = Device::whereIn('id', $deviceIds)->get();
+
+        foreach ($customer->applicationAreas as $area) {
+            foreach ($devices as $device) {
+                $aux_incident = $incidents->where('device_id', $device->id)->where('question_id', $question_id);
+                $data[] = [
+                    'area_id' => $area->id,
+                    'area_name' => $area->name,
+                    'device_id' => $device->id,
+                    'device_name' => $device->code,
+                    'version' => $device->version,
+                    'consumption_value' => $device->answer ? $this->consumption_value[$device->answer] : 0,
+                ];
+            }
+        }
+
+        $headers = ['Consumo'];
+
+        return [
+            'detections' => $data,
+            'headers' => $headers
         ];
     }
 }
