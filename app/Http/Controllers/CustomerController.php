@@ -1478,7 +1478,7 @@ class CustomerController extends Controller
             $order_query->whereIn('id', $order_ids);
         }
 
-        $orders = $order_query->where('customer_id', $customer->id)->get();
+        $orders = $order_query->where('customer_id', $customer->id)->where('status_id', 5)->get();
 
         $graph_type = $request->graph_type;
 

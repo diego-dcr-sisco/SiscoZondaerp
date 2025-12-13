@@ -129,7 +129,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td class="fw-bold text-danger" colspan="{{ 3 + count($data['headers']) }}">Utiliza los
+                                <td class="fw-bold text-danger" colspan="{{ 4 + count($data['headers']) }}">Utiliza los
                                     filtros para obtener resultados</td>
                             </tr>
                         @endforelse
