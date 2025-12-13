@@ -76,6 +76,8 @@ class CustomerController extends Controller
 
     private $consumption_value;
 
+    private $graphs_types;
+
     public function __construct()
     {
         $this->navigation_invoices = [
@@ -97,6 +99,11 @@ class CustomerController extends Controller
             'Medio' => 0.5,
             'Alto' => 0.75,
             'Consumo total' => 1,
+        ];
+
+        $this->graphs_types = [
+            'cnsm' => 'Consumos',
+            'cptr' => 'Capturas'
         ];
 
         $this->creditTimes = [
@@ -1400,8 +1407,10 @@ class CustomerController extends Controller
         // Filtrar campos con valor real
         $filled = array_filter($data, fn($value) => !is_null($value) && $value !== '');
 
-        // Verificar que exista 'customer' y al menos otro campo
-        return isset($filled['customer']) && count($filled) >= 2;
+        // Verificar que existan los 3 campos obligatorios
+        return isset($filled['customer'])
+            && isset($filled['date_range'])
+            && isset($filled['graph_type']);
     }
 
     public function showGraphics(Request $request, string $id)
@@ -1418,59 +1427,68 @@ class CustomerController extends Controller
         $control_points = [];
 
         $customer = Customer::with(['applicationAreas.devices'])->find($id);
+        $graphs_types = $this->graphs_types;
 
-        if ($this->hasRequiredFields($request->all())) {
-
-            $app_areas = ApplicationArea::where('customer_id', $customer->id)->select('id', 'name')->get();
-
-            $floorplans = FloorPlans::where('customer_id', $customer->id)->get();
-            if ($floorplans) {
-                $devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
-                if ($devices) {
-                    $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id'))->get();
-                } else {
-                    return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'))
-                        ->with('error', 'No se encontraron dispositivos');
-                }
-            } else {
-                return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'))->with('error', 'No se encontraron planos');
-            }
-
-            // Aplica los filtros segun la request
-            if ($request->filled('area')) {
-                $req_areas = ApplicationArea::where('name', 'like', '%' . $request->input('area') . '%')->pluck('id')->toArray();
-            }
-
-            if ($request->filled('pest')) {
-                $req_pests = PestCatalog::where('name', 'like', '%' . $request->input('pest') . '%')->pluck('id')->toArray();
-            }
-
-            // Obtener las ordenes bajo los filtros de la request
-            $order_query = Order::query();
-
-            if ($request->filled('date_range')) {
-                [$startDate, $endDate] = array_map(function ($d) {
-                    return Carbon::createFromFormat('d/m/Y', trim($d));
-                }, explode(' - ', $request->input('date_range')));
-
-                $order_query->whereBetween('programmed_date', [
-                    $startDate->format('Y-m-d'),
-                    $endDate->format('Y-m-d'),
-                ]);
-            }
-
-            if ($request->filled('service')) {
-                $found_services = Service::where('name', 'like', '%' . $request->input('service') . '%')->get()->pluck('id')->toArray();
-                $order_ids = OrderService::whereIn('service_id', $found_services)->get()->pluck('order_id')->toArray();
-                $order_query->whereIn('id', $order_ids);
-            }
-
-            $orders = $order_query->where('customer_id', $customer->id)->get();
-            //$data = $this->getGraphicDataWithDevicesByPests($customer, $orders, $req_areas, $req_pests);
-            $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orders, $req_areas);
+        if (!$this->hasRequiredFields($request->all())) {
+            return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas', 'graphs_types'))
+                ->with('error', 'No cumples con los campos minimos de busqueda');
         }
 
-        return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'));
+        $app_areas = ApplicationArea::where('customer_id', $customer->id)->select('id', 'name')->get();
+
+        $floorplans = FloorPlans::where('customer_id', $customer->id)->get();
+        if ($floorplans) {
+            $devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
+            if ($devices) {
+                $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id'))->get();
+            } else {
+                return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas'))
+                    ->with('error', 'No se encontraron dispositivos');
+            }
+        } else {
+            return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas', 'graphs_types'))->with('error', 'No se encontraron planos');
+        }
+
+        // Aplica los filtros segun la request
+        if ($request->filled('area')) {
+            $req_areas = ApplicationArea::where('name', 'like', '%' . $request->input('area') . '%')->pluck('id')->toArray();
+        }
+
+        if ($request->filled('pest')) {
+            $req_pests = PestCatalog::where('name', 'like', '%' . $request->input('pest') . '%')->pluck('id')->toArray();
+        }
+
+        // Obtener las ordenes bajo los filtros de la request
+        $order_query = Order::query();
+
+        if ($request->filled('date_range')) {
+            [$startDate, $endDate] = array_map(function ($d) {
+                return Carbon::createFromFormat('d/m/Y', trim($d));
+            }, explode(' - ', $request->input('date_range')));
+
+            $order_query->whereBetween('programmed_date', [
+                $startDate->format('Y-m-d'),
+                $endDate->format('Y-m-d'),
+            ]);
+        }
+
+        if ($request->filled('service')) {
+            $found_services = Service::where('name', 'like', '%' . $request->input('service') . '%')->get()->pluck('id')->toArray();
+            $order_ids = OrderService::whereIn('service_id', $found_services)->get()->pluck('order_id')->toArray();
+            $order_query->whereIn('id', $order_ids);
+        }
+
+        $orders = $order_query->where('customer_id', $customer->id)->get();
+
+        $graph_type = $request->graph_type;
+
+        if ($graph_type == 'cnsm') {
+            $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orders, $req_areas);
+        } else if ($graph_type == 'cptr') {
+            $data = $this->getGraphicDataWithDevicesByPests($customer, $orders, $req_areas, $req_pests);
+        }
+
+        return view('customer.show.graphics', compact('customer', 'pests_headers', 'data', 'control_points', 'app_areas', 'graphs_types'))->with('success', 'Resultados encontrados en los reportes APROBADOS');
     }
 
     private function getGraphicDataWithDevicesByPests($customer, $orders, $areas, $pests)
@@ -1523,6 +1541,7 @@ class CustomerController extends Controller
                     'area_name' => $area->name,
                     'device_id' => $device->id,
                     'device_name' => $device->code,
+                    'service' => $device->floorplan->service->name,
                     'version' => $device->version,
                     'pest_total_detections' => $pest_totals,
                     'total_detections' => $total_detections
@@ -1556,6 +1575,7 @@ class CustomerController extends Controller
                     'area_name' => $area->name,
                     'device_id' => $device->id,
                     'device_name' => $device->code,
+                    'service' => $device->floorplan->service->name,
                     'version' => $device->version,
                     'consumption_value' => $aux_incident?->answer ? $this->consumption_value[$aux_incident->answer] : 0,
                 ];

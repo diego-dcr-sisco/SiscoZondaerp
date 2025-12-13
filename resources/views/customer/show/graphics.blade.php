@@ -16,20 +16,20 @@
                     <div class="row g-2 mb-0">
                         <!-- Cliente -->
                         <div class="col-lg-3">
-                            <label for="customer" class="form-label">Cliente</label>
+                            <label for="customer" class="form-label is-required">Cliente</label>
                             <input type="text"
                                 class="form-control form-control-sm {{ isset($customer) ? 'bg-secondary-subtle' : '' }}"
                                 id="customer" name="customer"
                                 value="{{ request('customer') ?? isset($customer) ? $customer->name : '' }}"
-                                placeholder="Nombre del cliente" {{ isset($customer) ? 'readonly' : '' }}>
+                                placeholder="Nombre del cliente" {{ isset($customer) ? 'readonly' : '' }} required>
                         </div>
 
                         <!-- Rango de fecha -->
                         <div class="col-lg-3">
-                            <label for="date_range" class="form-label">Rango de Fechas</label>
+                            <label for="date_range" class="form-label is-required">Rango de Fechas</label>
                             <input type="text" class="form-control form-control-sm date-range-picker" id="date-range"
                                 name="date_range" value="{{ request('date_range') }}" placeholder="Selecciona un rango"
-                                autocomplete="off">
+                                autocomplete="off" required>
                         </div>
 
                         <!-- Servicio -->
@@ -73,6 +73,19 @@
                                 value="{{ request('pest') }}" placeholder="Buscar por plaga">
                         </div>
 
+                        <div class="col-lg-2">
+                            <label for="graph_type" class="form-label is-required">Tipo de grafica</label>
+                            <select class="form-select form-select-sm" id="graph_type" name="graph_type" required>
+                                <option value="" {{ request('graph_type') == null ? 'selected' : '' }}> Ninguno
+                                </option>
+                                @foreach ($graphs_types as $key => $graphs_type)
+                                    <option value="{{ $key }}"
+                                        {{ request('graph_type') == $key ? 'selected' : '' }}>{{ $graphs_type }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <!-- Botones -->
                         <div class="col-lg-12 d-flex justify-content-end m-0 mt-3">
                             <button type="submit" class="btn btn-primary btn-sm me-2">
@@ -91,6 +104,7 @@
                     <thead>
                         <tr>
                             <th class="fw-bold" scope="col">#</th>
+                            <th class="fw-bold" scope="col">Servicio</th>
                             <th class="fw-bold" scope="col">Area</th>
                             <th class="fw-bold" scope="col">Dispositivo</th>
                             @foreach ($data['headers'] as $header)
@@ -99,18 +113,26 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($data['detections'] as $index => $d)
+                        @forelse ($data['detections'] as $index => $d)
                             <tr>
                                 <td>{{ $index + 1 }}</td>
+                                <td>{{ $d['service'] }}</td>
                                 <td>{{ $d['area_name'] }}</td>
                                 <td>{{ $d['device_name'] }}</td>
-                                {{-- @foreach ($data['headers'] as $header)
-                                    <td>{{ $d['pest_total_detections'][$header] }}</td>
-                                @endforeach
-                                --}}
-                                <td>{{ $d['consumption_value']  }}</td>
+                                @if (request('graph_type') == 'cptr')
+                                    @foreach ($data['headers'] as $header)
+                                        <td>{{ $d['pest_total_detections'][$header] }}</td>
+                                    @endforeach
+                                @elseif (request('graph_type') == 'cnsm')
+                                    <td>{{ $d['consumption_value'] }}</td>
+                                @endif
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td class="fw-bold text-danger" colspan="{{ 3 + count($data['headers']) }}">Utiliza los
+                                    filtros para obtener resultados</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
