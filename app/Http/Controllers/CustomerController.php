@@ -1543,6 +1543,7 @@ class CustomerController extends Controller
         $deviceIds = $incidents->pluck('device_id')->unique()->toArray();
         $devices = Device::whereIn('id', $deviceIds)->get();
 
+        $data = [];
         foreach ($customer->applicationAreas as $area) {
             foreach ($devices as $device) {
                 $aux_incident = $incidents
