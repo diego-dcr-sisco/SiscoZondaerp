@@ -1535,7 +1535,7 @@ class CustomerController extends Controller
                     'device_id' => $device->id,
                     'device_name' => $device->code,
                     'version' => $device->version,
-                    'consumption_value' => $device->answer ? $this->consumption_value[$device->answer] : 0,
+                    'consumption_value' => $aux_incident->answer ? $this->consumption_value[$aux_incident->answer] : 0,
                 ];
             }
         }
