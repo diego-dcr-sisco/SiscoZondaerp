@@ -107,6 +107,7 @@
                             <th class="fw-bold" scope="col">Servicio</th>
                             <th class="fw-bold" scope="col">Area</th>
                             <th class="fw-bold" scope="col">Dispositivo</th>
+                            <th class="fw-bold" scope="col">Version</th>
                             @foreach ($data['headers'] as $header)
                                 <th class="fw-bold" scope="col">{{ $header }}</th>
                             @endforeach
@@ -119,6 +120,7 @@
                                 <td>{{ $d['service'] }}</td>
                                 <td>{{ $d['area_name'] }}</td>
                                 <td>{{ $d['device_name'] }}</td>
+                                <td>{{ $d['version'] }}</td>
                                 @if (request('graph_type') == 'cptr')
                                     @foreach ($data['headers'] as $header)
                                         <td>{{ $d['pest_total_detections'][$header] }}</td>
