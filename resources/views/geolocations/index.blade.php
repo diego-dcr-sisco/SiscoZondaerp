@@ -93,6 +93,14 @@
             max-height: 200px;
             overflow-y: auto;
         }
+
+        .card-header[data-bs-toggle="collapse"] .bi-chevron-down {
+            transition: transform 0.3s ease;
+        }
+
+        .card-header[data-bs-toggle="collapse"]:not(.collapsed) .bi-chevron-down {
+            transform: rotate(180deg);
+        }
     </style>
 
     <div class="container-fluid p-0">
@@ -129,125 +137,157 @@
                 <div class="p-3">
                     <!-- Search Address -->
                     <div class="card mb-3 shadow-sm">
-                        <div class="card-header bg-primary text-white">
-                            <i class="bi bi-search"></i> Buscar Dirección
-                        </div>
-                        <div class="card-body">
-                            <div class="input-group">
-                                <input type="text" class="form-control" id="address-search" 
-                                       placeholder="Buscar dirección...">
-                                <button class="btn btn-primary" type="button" id="search-btn">
-                                    <i class="bi bi-search"></i>
-                                </button>
+                        <div class="card-header bg-light text-dark" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseSearch">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-search"></i> Buscar Dirección</span>
+                                <i class="bi bi-chevron-down"></i>
                             </div>
-                            <small class="text-muted">Busca una dirección para centrar el mapa</small>
+                        </div>
+                        <div class="collapse show" id="collapseSearch">
+                            <div class="card-body">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="address-search" 
+                                           placeholder="Buscar dirección...">
+                                    <button class="btn btn-primary" type="button" id="search-btn">
+                                        <i class="bi bi-search"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Busca una dirección para centrar el mapa</small>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Filters -->
                     <div class="card mb-3 shadow-sm">
-                        <div class="card-header bg-secondary text-white">
-                            <i class="bi bi-funnel"></i> Filtros
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small">Tipo de Control Point</label>
-                                <select class="form-select form-select-sm" id="filter-control-point">
-                                    <option value="">Todos los tipos</option>
-                                    @foreach($controlPoints as $cp)
-                                        <option value="{{ $cp['id'] }}">{{ $cp['name'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small">Zona de Aplicación</label>
-                                <select class="form-select form-select-sm" id="filter-area">
-                                    <option value="">Todas las zonas</option>
-                                    @foreach($applicationAreas as $area)
-                                        <option value="{{ $area['id'] }}">{{ $area['name'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="mb-2">
-                                <label class="form-label fw-bold small">Estado</label>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="filter-status" 
-                                           id="filter-all" value="all" checked>
-                                    <label class="form-check-label small" for="filter-all">
-                                        Todos
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="filter-status" 
-                                           id="filter-geolocated" value="geolocated">
-                                    <label class="form-check-label small" for="filter-geolocated">
-                                        <i class="bi bi-check-circle text-success"></i> Geolocalizados
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="filter-status" 
-                                           id="filter-pending" value="pending">
-                                    <label class="form-check-label small" for="filter-pending">
-                                        <i class="bi bi-exclamation-circle text-danger"></i> Pendientes
-                                    </label>
-                                </div>
+                        <div class="card-header bg-light text-dark" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseFilters">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-funnel"></i> Filtros</span>
+                                <i class="bi bi-chevron-down"></i>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Statistics -->
-                    <div class="card mb-3 shadow-sm">
-                        <div class="card-header bg-info text-white">
-                            <i class="bi bi-bar-chart"></i> Estadísticas
-                        </div>
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="small">Total dispositivos:</span>
-                                <span class="badge bg-primary" id="total-devices">{{ count($devices) }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="small">Geolocalizados:</span>
-                                <span class="badge bg-success" id="geolocated-count">0</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="small">Pendientes:</span>
-                                <span class="badge bg-danger" id="pending-count">{{ count($devices) }}</span>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <span class="small">Modificados:</span>
-                                <span class="badge bg-warning" id="modified-count">0</span>
-                            </div>
-                            <div class="progress mt-2" style="height: 20px;">
-                                <div class="progress-bar bg-success" role="progressbar" id="progress-bar" 
-                                     style="width: 0%">0%</div>
+                        <div class="collapse show" id="collapseFilters">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Tipo de Control Point</label>
+                                    <select class="form-select form-select-sm" id="filter-control-point">
+                                        <option value="">Todos los tipos</option>
+                                        @foreach($controlPoints as $cp)
+                                            <option value="{{ $cp['id'] }}">{{ $cp['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Zona de Aplicación</label>
+                                    <select class="form-select form-select-sm" id="filter-area">
+                                        <option value="">Todas las zonas</option>
+                                        @foreach($applicationAreas as $area)
+                                            <option value="{{ $area['id'] }}">{{ $area['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label fw-bold small">Estado</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="filter-status" 
+                                               id="filter-all" value="all" checked>
+                                        <label class="form-check-label small" for="filter-all">
+                                            Todos
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="filter-status" 
+                                               id="filter-geolocated" value="geolocated">
+                                        <label class="form-check-label small" for="filter-geolocated">
+                                            <i class="bi bi-check-circle text-success"></i> Geolocalizados
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="filter-status" 
+                                               id="filter-pending" value="pending">
+                                        <label class="form-check-label small" for="filter-pending">
+                                            <i class="bi bi-exclamation-circle text-danger"></i> Pendientes
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Instructions -->
-                    <div class="alert alert-light border shadow-sm">
-                        <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Instrucciones</h6>
-                        <small>
-                            <ol class="mb-0 ps-3">
-                                <li>Selecciona un dispositivo de la lista</li>
-                                <li>Haz clic en el mapa para colocarlo</li>
-                                <li>Arrastra los marcadores para ajustar</li>
-                                <li>Guarda cuando termines</li>
-                            </ol>
-                        </small>
+                    <div class="card mb-3 shadow-sm">
+                        <div class="card-header bg-light text-dark" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseInstructions">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-info-circle"></i> Instrucciones</span>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                        </div>
+                        <div class="collapse" id="collapseInstructions">
+                            <div class="card-body">
+                                <small>
+                                    <ol class="mb-0 ps-3">
+                                        <li>Selecciona un dispositivo de la lista</li>
+                                        <li>Haz clic en el mapa para colocarlo</li>
+                                        <li>Arrastra los marcadores para ajustar</li>
+                                        <li>Guarda cuando termines</li>
+                                    </ol>
+                                </small>
+                            </div>
+                        </div>
                     </div>
                     
                     <!-- Devices List -->
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-list-ul"></i> Dispositivos</span>
-                            <button class="btn btn-sm btn-light" id="clear-selection">
-                                <i class="bi bi-x-circle"></i> Limpiar selección
-                            </button>
+                    <div class="card mb-3 shadow-sm">
+                        <div class="card-header bg-success text-white" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseDevices">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-list-ul"></i> Dispositivos</span>
+                                <div>
+                                    <button class="btn btn-sm btn-light me-2" id="clear-selection" onclick="event.stopPropagation();">
+                                        <i class="bi bi-x-circle"></i> Limpiar selección
+                                    </button>
+                                    <i class="bi bi-chevron-down"></i>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body p-0">
-                            <div id="devices-list" style="max-height: calc(100vh - 400px); overflow-y: auto;">
-                                <!-- Se llenará con JavaScript -->
+                        <div class="collapse show" id="collapseDevices">
+                            <div class="card-body p-0">
+                                <div id="devices-list" style="max-height: calc(100vh - 400px); overflow-y: auto;">
+                                    <!-- Se llenará con JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- Statistics -->
+                    <div class="card mb-3 shadow-sm">
+                        <div class="card-header bg-light text-dark" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#collapseStats">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-bar-chart"></i> Estadísticas</span>
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                        </div>
+                        <div class="collapse show" id="collapseStats">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="small">Total dispositivos:</span>
+                                    <span class="badge bg-primary" id="total-devices">{{ count($devices) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="small">Geolocalizados:</span>
+                                    <span class="badge bg-success" id="geolocated-count">0</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="small">Pendientes:</span>
+                                    <span class="badge bg-danger" id="pending-count">{{ count($devices) }}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="small">Modificados:</span>
+                                    <span class="badge bg-warning" id="modified-count">0</span>
+                                </div>
+                                <div class="progress mt-2" style="height: 20px;">
+                                    <div class="progress-bar bg-success" role="progressbar" id="progress-bar" 
+                                         style="width: 0%">0%</div>
+                                </div>
                             </div>
                         </div>
                     </div>
