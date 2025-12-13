@@ -96,7 +96,7 @@ class CustomerController extends Controller
             'Bajo' => 0.25,
             'Medio' => 0.5,
             'Alto' => 0.75,
-            'Consumo Total' => 1,
+            'Consumo total' => 1,
         ];
 
         $this->creditTimes = [
