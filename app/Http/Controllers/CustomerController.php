@@ -1662,9 +1662,8 @@ class CustomerController extends Controller
     private function getGraphicDataWithDevicesByAnswer($customer, $orders, $devices)
     {
         $question_id = 2;
-        $groupedData = []; // Array asociativo para agrupar por clave
+        $groupedData = [];
 
-        // Agrupar dispositivos por área primero
         $devicesByArea = $devices->groupBy('application_area_id');
 
         foreach ($customer->applicationAreas as $area) {
@@ -1675,31 +1674,23 @@ class CustomerController extends Controller
             }
 
             foreach ($areaDevices as $device) {
-                // Obtener incidentes para este dispositivo
                 $incidents = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
                     ->where('question_id', $question_id)
                     ->where('device_id', $device->id)
                     ->select('id', 'device_id', 'order_id', 'answer')
                     ->get();
 
-                // Calcular consumo para este dispositivo
                 $deviceTotalConsumption = 0;
                 $deviceIncidentCount = $incidents->count();
 
-
-                if ($deviceIncidentCount > 0) {
-                    foreach ($incidents as $incident) {
-                        $deviceTotalConsumption += $this->consumption_value[$this->normalizeString($incident->answer)] ?? 0;
-                    }
+                foreach ($incidents as $incident) {
+                    $normalizedAnswer = $this->normalizeString($incident->answer);
+                    $deviceTotalConsumption += $this->consumption_value[$normalizedAnswer] ?? 0;
                 }
-                // Si no hay incidentes, el consumo total es 0 y el contador de incidentes es 0
+
                 $key = $area->id . '_' . $device->nplan . '_' . $device->code;
 
                 if (!isset($groupedData[$key])) {
-                    // Nuevo grupo - si no hay incidentes, el valor es 0
-                    /*$consumptionValue = $deviceIncidentCount > 0 ?
-                        ($deviceTotalConsumption / $deviceIncidentCount) : 0;*/
-
                     $groupedData[$key] = [
                         'area_id' => $area->id,
                         'area_name' => $area->name,
@@ -1707,23 +1698,15 @@ class CustomerController extends Controller
                         'service' => $device->floorplan->service->name ?? 'N/A',
                         'nplan' => $device->nplan,
                         'device_count' => 1,
-                        //'total_consumption' => $deviceTotalConsumption,
-                        'incident_count' => $deviceIncidentCount,
-                        'consumption_value' => $deviceTotalConsumption,
+                        '_total_consumption' => $deviceTotalConsumption,
+                        '_total_incidents' => $deviceIncidentCount,
                         'versions' => [$device->version],
                     ];
                 } else {
-                    // Actualizar grupo existente
                     $groupedData[$key]['device_count']++;
-                   // $groupedData[$key]['total_consumption'] += $deviceTotalConsumption;
-                    $groupedData[$key]['incident_count'] += $deviceIncidentCount;
+                    $groupedData[$key]['_total_consumption'] += $deviceTotalConsumption;
+                    $groupedData[$key]['_total_incidents'] += $deviceIncidentCount;
 
-                    // Recalcular promedio - si no hay incidentes, el valor es 0
-                    if (!$groupedData[$key]['incident_count'] > 0) {
-                        $groupedData[$key]['consumption_value'] = 0;
-                    }
-
-                    // Agregar versión si es diferente
                     if (!in_array($device->version, $groupedData[$key]['versions'])) {
                         $groupedData[$key]['versions'][] = $device->version;
                     }
@@ -1731,8 +1714,26 @@ class CustomerController extends Controller
             }
         }
 
-        // Convertir a array indexado
-        $data = array_values($groupedData);
+        // Calcular el valor final de consumo (promedio) para cada grupo
+        $data = [];
+        foreach ($groupedData as $key => $group) {
+            if ($group['_total_incidents'] > 0) {
+                $consumptionValue = $group['_total_consumption'] / $group['_total_incidents'];
+            } else {
+                $consumptionValue = 0;
+            }
+
+            $data[] = [
+                'area_id' => $group['area_id'],
+                'area_name' => $group['area_name'],
+                'device_name' => $group['device_name'],
+                'service' => $group['service'],
+                'nplan' => $group['nplan'],
+                'device_count' => $group['device_count'],
+                'versions' => $group['versions'],
+                'consumption_value' => $consumptionValue,
+            ];
+        }
 
         return [
             'detections' => $data,
