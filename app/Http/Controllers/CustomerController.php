@@ -1660,12 +1660,13 @@ class CustomerController extends Controller
 
         // Optimizar: traer solo los incidentes necesarios
 
-        dd($orders->pluck('id')->toArray());
         $incidents = OrderIncidents::whereIn('order_id', 60000)//$orders->pluck('id'))
             ->where('question_id', $question_id)
             ->whereIn('device_id', $devices->pluck('id'))
             ->select('id', 'device_id', 'order_id', 'answer')
             ->get();
+
+        dd($incidents->toArray());
 
         //dd(json_encode($incidents->toArray()));
 
