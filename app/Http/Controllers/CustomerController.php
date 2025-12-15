@@ -1656,7 +1656,7 @@ class CustomerController extends Controller
     private function getGraphicDataWithDevicesByAnswer($customer, $orders, $devices)
     {
         //$question_id = 2;
-        $question_id = 13;
+        $question_id = 2;
 
         // Optimizar: traer solo los incidentes necesarios
         $incidents = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
@@ -1665,7 +1665,7 @@ class CustomerController extends Controller
             ->select('id', 'device_id', 'order_id', 'answer')
             ->get();
 
-        dd(json_encode($incidents->toArray()));
+        //dd(json_encode($incidents->toArray()));
 
         // Preprocesar datos
         $incidentsByDevice = $incidents->groupBy('device_id');
@@ -1693,6 +1693,8 @@ class CustomerController extends Controller
                     $incident = $incidentsByDevice->get($device->id, collect())->first();
                     $consumption = $incident?->answer ?
                         ($this->consumption_value[$incident->answer] ?? 0) : 0;
+
+                        dd($consumption);
 
                     $totalConsumption += $consumption;
                     $deviceCount++;
