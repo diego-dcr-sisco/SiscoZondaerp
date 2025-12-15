@@ -1661,7 +1661,7 @@ class CustomerController extends Controller
 
     private function getGraphicDataWithDevicesByAnswer($customer, $orders, $devices)
     {
-        $question_id = 2;
+        $question_id = 13;
         $groupedData = [];
 
         $devicesByArea = $devices->groupBy('application_area_id');
