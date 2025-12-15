@@ -1469,31 +1469,6 @@ class CustomerController extends Controller
         // Obtener áreas de aplicación sin consulta adicional
         $app_areas = $customer->applicationAreas;
 
-        // Optimizar consulta de dispositivos y control points
-        $devices = Device::whereHas('floorplan', function ($q) use ($customer) {
-            $q->where('customer_id', $customer->id);
-        })
-            ->with([
-                'floorplan.service:id,name',
-                'controlPoint:id,name'
-            ])
-            ->select('id', 'code', 'version', 'application_area_id', 'floorplan_id', 'type_control_point_id')
-            ->get();
-
-        if ($devices->isEmpty()) {
-            return view('customer.show.graphics', [
-                'customer' => $customer,
-                'pests_headers' => [],
-                'data' => $data,
-                'control_points' => collect(),
-                'app_areas' => $app_areas,
-                'graphs_types' => $this->graphs_types,
-                'request_data' => $request->all(),
-            ])->with('error', 'No se encontraron dispositivos');
-        }
-
-        $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique()->toArray())->get();
-
         // Aplica filtros usando like solo si es necesario
         if ($request->filled('area')) {
             $req_areas = ApplicationArea::where('customer_id', $customer->id)
@@ -1525,10 +1500,8 @@ class CustomerController extends Controller
         if ($request->filled('service')) {
             $found_services = Service::where('name', 'like', '%' . $request->input('service') . '%')
                 ->pluck('id');
-
             $order_ids = OrderService::whereIn('service_id', $found_services)
                 ->pluck('order_id');
-
             $order_query->whereIn('id', $order_ids);
         }
 
@@ -1545,6 +1518,32 @@ class CustomerController extends Controller
                 'request_data' => $request->all(),
             ])->with('info', 'No se encontraron órdenes aprobadas con los filtros aplicados');
         }
+
+        $device_ids = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
+            ->pluck('device_id')->unique()->toArray();
+
+        // Optimizar consulta de dispositivos y control points
+        $devices = Device::whereIn('id', $device_ids)
+            ->with([
+                'floorplan.service:id,name',
+                'controlPoint:id,name'
+            ])
+            ->select('id', 'code', 'version', 'application_area_id', 'floorplan_id', 'type_control_point_id', 'nplan')
+            ->get();
+
+        if ($devices->isEmpty()) {
+            return view('customer.show.graphics', [
+                'customer' => $customer,
+                'pests_headers' => [],
+                'data' => $data,
+                'control_points' => collect(),
+                'app_areas' => $app_areas,
+                'graphs_types' => $this->graphs_types,
+                'request_data' => $request->all(),
+            ])->with('error', 'No se encontraron dispositivos');
+        }
+
+        $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique()->toArray())->get();
 
         $graph_type = $request->graph_type;
 
@@ -1640,7 +1639,7 @@ class CustomerController extends Controller
 
     private function getGraphicDataWithDevicesByAnswer($customer, $orders, $devices)
     {
-        $question_id = 13;
+        $question_id = 2;
 
         // Optimizar: traer solo los incidentes necesarios
         $incidents = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
@@ -1653,23 +1652,47 @@ class CustomerController extends Controller
         $incidentsByDevice = $incidents->groupBy('device_id');
         $devicesByArea = $devices->groupBy('application_area_id');
 
+        // Agrupar dispositivos por nplan y code dentro de cada área
         $data = [];
 
         foreach ($customer->applicationAreas as $area) {
             $areaDevices = $devicesByArea->get($area->id, collect());
 
-            foreach ($areaDevices as $device) {
-                $incident = $incidentsByDevice->get($device->id, collect())->first();
+            // Agrupar dispositivos por nplan y code (mismo punto de control)
+            $groupedDevices = $areaDevices->groupBy(function ($device) {
+                return $device->nplan . '_' . $device->code;
+            });
+
+            foreach ($groupedDevices as $groupKey => $deviceGroup) {
+                $totalConsumption = 0;
+                $deviceCount = 0;
+                $firstDevice = $deviceGroup->first();
+                $versions = [];
+
+                // Sumar consumo de todas las versiones del mismo dispositivo
+                foreach ($deviceGroup as $device) {
+                    $incident = $incidentsByDevice->get($device->id, collect())->first();
+                    $consumption = $incident?->answer ?
+                        ($this->consumption_value[$incident->answer] ?? 0) : 0;
+
+                    $totalConsumption += $consumption;
+                    $deviceCount++;
+                    $versions[] = $device->version;
+                }
+
+                // Calcular el promedio (evitar división por cero)
+                $averageConsumption = $deviceCount > 0 ? $totalConsumption / $deviceCount : 0;
 
                 $data[] = [
                     'area_id' => $area->id,
                     'area_name' => $area->name,
-                    'device_id' => $device->id,
-                    'device_name' => $device->code,
-                    'service' => $device->floorplan->service->name ?? 'N/A',
-                    'version' => $device->version,
-                    'consumption_value' => $incident?->answer ?
-                        ($this->consumption_value[$incident->answer] ?? 0) : 0,
+                    'device_id' => $firstDevice->id, // ID del primer dispositivo del grupo
+                    'device_name' => $firstDevice->code,
+                    'service' => $firstDevice->floorplan->service->name ?? 'N/A',
+                    'nplan' => $firstDevice->nplan,
+                    'versions' => $versions, // Todas las versiones agrupadas
+                    'device_count' => $deviceCount, // Número de dispositivos agrupados
+                    'consumption_value' => $averageConsumption, // Promedio del consumo del grupo
                 ];
             }
         }

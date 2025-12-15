@@ -120,7 +120,7 @@
                                 <td>{{ $d['service'] }}</td>
                                 <td>{{ $d['area_name'] }}</td>
                                 <td>{{ $d['device_name'] }}</td>
-                                <td>{{ $d['version'] }}</td>
+                                <td>{{ json_encode($d['versions']) }}</td>
                                 @if (request('graph_type') == 'cptr')
                                     @foreach ($data['headers'] as $header)
                                         <td>{{ $d['pest_total_detections'][$header] }}</td>
