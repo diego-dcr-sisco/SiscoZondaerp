@@ -1509,7 +1509,7 @@ class CustomerController extends Controller
         $orders = $order_query->with(['services:service.id,service.name'])->get();
 
         // Si necesitas una colección única de todos los servicios
-        $uniqueServices = $orders->flatMap->services->unique('id');
+        /*$uniqueServices = $orders->flatMap->services->unique('id');
 
         // Opción 2: Obtener servicios únicos directamente desde la base de datos
         $services = Service::select('id', 'name')
@@ -1519,10 +1519,9 @@ class CustomerController extends Controller
                     ->whereIn('order_id', $order_query->pluck('id'));
             })
             ->distinct()
-            ->get();
+            ->get();*/
 
-        dd($services->toArray());
-
+        
 
         if ($orders->isEmpty()) {
             return view('customer.show.graphics', [
@@ -1535,8 +1534,6 @@ class CustomerController extends Controller
                 'request_data' => $request->all(),
             ])->with('info', 'No se encontraron órdenes aprobadas con los filtros aplicados');
         }
-
-        dd($orders->services);
 
         $device_ids = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
             ->pluck('device_id')->unique()->toArray();
