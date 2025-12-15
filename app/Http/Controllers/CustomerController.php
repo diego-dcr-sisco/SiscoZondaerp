@@ -1699,8 +1699,6 @@ class CustomerController extends Controller
                     $versions[] = $device->version;
                 }
 
-                dd($deviceCount);
-
                 // Calcular el promedio (evitar división por cero)
                 $averageConsumption = $deviceCount > 0 ? $totalConsumption / $deviceCount : 0;
 
@@ -1717,6 +1715,8 @@ class CustomerController extends Controller
                 ];
             }
         }
+
+        dd($data);
 
         return [
             'detections' => $data,
