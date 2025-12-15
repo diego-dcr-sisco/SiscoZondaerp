@@ -779,7 +779,7 @@ class UserController extends Controller
 			return redirect()->route('user.index')->with('error', 'User not found.');
 		}
 
-		$user->syncRoles([]);
+		/*$user->syncRoles([]);
 
 		UserFile::where('user_id', $user->id)->delete();
 		UserContract::where('user_id', $user->id)->delete();
@@ -801,7 +801,8 @@ class UserController extends Controller
 				}
 			}
 		}
-		$user->delete();
+		$user->delete();*/
+		$user->status_id = 3;
 		return redirect()->route('user.index');
 	}
 }

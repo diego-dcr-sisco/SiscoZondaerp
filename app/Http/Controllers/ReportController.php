@@ -131,9 +131,10 @@ class ReportController extends Controller
 
                 // Procesar cada elemento
                 foreach ($devices as $deviceId) {
-                    //$updated_incidents = [];
-                    //$updated_products = [];
-                    //$updated_pests = [];
+                    $updated_incidents = [];
+                    $updated_products = [];
+                    $updated_pests = [];
+                    $updated_questions = [];
 
                     foreach ($answers as $questionId => $answer) {
                         if (in_array($questionId, $questions)) {
@@ -148,6 +149,7 @@ class ReportController extends Controller
                                 ]
                             );
 
+                            $updated_questions[] = $questionId;
                             $updated_incidents[] = $oi->id;
                         }
                     }
@@ -213,7 +215,7 @@ class ReportController extends Controller
                         }
                     }
 
-                    //OrderIncidents::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_incidents)->delete();
+                    OrderIncidents::where('order_id', $order->id)->where('device_id', $deviceId)->where('question_id', $updated_questions)->whereNotIn('id', $updated_incidents)->delete();
                     //DeviceProduct::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_products)->delete();
                     //DevicePest::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_pests)->delete();
                 }

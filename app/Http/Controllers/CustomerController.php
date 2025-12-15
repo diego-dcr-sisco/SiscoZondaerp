@@ -94,11 +94,11 @@ class CustomerController extends Controller
 
         // Mapeo de respuestas -> valor decimal
         $this->consumption_value = [
-            'Nulo' => 0,
-            'Bajo' => 0.25,
-            'Medio' => 0.5,
-            'Alto' => 0.75,
-            'Consumo total' => 1,
+            'nulo' => 0,
+            'bajo' => 0.25,
+            'medio' => 0.5,
+            'alto' => 0.75,
+            'consumototal' => 1,
         ];
 
         $this->graphs_types = [
@@ -1653,6 +1653,12 @@ class CustomerController extends Controller
         ];
     }
 
+    private function normalizeString($string)
+    {
+        // Convierte a minúsculas y elimina espacios
+        return strtolower(str_replace(' ', '', $string));
+    }
+
     private function getGraphicDataWithDevicesByAnswer($customer, $orders, $devices)
     {
         $question_id = 2;
@@ -1680,19 +1686,19 @@ class CustomerController extends Controller
                 $deviceTotalConsumption = 0;
                 $deviceIncidentCount = $incidents->count();
 
+
                 if ($deviceIncidentCount > 0) {
                     foreach ($incidents as $incident) {
-                        $deviceTotalConsumption += $this->consumption_value[$incident->answer] ?? 0;
+                        $deviceTotalConsumption += $this->consumption_value[$this->normalizeString($incident->answer)] ?? 0;
                     }
                 }
                 // Si no hay incidentes, el consumo total es 0 y el contador de incidentes es 0
-
                 $key = $area->id . '_' . $device->nplan . '_' . $device->code;
 
                 if (!isset($groupedData[$key])) {
                     // Nuevo grupo - si no hay incidentes, el valor es 0
-                    $consumptionValue = $deviceIncidentCount > 0 ?
-                        ($deviceTotalConsumption / $deviceIncidentCount) : 0;
+                    /*$consumptionValue = $deviceIncidentCount > 0 ?
+                        ($deviceTotalConsumption / $deviceIncidentCount) : 0;*/
 
                     $groupedData[$key] = [
                         'area_id' => $area->id,
@@ -1701,23 +1707,19 @@ class CustomerController extends Controller
                         'service' => $device->floorplan->service->name ?? 'N/A',
                         'nplan' => $device->nplan,
                         'device_count' => 1,
-                        'total_consumption' => $deviceTotalConsumption,
+                        //'total_consumption' => $deviceTotalConsumption,
                         'incident_count' => $deviceIncidentCount,
-                        'consumption_value' => $consumptionValue,
+                        'consumption_value' => $deviceTotalConsumption,
                         'versions' => [$device->version],
                     ];
                 } else {
                     // Actualizar grupo existente
                     $groupedData[$key]['device_count']++;
-                    $groupedData[$key]['total_consumption'] += $deviceTotalConsumption;
+                   // $groupedData[$key]['total_consumption'] += $deviceTotalConsumption;
                     $groupedData[$key]['incident_count'] += $deviceIncidentCount;
 
                     // Recalcular promedio - si no hay incidentes, el valor es 0
-                    if ($groupedData[$key]['incident_count'] > 0) {
-                        $groupedData[$key]['consumption_value'] =
-                            $groupedData[$key]['total_consumption'] /
-                            $groupedData[$key]['incident_count'];
-                    } else {
+                    if (!$groupedData[$key]['incident_count'] > 0) {
                         $groupedData[$key]['consumption_value'] = 0;
                     }
 
