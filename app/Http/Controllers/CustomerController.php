@@ -1624,7 +1624,7 @@ class CustomerController extends Controller
                     'device_id' => $device->id,
                     'device_name' => $device->code,
                     'service' => $device->floorplan->service->name ?? 'N/A',
-                    'version' => $device->version,
+                    'versions' => [$device->version],
                     'pest_total_detections' => $pest_totals,
                     'total_detections' => $total_detections
                 ];
