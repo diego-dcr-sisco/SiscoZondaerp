@@ -1656,7 +1656,7 @@ class CustomerController extends Controller
     private function getGraphicDataWithDevicesByAnswer($customer, $orders, $devices)
     {
         //$question_id = 2;
-        $question_id = 2;
+        $question_id = 13;
 
         // Optimizar: traer solo los incidentes necesarios
         $incidents = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
