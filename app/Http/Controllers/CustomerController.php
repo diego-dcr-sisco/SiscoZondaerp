@@ -1694,12 +1694,12 @@ class CustomerController extends Controller
                     $consumption = $incident?->answer ?
                         ($this->consumption_value[$incident->answer] ?? 0) : 0;
 
-                        dd($consumption);
-
                     $totalConsumption += $consumption;
                     $deviceCount++;
                     $versions[] = $device->version;
                 }
+
+                dd($deviceCount);
 
                 // Calcular el promedio (evitar división por cero)
                 $averageConsumption = $deviceCount > 0 ? $totalConsumption / $deviceCount : 0;
