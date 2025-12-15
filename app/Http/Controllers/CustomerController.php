@@ -1659,6 +1659,8 @@ class CustomerController extends Controller
         $question_id = 13;
 
         // Optimizar: traer solo los incidentes necesarios
+
+        dd($orders->pluck('id')->toArray());
         $incidents = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
             ->where('question_id', $question_id)
             ->whereIn('device_id', $devices->pluck('id'))
