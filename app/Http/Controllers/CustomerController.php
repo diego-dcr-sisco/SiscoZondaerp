@@ -1665,9 +1665,10 @@ class CustomerController extends Controller
             ->select('id', 'device_id', 'order_id', 'answer')
             ->get();
 
+        dd(json_encode($incidents->toArray()));
+
         // Preprocesar datos
         $incidentsByDevice = $incidents->groupBy('device_id');
-        dd($incidentsByDevice);
         $devicesByArea = $devices->groupBy('application_area_id');
 
         // Agrupar dispositivos por nplan y code dentro de cada área
