@@ -1718,7 +1718,7 @@ class CustomerController extends Controller
         $data = [];
         foreach ($groupedData as $key => $group) {
             if ($group['_total_incidents'] > 0) {
-                $consumptionValue = $group['_total_consumption'] / $group['_total_incidents'];
+                $consumptionValue = $group['_total_consumption']; // $group['_total_incidents'];
             } else {
                 $consumptionValue = 0;
             }
