@@ -1699,6 +1699,10 @@ class CustomerController extends Controller
                     $deviceCount++;
                     $versions[] = $device->version;
                     $devicesAnalyzed[] = $device->id;
+
+                    if($device->id == 7741) {
+                        dd($incident, $this->consumption_value[$incident->answer]);
+                    }
                 }
 
                 // Calcular el promedio (evitar división por cero)
