@@ -1687,6 +1687,7 @@ class CustomerController extends Controller
                 $deviceCount = 0;
                 $firstDevice = $deviceGroup->first();
                 $versions = [];
+                $devicesAnalyzed = [];
 
                 // Sumar consumo de todas las versiones del mismo dispositivo
                 foreach ($deviceGroup as $device) {
@@ -1697,6 +1698,7 @@ class CustomerController extends Controller
                     $totalConsumption += $consumption;
                     $deviceCount++;
                     $versions[] = $device->version;
+                    $devicesAnalyzed[] = $device->id;
                 }
 
                 // Calcular el promedio (evitar división por cero)
@@ -1710,6 +1712,7 @@ class CustomerController extends Controller
                     'service' => $firstDevice->floorplan->service->name ?? 'N/A',
                     'nplan' => $firstDevice->nplan,
                     'versions' => $versions, // Todas las versiones agrupadas
+                    'device' => $devicesAnalyzed,
                     'device_count' => $deviceCount, // Número de dispositivos agrupados
                     'consumption_value' => $averageConsumption, // Promedio del consumo del grupo
                 ];
