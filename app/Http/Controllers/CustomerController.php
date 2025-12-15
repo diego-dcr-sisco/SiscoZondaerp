@@ -1521,7 +1521,7 @@ class CustomerController extends Controller
             ->distinct()
             ->get();*/
 
-        
+
 
         if ($orders->isEmpty()) {
             return view('customer.show.graphics', [
@@ -1655,78 +1655,82 @@ class CustomerController extends Controller
 
     private function getGraphicDataWithDevicesByAnswer($customer, $orders, $devices)
     {
-        //$question_id = 2;
-        $question_id = 13;
+        $question_id = 2;
+        $groupedData = []; // Array asociativo para agrupar por clave
 
-        // Optimizar: traer solo los incidentes necesarios
-
-        $incidents = OrderIncidents::whereIn('order_id', [60000])//$orders->pluck('id'))
-            ->where('question_id', $question_id)
-            ->whereIn('device_id', $devices->pluck('id'))
-            ->select('id', 'device_id', 'order_id', 'answer')
-            ->get();
-
-
-        // Preprocesar datos
-        $incidentsByDevice = $incidents->groupBy('device_id');
-
+        // Agrupar dispositivos por área primero
         $devicesByArea = $devices->groupBy('application_area_id');
-
-        // Agrupar dispositivos por nplan y code dentro de cada área
-        $data = [];
 
         foreach ($customer->applicationAreas as $area) {
             $areaDevices = $devicesByArea->get($area->id, collect());
 
-            dd($areaDevices->toArray());
+            if ($areaDevices->isEmpty()) {
+                continue;
+            }
 
-            // Agrupar dispositivos por nplan y code (mismo punto de control)
-            $groupedDevices = $areaDevices->groupBy(function ($device) {
-                return $device->nplan . '_' . $device->code;
-            });
+            foreach ($areaDevices as $device) {
+                // Obtener incidentes para este dispositivo
+                $incidents = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
+                    ->where('question_id', $question_id)
+                    ->where('device_id', $device->id)
+                    ->select('id', 'device_id', 'order_id', 'answer')
+                    ->get();
 
-            foreach ($groupedDevices as $groupKey => $deviceGroup) {
-                $totalConsumption = 0;
-                $deviceCount = 0;
-                $firstDevice = $deviceGroup->first();
-                $versions = [];
-                $devicesAnalyzed = [];
+                // Calcular consumo para este dispositivo
+                $deviceTotalConsumption = 0;
+                $deviceIncidentCount = $incidents->count();
 
-                // Sumar consumo de todas las versiones del mismo dispositivo
-                foreach ($deviceGroup as $device) {
-                    $incident = $incidentsByDevice->get($device->id, collect())->first();
-                    $consumption = $incident?->answer ?
-                        ($this->consumption_value[$incident->answer] ?? 0) : 0;
-
-                    $totalConsumption += $consumption;
-                    $deviceCount++;
-                    $versions[] = $device->version;
-                    $devicesAnalyzed[] = $device->id;
-
-                    if($device->id == 7741) {
-                        dd($incident, $this->consumption_value[$incident->answer]);
+                if ($deviceIncidentCount > 0) {
+                    foreach ($incidents as $incident) {
+                        $deviceTotalConsumption += $this->consumption_value[$incident->answer] ?? 0;
                     }
                 }
+                // Si no hay incidentes, el consumo total es 0 y el contador de incidentes es 0
 
-                // Calcular el promedio (evitar división por cero)
-                $averageConsumption = $deviceCount > 0 ? $totalConsumption / $deviceCount : 0;
+                $key = $area->id . '_' . $device->nplan . '_' . $device->code;
 
-                $data[] = [
-                    'area_id' => $area->id,
-                    'area_name' => $area->name,
-                    'device_id' => $firstDevice->id, // ID del primer dispositivo del grupo
-                    'device_name' => $firstDevice->code,
-                    'service' => $firstDevice->floorplan->service->name ?? 'N/A',
-                    'nplan' => $firstDevice->nplan,
-                    'versions' => $versions, // Todas las versiones agrupadas
-                    'device' => $devicesAnalyzed,
-                    'device_count' => $deviceCount, // Número de dispositivos agrupados
-                    'consumption_value' => $averageConsumption, // Promedio del consumo del grupo
-                ];
+                if (!isset($groupedData[$key])) {
+                    // Nuevo grupo - si no hay incidentes, el valor es 0
+                    $consumptionValue = $deviceIncidentCount > 0 ?
+                        ($deviceTotalConsumption / $deviceIncidentCount) : 0;
+
+                    $groupedData[$key] = [
+                        'area_id' => $area->id,
+                        'area_name' => $area->name,
+                        'device_name' => $device->code,
+                        'service' => $device->floorplan->service->name ?? 'N/A',
+                        'nplan' => $device->nplan,
+                        'device_count' => 1,
+                        'total_consumption' => $deviceTotalConsumption,
+                        'incident_count' => $deviceIncidentCount,
+                        'consumption_value' => $consumptionValue,
+                        'versions' => [$device->version],
+                    ];
+                } else {
+                    // Actualizar grupo existente
+                    $groupedData[$key]['device_count']++;
+                    $groupedData[$key]['total_consumption'] += $deviceTotalConsumption;
+                    $groupedData[$key]['incident_count'] += $deviceIncidentCount;
+
+                    // Recalcular promedio - si no hay incidentes, el valor es 0
+                    if ($groupedData[$key]['incident_count'] > 0) {
+                        $groupedData[$key]['consumption_value'] =
+                            $groupedData[$key]['total_consumption'] /
+                            $groupedData[$key]['incident_count'];
+                    } else {
+                        $groupedData[$key]['consumption_value'] = 0;
+                    }
+
+                    // Agregar versión si es diferente
+                    if (!in_array($device->version, $groupedData[$key]['versions'])) {
+                        $groupedData[$key]['versions'][] = $device->version;
+                    }
+                }
             }
         }
 
-        dd($data);
+        // Convertir a array indexado
+        $data = array_values($groupedData);
 
         return [
             'detections' => $data,
