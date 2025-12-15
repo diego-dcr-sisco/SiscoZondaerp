@@ -1667,6 +1667,7 @@ class CustomerController extends Controller
 
         // Preprocesar datos
         $incidentsByDevice = $incidents->groupBy('device_id');
+        dd($incidentsByDevice);
         $devicesByArea = $devices->groupBy('application_area_id');
 
         // Agrupar dispositivos por nplan y code dentro de cada área
