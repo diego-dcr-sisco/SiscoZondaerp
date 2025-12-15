@@ -780,7 +780,6 @@ class UserController extends Controller
 		}
 
 		/*$user->syncRoles([]);
-
 		UserFile::where('user_id', $user->id)->delete();
 		UserContract::where('user_id', $user->id)->delete();
 		UserCustomer::where('user_id', $user->id)->delete();
@@ -802,7 +801,7 @@ class UserController extends Controller
 			}
 		}
 		$user->delete();*/
-		$user->status_id = 3;
+		$user->update(['status_id' => 3]);
 		return redirect()->route('user.index');
 	}
 }

@@ -464,7 +464,7 @@ class ContractController extends Controller
                 $count_indexs[$cs->service_id]++;
             }
 
-            $orders = Order::where('setting_id', $cs->id)->get();
+            $orders = Order::where('setting_id', $cs->id)->orderBy('programmed_date')->get();
             $configurations[] = [
                 'config_id' => $count_indexs[$cs->service_id],
                 'setting_id' => $cs->id,
