@@ -694,7 +694,7 @@
                         const config = configurations.find(c => c.config_id === configId);
                         if (config && config.orders) {
                             const order = config.orders.find(o => o.id == orderId);
-                            if (order && order.status_id === 1) {
+                            if (order && order.status_id == 1) {
                                 order.programmed_date = newDateObj.toISOString();
 
                                 // Actualizar también la fecha correspondiente en configDates
@@ -728,7 +728,7 @@
                         if (orderIndex !== -1) {
                             const order = config.orders[orderIndex];
 
-                            if (order.status_id === 1) {
+                            if (order.status_id == 1) {
                                 // Eliminar también la fecha correspondiente en configDates
                                 const dateIndex = configDates[configId].findIndex(date =>
                                     new Date(date).toISOString() === order.programmed_date
