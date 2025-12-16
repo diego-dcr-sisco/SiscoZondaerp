@@ -63,6 +63,7 @@ class FloorPlansController extends Controller
             'Plano' => route('floorplan.edit', ['id' => $floorplan->id]),
             'Dispositivos' => route('floorplan.devices', ['id' => $floorplan->id, 'version' => $floorplan->lastVersion() ?? '0']),
             'QRs' => route('floorplan.qr', ['id' => $floorplan->id]),
+            'Geolocalización' => route('floorplan.geolocation', ['id' => $floorplan->id]),
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $floorplan->customer_id])
         ];
 
@@ -301,23 +302,50 @@ class FloorPlansController extends Controller
 
     public function store(Request $request, string $customerId)
     {
-        $request->validate([
-            'file' => 'required|image|mimes:jpeg,png,jpg,gif|max:10000'
+        $validated = $request->validate([
+            'filename' => [
+                'required',
+                'string',
+                'min:3',
+                'max:100',
+                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-_]+$/'
+            ],
+            'file' => [
+                'required',
+                'image',
+                'mimes:jpeg,png,jpg',
+                'max:5120'
+            ],
+            'service_id' => 'nullable|exists:service,id',
+            'customer_id' => 'required|exists:customer,id'
+        ], [
+            'filename.required' => 'El nombre del plano es obligatorio',
+            'filename.min' => 'El nombre debe tener al menos 3 caracteres',
+            'filename.max' => 'El nombre no puede exceder 100 caracteres',
+            'filename.regex' => 'El nombre solo puede contener letras, números, espacios, guiones y guiones bajos',
+            'file.required' => 'Debe seleccionar un archivo',
+            'file.image' => 'El archivo debe ser una imagen',
+            'file.mimes' => 'Solo se permiten archivos JPG, JPEG o PNG',
+            'file.max' => 'El archivo no debe exceder 5MB'
         ]);
 
+        $sanitizedFilename = $this->sanitizeFilename($validated['filename']);
+
         $file = $request->file('file');
-        $url = $this->path . $customerId . '/' . time() . '_' . $file->getClientOriginalName();
+        $extension = $file->getClientOriginalExtension();
+        $safeFileName = time() . '_' . Str::slug($sanitizedFilename) . '.' . $extension;
+        $url = $this->path . $customerId . '/' . $safeFileName;
 
         Storage::disk('public')->put($url, file_get_contents($file));
 
         $floorplan = new FloorPlans();
-        $floorplan->fill($request->all());
+        $floorplan->filename = $sanitizedFilename;
         $floorplan->customer_id = $customerId;
-        $floorplan->service_id = $request->input('service_id') != 0 ? $request->input('service_id') : null;
+        $floorplan->service_id = $request->input('service_id') ?: null;
         $floorplan->path = $url;
         $floorplan->save();
 
-        return back();
+        return back()->with('success', 'Plano creado exitosamente');
     }
 
     public function edit(string $id)
@@ -599,26 +627,52 @@ class FloorPlansController extends Controller
     public function update(Request $request, string $id)
     {
         $floorplan = FloorPlans::find($id);
-        $request->validate([
-            'file' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+        
+        $validated = $request->validate([
+            'filename' => [
+                'required',
+                'string',
+                'min:3',
+                'max:100',
+                'regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-_]+$/'
+            ],
+            'file' => [
+                'nullable',
+                'image',
+                'mimes:jpeg,png,jpg',
+                'max:5120'
+            ],
+            'service_id' => 'nullable|exists:services,id'
+        ], [
+            'filename.required' => 'El nombre del plano es obligatorio',
+            'filename.min' => 'El nombre debe tener al menos 3 caracteres',
+            'filename.max' => 'El nombre no puede exceder 100 caracteres',
+            'filename.regex' => 'El nombre solo puede contener letras, números, espacios, guiones y guiones bajos',
+            'file.image' => 'El archivo debe ser una imagen',
+            'file.mimes' => 'Solo se permiten archivos JPG, JPEG o PNG',
+            'file.max' => 'El archivo no debe exceder 5MB'
         ]);
-        $floorplan->fill($request->except('file'));
-        $floorplan->customer_id = $floorplan->customer->id;
-        $floorplan->service_id = $request->input('service_id') != 0 ? $request->input('service_id') : null;
+
+        $floorplan->filename = $this->sanitizeFilename($validated['filename']);
+        $floorplan->service_id = $request->input('service_id') ?: null;
 
         if ($request->hasFile('file')) {
-            // Si hay una imagen nueva, eliminar la imagen anterior si existe
-            if ($floorplan->path && Storage::disk('local')->exists('public/floorplans/' . $floorplan->path)) {
-                Storage::disk('local')->delete('public/floorplans/' . $floorplan->path);
+            if ($floorplan->path && Storage::disk('public')->exists($floorplan->path)) {
+                Storage::disk('public')->delete($floorplan->path);
             }
 
-            $newFilename = $floorplan->customer->id . '/' . $floorplan->customer->id . '_' . time() . '.' . $request->file('file')->getClientOriginalExtension();
-            $request->file('file')->storeAs('public/floorplans/', $newFilename, 'local');
-            $floorplan->path = 'floorplans/' . $newFilename;
+            $file = $request->file('file');
+            $extension = $file->getClientOriginalExtension();
+            $safeFileName = Str::slug($floorplan->filename) . '_' . time() . '.' . $extension;
+            $newPath = $this->path . $floorplan->customer_id . '/' . $safeFileName;
+            
+            Storage::disk('public')->put($newPath, file_get_contents($file));
+            $floorplan->path = $newPath;
         }
+        
         $floorplan->save();
 
-        return back();
+        return back()->with('success', 'Plano actualizado exitosamente');
     }
 
     public function updateDevices(Request $request, string $id)
@@ -791,5 +845,18 @@ class FloorPlansController extends Controller
         });
 
         return $pdf->stream($pdf_name);
+    }
+
+    private function sanitizeFilename(string $filename): string
+    {
+        $sanitized = preg_replace('/[<>:"\/\\|?*\x00-\x1f]/', '', $filename);
+        $sanitized = preg_replace('/\s+/', ' ', $sanitized);
+        $sanitized = trim($sanitized);
+        
+        if (empty($sanitized)) {
+            $sanitized = 'Plano_' . time();
+        }
+        
+        return $sanitized;
     }
 }
