@@ -19,6 +19,7 @@
     
     <script>
         let services_configuration = [];
+        let contract_configurations = [];
         const contain_selected_services = [];
         const view = @json($view);
     </script>

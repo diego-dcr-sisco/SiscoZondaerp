@@ -663,13 +663,13 @@
                             <i class="bi bi-eye-fill"></i>
                         </a>
                         ${order.status_id == 1 ? 
-                            `<button class="btn btn-sm btn-secondary" onclick="editOrder(${order.id}, '${order.programmed_date}', ${configId})"
+                            `<button class="btn btn-sm btn-secondary" onclick="editOrder('${order.id}', '${order.programmed_date}', ${configId})"
                                                                         data-bs-toggle="tooltip"    
                                                                         data-bs-title="This top tooltip is themed via CSS variables.">
                                                                         <i class="bi bi-calendar2-check-fill"></i>
                                                                     </button>
-                                                                    <button class="btn btn-sm btn-danger" onclick="deleteOrder(${order.id}, ${configId})">
-                                                                        <i class="bi bi-trash-fill"></i>
+                                                                    <button class="btn btn-sm btn-danger" onclick="deleteOrder('${order.id}', ${configId})">
+                                                                        <i class="bi bi-trash-fill"></i> 
                                                                     </button>` 
                             : 
                             `<span class="text-muted fw-bold">No editable</span>`
@@ -693,7 +693,7 @@
                         // Buscar y actualizar la orden en las configuraciones
                         const config = configurations.find(c => c.config_id === configId);
                         if (config && config.orders) {
-                            const order = config.orders.find(o => o.id === orderId);
+                            const order = config.orders.find(o => o.id == orderId);
                             if (order && order.status_id === 1) {
                                 order.programmed_date = newDateObj.toISOString();
 
@@ -724,7 +724,7 @@
                     // Buscar y eliminar la orden en las configuraciones
                     const config = configurations.find(c => c.config_id === configId);
                     if (config && config.orders) {
-                        const orderIndex = config.orders.findIndex(o => o.id === orderId);
+                        const orderIndex = config.orders.findIndex(o => o.id == orderId);
                         if (orderIndex !== -1) {
                             const order = config.orders[orderIndex];
 

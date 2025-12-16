@@ -642,7 +642,7 @@ class FloorPlansController extends Controller
                 'mimes:jpeg,png,jpg',
                 'max:5120'
             ],
-            'service_id' => 'nullable|exists:services,id'
+            'service_id' => 'nullable|exists:service,id'
         ], [
             'filename.required' => 'El nombre del plano es obligatorio',
             'filename.min' => 'El nombre debe tener al menos 3 caracteres',
