@@ -167,30 +167,40 @@
 
         <script>
             $('#configureServiceModal').on('show.bs.modal', function(event) {
-                configCounter = 0;
                 configDates = {};
                 configDescriptions = {};
 
                 const service_id = $('#service-id').val();
                 //setServiceVisualData(service_id);
 
-                // CORRECCIÓN 1: Reiniciar configurations solo para este servicio
+                // Reiniciar configurations solo para este servicio
                 configurations = contract_configurations.filter(c => c.service_id == service_id);
+                
+                console.log('Service ID:', service_id);
+                console.log('Contract Configurations:', contract_configurations);
+                console.log('Filtered Configurations:', configurations);
+                
+                // Inicializar configCounter con el máximo ID existente para evitar colisiones
+                configCounter = configurations.length > 0 
+                    ? Math.max(...configurations.map(c => c.config_id)) 
+                    : 0;
 
                 if (configurations.length != 0) {
                     $("#empty-config-state").hide();
 
                     configurations.forEach(config => {
+                        // Establecer el configCounter al ID específico de esta configuración ANTES de llamar a addConfiguration
+                        configCounter = config.config_id - 1;
                         addConfiguration();
 
-                        // CORRECCIÓN 2: Cargar fechas desde las órdenes existentes MANTENIENDO IDs
-                        const datesFromOrders = config.orders ? config.orders.map(order => order
-                            .programmed_date) : [];
+                        // Cargar fechas desde las órdenes existentes MANTENIENDO IDs
+                        const datesFromOrders = config.dates || (config.orders ? config.orders.map(order => order
+                            .programmed_date) : []);
 
-                        // CORRECCIÓN 3: Asignar directamente al config_id específico
+                        //  Asignar directamente al config_id específico
                         configDates[config.config_id] = datesFromOrders;
 
-                        // CORRECCIÓN 4: Mover can_renew fuera del forEach si es necesario
+                        // Mover can_renew fuera del forEach si es necesario
                         // (depende de la lógica de negocio)
                         if (can_renew) {
                             const service = {
@@ -203,15 +213,14 @@
                             const startDate = $("#startdate").val();
                             const endDate = $("#enddate").val();
 
-                            // CORRECCIÓN 5: Verificar que las fechas existan
+                            // Verificar que las fechas existan
                             if (startDate && endDate) {
                                 const dates = createDates(service, startDate, endDate, config.config_id);
                                 configDates[config.config_id] = dates.map(d => new Date(d).toISOString());
                             }
                         }
 
-                        // CORRECCIÓN 6: Mover configDescriptions fuera del forEach
-                        // (se estaba sobrescribiendo en cada iteración)
+                        // Mover configDescriptions fuera del forEach
                         if (config.description) {
                             configDescriptions[config.config_id] = config.description;
                         }
@@ -227,37 +236,45 @@
                             $(`#service-date-${config.config_id}`).val(config.days);
                         }
 
-                        // CORRECCIÓN 7: Cargar fechas (usar setTimeout para asegurar que el DOM esté listo)
+                        // Guardar referencia a config.orders en configurations local
+                        const localConfig = configurations.find(c => c.config_id === config.config_id);
+                        if (localConfig && config.orders) {
+                            localConfig.orders = config.orders;
+                        }
+
+                        // Cargar fechas y órdenes después de que el DOM esté listo
                         setTimeout(() => {
-                            if (configDates[config.config_id] && configDates[config.config_id].length >
-                                0) {
-                                $(`#datesCollapse${config.config_id}`).addClass('show');
-                                $(`#accordion-btn${config.config_id}`).attr('aria-expanded', 'true');
+                            if (configDates[config.config_id] && configDates[config.config_id].length > 0) {
                                 updateDatesList(config.config_id);
                             }
 
-                            // CORRECCIÓN 8: Cargar órdenes MANTENIENDO IDs existentes
+                            // Cargar órdenes MANTENIENDO IDs existentes
+                            console.log(`Config ${config.config_id} orders:`, config.orders);
                             if (config.orders && config.orders.length > 0) {
-                                $(`#ordersCollapse${config.config_id}`).addClass('show');
-                                $(`#orders-accordion-btn${config.config_id}`).attr('aria-expanded',
-                                    'true');
+                                console.log(`Actualizando tabla de órdenes para config ${config.config_id}`);
                                 updateOrdersTable(config.config_id, config.orders);
+                                
+                                // Expandir el acordeón DESPUÉS de actualizar la tabla
+                                $(`#ordersCollapse${config.config_id}`).addClass('show');
+                                $(`#orders-accordion-btn${config.config_id}`).attr('aria-expanded', 'true');
+                            } else {
+                                console.log(`Config ${config.config_id} no tiene órdenes o está vacío`);
                             }
-                        }, 100);
+                        }, 300); // Aumentar el timeout para asegurar que el DOM esté listo
 
-                        // CORRECCIÓN 9: Cargar descripción después de inicializar Summernote
+                        // Cargar descripción después de inicializar Summernote
                         setTimeout(() => {
                             if (configDescriptions[config.config_id]) {
                                 $(`#config-summernote${config.config_id}`).summernote('code',
                                     configDescriptions[config.config_id]);
                             }
-                        }, 200);
-
-                        // CORRECCIÓN 10: Actualizar configCounter correctamente
-                        configCounter = Math.max(configCounter, config.config_id);
+                        }, 400);
                     });
 
-                    // CORRECCIÓN 11: Mover configDescriptions fuera del forEach
+                    // Actualizar configCounter al máximo ID al final
+                    configCounter = Math.max(...configurations.map(c => c.config_id));
+
+                    // Mover configDescriptions fuera del forEach
                     configDescriptions = configurations.reduce((acc, curr) => {
                         acc[curr.config_id] = curr.description || null;
                         return acc;
@@ -511,21 +528,28 @@
                 if (newDate) {
                     const dateObj = new Date(newDate + 'T00:00:00');
                     if (!isNaN(dateObj.getTime())) {
+                        // Inicializar configDates[configId] si no existe
+                        if (!configDates[configId]) {
+                            configDates[configId] = [];
+                        }
+
                         // Verificar si la fecha ya existe
                         const dateExists = configDates[configId].some(existingDate => {
-                            return new Date(existingDate).toISOString().split('T')[0] === newDate;
+                            const existingDateStr = new Date(existingDate).toISOString().split('T')[0];
+                            return existingDateStr === newDate;
                         });
 
                         if (!dateExists) {
-                            // Agregar la fecha
-                            configDates[configId].push(dateObj.toISOString());
+                            // Agregar la fecha en formato ISO
+                            const isoDate = dateObj.toISOString();
+                            configDates[configId].push(isoDate);
 
                             // Buscar configuración existente
                             let config = configurations.find(c => c.config_id === configId);
                             if (!config) {
                                 config = {
                                     config_id: configId,
-                                    service_id: $('#service-id').val(),
+                                    service_id: parseInt($('#service-id').val()),
                                     orders: []
                                 };
                                 configurations.push(config);
@@ -535,11 +559,11 @@
                                 config.orders = [];
                             }
 
-                            // Crear nueva orden con ID temporal
+                            // Crear nueva orden con ID temporal único
                             const newOrder = {
                                 id: `temp_manual_${configId}_${Date.now()}`,
                                 folio: null,
-                                programmed_date: dateObj.toISOString(),
+                                programmed_date: isoDate,
                                 status_id: 1,
                                 status_name: 'Pendiente',
                                 url: null
@@ -550,13 +574,21 @@
                             // Actualizar la interfaz
                             updateDatesList(configId);
                             updateOrdersTable(configId, config.orders);
+                            
+                            // Expandir los acordeones para mostrar los cambios
+                            $(`#ordersCollapse${configId}`).addClass('show');
+                            $(`#orders-accordion-btn${configId}`).attr('aria-expanded', 'true');
+                            
                             showSuccessMessage('Fecha y orden agregadas correctamente');
                         } else {
                             showErrorMessage('La fecha ya existe en la lista');
                         }
                     } else {
-                        showErrorMessage('Fecha inválida');
+                        showErrorMessage('Fecha inválida. Use el formato YYYY-MM-DD');
                     }
+                } else {
+                    // Usuario canceló el prompt
+                    console.log('Operación cancelada por el usuario');
                 }
             }
 
@@ -761,12 +793,10 @@
             }
 
             function showSuccessMessage(message) {
-                // Puedes reemplazar esto con un toast más elegante
                 alert(`✅ ${message}`);
             }
 
             function showErrorMessage(message) {
-                // Puedes reemplazar esto con un toast más elegante
                 alert(`❌ ${message}`);
             }
 
@@ -862,7 +892,7 @@
                 // Animación de desvanecimiento
                 $element.fadeOut(300, function() {
                     $(this).remove();
-                    configCounter--;
+                    // No decrementar configCounter para evitar IDs duplicados
                     delete configDates[configId];
 
                     // Eliminar solo de contract_configurations (mantener otros servicios)
@@ -1073,23 +1103,24 @@
                 updateDatesList(configId);
 
                 // Buscar la configuración existente para obtener órdenes actuales
-                //let config = configurations.find(c => c.config_id === configId);
-                //const existingOrders = config ? (config.orders || []) : [];
-
+                let config = configurations.find(c => c.config_id === configId);
+                const existingOrders = config ? (config.orders || []) : [];
 
                 // Generar órdenes MANTENIENDO IDs existentes
-                const generatedOrders = generateOrdersFromDates(dates, configId);
+                const generatedOrders = generateOrdersFromDates(dates, configId, existingOrders);
 
-                //if (!config) {
-                config = {
-                    config_id: configId,
-                    service_id: $('#service-id').val(),
-                    orders: generatedOrders
-                };
-                configurations.push(config);
-                //} else {
-                //    config.orders = generatedOrders;
-                //}
+                if (!config) {
+                    // Crear nueva configuración si no existe
+                    config = {
+                        config_id: configId,
+                        service_id: $('#service-id').val(),
+                        orders: generatedOrders
+                    };
+                    configurations.push(config);
+                } else {
+                    // Actualizar configuración existente
+                    config.orders = generatedOrders;
+                }
 
                 updateOrdersTable(configId, config.orders);
 
@@ -1396,10 +1427,14 @@
                     const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
                     const frequency = frequencies.find(f => f.id === frequency_id);
                     const interval_id = parseInt($(`#service-interval-${configId}`).val());
-                    const interval = interval_id > 0 ? intervals[interval_id - 1] : '';
+                    const interval = interval_id > 0 ? intervals[interval_id - 1] : null;
                     const days = $(`#service-days-${configId}`).val();
 
-                    if (frequency_id !== 0 && days.trim() !== '') {
+                    // Verificar si tiene fechas manuales O configuración de frecuencia
+                    const hasManualDates = configDates[configId] && configDates[configId].length > 0;
+                    const hasFrequencyConfig = frequency_id !== 0 && days.trim() !== '';
+
+                    if (hasManualDates || hasFrequencyConfig) {
                         // Crear nueva configuración para este servicio
                         const c_config = contract_configurations.find(c => c.config_id == configId && c.service_id ==
                             service_id) ?? null;
@@ -1407,11 +1442,11 @@
                             config_id: configId,
                             setting_id: c_config ? c_config.setting_id : null,
                             service_id: parseInt(service_id),
-                            frequency: frequency.name,
-                            frequency_id: frequency_id,
+                            frequency: frequency ? frequency.name : 'Manual',
+                            frequency_id: (frequency_id && frequency_id > 0) ? frequency_id : 1, // Frecuencia por defecto: 1 (Día)
                             interval: interval,
-                            interval_id: interval_id,
-                            days: [days],
+                            interval_id: (interval_id && interval_id > 0) ? interval_id : 1, // Intervalo por defecto: 1
+                            days: days ? [days] : [],
                             dates: configDates[configId] || [],
                             orders: generateOrdersFromDates(configDates[configId] || [], configId, c_config ?
                                 c_config.orders : []),

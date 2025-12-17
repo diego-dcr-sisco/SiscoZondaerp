@@ -179,7 +179,7 @@ class ContractController extends Controller
                 'contract_id' => $contract->id,
                 'service_id' => $data->service_id,
                 'execution_frequency_id' => $data->frequency_id,
-                'interval' => $data->interval_id,
+                'interval' => $data->interval_id ?? 1, // Valor por defecto 1 si es null o 0
                 'days' => json_encode($data->days),
                 'total' => count($data->dates),
                 'service_description' => $data->description ?? null,
@@ -474,9 +474,9 @@ class ContractController extends Controller
                 'interval' => $this->intervals[$cs->interval],
                 'interval_id' => $cs->interval,
                 'days' => explode(',', json_decode($cs->days)[0] ?? ''),
-                /*'dates' => array_map(function ($date) {
+                'dates' => $orders->pluck('programmed_date')->map(function ($date) {
                     return $date . 'T00:00:00.000Z';
-                }, $orders->pluck('programmed_date')->toArray()),*/
+                })->toArray(),
                 'orders' => $orders->map(function ($order) {
                     return [
                         'id' => $order->id,
@@ -486,7 +486,7 @@ class ContractController extends Controller
                         'status_name' => $order->status->name,
                         'url' => route('order.edit', ['id' => $order->id])
                     ];
-                }),
+                })->toArray(), // ← Convertir a array
                 'description' =>  $cs->service_description ?? null,
             ];
         }
@@ -560,7 +560,7 @@ class ContractController extends Controller
                         'contract_id' => $contract->id,
                         'service_id' => $data->service_id,
                         'execution_frequency_id' => $data->frequency_id,
-                        'interval' => $data->interval_id,
+                        'interval' => $data->interval_id ?? 1, // Valor por defecto 1 si es null
                         'days' => json_encode($data->days),
                         'total' => count($data->dates),
                         'service_description' => $data->description ?? null,
