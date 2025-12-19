@@ -147,7 +147,11 @@
             container.innerHTML = '';
         }
 
-        if (document.querySelector(`.remove-pest[data-pest-id="${pestId}"]`)) {
+        // Generar key si no existe
+        const pestKey = key != null ? key : generateTimeKey();
+
+        // Prevenir duplicados por key (permite misma plaga con diferentes keys)
+        if (document.querySelector(`.remove-pest[data-pest-key="${pestKey}"]`)) {
             return;
         }
 
@@ -156,7 +160,7 @@
         pestDiv.innerHTML = `
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="fw-bold">${pestName}</span>
-                <button class="btn btn-sm btn-danger remove-pest" data-pest-id="${pestId}" data-pest-key="${key != null ? key : generateTimeKey()}">
+                <button class="btn btn-sm btn-danger remove-pest" data-pest-id="${pestId}" data-pest-key="${pestKey}">
                     <i class="bi bi-trash-fill"></i>
                 </button>
             </div>
@@ -179,7 +183,11 @@
             container.innerHTML = '';
         }
 
-        if (document.querySelector(`.remove-product[data-product-id="${productId}"]`)) {
+        // Generar key si no existe
+        const productKey = key != null ? key : generateTimeKey();
+
+        // Prevenir duplicados por key
+        if (document.querySelector(`.remove-product[data-product-key="${productKey}"]`)) {
             return;
         }
 
@@ -203,14 +211,12 @@
             )
         ].join('');
 
-        console.log('LLaves: ', key)
-
         const productDiv = document.createElement('div');
         productDiv.className = 'border rounded p-2 mb-2 bg-white';
         productDiv.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="fw-bold">${productName}</span>
-                <button class="btn btn-sm btn-danger remove-product" data-product-id="${productId}" data-product-key="${ key != null ? key : generateTimeKey()}">
+                <button class="btn btn-sm btn-danger remove-product" data-product-id="${productId}" data-product-key="${productKey}">
                     <i class="bi bi-trash-fill"></i>
                 </button>
         </div>
@@ -243,6 +249,13 @@
     // Función principal para abrir el modal
     function openReviewModal(buttonElement, serviceId) {
         const deviceData = JSON.parse(buttonElement.getAttribute('data-device'));
+        
+        // CRÍTICO: Limpiar arrays globales solo si es un dispositivo diferente
+        if (currentDeviceId !== deviceData.id) {
+            pests.length = 0;
+            products.length = 0;
+        }
+        
         currentDeviceId = deviceData.id;
         currentServiceId = serviceId;
 
@@ -336,13 +349,28 @@
         const pestId = document.getElementById('new-pest-select').value;
         const quantity = document.getElementById('pest-quantity').value || 1;
 
-        if (!pestId) return;
+        if (!pestId) {
+            alert('Por favor seleccione una plaga');
+            return;
+        }
 
         const pest = findPestById(pestId);
         if (pest) {
             addPestToContainer(pest.id, pest.name, quantity, null);
             document.getElementById('new-pest-select').value = '';
             document.getElementById('pest-quantity').value = 1;
+            
+            // Feedback visual
+            const btn = document.getElementById('add-pest-btn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+            btn.classList.add('btn-success');
+            btn.classList.remove('btn-primary');
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-primary');
+            }, 800);
         }
     });
 
@@ -352,7 +380,10 @@
         const productId = productSelect.value;
         const quantity = document.getElementById('product-quantity').value || 1;
 
-        if (!productId) return;
+        if (!productId) {
+            alert('Por favor seleccione un producto');
+            return;
+        }
 
         // Obtener métodos y lotes desde los data attributes
         const methods = applicationMethods; // Usamos la constante global
@@ -376,6 +407,18 @@
         // Resetear el formulario
         productSelect.value = '';
         document.getElementById('product-quantity').value = 1;
+        
+        // Feedback visual
+        const btn = document.getElementById('add-product-btn');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-primary');
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-primary');
+        }, 800);
     });
 
     /*document.getElementById('modal-pests-container').addEventListener('click', (e) => {
@@ -392,6 +435,23 @@
         const removeBtn = e.target.closest('.remove-pest');
         if (removeBtn) {
             e.preventDefault();
+            
+            const pestName = removeBtn.closest('.border.rounded').querySelector('.fw-bold').textContent;
+            
+            // Confirmación antes de eliminar
+            if (!confirm(`¿Está seguro de eliminar la plaga "${pestName}"?`)) {
+                return;
+            }
+            
+            const pestKey = removeBtn.dataset.pestKey;
+            
+            // Eliminar del array global
+            const index = pests.findIndex(p => p.key == pestKey);
+            if (index != -1) {
+                pests.splice(index, 1);
+            }
+            
+            // Eliminar del DOM
             const pestItem = removeBtn.closest('.border.rounded');
             pestItem.remove();
 
@@ -406,17 +466,23 @@
     // Event Delegation para eliminar productos
     document.getElementById('modal-products-container').addEventListener('click', (e) => {
         const removeBtn = e.target.closest('.remove-product');
-        console.log(removeBtn)
 
         if (removeBtn) {
             e.preventDefault();
+            
+            const productName = removeBtn.closest('.border.rounded').querySelector('.fw-bold').textContent;
+            
+            // Confirmación antes de eliminar
+            if (!confirm(`¿Está seguro de eliminar el producto "${productName}"?`)) {
+                return;
+            }
+            
             const productItem = removeBtn.closest('.border.rounded');
             productItem.remove();
 
             const productKey = removeBtn.dataset.productKey;
 
             const index = products.findIndex(p => p.key == productKey);
-            console.log(`I: ${index} -> K: ${productKey}`)
             if (index != -1) {
                 products.splice(index, 1);
             }
@@ -437,7 +503,8 @@
             const pestName = item.querySelector('.fw-bold').textContent;
             const quantity = item.querySelector('.pest-quantity').value;
 
-            const pest_index = pests.findIndex(p => p.id == pestId);
+            // Buscar por key para manejar correctamente múltiples plagas del mismo tipo
+            const pest_index = pests.findIndex(p => p.key == pestKey);
 
             if (pest_index != -1) {
                 pests[pest_index].quantity = parseInt(quantity) || 1;
@@ -466,13 +533,16 @@
             const method = methodId ? applicationMethods.find(m => m.id == methodId) : null;
             const lot = lotId ? (productInAllProducts?.lots?.find(l => l.id == lotId) || null) : null;
 
-            const product_index = products.findIndex(p => p.id == productId &&
-                p.application_method_id == methodId &&
-                p.lot_id == lotId
-            );
+            // Buscar por key para manejar correctamente múltiples instancias
+            const product_index = products.findIndex(p => p.key == productKey);
 
             if (product_index != -1) {
-                products[product_index].quantity = parseInt(quantity) || 1
+                // Actualizar producto existente
+                products[product_index].quantity = parseInt(quantity) || 1;
+                products[product_index].application_method_id = methodId || null;
+                products[product_index].method_name = method?.name || 'Sin método';
+                products[product_index].lot_id = lotId || null;
+                products[product_index].lot_number = lot?.registration_number || 'Sin lote';
             } else {
                 products.push({
                     key: productKey,

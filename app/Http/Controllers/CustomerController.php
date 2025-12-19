@@ -46,6 +46,9 @@ use Illuminate\View\View;
 
 class CustomerController extends Controller
 {
+    // Constants for graphics
+    private const STATUS_APPROVED = 5;
+    private const QUESTION_CONSUMPTION = 13;
 
     private $files_path = 'customers/files/';
     private $cities_route = 'datas/json/Mexico_cities.json';
@@ -1407,19 +1410,53 @@ class CustomerController extends Controller
         // Filtrar campos con valor real
         $filled = array_filter($data, fn($value) => !is_null($value) && $value !== '');
 
-        // Verificar que existan los 3 campos obligatorios
-        return isset($filled['customer'])
-            && isset($filled['date_range'])
+        // Verificar que existan los 2 campos obligatorios (customer viene de ruta)
+        return isset($filled['date_range'])
             && isset($filled['graph_type']);
+    }
+
+    /**
+     * Helper method to return graphics view with consistent structure
+     */
+    private function returnGraphicsView($customer, $app_areas, $request_data, $messageType = null, $message = null)
+    {
+        $view = view('customer.show.graphics', [
+            'customer' => $customer,
+            'pests_headers' => [],
+            'data' => ['detections' => [], 'headers' => []],
+            'control_points' => collect(),
+            'app_areas' => $app_areas,
+            'graphs_types' => $this->graphs_types,
+            'request_data' => $request_data,
+        ]);
+
+        if ($messageType && $message) {
+            $view->with($messageType, $message);
+        }
+
+        return $view;
     }
 
     public function showGraphics(Request $request, string $id)
     {
+        // Validation: customer ID comes from route parameter, not request
+        $request->validate([
+            'date_range' => 'nullable|string',
+            'graph_type' => 'nullable|in:cnsm,cptr',
+            'area' => 'nullable|string|max:255',
+            'pest' => 'nullable|string|max:255',
+            'service' => 'nullable|string|max:255',
+        ], [
+            'date_range.string' => 'El rango de fechas debe ser texto',
+            'graph_type.in' => 'Tipo de gráfico no válido',
+        ]);
+
         // Inicializar variables
         $data = [
             'detections' => [],
             'headers' => []
         ];
+
 
         $req_areas = [];
         $req_pests = [];
@@ -1440,34 +1477,17 @@ class CustomerController extends Controller
             }
         ])->find($id);
 
-        // Validación temprana para evitar cargas innecesarias
-        if (!$this->hasRequiredFields($request->all())) {
-            return view('customer.show.graphics', [
-                'customer' => $customer,
-                'pests_headers' => [],
-                'data' => $data,
-                'control_points' => [],
-                'app_areas' => [],
-                'graphs_types' => $this->graphs_types,
-                'request_data' => $request->all(),
-            ])->with('error', 'No cumples con los campos mínimos de búsqueda');
-        }
-
         if (!$customer) {
-            // Retornar vista en lugar de redirect
-            return view('customer.show.graphics', [
-                'customer' => null,
-                'pests_headers' => [],
-                'data' => $data,
-                'control_points' => [],
-                'app_areas' => [],
-                'graphs_types' => $this->graphs_types,
-                'request_data' => $request->all(),
-            ])->with('error', 'Cliente no encontrado');
+            return $this->returnGraphicsView(null, [], $request->all(), 'error', 'Cliente no encontrado');
         }
 
         // Obtener áreas de aplicación sin consulta adicional
         $app_areas = $customer->applicationAreas;
+
+        // Si no hay filtros aplicados, solo mostrar la vista con el formulario vacío
+        if (!$this->hasRequiredFields($request->all())) {
+            return $this->returnGraphicsView($customer, $app_areas, $request->all());
+        }
 
         // Aplica filtros usando like solo si es necesario
         if ($request->filled('area')) {
@@ -1484,17 +1504,21 @@ class CustomerController extends Controller
         }
 
         // Optimizar consulta de órdenes
-        $order_query = Order::where('customer_id', $customer->id)->where('status_id', 5);
+        $order_query = Order::where('customer_id', $customer->id)->where('status_id', self::STATUS_APPROVED);
 
         if ($request->filled('date_range')) {
-            [$startDate, $endDate] = array_map(function ($d) {
-                return Carbon::createFromFormat('d/m/Y', trim($d));
-            }, explode(' - ', $request->input('date_range')));
+            try {
+                [$startDate, $endDate] = array_map(function ($d) {
+                    return Carbon::createFromFormat('d/m/Y', trim($d));
+                }, explode(' - ', $request->input('date_range')));
 
-            $order_query->whereBetween('programmed_date', [
-                $startDate->format('Y-m-d'),
-                $endDate->format('Y-m-d'),
-            ]);
+                $order_query->whereBetween('programmed_date', [
+                    $startDate->format('Y-m-d'),
+                    $endDate->format('Y-m-d'),
+                ]);
+            } catch (\Exception $e) {
+                return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Formato de fecha inválido');
+            }
         }
 
         if ($request->filled('service')) {
@@ -1524,19 +1548,18 @@ class CustomerController extends Controller
 
 
         if ($orders->isEmpty()) {
-            return view('customer.show.graphics', [
-                'customer' => $customer,
-                'pests_headers' => [],
-                'data' => $data,
-                'control_points' => $control_points,
-                'app_areas' => $app_areas,
-                'graphs_types' => $this->graphs_types,
-                'request_data' => $request->all(),
-            ])->with('info', 'No se encontraron órdenes aprobadas con los filtros aplicados');
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'info', 'No se encontraron órdenes aprobadas con los filtros aplicados');
         }
+        
 
-        $device_ids = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
-            ->pluck('device_id')->unique()->toArray();
+        // Cache orderIds to avoid repeated pluck() calls
+        $orderIds = $orders->pluck('id')->toArray();
+
+        // Use DISTINCT in SQL instead of unique() in PHP for better performance
+        $device_ids = OrderIncidents::whereIn('order_id', $orderIds)
+            ->distinct()
+            ->pluck('device_id')
+            ->toArray();
 
         // Optimizar consulta de dispositivos y control points
         $devices = Device::whereIn('id', $device_ids)
@@ -1548,26 +1571,23 @@ class CustomerController extends Controller
             ->get();
 
         if ($devices->isEmpty()) {
-            return view('customer.show.graphics', [
-                'customer' => $customer,
-                'pests_headers' => [],
-                'data' => $data,
-                'control_points' => collect(),
-                'app_areas' => $app_areas,
-                'graphs_types' => $this->graphs_types,
-                'request_data' => $request->all(),
-            ])->with('error', 'No se encontraron dispositivos');
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'No se encontraron dispositivos');
         }
 
         $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique()->toArray())->get();
 
         $graph_type = $request->graph_type;
 
+        // Pre-calculate devicesByArea once for reuse
+        $devicesByArea = $devices->groupBy('application_area_id');
+
         // Obtener datos según el tipo de gráfico
         if ($graph_type == 'cnsm') {
-            $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orders, $devices);
+            $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orderIds, $devices, $devicesByArea);
         } else if ($graph_type == 'cptr') {
-            $data = $this->getGraphicDataWithDevicesByPests($customer, $orders, $devices, $req_pests);
+            $data = $this->getGraphicDataWithDevicesByPests($customer, $orderIds, $devices, $req_pests, $devicesByArea);
+        } else {
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido');
         }
 
         return view('customer.show.graphics', [
@@ -1581,10 +1601,8 @@ class CustomerController extends Controller
         ])->with('success', 'Resultados encontrados');
     }
 
-    private function getGraphicDataWithDevicesByPests($customer, $orders, $devices, $pests)
+    private function getGraphicDataWithDevicesByPests($customer, $orderIds, $devices, $pests, $devicesByArea)
     {
-        $orderIds = $orders->pluck('id');
-
         // Optimizar consulta usando joins y selects específicos
         $allDevicePests = DevicePest::whereIn('order_id', $orderIds)
             ->whereIn('device_id', $devices->pluck('id'))
@@ -1608,7 +1626,6 @@ class CustomerController extends Controller
 
         // Precalcular agrupaciones
         $devicePestsByDevice = $allDevicePests->groupBy('device_id');
-        $devicesByArea = $devices->groupBy('application_area_id');
 
         $data = [];
 
@@ -1639,7 +1656,7 @@ class CustomerController extends Controller
                     'area_name' => $area->name,
                     'device_id' => $device->id,
                     'device_name' => $device->code,
-                    'service' => $device->floorplan->service->name ?? 'N/A',
+                    'service' => $device->floorplan?->service?->name ?? 'N/A',
                     'versions' => [$device->version],
                     'pest_total_detections' => $pest_totals,
                     'total_detections' => $total_detections
@@ -1659,12 +1676,17 @@ class CustomerController extends Controller
         return strtolower(str_replace(' ', '', $string));
     }
 
-    private function getGraphicDataWithDevicesByAnswer($customer, $orders, $devices)
+    private function getGraphicDataWithDevicesByAnswer($customer, $orderIds, $devices, $devicesByArea)
     {
-        $question_id = 13;
         $groupedData = [];
 
-        $devicesByArea = $devices->groupBy('application_area_id');
+        // CRITICAL: Pre-load ALL incidents at once to eliminate N+1 query problem
+        $allIncidents = OrderIncidents::whereIn('order_id', $orderIds)
+            ->where('question_id', self::QUESTION_CONSUMPTION)
+            ->whereIn('device_id', $devices->pluck('id'))
+            ->select('id', 'device_id', 'order_id', 'answer')
+            ->get()
+            ->groupBy('device_id');
 
         foreach ($customer->applicationAreas as $area) {
             $areaDevices = $devicesByArea->get($area->id, collect());
@@ -1674,11 +1696,8 @@ class CustomerController extends Controller
             }
 
             foreach ($areaDevices as $device) {
-                $incidents = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
-                    ->where('question_id', $question_id)
-                    ->where('device_id', $device->id)
-                    ->select('id', 'device_id', 'order_id', 'answer')
-                    ->get();
+                // Get pre-loaded incidents for this device (no database query!)
+                $incidents = $allIncidents->get($device->id, collect());
 
                 $deviceTotalConsumption = 0;
                 $deviceIncidentCount = $incidents->count();
@@ -1695,7 +1714,7 @@ class CustomerController extends Controller
                         'area_id' => $area->id,
                         'area_name' => $area->name,
                         'device_name' => $device->code,
-                        'service' => $device->floorplan->service->name ?? 'N/A',
+                        'service' => $device->floorplan?->service?->name ?? 'N/A',
                         'nplan' => $device->nplan,
                         'device_count' => 1,
                         '_total_consumption' => $deviceTotalConsumption,
@@ -1727,7 +1746,7 @@ class CustomerController extends Controller
                 'area_id' => $group['area_id'],
                 'area_name' => $group['area_name'],
                 'device_name' => $group['device_name'],
-                'service' => $group['service'],
+                'service' => $group['service'] ?? 'N/A',
                 'nplan' => $group['nplan'],
                 'device_count' => $group['device_count'],
                 'versions' => $group['versions'],
