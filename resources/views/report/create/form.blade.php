@@ -153,6 +153,9 @@
                         onclick="openModal(this)">
                         Cambiar firma
                     </button>
+                    <button type="button" class="btn btn-danger btn-sm mt-2" onclick="deleteSignature()">
+                        Eliminar firma
+                    </button>
                 </div>
             </div>
         </div>
