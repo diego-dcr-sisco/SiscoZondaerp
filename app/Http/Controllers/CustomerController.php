@@ -1725,7 +1725,7 @@ class CustomerController extends Controller
             }
         }
 
-        // CRITICAL: Pre-load ALL incidents at once to eliminate N+1 query problem
+        // CRITICO: Pre-cargar todos los incidentes relevantes de una sola vez y evitar las N+1 consultas
         $allIncidents = OrderIncidents::whereIn('order_id', $orderIds)
             ->where('question_id', self::QUESTION_CONSUMPTION)
             ->whereIn('device_id', $devices->pluck('id'))
