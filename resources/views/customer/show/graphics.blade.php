@@ -1,4 +1,4 @@
-@extends('layouts.app')
+    @extends('layouts.app')
 @section('content')
     <div class="container-fluid p-0">
         <div class="d-flex align-items-center border-bottom ps-4 p-2">
@@ -99,8 +99,17 @@
                 </form>
             </div>
 
+            <!-- Botones de acción para la tabla -->
+            @if (!empty($data['detections']))
+                <div class="d-flex justify-content-end mb-2">
+                    <button type="button" class="btn btn-sm btn-success" id="copy-table-btn" title="Copiar tabla al portapapeles">
+                        <i class="bi bi-clipboard-check"></i> Copiar tabla
+                    </button>
+                </div>
+            @endif
+
             <div class="table-responsive">
-                <table class="table table-sm table-bordered table-striped">
+                <table class="table table-sm table-bordered table-striped" id="graphics-table">
                     <thead>
                         <tr>
                             <th class="fw-bold" scope="col">#</th>
@@ -126,15 +135,41 @@
                                         <td>{{ $d['pest_total_detections'][$header] }}</td>
                                     @endforeach
                                 @elseif (request('graph_type') == 'cnsm')
-                                    <td>{{ $d['consumption_value'] }}</td>
+                                    @if (!empty($d['weekly_consumption']))
+                                        @foreach ($data['headers'] as $header)
+                                            <td class="text-center">{{ $d['weekly_consumption'][$header] ?? 0 }}</td>
+                                        @endforeach
+                                    @else
+                                        <td class="text-center">{{ $d['consumption_value'] }}</td>
+                                    @endif
                                 @endif
                             </tr>
                         @empty
                             <tr>
-                                <td class="fw-bold text-danger" colspan="{{ 4 + count($data['headers']) }}">Utiliza los
+                                <td class="fw-bold text-danger" colspan="{{ 5 + count($data['headers']) }}">Utiliza los
                                     filtros para obtener resultados</td>
                             </tr>
                         @endforelse
+                        
+                        @if (!empty($data['detections']))
+                            <!-- Fila de totales generales -->
+                            <tr class="table-primary">
+                                <td colspan="5" class="fw-bold text-end">TOTAL GENERAL:</td>
+                                @if (request('graph_type') == 'cptr')
+                                    @foreach ($data['headers'] as $header)
+                                        <td class="fw-bold">{{ $data['grand_totals'][$header] ?? 0 }}</td>
+                                    @endforeach
+                                @elseif (request('graph_type') == 'cnsm')
+                                    @if (!empty($data['grand_totals_weekly']))
+                                        @foreach ($data['headers'] as $header)
+                                            <td class="fw-bold text-center">{{ $data['grand_totals_weekly'][$header] ?? 0 }}</td>
+                                        @endforeach
+                                    @else
+                                        <td class="fw-bold text-center">{{ $data['grand_total_consumption'] ?? 0 }}</td>
+                                    @endif
+                                @endif
+                            </tr>
+                        @endif
                     </tbody>
                 </table>
             </div>
@@ -180,5 +215,77 @@
                     'DD/MM/YYYY'));
             });
         });
+
+        // Funcionalidad para copiar tabla al portapapeles
+        document.getElementById('copy-table-btn')?.addEventListener('click', function() {
+            const table = document.getElementById('graphics-table');
+            const btn = this;
+            
+            if (!table) return;
+            
+            // Crear rango de selección
+            const range = document.createRange();
+            range.selectNode(table);
+            
+            // Limpiar selección previa y agregar nueva
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            
+            try {
+                // Copiar al portapapeles
+                const successful = document.execCommand('copy');
+                
+                if (successful) {
+                    // Feedback visual de éxito
+                    const originalHTML = btn.innerHTML;
+                    btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> ¡Copiado!';
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-primary');
+                    
+                    setTimeout(() => {
+                        btn.innerHTML = originalHTML;
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-success');
+                    }, 2000);
+                } else {
+                    throw new Error('No se pudo copiar');
+                }
+            } catch (err) {
+                // Fallback para navegadores modernos usando Clipboard API
+                navigator.clipboard.writeText(getTableAsText(table))
+                    .then(() => {
+                        const originalHTML = btn.innerHTML;
+                        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> ¡Copiado!';
+                        btn.classList.remove('btn-success');
+                        btn.classList.add('btn-primary');
+                        
+                        setTimeout(() => {
+                            btn.innerHTML = originalHTML;
+                            btn.classList.remove('btn-primary');
+                            btn.classList.add('btn-success');
+                        }, 2000);
+                    })
+                    .catch(() => {
+                        alert('No se pudo copiar la tabla. Por favor, intente seleccionarla manualmente.');
+                    });
+            } finally {
+                // Limpiar selección
+                window.getSelection().removeAllRanges();
+            }
+        });
+        
+        // Función auxiliar para convertir tabla a texto con tabulaciones
+        function getTableAsText(table) {
+            let text = '';
+            const rows = table.querySelectorAll('tr');
+            
+            rows.forEach((row, rowIndex) => {
+                const cells = row.querySelectorAll('th, td');
+                const cellTexts = Array.from(cells).map(cell => cell.textContent.trim());
+                text += cellTexts.join('\t') + '\n';
+            });
+            
+            return text;
+        }
     </script>
 @endsection

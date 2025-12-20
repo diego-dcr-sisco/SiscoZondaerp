@@ -1505,6 +1505,10 @@ class CustomerController extends Controller
 
         // Optimizar consulta de órdenes
         $order_query = Order::where('customer_id', $customer->id)->where('status_id', self::STATUS_APPROVED);
+        
+        // Inicializar fechas
+        $startDate = null;
+        $endDate = null;
 
         if ($request->filled('date_range')) {
             try {
@@ -1583,7 +1587,7 @@ class CustomerController extends Controller
 
         // Obtener datos según el tipo de gráfico
         if ($graph_type == 'cnsm') {
-            $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orderIds, $devices, $devicesByArea);
+            $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orderIds, $orders, $devices, $devicesByArea, $startDate, $endDate);
         } else if ($graph_type == 'cptr') {
             $data = $this->getGraphicDataWithDevicesByPests($customer, $orderIds, $devices, $req_pests, $devicesByArea);
         } else {
@@ -1664,9 +1668,18 @@ class CustomerController extends Controller
             }
         }
 
+        // Calcular totales generales (suma de todos los dispositivos por cada plaga)
+        $grand_totals = array_fill_keys($pests_headers, 0);
+        foreach ($data as $row) {
+            foreach ($row['pest_total_detections'] as $pest => $total) {
+                $grand_totals[$pest] += $total;
+            }
+        }
+
         return [
             'detections' => $data,
-            'headers' => $pests_headers
+            'headers' => $pests_headers,
+            'grand_totals' => $grand_totals
         ];
     }
 
@@ -1676,17 +1689,51 @@ class CustomerController extends Controller
         return strtolower(str_replace(' ', '', $string));
     }
 
-    private function getGraphicDataWithDevicesByAnswer($customer, $orderIds, $devices, $devicesByArea)
+    private function getGraphicDataWithDevicesByAnswer($customer, $orderIds, $orders, $devices, $devicesByArea, $startDate = null, $endDate = null)
     {
         $groupedData = [];
+        
+        // Calcular semanas del rango si hay fechas
+        $weekHeaders = [];
+        $weekRanges = [];
+        
+        if ($startDate && $endDate) {
+            $current = $startDate->copy()->startOfWeek();
+            $end = $endDate->copy()->endOfWeek();
+            $weekNumber = 1;
+            
+            while ($current <= $end) {
+                $weekStart = $current->copy();
+                $weekEnd = $current->copy()->endOfWeek();
+                
+                // Ajustar si excede el rango
+                if ($weekStart < $startDate) $weekStart = $startDate->copy();
+                if ($weekEnd > $endDate) $weekEnd = $endDate->copy();
+                
+                $weekKey = "S{$weekNumber}";
+                $weekLabel = $weekKey . ' (' . $weekStart->format('d/m') . ' - ' . $weekEnd->format('d/m') . ')';
+                
+                $weekHeaders[] = $weekLabel;
+                $weekRanges[$weekKey] = [
+                    'start' => $weekStart->format('Y-m-d'),
+                    'end' => $weekEnd->format('Y-m-d'),
+                    'label' => $weekLabel
+                ];
+                
+                $current->addWeek();
+                $weekNumber++;
+            }
+        }
 
         // CRITICAL: Pre-load ALL incidents at once to eliminate N+1 query problem
         $allIncidents = OrderIncidents::whereIn('order_id', $orderIds)
             ->where('question_id', self::QUESTION_CONSUMPTION)
             ->whereIn('device_id', $devices->pluck('id'))
             ->select('id', 'device_id', 'order_id', 'answer')
-            ->get()
-            ->groupBy('device_id');
+            ->get();
+        
+        // Crear mapeo de order_id a programmed_date para evitar búsquedas repetidas
+        $orderDates = $orders->pluck('programmed_date', 'id')->toArray();
 
         foreach ($customer->applicationAreas as $area) {
             $areaDevices = $devicesByArea->get($area->id, collect());
@@ -1697,14 +1744,33 @@ class CustomerController extends Controller
 
             foreach ($areaDevices as $device) {
                 // Get pre-loaded incidents for this device (no database query!)
-                $incidents = $allIncidents->get($device->id, collect());
+                $incidents = $allIncidents->where('device_id', $device->id);
 
                 $deviceTotalConsumption = 0;
                 $deviceIncidentCount = $incidents->count();
+                $weeklyConsumption = [];
+                
+                // Inicializar consumo semanal en 0
+                foreach ($weekRanges as $weekKey => $range) {
+                    $weeklyConsumption[$range['label']] = 0;
+                }
 
                 foreach ($incidents as $incident) {
                     $normalizedAnswer = $this->normalizeString($incident->answer);
-                    $deviceTotalConsumption += $this->consumption_value[$normalizedAnswer] ?? 0;
+                    $consumptionValue = $this->consumption_value[$normalizedAnswer] ?? 0;
+                    $deviceTotalConsumption += $consumptionValue;
+                    
+                    // Asignar a la semana correspondiente
+                    if (!empty($weekRanges) && isset($orderDates[$incident->order_id])) {
+                        $orderDate = $orderDates[$incident->order_id];
+                        
+                        foreach ($weekRanges as $weekKey => $range) {
+                            if ($orderDate >= $range['start'] && $orderDate <= $range['end']) {
+                                $weeklyConsumption[$range['label']] += $consumptionValue;
+                                break;
+                            }
+                        }
+                    }
                 }
 
                 $key = $area->id . '_' . $device->nplan . '_' . $device->code;
@@ -1719,12 +1785,18 @@ class CustomerController extends Controller
                         'device_count' => 1,
                         '_total_consumption' => $deviceTotalConsumption,
                         '_total_incidents' => $deviceIncidentCount,
+                        '_weekly_consumption' => $weeklyConsumption,
                         'versions' => [$device->version],
                     ];
                 } else {
                     $groupedData[$key]['device_count']++;
                     $groupedData[$key]['_total_consumption'] += $deviceTotalConsumption;
                     $groupedData[$key]['_total_incidents'] += $deviceIncidentCount;
+                    
+                    // Sumar consumos semanales
+                    foreach ($weeklyConsumption as $weekLabel => $value) {
+                        $groupedData[$key]['_weekly_consumption'][$weekLabel] += $value;
+                    }
 
                     if (!in_array($device->version, $groupedData[$key]['versions'])) {
                         $groupedData[$key]['versions'][] = $device->version;
@@ -1733,11 +1805,11 @@ class CustomerController extends Controller
             }
         }
 
-        // Calcular el valor final de consumo (promedio) para cada grupo
+        // Calcular el valor final de consumo para cada grupo
         $data = [];
         foreach ($groupedData as $key => $group) {
             if ($group['_total_incidents'] > 0) {
-                $consumptionValue = $group['_total_consumption']; // $group['_total_incidents'];
+                $consumptionValue = $group['_total_consumption'];
             } else {
                 $consumptionValue = 0;
             }
@@ -1751,12 +1823,38 @@ class CustomerController extends Controller
                 'device_count' => $group['device_count'],
                 'versions' => $group['versions'],
                 'consumption_value' => $consumptionValue,
+                'weekly_consumption' => $group['_weekly_consumption'] ?? [],
             ];
+        }
+
+        // Calcular totales generales
+        $grand_total_consumption = 0;
+        $grand_totals_weekly = [];
+        
+        if (!empty($weekHeaders)) {
+            // Inicializar totales semanales
+            foreach ($weekHeaders as $weekLabel) {
+                $grand_totals_weekly[$weekLabel] = 0;
+            }
+            
+            // Sumar consumos de todos los dispositivos
+            foreach ($data as $row) {
+                foreach ($row['weekly_consumption'] as $weekLabel => $value) {
+                    $grand_totals_weekly[$weekLabel] += $value;
+                }
+            }
+        } else {
+            // Sumar consumo total
+            foreach ($data as $row) {
+                $grand_total_consumption += $row['consumption_value'];
+            }
         }
 
         return [
             'detections' => $data,
-            'headers' => ['Consumo']
+            'headers' => !empty($weekHeaders) ? $weekHeaders : ['Consumo Total'],
+            'grand_total_consumption' => $grand_total_consumption,
+            'grand_totals_weekly' => $grand_totals_weekly
         ];
     }
 }
