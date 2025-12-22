@@ -2,7 +2,7 @@
     $answer = null;
     $pests_data = [];
 
-    function cleanHtmlSimple(string $html, array $config = []): string
+    /*function cleanHtmlSimple(string $html, array $config = []): string
     {
         // Configuración por defecto
         $defaultConfig = [
@@ -40,6 +40,48 @@
         $html = preg_replace('/(\r\n|\r|\n)+/', $config['newline'], $html);
 
         return trim($html);
+    }*/
+
+    function cleanHtmlSimple(string $html, array $config = []): string
+    {
+        $defaults = [
+            'newline' => '<br>',
+            'keepOnlyTags' => ['p', 'br', 'ul', 'ol', 'li', 'a', 'b', 'strong'],
+            'keepHtml' => true,
+        ];
+
+        $config = array_merge($defaults, $config);
+
+        // Si no se mantiene HTML, convertir saltos de línea y escaparlos
+        if (!$config['keepHtml']) {
+            return str_replace(
+                ["\r\n", "\r", "\n"],
+                $config['newline'],
+                htmlspecialchars($html, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+            );
+        }
+
+        // Primero, convertir saltos de línea a etiquetas <br>
+        $html = nl2br($html, false); // false para usar <br> en lugar de <br />
+
+        // Si newline es diferente de <br>, reemplazar
+        if ($config['newline'] !== '<br>') {
+            $html = str_replace('<br>', $config['newline'], $html);
+        }
+
+        // Ahora limpiar el HTML manteniendo solo las etiquetas permitidas
+        $allowedTags = '';
+        foreach ($config['keepOnlyTags'] as $tag) {
+            $tag = strtolower(trim($tag, '<>'));
+            $allowedTags .= "<$tag>";
+        }
+
+        // Asegurarse que <br> esté permitido si usamos newline: '<br>'
+        if ($config['newline'] === '<br>' && !str_contains($allowedTags, '<br>')) {
+            $allowedTags .= '<br>';
+        }
+
+        return strip_tags($html, $allowedTags);
     }
 
     function removeAttributes(string $html, array $badAttributes, bool $keepClasses = false): string
