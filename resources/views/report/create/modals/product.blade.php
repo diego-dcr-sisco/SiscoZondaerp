@@ -113,6 +113,9 @@
             var found_product = products.find(item => item.id == product_id);
             var found_lots = lots.find(item => item.product_id == product_id);
 
+            console.log(found_product);
+            console.log(found_lots);
+
             $('#metric').val(found_product.metric_id)
             $('#dosage').val(found_product.dosage);
             $('#lot').val(found_lots.id);
