@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use DateTime;
 use App\Enums\CfdiUsage as EnumCfdiUsage;
 use App\Enums\PaymentForm as EnumPaymentForm;
 use App\Enums\PaymentMethod;
@@ -411,6 +412,38 @@ class CustomerController extends Controller
                 "Value" => "S01",
             ],
         ];
+    }
+
+    function getWeeksBetweenDates($startDate, $endDate, $outputFormat = 'd/m/y')
+    {
+        $weeks = [];
+        $start = new DateTime($startDate);
+        $end = new DateTime($endDate);
+
+        if ($start > $end) {
+            return $weeks;
+        }
+
+        $currentDate = clone $start;
+
+        while ($currentDate <= $end) {
+            $weekEnd = clone $currentDate;
+            $weekEnd->modify('+6 days');
+
+            if ($weekEnd > $end) {
+                $weekEnd = clone $end;
+            }
+
+            $weeks[] = [
+                $currentDate->format($outputFormat),
+                $weekEnd->format($outputFormat)
+            ];
+
+            $currentDate = clone $weekEnd;
+            $currentDate->modify('+1 day');
+        }
+
+        return $weeks;
     }
 
     public function generateCustomerCode(string $name, int $length = 3, string $model = Customer::class): string
@@ -1426,6 +1459,23 @@ class CustomerController extends Controller
         $app_areas = [];
         $pests_headers = [];
         $control_points = [];
+        $weeks = [];
+
+        $start_date = null;
+        $end_date = null;
+
+        if ($request->filled('date_range')) {
+            [$startDate, $endDate] = array_map(function ($d) {
+                return Carbon::createFromFormat('d/m/Y', trim($d));
+            }, explode(' - ', $request->input('date_range')));
+
+            $start_date = $startDate->format('Y-m-d');
+            $end_date = $endDate->format('Y-m-d');
+        }
+
+        if ($start_date && $end_date) {
+            $weeks = $this->getWeeksBetweenDates($start_date, $end_date);
+        }
 
         // Cargar relaciones específicas con select para minimizar datos
         $customer = Customer::with([
@@ -1484,9 +1534,11 @@ class CustomerController extends Controller
         }
 
         // Optimizar consulta de órdenes
-        $order_query = Order::where('customer_id', $customer->id)->where('status_id', 5);
+        $order_query = Order::where('customer_id', $customer->id)
+            ->where('status_id', 5)
+            ->whereBetween('programmed_date', [$start_date, $end_date]);
 
-        if ($request->filled('date_range')) {
+        /*if ($request->filled('date_range')) {
             [$startDate, $endDate] = array_map(function ($d) {
                 return Carbon::createFromFormat('d/m/Y', trim($d));
             }, explode(' - ', $request->input('date_range')));
@@ -1495,7 +1547,7 @@ class CustomerController extends Controller
                 $startDate->format('Y-m-d'),
                 $endDate->format('Y-m-d'),
             ]);
-        }
+        }*/
 
         if ($request->filled('service')) {
             $found_services = Service::where('name', 'like', '%' . $request->input('service') . '%')
@@ -1520,8 +1572,6 @@ class CustomerController extends Controller
             })
             ->distinct()
             ->get();*/
-
-
 
         if ($orders->isEmpty()) {
             return view('customer.show.graphics', [
@@ -1661,7 +1711,7 @@ class CustomerController extends Controller
 
     private function getGraphicDataWithDevicesByAnswer($customer, $orders, $devices)
     {
-        $question_id = 13;
+        $question_id = 2;
         $groupedData = [];
 
         $devicesByArea = $devices->groupBy('application_area_id');
