@@ -19,6 +19,7 @@ use App\Models\Service;
 use App\Models\Technician;
 use App\Models\User;
 use Carbon\Carbon;
+use Google\Service\AnalyticsData\OrderBy;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -275,7 +276,7 @@ class OrderController extends Controller
 
         $size = $size ?? $this->size;
         $order_status = OrderStatus::all();
-        $orders = $orders->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")->paginate($size)->appends([
+        $orders = $orders/*->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")*/->orderBy('programmed_date')->paginate($size)->appends([
             'customer' => $customer,
             'date' => $date,
             'time' => $time,
@@ -864,7 +865,7 @@ class OrderController extends Controller
                 $query->orderBy('name', $direction);
             }
         ])
-            ->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")
+            //->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")
             ->orderBy('programmed_date')
             ->paginate($size)
             ->appends($request->all());
