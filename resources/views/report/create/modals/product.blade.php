@@ -12,6 +12,7 @@
                 <div class="mb-3">
                     <label for="service-id" class="form-label is-required">Servicio relacionado</label>
                     <select class="form-select" id="service" name="service_id" required>
+                        <option value="">Sin servicio</option>
                         @foreach ($order->services as $service)
                             <option value="{{ $service->id }}">{{ $service->name }}</option>
                         @endforeach
@@ -40,6 +41,7 @@
                         <input type="number" class="form-control" id="amount" name="amount" placeholder="0.00"
                             min="0" step="0.01" required>
                         <select class="form-select" id="metric" name="metric_id">
+                            <option value="">Sin métrica o unidades</option>
                             @foreach ($metrics as $metric)
                                 <option value="{{ $metric->id }}">{{ $metric->value }}</option>
                             @endforeach
