@@ -9,7 +9,7 @@
             </div>
             <div class="modal-body">
                 <label for="name" class="form-label is-required">Nombre: </label>
-                <input type="text" class="form-control" id="filename" name="name" value="" maxlength="50"
+                <input type="text" class="form-control" id="filename" name="name" value="" maxlength="1024"
                     required>
                 <input type="hidden" id="extension" name="extension" value="" />
                 <input type="hidden" id="filepath" name="path" value="" />
