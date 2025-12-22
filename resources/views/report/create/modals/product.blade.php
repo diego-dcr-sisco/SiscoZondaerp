@@ -58,8 +58,8 @@
                     <label for="product-unit" class="form-label">Lote: </label>
                     <select class="form-select" id="lot" name="lot_id">
                         @foreach ($lots as $lot)
-                            <option value="{{ $lot->id }}">[ {{ $lot->registration_number }} ]
-                                {{ $lot->product->name ?? '-' }}</option>
+                            <option value="{{ $lot->id }}">{{ $lot->product->name ?? '-' }} No. {{ $lot->registration_number }}
+                                </option>
                         @endforeach
                     </select>
                 </div>
@@ -116,9 +116,6 @@
         if (product_id /*&& appmethod_id*/ ) {
             var found_product = allProducts.find(item => item.id == product_id);
             var found_lots = lots.find(item => item.product_id == product_id);
-
-            console.log(found_product);
-            console.log(found_lots);
 
             $('#metric').val(found_product.metric_id)
             $('#dosage').val(found_product.dosage);
