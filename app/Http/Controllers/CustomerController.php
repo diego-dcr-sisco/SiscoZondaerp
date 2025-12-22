@@ -49,7 +49,7 @@ class CustomerController extends Controller
 {
     // Constants for graphics
     private const STATUS_APPROVED = 5;
-    
+
     private const QUESTION_CONSUMPTION = 13;
     //private const QUESTION_CONSUMPTION = 2;
 
@@ -912,7 +912,7 @@ class CustomerController extends Controller
             'Planos' => route('customer.show.sede.floorplans', ['id' => $customer->id]),
             'Portal' => route('customer.show.sede.portal', ['id' => $customer->id]),
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
-            //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
+            //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
             'Graficas' => route('customer.graphics', ['id' => $customer->id]),
         ];
@@ -930,7 +930,7 @@ class CustomerController extends Controller
             'Planos' => route('customer.show.sede.floorplans', ['id' => $customer->id]),
             'Portal' => route('customer.show.sede.portal', ['id' => $customer->id]),
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
-            //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
+            //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
             'Graficas' => route('customer.graphics', ['id' => $customer->id]),
         ];
@@ -952,7 +952,7 @@ class CustomerController extends Controller
             'Planos' => route('customer.show.sede.floorplans', ['id' => $customer->id]),
             'Portal' => route('customer.show.sede.portal', ['id' => $customer->id]),
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
-            //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
+            //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
             'Graficas' => route('customer.graphics', ['id' => $customer->id]),
         ];
@@ -969,7 +969,7 @@ class CustomerController extends Controller
             'Planos' => route('customer.show.sede.floorplans', ['id' => $customer->id]),
             'Portal' => route('customer.show.sede.portal', ['id' => $customer->id]),
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
-            //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
+            //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
             'Graficas' => route('customer.graphics', ['id' => $customer->id]),
         ];
@@ -1040,7 +1040,7 @@ class CustomerController extends Controller
             'Planos' => route('customer.show.sede.floorplans', ['id' => $customer->id]),
             'Portal' => route('customer.show.sede.portal', ['id' => $customer->id]),
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
-            //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
+            //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
             'Graficas' => route('customer.graphics', ['id' => $customer->id]),
         ];
@@ -1279,13 +1279,13 @@ class CustomerController extends Controller
         return redirect()->route('customer.index', ['type' => 1, 'page' => 1]);
     }
 
-    public function tracking(int $id)
+    /*public function tracking(int $id)
     {
         $lead = Lead::findOrFail($id);
         $lead->tracking_at = Carbon::now()->toDateString();
         $lead->save();
         return back();
-    }
+    }*/
 
     /////////////////////////////////////////////////////////////////////////////////
     // FUNCIONES PARA MODULO DE FACTURACION
@@ -1453,7 +1453,7 @@ class CustomerController extends Controller
     /**
      * Helper method to return graphics view with consistent structure
      */
-    private function returnGraphicsView($customer, $app_areas, $request_data, $messageType = null, $message = null)
+    private function returnGraphicsView($customer, $app_areas, $request_data, $messageType = null, $message = null, $navigation)
     {
         $view = view('customer.show.graphics', [
             'customer' => $customer,
@@ -1463,6 +1463,7 @@ class CustomerController extends Controller
             'app_areas' => $app_areas,
             'graphs_types' => $this->graphs_types,
             'request_data' => $request_data,
+            'navigation' => $navigation,
         ]);
 
         if ($messageType && $message) {
@@ -1499,6 +1500,7 @@ class CustomerController extends Controller
         $pests_headers = [];
         $control_points = [];
         $weeks = [];
+        $navigation = [];
 
         $start_date = null;
         $end_date = null;
@@ -1530,15 +1532,26 @@ class CustomerController extends Controller
         ])->find($id);
 
         if (!$customer) {
-            return $this->returnGraphicsView(null, [], $request->all(), 'error', 'Cliente no encontrado');
+            return $this->returnGraphicsView(null, [], $request->all(), 'error', 'Cliente no encontrado', $navigation);
         }
+
+        $navigation = [
+            'Sede' => route('customer.edit.sede', ['id' => $customer->id]),
+            'Archivos' => route('customer.show.sede.files', ['id' => $customer->id]),
+            'Planos' => route('customer.show.sede.floorplans', ['id' => $customer->id]),
+            'Portal' => route('customer.show.sede.portal', ['id' => $customer->id]),
+            'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
+            //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
+            'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
+            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
+        ];
 
         // Obtener áreas de aplicación sin consulta adicional
         $app_areas = $customer->applicationAreas;
 
         // Si no hay filtros aplicados, solo mostrar la vista con el formulario vacío
         if (!$this->hasRequiredFields($request->all())) {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all());
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'No se tienen filtros aplicados validos', $navigation);
         }
 
         // Aplica filtros usando like solo si es necesario
@@ -1573,7 +1586,7 @@ class CustomerController extends Controller
                     $endDate->format('Y-m-d'),
                 ]);
             } catch (\Exception $e) {
-                return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Formato de fecha inválido');
+                return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Formato de fecha inválido', $navigation);
             }
         }
 
@@ -1602,7 +1615,7 @@ class CustomerController extends Controller
             ->get();*/
 
         if ($orders->isEmpty()) {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'info', 'No se encontraron órdenes aprobadas con los filtros aplicados');
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'info', 'No se encontraron órdenes aprobadas con los filtros aplicados', $navigation);
         }
         
 
@@ -1625,7 +1638,7 @@ class CustomerController extends Controller
             ->get();
 
         if ($devices->isEmpty()) {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'No se encontraron dispositivos');
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'No se encontraron dispositivos', $navigation);
         }
 
         $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique()->toArray())->get();
@@ -1641,7 +1654,7 @@ class CustomerController extends Controller
         } else if ($graph_type == 'cptr') {
             $data = $this->getGraphicDataWithDevicesByPests($customer, $orderIds, $devices, $req_pests, $devicesByArea);
         } else {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido');
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido', $navigation);
         }
 
         return view('customer.show.graphics', [
@@ -1652,6 +1665,7 @@ class CustomerController extends Controller
             'app_areas' => $app_areas,
             'graphs_types' => $this->graphs_types,
             'request_data' => $request->all(),
+            'navigation' => $navigation, 
         ])->with('success', 'Resultados encontrados');
     }
 

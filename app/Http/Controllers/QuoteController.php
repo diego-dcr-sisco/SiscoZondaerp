@@ -59,6 +59,7 @@ class QuoteController extends Controller
                 'Areas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
                 //'Seguimientos' => route('customer.show.sede.trackings', ['id' => $customer->id]),
                 'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
+                'Graficas' => route('customer.graphics', ['id' => $customer->id]),
             ];
         }
 

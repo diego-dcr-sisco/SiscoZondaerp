@@ -120,7 +120,13 @@
                                         <a href="{{ route('customer.quote', ['id' => $customer->id, 'class' => 'customer']) }}"
                                             class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                                             data-bs-title="Cotizaciones">
-                                            <i class="bi bi-clipboard-data-fill"></i>
+                                            <i class="bi bi-calculator-fill"></i>
+                                        </a>
+
+                                        <a href="{{ route('customer.graphics', ['id' => $customer->id]) }}"
+                                            class="btn btn-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            data-bs-title="Graficas">
+                                            <i class="bi bi-bar-chart-fill"></i>
                                         </a>
                                     @endif
 

@@ -51,7 +51,7 @@
                         </tr>
                     </thead>
                     <tbody id="table-body-quote">
-                        @foreach ($quotes as $i => $quote)
+                        @forelse ($quotes as $i => $quote)
                             @php
                                 $count += $quote->value;
                             @endphp
@@ -94,7 +94,13 @@
                                     </a>
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="10" class="text-center text-danger fw-bold">
+                                    Sin cotizaciones
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                     <tfoot>
                         <tr class="table-success">

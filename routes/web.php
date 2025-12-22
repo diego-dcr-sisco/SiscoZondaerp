@@ -441,7 +441,7 @@ Route::prefix('customers')
         Route::post('/autocomplete', [CustomerController::class, 'search_lead'])->name('autocomplete');
         Route::get('/convert/{id}', [CustomerController::class, 'convert'])->name('convert');
         Route::get('/tracking/{id}', [CustomerController::class, 'tracking'])->name('tracking');
-        Route::get('/filter/{type}', [CustomerController::class, 'filterCustomer'])->name('filter');
+        Route::get('/filter/{type}', [CustomerController::class, 'filterCustomer'])->name(name: 'filter');
 
         Route::post('reference/store/{customerId}', [CustomerController::class, 'storeReference'])->name('reference.store');
         Route::post('reference/update/{id}', [CustomerController::class, 'updateReference'])->name('reference.update');
