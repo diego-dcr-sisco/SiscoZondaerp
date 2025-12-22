@@ -1487,6 +1487,8 @@ class CustomerController extends Controller
             'graph_type.in' => 'Tipo de gráfico no válido',
         ]);
 
+        dd($request->all());
+
         // Inicializar variables
         $data = [
             'detections' => [],
