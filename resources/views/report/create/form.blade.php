@@ -340,6 +340,7 @@
 
 <script>
     const services = @json($order->services);
+    const lots = @json($lots);
     var summaryData = [];
 
     /*$(document).ready(function() {
