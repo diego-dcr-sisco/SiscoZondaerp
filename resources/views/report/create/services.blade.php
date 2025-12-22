@@ -90,7 +90,7 @@
                         {!! cleanHtmlSimple($order->propagateByService($service->id)->text) !!}
                     @else
                         @if ($order->setting && $order->setting->service_description)
-                            {!! $order->setting->service_description !!}
+                            {!! cleanHtmlSimple($order->setting->service_description) !!}
                         @endif
                     @endif
                 </div>
