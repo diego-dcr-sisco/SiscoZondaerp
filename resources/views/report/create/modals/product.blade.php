@@ -128,7 +128,7 @@
     function cleanForm() {
         $('#product-form').find('input[type="text"], input[type="email"], input[type="number"]').val('');
         $('#op-id').val(null);
-        $('#product-form').find('select').val(1);
+        $('#product-form').find('select').val('');
         $('#product-form').find('input[type="checkbox"], input[type="radio"]').prop('checked', false);
 
         $('#service').prop('disabled', false);
