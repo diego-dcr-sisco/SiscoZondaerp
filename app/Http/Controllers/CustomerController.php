@@ -1455,6 +1455,8 @@ class CustomerController extends Controller
      */
     private function returnGraphicsView($customer, $app_areas, $request_data, $messageType = null, $message = null, $navigation)
     {
+        session()->flash($messageType, $message);
+
         $view = view('customer.show.graphics', [
             'customer' => $customer,
             'pests_headers' => [],
@@ -1531,7 +1533,6 @@ class CustomerController extends Controller
         ])->find($id);
 
         if (!$customer) {
-            dd('no customer');
             return $this->returnGraphicsView(null, [], $request->all(), 'error', 'Cliente no encontrado', $navigation);
         }
 
@@ -1656,8 +1657,6 @@ class CustomerController extends Controller
         } else {
             return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido', $navigation);
         }
-
-        dd($data);
 
         return view('customer.show.graphics', [
             'customer' => $customer,
