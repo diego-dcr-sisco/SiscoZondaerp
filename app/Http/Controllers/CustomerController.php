@@ -49,7 +49,9 @@ class CustomerController extends Controller
 {
     // Constants for graphics
     private const STATUS_APPROVED = 5;
+    
     private const QUESTION_CONSUMPTION = 13;
+    //private const QUESTION_CONSUMPTION = 2;
 
     private $files_path = 'customers/files/';
     private $cities_route = 'datas/json/Mexico_cities.json';
