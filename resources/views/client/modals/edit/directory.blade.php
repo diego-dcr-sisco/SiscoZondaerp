@@ -10,7 +10,7 @@
             <div class="modal-body">
                 <label for="name" class="form-label is-required">Nombre: </label>
                 <input type="text" class="form-control" id="edit-name"
-                    name="name" value="" maxlength="50" required>
+                    name="name" value="" maxlength="1024" required>
                 <input type="hidden" id="path" name="path" value="" />
                 <input type="hidden" id="root-path" name="root_path" value="{{ $data['root_path']}}" />
             </div>

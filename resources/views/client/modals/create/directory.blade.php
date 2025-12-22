@@ -10,7 +10,7 @@
              <div class="modal-body">
                  <label for="name" class="form-label is-required">Nombre: </label>
                  <input type="text" class="form-control" id="name"
-                     name="folder_name" maxlength="50" autocomplete="off" required>
+                     name="folder_name" maxlength="1024" autocomplete="off" required>
                  <input type="hidden" name="parent_path" value="{{ $data['root_path'] }}" />
              </div>
              <div class="modal-footer">
