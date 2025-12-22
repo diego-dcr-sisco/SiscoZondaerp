@@ -110,7 +110,7 @@
         var product_id = $('#product').val();
 
         if (product_id /*&& appmethod_id*/ ) {
-            var found_product = products.find(item => item.id == product_id);
+            var found_product = allProducts.find(item => item.id == product_id);
             var found_lots = lots.find(item => item.product_id == product_id);
 
             console.log(found_product);
