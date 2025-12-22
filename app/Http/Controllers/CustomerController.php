@@ -47,6 +47,9 @@ use Illuminate\View\View;
 
 class CustomerController extends Controller
 {
+    // Constants for graphics
+    private const STATUS_APPROVED = 5;
+    private const QUESTION_CONSUMPTION = 13;
 
     private $files_path = 'customers/files/';
     private $cities_route = 'datas/json/Mexico_cities.json';
@@ -1440,19 +1443,53 @@ class CustomerController extends Controller
         // Filtrar campos con valor real
         $filled = array_filter($data, fn($value) => !is_null($value) && $value !== '');
 
-        // Verificar que existan los 3 campos obligatorios
-        return isset($filled['customer'])
-            && isset($filled['date_range'])
+        // Verificar que existan los 2 campos obligatorios (customer viene de ruta)
+        return isset($filled['date_range'])
             && isset($filled['graph_type']);
+    }
+
+    /**
+     * Helper method to return graphics view with consistent structure
+     */
+    private function returnGraphicsView($customer, $app_areas, $request_data, $messageType = null, $message = null)
+    {
+        $view = view('customer.show.graphics', [
+            'customer' => $customer,
+            'pests_headers' => [],
+            'data' => ['detections' => [], 'headers' => []],
+            'control_points' => collect(),
+            'app_areas' => $app_areas,
+            'graphs_types' => $this->graphs_types,
+            'request_data' => $request_data,
+        ]);
+
+        if ($messageType && $message) {
+            $view->with($messageType, $message);
+        }
+
+        return $view;
     }
 
     public function showGraphics(Request $request, string $id)
     {
+        // Validation: customer ID comes from route parameter, not request
+        $request->validate([
+            'date_range' => 'nullable|string',
+            'graph_type' => 'nullable|in:cnsm,cptr',
+            'area' => 'nullable|string|max:255',
+            'pest' => 'nullable|string|max:255',
+            'service' => 'nullable|string|max:255',
+        ], [
+            'date_range.string' => 'El rango de fechas debe ser texto',
+            'graph_type.in' => 'Tipo de gráfico no válido',
+        ]);
+
         // Inicializar variables
         $data = [
             'detections' => [],
             'headers' => []
         ];
+
 
         $req_areas = [];
         $req_pests = [];
@@ -1490,34 +1527,17 @@ class CustomerController extends Controller
             }
         ])->find($id);
 
-        // Validación temprana para evitar cargas innecesarias
-        if (!$this->hasRequiredFields($request->all())) {
-            return view('customer.show.graphics', [
-                'customer' => $customer,
-                'pests_headers' => [],
-                'data' => $data,
-                'control_points' => [],
-                'app_areas' => [],
-                'graphs_types' => $this->graphs_types,
-                'request_data' => $request->all(),
-            ])->with('error', 'No cumples con los campos mínimos de búsqueda');
-        }
-
         if (!$customer) {
-            // Retornar vista en lugar de redirect
-            return view('customer.show.graphics', [
-                'customer' => null,
-                'pests_headers' => [],
-                'data' => $data,
-                'control_points' => [],
-                'app_areas' => [],
-                'graphs_types' => $this->graphs_types,
-                'request_data' => $request->all(),
-            ])->with('error', 'Cliente no encontrado');
+            return $this->returnGraphicsView(null, [], $request->all(), 'error', 'Cliente no encontrado');
         }
 
         // Obtener áreas de aplicación sin consulta adicional
         $app_areas = $customer->applicationAreas;
+
+        // Si no hay filtros aplicados, solo mostrar la vista con el formulario vacío
+        if (!$this->hasRequiredFields($request->all())) {
+            return $this->returnGraphicsView($customer, $app_areas, $request->all());
+        }
 
         // Aplica filtros usando like solo si es necesario
         if ($request->filled('area')) {
@@ -1534,20 +1554,26 @@ class CustomerController extends Controller
         }
 
         // Optimizar consulta de órdenes
-        $order_query = Order::where('customer_id', $customer->id)
-            ->where('status_id', 5)
-            ->whereBetween('programmed_date', [$start_date, $end_date]);
+        $order_query = Order::where('customer_id', $customer->id)->where('status_id', self::STATUS_APPROVED);
+        
+        // Inicializar fechas
+        $startDate = null;
+        $endDate = null;
 
-        /*if ($request->filled('date_range')) {
-            [$startDate, $endDate] = array_map(function ($d) {
-                return Carbon::createFromFormat('d/m/Y', trim($d));
-            }, explode(' - ', $request->input('date_range')));
+        if ($request->filled('date_range')) {
+            try {
+                [$startDate, $endDate] = array_map(function ($d) {
+                    return Carbon::createFromFormat('d/m/Y', trim($d));
+                }, explode(' - ', $request->input('date_range')));
 
-            $order_query->whereBetween('programmed_date', [
-                $startDate->format('Y-m-d'),
-                $endDate->format('Y-m-d'),
-            ]);
-        }*/
+                $order_query->whereBetween('programmed_date', [
+                    $startDate->format('Y-m-d'),
+                    $endDate->format('Y-m-d'),
+                ]);
+            } catch (\Exception $e) {
+                return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Formato de fecha inválido');
+            }
+        }
 
         if ($request->filled('service')) {
             $found_services = Service::where('name', 'like', '%' . $request->input('service') . '%')
@@ -1574,19 +1600,18 @@ class CustomerController extends Controller
             ->get();*/
 
         if ($orders->isEmpty()) {
-            return view('customer.show.graphics', [
-                'customer' => $customer,
-                'pests_headers' => [],
-                'data' => $data,
-                'control_points' => $control_points,
-                'app_areas' => $app_areas,
-                'graphs_types' => $this->graphs_types,
-                'request_data' => $request->all(),
-            ])->with('info', 'No se encontraron órdenes aprobadas con los filtros aplicados');
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'info', 'No se encontraron órdenes aprobadas con los filtros aplicados');
         }
+        
 
-        $device_ids = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
-            ->pluck('device_id')->unique()->toArray();
+        // Cache orderIds to avoid repeated pluck() calls
+        $orderIds = $orders->pluck('id')->toArray();
+
+        // Use DISTINCT in SQL instead of unique() in PHP for better performance
+        $device_ids = OrderIncidents::whereIn('order_id', $orderIds)
+            ->distinct()
+            ->pluck('device_id')
+            ->toArray();
 
         // Optimizar consulta de dispositivos y control points
         $devices = Device::whereIn('id', $device_ids)
@@ -1598,26 +1623,23 @@ class CustomerController extends Controller
             ->get();
 
         if ($devices->isEmpty()) {
-            return view('customer.show.graphics', [
-                'customer' => $customer,
-                'pests_headers' => [],
-                'data' => $data,
-                'control_points' => collect(),
-                'app_areas' => $app_areas,
-                'graphs_types' => $this->graphs_types,
-                'request_data' => $request->all(),
-            ])->with('error', 'No se encontraron dispositivos');
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'No se encontraron dispositivos');
         }
 
         $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique()->toArray())->get();
 
         $graph_type = $request->graph_type;
 
+        // Pre-calculate devicesByArea once for reuse
+        $devicesByArea = $devices->groupBy('application_area_id');
+
         // Obtener datos según el tipo de gráfico
         if ($graph_type == 'cnsm') {
-            $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orders, $devices);
+            $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orderIds, $orders, $devices, $devicesByArea, $startDate, $endDate);
         } else if ($graph_type == 'cptr') {
-            $data = $this->getGraphicDataWithDevicesByPests($customer, $orders, $devices, $req_pests);
+            $data = $this->getGraphicDataWithDevicesByPests($customer, $orderIds, $devices, $req_pests, $devicesByArea);
+        } else {
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido');
         }
 
         return view('customer.show.graphics', [
@@ -1631,10 +1653,8 @@ class CustomerController extends Controller
         ])->with('success', 'Resultados encontrados');
     }
 
-    private function getGraphicDataWithDevicesByPests($customer, $orders, $devices, $pests)
+    private function getGraphicDataWithDevicesByPests($customer, $orderIds, $devices, $pests, $devicesByArea)
     {
-        $orderIds = $orders->pluck('id');
-
         // Optimizar consulta usando joins y selects específicos
         $allDevicePests = DevicePest::whereIn('order_id', $orderIds)
             ->whereIn('device_id', $devices->pluck('id'))
@@ -1658,7 +1678,6 @@ class CustomerController extends Controller
 
         // Precalcular agrupaciones
         $devicePestsByDevice = $allDevicePests->groupBy('device_id');
-        $devicesByArea = $devices->groupBy('application_area_id');
 
         $data = [];
 
@@ -1689,7 +1708,7 @@ class CustomerController extends Controller
                     'area_name' => $area->name,
                     'device_id' => $device->id,
                     'device_name' => $device->code,
-                    'service' => $device->floorplan->service->name ?? 'N/A',
+                    'service' => $device->floorplan?->service?->name ?? 'N/A',
                     'versions' => [$device->version],
                     'pest_total_detections' => $pest_totals,
                     'total_detections' => $total_detections
@@ -1697,9 +1716,18 @@ class CustomerController extends Controller
             }
         }
 
+        // Calcular totales generales (suma de todos los dispositivos por cada plaga)
+        $grand_totals = array_fill_keys($pests_headers, 0);
+        foreach ($data as $row) {
+            foreach ($row['pest_total_detections'] as $pest => $total) {
+                $grand_totals[$pest] += $total;
+            }
+        }
+
         return [
             'detections' => $data,
-            'headers' => $pests_headers
+            'headers' => $pests_headers,
+            'grand_totals' => $grand_totals
         ];
     }
 
@@ -1709,12 +1737,51 @@ class CustomerController extends Controller
         return strtolower(str_replace(' ', '', $string));
     }
 
-    private function getGraphicDataWithDevicesByAnswer($customer, $orders, $devices)
+    private function getGraphicDataWithDevicesByAnswer($customer, $orderIds, $orders, $devices, $devicesByArea, $startDate = null, $endDate = null)
     {
-        $question_id = 2;
         $groupedData = [];
+        
+        // Calcular semanas del rango si hay fechas
+        $weekHeaders = [];
+        $weekRanges = [];
+        
+        if ($startDate && $endDate) {
+            $current = $startDate->copy()->startOfWeek();
+            $end = $endDate->copy()->endOfWeek();
+            $weekNumber = 1;
+            
+            while ($current <= $end) {
+                $weekStart = $current->copy();
+                $weekEnd = $current->copy()->endOfWeek();
+                
+                // Ajustar si excede el rango
+                if ($weekStart < $startDate) $weekStart = $startDate->copy();
+                if ($weekEnd > $endDate) $weekEnd = $endDate->copy();
+                
+                $weekKey = "S{$weekNumber}";
+                $weekLabel = $weekKey . ' (' . $weekStart->format('d/m') . ' - ' . $weekEnd->format('d/m') . ')';
+                
+                $weekHeaders[] = $weekLabel;
+                $weekRanges[$weekKey] = [
+                    'start' => $weekStart->format('Y-m-d'),
+                    'end' => $weekEnd->format('Y-m-d'),
+                    'label' => $weekLabel
+                ];
+                
+                $current->addWeek();
+                $weekNumber++;
+            }
+        }
 
-        $devicesByArea = $devices->groupBy('application_area_id');
+        // CRITICO: Pre-cargar todos los incidentes relevantes de una sola vez y evitar las N+1 consultas
+        $allIncidents = OrderIncidents::whereIn('order_id', $orderIds)
+            ->where('question_id', self::QUESTION_CONSUMPTION)
+            ->whereIn('device_id', $devices->pluck('id'))
+            ->select('id', 'device_id', 'order_id', 'answer')
+            ->get();
+        
+        // Crear mapeo de order_id a programmed_date para evitar búsquedas repetidas
+        $orderDates = $orders->pluck('programmed_date', 'id')->toArray();
 
         foreach ($customer->applicationAreas as $area) {
             $areaDevices = $devicesByArea->get($area->id, collect());
@@ -1724,18 +1791,34 @@ class CustomerController extends Controller
             }
 
             foreach ($areaDevices as $device) {
-                $incidents = OrderIncidents::whereIn('order_id', $orders->pluck('id'))
-                    ->where('question_id', $question_id)
-                    ->where('device_id', $device->id)
-                    ->select('id', 'device_id', 'order_id', 'answer')
-                    ->get();
+                // Get pre-loaded incidents for this device (no database query!)
+                $incidents = $allIncidents->where('device_id', $device->id);
 
                 $deviceTotalConsumption = 0;
                 $deviceIncidentCount = $incidents->count();
+                $weeklyConsumption = [];
+                
+                // Inicializar consumo semanal en 0
+                foreach ($weekRanges as $weekKey => $range) {
+                    $weeklyConsumption[$range['label']] = 0;
+                }
 
                 foreach ($incidents as $incident) {
                     $normalizedAnswer = $this->normalizeString($incident->answer);
-                    $deviceTotalConsumption += $this->consumption_value[$normalizedAnswer] ?? 0;
+                    $consumptionValue = $this->consumption_value[$normalizedAnswer] ?? 0;
+                    $deviceTotalConsumption += $consumptionValue;
+                    
+                    // Asignar a la semana correspondiente
+                    if (!empty($weekRanges) && isset($orderDates[$incident->order_id])) {
+                        $orderDate = $orderDates[$incident->order_id];
+                        
+                        foreach ($weekRanges as $weekKey => $range) {
+                            if ($orderDate >= $range['start'] && $orderDate <= $range['end']) {
+                                $weeklyConsumption[$range['label']] += $consumptionValue;
+                                break;
+                            }
+                        }
+                    }
                 }
 
                 $key = $area->id . '_' . $device->nplan . '_' . $device->code;
@@ -1745,17 +1828,23 @@ class CustomerController extends Controller
                         'area_id' => $area->id,
                         'area_name' => $area->name,
                         'device_name' => $device->code,
-                        'service' => $device->floorplan->service->name ?? 'N/A',
+                        'service' => $device->floorplan?->service?->name ?? 'N/A',
                         'nplan' => $device->nplan,
                         'device_count' => 1,
                         '_total_consumption' => $deviceTotalConsumption,
                         '_total_incidents' => $deviceIncidentCount,
+                        '_weekly_consumption' => $weeklyConsumption,
                         'versions' => [$device->version],
                     ];
                 } else {
                     $groupedData[$key]['device_count']++;
                     $groupedData[$key]['_total_consumption'] += $deviceTotalConsumption;
                     $groupedData[$key]['_total_incidents'] += $deviceIncidentCount;
+                    
+                    // Sumar consumos semanales
+                    foreach ($weeklyConsumption as $weekLabel => $value) {
+                        $groupedData[$key]['_weekly_consumption'][$weekLabel] += $value;
+                    }
 
                     if (!in_array($device->version, $groupedData[$key]['versions'])) {
                         $groupedData[$key]['versions'][] = $device->version;
@@ -1764,11 +1853,11 @@ class CustomerController extends Controller
             }
         }
 
-        // Calcular el valor final de consumo (promedio) para cada grupo
+        // Calcular el valor final de consumo para cada grupo
         $data = [];
         foreach ($groupedData as $key => $group) {
             if ($group['_total_incidents'] > 0) {
-                $consumptionValue = $group['_total_consumption']; // $group['_total_incidents'];
+                $consumptionValue = $group['_total_consumption'];
             } else {
                 $consumptionValue = 0;
             }
@@ -1777,17 +1866,43 @@ class CustomerController extends Controller
                 'area_id' => $group['area_id'],
                 'area_name' => $group['area_name'],
                 'device_name' => $group['device_name'],
-                'service' => $group['service'],
+                'service' => $group['service'] ?? 'N/A',
                 'nplan' => $group['nplan'],
                 'device_count' => $group['device_count'],
                 'versions' => $group['versions'],
                 'consumption_value' => $consumptionValue,
+                'weekly_consumption' => $group['_weekly_consumption'] ?? [],
             ];
+        }
+
+        // Calcular totales generales
+        $grand_total_consumption = 0;
+        $grand_totals_weekly = [];
+        
+        if (!empty($weekHeaders)) {
+            // Inicializar totales semanales
+            foreach ($weekHeaders as $weekLabel) {
+                $grand_totals_weekly[$weekLabel] = 0;
+            }
+            
+            // Sumar consumos de todos los dispositivos
+            foreach ($data as $row) {
+                foreach ($row['weekly_consumption'] as $weekLabel => $value) {
+                    $grand_totals_weekly[$weekLabel] += $value;
+                }
+            }
+        } else {
+            // Sumar consumo total
+            foreach ($data as $row) {
+                $grand_total_consumption += $row['consumption_value'];
+            }
         }
 
         return [
             'detections' => $data,
-            'headers' => ['Consumo']
+            'headers' => !empty($weekHeaders) ? $weekHeaders : ['Consumo Total'],
+            'grand_total_consumption' => $grand_total_consumption,
+            'grand_totals_weekly' => $grand_totals_weekly
         ];
     }
 }

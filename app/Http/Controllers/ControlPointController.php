@@ -16,6 +16,7 @@ use App\Models\Question;
 use App\Models\QuestionOption;
 use App\Models\ControlPointQuestion;
 use App\Models\ProductCatalog;
+use App\Models\FloorPlans;
 use Illuminate\Support\Str;
 
 class ControlPointController extends Controller
@@ -235,4 +236,78 @@ class ControlPointController extends Controller
             )
         );
     }
+
+    public function geolocateDevices($floorplan_id)
+    {
+        $floorplan = FloorPlans::find($floorplan_id);
+        $customer = $floorplan->customer;
+        
+        $navigation = [
+            'Plano' => route('floorplan.edit', ['id' => $floorplan_id]),
+            'Dispositivos' => route('floorplan.devices', ['id' => $floorplan_id, 'version' => $floorplan->lastVersion() ?? '0']),
+            'QRs' => route('floorplan.qr', ['id' => $floorplan_id]),
+            'Geolocalización' => route('floorplan.geolocation', ['id' => $floorplan_id]),
+            'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $floorplan->customer_id])
+        ];
+
+        $devices = $floorplan->devices($floorplan->lastVersion() ?? 1)->get()->map(function($d) {
+            return [
+                'id' => $d->id,
+                'code' => $d->code,
+                'nplan' => $d->nplan,
+                'latitude' => $d->latitude,
+                'longitude' => $d->longitude,
+                'type_control_point_id' => $d->type_control_point_id,
+                'control_point' => [
+                    'id' => $d->controlPoint->id,
+                    'name' => $d->controlPoint->name,
+                    'color' => $d->controlPoint->color
+                ],
+                'application_area' => [
+                    'id' => $d->application_area_id,
+                    'name' => $d->applicationArea->name ?? 'Sin zona'
+                ]
+            ];
+        });
+
+        // Agrupar tipos de control points únicos
+        $controlPoints = $devices->pluck('control_point')->unique('id')->values();
+        
+        // Agrupar áreas de aplicación únicas
+        $applicationAreas = $devices->pluck('application_area')->unique('id')->values();
+
+        return view('geolocations.index', compact('floorplan', 'devices', 'customer', 'navigation', 'controlPoints', 'applicationAreas'));
+    }
+
+    public function updateDeviceCoordinates(Request $request)
+    {
+        $validated = $request->validate([
+            'devices' => 'required|array',
+            'devices.*.id' => 'required|exists:device,id',
+            'devices.*.latitude' => 'required|numeric|between:-90,90',
+            'devices.*.longitude' => 'required|numeric|between:-180,180',
+        ]);
+
+        try {
+            foreach ($validated['devices'] as $deviceData) {
+                $device = \App\Models\Device::find($deviceData['id']);
+                $device->latitude = $deviceData['latitude'];
+                $device->longitude = $deviceData['longitude'];
+                $device->save();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Coordenadas actualizadas correctamente',
+                'updated_count' => count($validated['devices'])
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar las coordenadas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

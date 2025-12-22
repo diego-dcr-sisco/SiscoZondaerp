@@ -494,6 +494,10 @@ Route::prefix('floorplans')
 
         Route::get('/floorplans/show/{path}', [FloorPlansController::class, 'getImage'])->where('path', '.*')->name('image.show');
         Route::post('/floorplan/{id}/search/version', [FloorPlansController::class, 'searchDevicesbyVersion'])->name('search.device.version');
+
+        // Geolocalización de dispositivos en plano - logica se maneja en ControlPointController
+        Route::get('/geolocation/{id}', [ControlPointController::class, 'geolocateDevices'])->name('geolocation');
+        Route::post('/geolocation/update', [ControlPointController::class, 'updateDeviceCoordinates'])->name('geolocation.update');
     });
 
 // SERVICIOS

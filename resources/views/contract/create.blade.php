@@ -40,8 +40,8 @@
         const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
     </script>   
 
-    <script src="{{ asset('js/technician.min.js') }}"></script>
-    <script src="{{ asset('js/customer.min.js') }}"></script>
-    <script src="{{ asset('js/service.min.js') }}"></script>
-    <script src="{{ asset('js/contract/functions.min.js') }}"></script>
+    <script src="{{ asset('js/technician.min.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/customer.min.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/service.min.js') }}?v={{ time() }}"></script>
+    <script src="{{ asset('js/contract/functions.min.js') }}?v={{ time() }}"></script>
 @endsection

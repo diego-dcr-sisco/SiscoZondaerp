@@ -596,23 +596,100 @@ class ClientController extends Controller
     {
         try {
             $disk = $this->getDisk();
-            if ($disk->directoryExists($path)) {
-                // Eliminar recursivamente
-                $contents = $disk->listContents($path, true);
-                foreach ($contents as $item) {
-                    if ($item->isFile()) {
-                        $disk->delete($item->path());
-                    }
-                }
-                // Flysystem v3 no tiene deleteDirectory, así que eliminamos manualmente
-                // Para Google Drive,可能需要 una solución diferente
-                return back();
+            
+            if (!$disk->directoryExists($path)) {
+                return response()->json(['error' => 'Directory not found.'], 404);
             }
 
-            return response()->json(['error' => 'Directory not found.'], 404);
+            // Para Google Drive, usar una estrategia diferente
+            if ($this->disk_type === 'google') {
+                $this->deleteGoogleDriveDirectory($disk, $path);
+            } else {
+                // Para almacenamiento local
+                $this->deleteLocalDirectory($disk, $path);
+            }
+            
+            return back()->with('success', 'Directorio eliminado exitosamente');
+
         } catch (\Exception $e) {
-            return response()->json(['error' => 'An error occurred while deleting the directory.'], 500);
+            Log::error('Error deleting directory: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'An error occurred while deleting the directory.',
+                'message' => $e->getMessage()
+            ], 500);
         }
+    }
+
+    /**
+     * Elimina un directorio de Google Drive recursivamente
+     */
+    private function deleteGoogleDriveDirectory($disk, string $path)
+    {
+        // Listar contenido recursivamente
+        $contents = $disk->listContents($path, true)->toArray();
+        
+        // Separar archivos y directorios
+        $files = [];
+        $directories = [];
+        
+        foreach ($contents as $item) {
+            if ($item->isFile()) {
+                $files[] = $item->path();
+            } elseif ($item->isDir()) {
+                $directories[] = $item->path();
+            }
+        }
+        
+        // Eliminar primero todos los archivos
+        foreach ($files as $file) {
+            try {
+                $disk->delete($file);
+            } catch (\Exception $e) {
+                Log::warning("No se pudo eliminar archivo: {$file} - " . $e->getMessage());
+            }
+        }
+        
+        // Ordenar directorios por profundidad (más profundo primero)
+        usort($directories, function($a, $b) {
+            return substr_count($b, '/') - substr_count($a, '/');
+        });
+        
+        // Eliminar directorios en orden
+        foreach ($directories as $directory) {
+            try {
+                $disk->deleteDirectory($directory);
+            } catch (\Exception $e) {
+                Log::warning("No se pudo eliminar directorio: {$directory} - " . $e->getMessage());
+            }
+        }
+        
+        // Finalmente eliminar el directorio raíz
+        $disk->deleteDirectory($path);
+    }
+
+    /**
+     * Elimina un directorio local recursivamente
+     */
+    private function deleteLocalDirectory($disk, string $path)
+    {
+        $contents = $disk->listContents($path, true)->toArray();
+        
+        // Ordenar por profundidad en orden descendente
+        usort($contents, function($a, $b) {
+            return substr_count($b->path(), '/') - substr_count($a->path(), '/');
+        });
+        
+        // Eliminar archivos y directorios en orden inverso
+        foreach ($contents as $item) {
+            if ($item->isFile()) {
+                $disk->delete($item->path());
+            } elseif ($item->isDir()) {
+                $disk->deleteDirectory($item->path());
+            }
+        }
+        
+        // Eliminar el directorio raíz
+        $disk->deleteDirectory($path);
     }
 
     public function destroyFile(string $path)

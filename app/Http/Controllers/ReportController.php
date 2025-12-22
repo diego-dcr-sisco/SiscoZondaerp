@@ -1363,7 +1363,8 @@ class ReportController extends Controller
         $data = json_decode($request->input('order'), true);
 
         try {
-            if (!preg_match('/^data:image\/(jpeg|png);base64,/', $data['signature_base64'])) {
+            // Validar firma solo si no es null y no está vacía
+            if (!empty($data['signature_base64']) && !preg_match('/^data:image\/(jpeg|png);base64,/', $data['signature_base64'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Formato de firma no válido'
@@ -1377,7 +1378,7 @@ class ReportController extends Controller
                 'end_time' => $data['end_time'],
                 'status_id' => $data['status'],
                 'signature_name' => !empty($data['signed_by']) ? $data['signed_by'] : null,
-                'customer_signature' => $data['signature_base64'],
+                'customer_signature' => $data['signature_base64'] ?? null,
             ];
 
             if (!empty($data['id'])) {
