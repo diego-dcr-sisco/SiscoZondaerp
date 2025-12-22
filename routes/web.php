@@ -456,6 +456,8 @@ Route::prefix('customers')
         Route::get('/quote/search', [QuoteController::class, 'search'])->name('quote.search');
 
         Route::get('/graphics/{id}', [CustomerController::class, 'showGraphics'])->name('graphics');
+        Route::get('/graphics/{id}/export', [CustomerController::class, 'exportGraphics'])
+    ->name('graphics.export');
     });
 
 // Leads, Clientes potenciales    

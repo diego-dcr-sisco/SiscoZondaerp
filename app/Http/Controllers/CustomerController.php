@@ -35,6 +35,10 @@ use App\Models\TaxRegime;
 use App\Models\User;
 use App\Models\UserCustomer;
 use App\Models\ZoneType;
+
+use App\Exports\SimpleGraphicsExport;
+use Spatie\SimpleExcel\SimpleExcelWriter;
+
 use Carbon\Carbon;
 use File;
 use Illuminate\Http\RedirectResponse;
@@ -1571,7 +1575,7 @@ class CustomerController extends Controller
 
         // Optimizar consulta de órdenes
         $order_query = Order::where('customer_id', $customer->id)->where('status_id', self::STATUS_APPROVED);
-        
+
         // Inicializar fechas
         $startDate = null;
         $endDate = null;
@@ -1618,7 +1622,7 @@ class CustomerController extends Controller
         if ($orders->isEmpty()) {
             return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'info', 'No se encontraron órdenes aprobadas con los filtros aplicados', $navigation);
         }
-        
+
 
         // Cache orderIds to avoid repeated pluck() calls
         $orderIds = $orders->pluck('id')->toArray();
@@ -1666,7 +1670,7 @@ class CustomerController extends Controller
             'app_areas' => $app_areas,
             'graphs_types' => $this->graphs_types,
             'request_data' => $request->all(),
-            'navigation' => $navigation, 
+            'navigation' => $navigation,
         ])->with('success', 'Resultados encontrados');
     }
 
@@ -1757,34 +1761,36 @@ class CustomerController extends Controller
     private function getGraphicDataWithDevicesByAnswer($customer, $orderIds, $orders, $devices, $devicesByArea, $startDate = null, $endDate = null)
     {
         $groupedData = [];
-        
+
         // Calcular semanas del rango si hay fechas
         $weekHeaders = [];
         $weekRanges = [];
-        
+
         if ($startDate && $endDate) {
             $current = $startDate->copy()->startOfWeek();
             $end = $endDate->copy()->endOfWeek();
             $weekNumber = 1;
-            
+
             while ($current <= $end) {
                 $weekStart = $current->copy();
                 $weekEnd = $current->copy()->endOfWeek();
-                
+
                 // Ajustar si excede el rango
-                if ($weekStart < $startDate) $weekStart = $startDate->copy();
-                if ($weekEnd > $endDate) $weekEnd = $endDate->copy();
-                
+                if ($weekStart < $startDate)
+                    $weekStart = $startDate->copy();
+                if ($weekEnd > $endDate)
+                    $weekEnd = $endDate->copy();
+
                 $weekKey = "S{$weekNumber}";
                 $weekLabel = $weekKey . ' (' . $weekStart->format('d/m') . ' - ' . $weekEnd->format('d/m') . ')';
-                
+
                 $weekHeaders[] = $weekLabel;
                 $weekRanges[$weekKey] = [
                     'start' => $weekStart->format('Y-m-d'),
                     'end' => $weekEnd->format('Y-m-d'),
                     'label' => $weekLabel
                 ];
-                
+
                 $current->addWeek();
                 $weekNumber++;
             }
@@ -1796,7 +1802,7 @@ class CustomerController extends Controller
             ->whereIn('device_id', $devices->pluck('id'))
             ->select('id', 'device_id', 'order_id', 'answer')
             ->get();
-        
+
         // Crear mapeo de order_id a programmed_date para evitar búsquedas repetidas
         $orderDates = $orders->pluck('programmed_date', 'id')->toArray();
 
@@ -1814,7 +1820,7 @@ class CustomerController extends Controller
                 $deviceTotalConsumption = 0;
                 $deviceIncidentCount = $incidents->count();
                 $weeklyConsumption = [];
-                
+
                 // Inicializar consumo semanal en 0
                 foreach ($weekRanges as $weekKey => $range) {
                     $weeklyConsumption[$range['label']] = 0;
@@ -1824,11 +1830,11 @@ class CustomerController extends Controller
                     $normalizedAnswer = $this->normalizeString($incident->answer);
                     $consumptionValue = $this->consumption_value[$normalizedAnswer] ?? 0;
                     $deviceTotalConsumption += $consumptionValue;
-                    
+
                     // Asignar a la semana correspondiente
                     if (!empty($weekRanges) && isset($orderDates[$incident->order_id])) {
                         $orderDate = $orderDates[$incident->order_id];
-                        
+
                         foreach ($weekRanges as $weekKey => $range) {
                             if ($orderDate >= $range['start'] && $orderDate <= $range['end']) {
                                 $weeklyConsumption[$range['label']] += $consumptionValue;
@@ -1857,7 +1863,7 @@ class CustomerController extends Controller
                     $groupedData[$key]['device_count']++;
                     $groupedData[$key]['_total_consumption'] += $deviceTotalConsumption;
                     $groupedData[$key]['_total_incidents'] += $deviceIncidentCount;
-                    
+
                     // Sumar consumos semanales
                     foreach ($weeklyConsumption as $weekLabel => $value) {
                         $groupedData[$key]['_weekly_consumption'][$weekLabel] += $value;
@@ -1895,13 +1901,13 @@ class CustomerController extends Controller
         // Calcular totales generales
         $grand_total_consumption = 0;
         $grand_totals_weekly = [];
-        
+
         if (!empty($weekHeaders)) {
             // Inicializar totales semanales
             foreach ($weekHeaders as $weekLabel) {
                 $grand_totals_weekly[$weekLabel] = 0;
             }
-            
+
             // Sumar consumos de todos los dispositivos
             foreach ($data as $row) {
                 foreach ($row['weekly_consumption'] as $weekLabel => $value) {
@@ -1921,5 +1927,99 @@ class CustomerController extends Controller
             'grand_total_consumption' => $grand_total_consumption,
             'grand_totals_weekly' => $grand_totals_weekly
         ];
+    }
+    public function exportGraphics(Request $request, string $id)
+    {
+        // Obtener los datos
+        $response = $this->showGraphics($request, $id);
+
+        if ($response instanceof \Illuminate\Http\RedirectResponse) {
+            return $response;
+        }
+
+        $data = $response->getData();
+
+        // Convertir datos a array
+        $dataArray = $this->convertDataToArray($data);
+
+        if (empty($dataArray['detections'])) {
+            return redirect()->back()->with('error', 'No hay datos para exportar');
+        }
+
+        $customer = $data['customer'];
+        $graphTypeLabel = $request->graph_type == 'cnsm' ? 'Consumo' : 'Capturas';
+        $fileName = "Reporte_{$graphTypeLabel}_{$customer->name}_" . now()->format('Y-m-d_His') . '.xlsx';
+
+        // Obtener headers como array
+        $headers = $this->getHeadersAsArray($data);
+
+        // Crear el exportador
+        $exporter = new SimpleGraphicsExport(
+            $dataArray,
+            $request->graph_type,
+            $headers
+        );
+
+        // Obtener las filas
+        $rows = $exporter->getRows();
+
+        // Usar Spatie Simple Excel para escribir el archivo
+        $filePath = storage_path('app/temp/' . $fileName);
+
+        if (!is_dir(dirname($filePath))) {
+            mkdir(dirname($filePath), 0755, true);
+        }
+
+        $writer = SimpleExcelWriter::create($filePath);
+
+        foreach ($rows as $row) {
+            $writer->addRow($row);
+        }
+
+        $writer->close();
+
+        return response()->download($filePath, $fileName)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Convertir datos del objeto a array
+     */
+    private function convertDataToArray($data): array
+    {
+        $result = [];
+
+        // Convertir data a array recursivamente
+        $dataArray = json_decode(json_encode($data), true);
+
+        // Extraer la estructura que necesitamos
+        if (isset($dataArray['data'])) {
+            $result = $dataArray['data'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Obtener headers como array
+     */
+    private function getHeadersAsArray($data): array
+    {
+        // Verificar si está disponible como propiedad del objeto
+        if (isset($data->pests_headers)) {
+            if (is_array($data->pests_headers)) {
+                return $data->pests_headers;
+            }
+            return (array) $data->pests_headers;
+        }
+
+        // Buscar en la estructura de datos
+        if (isset($data->data) && isset($data->data['headers'])) {
+            if (is_array($data->data['headers'])) {
+                return $data->data['headers'];
+            }
+            return (array) $data->data['headers'];
+        }
+
+        return [];
     }
 }
