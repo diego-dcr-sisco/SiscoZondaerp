@@ -1487,14 +1487,11 @@ class CustomerController extends Controller
             'graph_type.in' => 'Tipo de gráfico no válido',
         ]);
 
-        dd($request->all());
-
         // Inicializar variables
         $data = [
             'detections' => [],
             'headers' => []
         ];
-
 
         $req_areas = [];
         $req_pests = [];
@@ -1534,6 +1531,7 @@ class CustomerController extends Controller
         ])->find($id);
 
         if (!$customer) {
+            dd('no customer');
             return $this->returnGraphicsView(null, [], $request->all(), 'error', 'Cliente no encontrado', $navigation);
         }
 
