@@ -494,55 +494,6 @@
                 badAttributes: ['style', 'start', 'dir', 'class', 'id', 'onclick']
             }
         };
-        let summernoteConfig = {
-            height: 300,
-            lang: 'es-ES',
-            toolbar: [
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['font', ['fontsize', 'fontname']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['height', ['height']],
-                ['insert', ['table', 'link']],
-            ],
-            fontSize: ['8', '10', '12', '14', '16'],
-            lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
-
-            // Importante: Activar el módulo de tablas
-            tableClassName: 'table table-bordered',
-
-            // Configuración para manejar pegado de tablas de Excel
-            callbacks: {
-                onPaste: function(e) {
-                    var thisNote = $(this);
-                    var updatePaste = function() {
-                        var original = thisNote.summernote('code');
-                        var cleaned = cleanPasteForTables(original);
-                        thisNote.summernote('code', cleaned);
-                    };
-                    setTimeout(updatePaste, 10);
-                }
-            },
-
-            // Configuración del cleaner - PERMITIR TABLAS
-            cleaner: {
-                action: 'both',
-                newline: '<br>',
-                notStyle: 'position:absolute;top:0;left:0;right:0',
-                keepHtml: true,
-                // AÑADIR ETIQUETAS DE TABLA A LA LISTA BLANCA
-                keepOnlyTags: [
-                    '<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>', '<strong>',
-                    // Etiquetas de tabla
-                    '<table>', '<thead>', '<tbody>', '<tfoot>', '<tr>', '<th>', '<td>',
-                    '<col>', '<colgroup>', '<caption>'
-                ],
-                keepClasses: false,
-                badTags: ['style', 'script', 'applet', 'embed', 'noframes', 'noscript'],
-                // Permitir algunos atributos de tabla
-                badAttributes: ['style', 'start', 'dir', 'class', 'id', 'onclick']
-            }
-        };
-
         // Función para inicializar el editor
         function initializeSummernote() {
             // Si ya existe, destruirlo primero
