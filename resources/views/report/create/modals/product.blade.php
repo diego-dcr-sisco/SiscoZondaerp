@@ -58,7 +58,7 @@
                     <label for="product-unit" class="form-label">Lote: </label>
                     <select class="form-select" id="lot" name="lot_id">
                         @foreach ($lots as $lot)
-                            <option value="{{ $lot->id }}">{{ $lot->product->name ?? '-' }} No. {{ $lot->registration_number }}
+                            <option value="{{ $lot->id }}">{{ $lot->product->name ?? '-' }} - No. {{ $lot->registration_number }}
                                 </option>
                         @endforeach
                     </select>
