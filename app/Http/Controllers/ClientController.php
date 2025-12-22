@@ -287,7 +287,7 @@ class ClientController extends Controller
         try {
             $request->validate([
                 'order' => 'required|exists:order,id',
-                'name' => 'required|string|max:255',
+                'name' => 'required|string|max:1024',
                 'signature' => 'nullable|string',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
             ]);
@@ -1002,7 +1002,7 @@ class ClientController extends Controller
     {
         try {
             $request->validate([
-                'folder_name' => 'required|string|max:255',
+                'folder_name' => 'required|string|max:1024',
                 'parent_path' => 'nullable|string',
                 'is_mip' => 'nullable|boolean'
             ]);
@@ -1179,7 +1179,7 @@ class ClientController extends Controller
         try {
             $request->validate([
                 'current_path' => 'required|string',
-                'new_name' => 'required|string|max:255|regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-_\.]+$/',
+                'new_name' => 'required|string|max:1024|regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-_\.]+$/',
                 'is_mip' => 'nullable|boolean'
             ], [
                 'new_name.regex' => 'El nombre solo puede contener letras, números, espacios, guiones, puntos y guiones bajos.',
