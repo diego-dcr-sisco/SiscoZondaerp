@@ -12,6 +12,67 @@
         return [];
     }
 
+    function cleanHtmlSimple(string $html, array $config = []): string
+    {
+        // Configuración por defecto
+        $defaultConfig = [
+            'keepHtml' => true,
+            'keepOnlyTags' => '<p><br><ul><ol><li><a><b><strong><table><thead><tbody><tfoot><tr><th><td><col><colgroup><caption>',
+            'badTags' => ['style', 'script', 'applet', 'embed', 'noframes', 'noscript'],
+            'badAttributes' => ['style', 'start', 'dir', 'class'],
+            'newline' => '<br>',
+            'keepClasses' => false,
+        ];
+
+        $config = array_merge($defaultConfig, $config);
+
+        // Si no se debe mantener HTML
+        if (!$config['keepHtml']) {
+            return nl2br(htmlspecialchars($html, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        }
+
+        // 1. Primero eliminar las etiquetas peligrosas con su contenido
+        foreach ($config['badTags'] as $tag) {
+            $pattern = '/<' . $tag . '\b[^>]*>.*?<\/' . $tag . '>/is';
+            $html = preg_replace($pattern, '', $html);
+        }
+
+        // 2. Aplicar strip_tags para permitir solo ciertas etiquetas
+        $html = strip_tags($html, $config['keepOnlyTags']);
+
+        // 3. Eliminar atributos de las etiquetas restantes
+        if (!empty($config['badAttributes'])) {
+            $html = removeAttributes($html, $config['badAttributes'], $config['keepClasses']);
+        }
+
+        // 4. Normalizar espacios y saltos de línea
+        $html = preg_replace('/\s+/', ' ', $html);
+        $html = preg_replace('/(\r\n|\r|\n)+/', $config['newline'], $html);
+
+        return trim($html);
+    }
+
+    function removeAttributes(string $html, array $badAttributes, bool $keepClasses = false): string
+    {
+        // Si keepClasses es true, remover 'class' de los atributos a eliminar
+        if ($keepClasses) {
+            $badAttributes = array_diff($badAttributes, ['class']);
+        }
+
+        // Patrón para encontrar atributos en etiquetas
+        foreach ($badAttributes as $attr) {
+            $pattern = '/\s+' . preg_quote($attr, '/') . '\s*=\s*"[^"]*"/i';
+            $html = preg_replace($pattern, '', $html);
+
+            $pattern = '/\s+' . preg_quote($attr, '/') . '\s*=\s*\'[^\']*\'/i';
+            $html = preg_replace($pattern, '', $html);
+
+            $pattern = '/\s+' . preg_quote($attr, '/') . '\s*=\s*[^\s>]+/i';
+            $html = preg_replace($pattern, '', $html);
+        }
+
+        return $html;
+    }
 @endphp
 
 <style>
@@ -397,33 +458,88 @@
             ],
             fontSize: ['8', '10', '12', '14', '16'],
             lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
+
+            // Importante: Activar el módulo de tablas
+            tableClassName: 'table table-bordered',
+
+            // Configuración para manejar pegado de tablas de Excel
             callbacks: {
                 onPaste: function(e) {
                     var thisNote = $(this);
                     var updatePaste = function() {
                         var original = thisNote.summernote('code');
-                        var cleaned = cleanPaste(original);
+                        var cleaned = cleanPasteForTables(original);
                         thisNote.summernote('code', cleaned);
                     };
                     setTimeout(updatePaste, 10);
                 }
             },
 
+            // Configuración del cleaner - PERMITIR TABLAS
             cleaner: {
-                action: 'both', // 'both' | 'button' | 'paste'
-                newline: '<br>', // Formato para saltos de línea
-                notStyle: 'position:absolute;top:0;left:0;right:0', // Estilo de notificación
-                keepHtml: true, // Activa el modo de "lista blanca" (whitelist)
-                keepOnlyTags: ['<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>',
-                    '<strong>'
-                ], // Etiquetas permitidas
-                keepClasses: false, // Remueve todas las clases CSS
-                badTags: ['style', 'script', 'applet', 'embed', 'noframes',
-                    'noscript'
-                ], // Etiquetas prohibidas (se eliminan con su contenido)
-                badAttributes: ['style', 'start', 'dir',
-                    'class'
-                ] // Atributos prohibidos (se eliminan de las etiquetas restantes)
+                action: 'both',
+                newline: '<br>',
+                notStyle: 'position:absolute;top:0;left:0;right:0',
+                keepHtml: true,
+                // AÑADIR ETIQUETAS DE TABLA A LA LISTA BLANCA
+                keepOnlyTags: [
+                    '<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>', '<strong>',
+                    // Etiquetas de tabla
+                    '<table>', '<thead>', '<tbody>', '<tfoot>', '<tr>', '<th>', '<td>',
+                    '<col>', '<colgroup>', '<caption>'
+                ],
+                keepClasses: false,
+                badTags: ['style', 'script', 'applet', 'embed', 'noframes', 'noscript'],
+                // Permitir algunos atributos de tabla
+                badAttributes: ['style', 'start', 'dir', 'class', 'id', 'onclick']
+            }
+        };
+        let summernoteConfig = {
+            height: 300,
+            lang: 'es-ES',
+            toolbar: [
+                ['style', ['bold', 'italic', 'underline', 'clear']],
+                ['font', ['fontsize', 'fontname']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['height', ['height']],
+                ['insert', ['table', 'link']],
+            ],
+            fontSize: ['8', '10', '12', '14', '16'],
+            lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
+
+            // Importante: Activar el módulo de tablas
+            tableClassName: 'table table-bordered',
+
+            // Configuración para manejar pegado de tablas de Excel
+            callbacks: {
+                onPaste: function(e) {
+                    var thisNote = $(this);
+                    var updatePaste = function() {
+                        var original = thisNote.summernote('code');
+                        var cleaned = cleanPasteForTables(original);
+                        thisNote.summernote('code', cleaned);
+                    };
+                    setTimeout(updatePaste, 10);
+                }
+            },
+
+            // Configuración del cleaner - PERMITIR TABLAS
+            cleaner: {
+                action: 'both',
+                newline: '<br>',
+                notStyle: 'position:absolute;top:0;left:0;right:0',
+                keepHtml: true,
+                // AÑADIR ETIQUETAS DE TABLA A LA LISTA BLANCA
+                keepOnlyTags: [
+                    '<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>', '<strong>',
+                    // Etiquetas de tabla
+                    '<table>', '<thead>', '<tbody>', '<tfoot>', '<tr>', '<th>', '<td>',
+                    '<col>', '<colgroup>', '<caption>'
+                ],
+                keepClasses: false,
+                badTags: ['style', 'script', 'applet', 'embed', 'noframes', 'noscript'],
+                // Permitir algunos atributos de tabla
+                badAttributes: ['style', 'start', 'dir', 'class', 'id', 'onclick']
             }
         };
 
