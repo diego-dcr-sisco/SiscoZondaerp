@@ -17,7 +17,7 @@
         // Configuración por defecto
         $defaultConfig = [
             'keepHtml' => true,
-            'keepOnlyTags' => '<p><br><ul><ol><li><a><b><strong><table><thead><tbody><tfoot><tr><th><td><col><colgroup><caption>',
+            'keepOnlyTags' => '<p><br><ul><ol><li><a><b><strong><table><thead><tbody><tfoot><tr><th><td><col><colgroup><caption><div>',
             'badTags' => ['style', 'script', 'applet', 'embed', 'noframes', 'noscript'],
             'badAttributes' => ['style', 'start', 'dir', 'class'],
             'newline' => '<br>',
@@ -483,7 +483,7 @@
                 keepHtml: true,
                 // AÑADIR ETIQUETAS DE TABLA A LA LISTA BLANCA
                 keepOnlyTags: [
-                    '<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>', '<strong>',
+                    '<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>', '<strong>', 'div',
                     // Etiquetas de tabla
                     '<table>', '<thead>', '<tbody>', '<tfoot>', '<tr>', '<th>', '<td>',
                     '<col>', '<colgroup>', '<caption>'
