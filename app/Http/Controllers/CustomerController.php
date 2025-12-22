@@ -1657,6 +1657,8 @@ class CustomerController extends Controller
             return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido', $navigation);
         }
 
+        dd($data);
+
         return view('customer.show.graphics', [
             'customer' => $customer,
             'pests_headers' => $data['headers'] ?? [],
