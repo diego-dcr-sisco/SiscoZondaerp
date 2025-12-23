@@ -174,6 +174,7 @@ class Certificate
             ->first();
 
         if ($userfile && $userfile->path) {
+            dd($userfile->path);
             $signature_img = Storage::disk('public')->get(ltrim($userfile->path, '/'));
             $signature_base64 = 'data:image/png;base64,' . base64_encode($signature_img);
         }

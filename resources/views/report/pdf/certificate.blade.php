@@ -309,7 +309,8 @@
 
 <body>
     <div class="watermark">
-        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/watermark.png'))) }}">
+        <img
+            src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/watermark.png'))) }}">
     </div>
 
     <div class="row">
@@ -317,7 +318,8 @@
             <h1 style="font-size: 22px; margin: 0;">{{ $title }}</h1>
         </div>
         <div class="logo">
-            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/landscape_logo.png'))) }} style="width: 150px; margin: 0;">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/landscape_logo.png'))) }} style="width:
+                150px; margin: 0;">
         </div>
     </div>
 
@@ -377,15 +379,15 @@
             <div class="render-html">
                 {!! $service['text'] !!}
             </div>
-            
+
             <!-- Evidencias del área "servicio" para este servicio específico -->
-            @if(isset($photo_evidences['servicio']) && count($photo_evidences['servicio']) > 0)
+            @if (isset($photo_evidences['servicio']) && count($photo_evidences['servicio']) > 0)
                 <div class="photo-evidence-section">
                     <div style="font-weight: bold; margin-top: 10px; color: #0d6efd;">
                         EVIDENCIAS FOTOGRÁFICAS - SERVICIO
                     </div>
                     <div class="photo-evidence-grid">
-                        @foreach($photo_evidences['servicio'] as $evidence)
+                        @foreach ($photo_evidences['servicio'] as $evidence)
                             <div class="photo-evidence-item">
                                 <img src="{{ $evidence['image'] }}" class="photo-evidence-image" alt="Evidencia">
                                 <div class="photo-evidence-description">
@@ -484,15 +486,15 @@
         <div class="text-justify">
             {!! $notes !!}
         </div>
-        
+
         <!-- Evidencias del área "notas" -->
-        @if(isset($photo_evidences['notas']) && count($photo_evidences['notas']) > 0)
+        @if (isset($photo_evidences['notas']) && count($photo_evidences['notas']) > 0)
             <div class="photo-evidence-section">
                 <div style="font-weight: bold; margin-top: 10px; color: #6c757d;">
                     EVIDENCIAS FOTOGRÁFICAS
                 </div>
                 <div class="photo-evidence-grid">
-                    @foreach($photo_evidences['notas'] as $evidence)
+                    @foreach ($photo_evidences['notas'] as $evidence)
                         <div class="photo-evidence-item">
                             <img src="{{ $evidence['image'] }}" class="photo-evidence-image" alt="Evidencia">
                             <div class="photo-evidence-description">
@@ -511,15 +513,15 @@
         <div class="text-justify">
             {!! $recommendations !!}
         </div>
-        
+
         <!-- Evidencias del área "recomendaciones" -->
-        @if(isset($photo_evidences['recomendaciones']) && count($photo_evidences['recomendaciones']) > 0)
+        @if (isset($photo_evidences['recomendaciones']) && count($photo_evidences['recomendaciones']) > 0)
             <div class="photo-evidence-section">
                 <div style="font-weight: bold; margin-top: 10px; color: #198754;">
                     EVIDENCIAS FOTOGRÁFICAS - RECOMENDACIONES
                 </div>
                 <div class="photo-evidence-grid">
-                    @foreach($photo_evidences['recomendaciones'] as $evidence)
+                    @foreach ($photo_evidences['recomendaciones'] as $evidence)
                         <div class="photo-evidence-item">
                             <img src="{{ $evidence['image'] }}" class="photo-evidence-image" alt="Evidencia">
                             <div class="photo-evidence-description">
@@ -533,11 +535,11 @@
     </div>
 
     <!-- EVIDENCIAS FOTOGRÁFICAS (área general) -->
-    @if(isset($photo_evidences['evidencias']) && count($photo_evidences['evidencias']) > 0)
+    @if (isset($photo_evidences['evidencias']) && count($photo_evidences['evidencias']) > 0)
         <div class="row">
             <div class="bg-blue" style="background-color: #6f42c1;">EVIDENCIAS FOTOGRÁFICAS</div>
             <div class="photo-evidence-grid">
-                @foreach($photo_evidences['evidencias'] as $evidence)
+                @foreach ($photo_evidences['evidencias'] as $evidence)
                     <div class="photo-evidence-item">
                         <img src="{{ $evidence['image'] }}" class="photo-evidence-image" alt="Evidencia">
                         <div class="photo-evidence-description">
@@ -550,17 +552,13 @@
     @endif
 
     <!-- Mensaje si no hay evidencias en ninguna área -->
-    {{--@if(empty($photo_evidences) || 
-        (empty($photo_evidences['servicio']) && 
-         empty($photo_evidences['notas']) && 
-         empty($photo_evidences['recomendaciones']) && 
-         empty($photo_evidences['evidencias'])))
+    {{-- @if (empty($photo_evidences) || (empty($photo_evidences['servicio']) && empty($photo_evidences['notas']) && empty($photo_evidences['recomendaciones']) && empty($photo_evidences['evidencias'])))
         <div class="row">
             <div class="evidence-placeholder">
                 No hay evidencias fotográficas para mostrar
             </div>
         </div>
-    @endif--}}  
+    @endif --}}
 
     <div class="signature-section">
         <table class="signature-table">
@@ -568,7 +566,9 @@
                 <!-- Firma Cliente -->
                 <td class="signature-cell">
                     <div class="signature-container">
-                        <img src="{{ $customer['signature_base64'] }}" class="signature-image">
+                        @if ($customer['signature_base64'])
+                            <img src="{{ $customer['signature_base64'] }}" class="signature-image">
+                        @endif
                         <div class="signature-title">Nombre y firma del cliente</div>
                         <div class="signature-name">{{ $customer['signed_by'] }}</div>
                         <div class="signature-name">{{ $customer['name'] }}</div>

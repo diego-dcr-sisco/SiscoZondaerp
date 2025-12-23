@@ -18,8 +18,9 @@ class SimpleGraphicsExport
         $rows = [];
         $index = 1;
 
-        $headers = $this->getHeaders($this->data);        
-        
+        //dd($this->data);
+        $headers = $this->getHeaders($this->data);
+
         foreach ($this->data['detections'] as $index => $detection) {
             $row_data = [
                 ($index + 1),
@@ -31,10 +32,22 @@ class SimpleGraphicsExport
 
             $array_count = [];
             foreach ($this->data['headers'] as $header_key) {
-                array_push($array_count, $detection['weekly_consumption'][$header_key]);
+                if ($this->graphType == 'cnsm') {
+                    array_push($array_count, $detection['weekly_consumption'][$header_key]);
+                } else {
+                    array_push($array_count, $detection['pest_total_detections'][$header_key]);
+                }
             }
             $rows[] = array_merge($row_data, $array_count);
         }
+
+        $array_count = [];
+
+        foreach ($this->data['headers'] as $header_key) {
+            array_push($array_count, $this->data['grand_totals_weekly'][$header_key]);
+        }
+
+        $rows[] = array_merge(['', '', '', '', 'Totales'], $array_count);
 
         return [
             'headers' => $headers,
