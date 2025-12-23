@@ -114,7 +114,7 @@
                                 <td> {{ $user->workDepartment->name ?? '-' }} </td>
                                 <td
                                     class="fw-bold {{ $user->status_id == 2 ? 'text-success' : ($user->status_id == 3 ? 'text-danger' : 'text-warning') }}">
-                                    {{ $user->status->name }} </td>
+                                    {{ $user->status->name ?? '-' }} </td>
                                 <td>
                                     @can('write_user')
                                         <a href="{{ $user->role_id != 5 ? route('user.edit', ['id' => $user->id]) : route('user.edit.client', ['id' => $user->id]) }}"
