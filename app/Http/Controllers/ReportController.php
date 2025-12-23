@@ -566,9 +566,9 @@ class ReportController extends Controller
             ->get();
 
         $order_status = OrderStatus::all();
-        $user_technicians = User::where('role_id', 3)
+        $user_technicians = User::where('status_id', 2)
             ->where(function ($query) {
-                $query->where('status_id', 2)
+                $query->where('role_id', 3)
                     ->orWhere('work_department_id', 8);
             })
             ->orderBy('name')
