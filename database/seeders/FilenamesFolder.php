@@ -15,39 +15,6 @@ class FilenamesFolder extends Seeder
     {
         $fileNames = [
             'customer' => [
-                'Certificado RFC',
-                'Comprobante domicilio fiscal',
-                'Credencial INE',
-                'Estatutos de incorporación',
-                'Comprobante situación fiscal',
-                'Manual del portal',
-            ],
-            'user' => [
-                'INE',
-                'CURP',
-                'Constancia de situación fiscal (RFC)',
-                'NSS',
-                'Acta de nacimiento',
-                'Comprobante de domicilio',
-                'Licencia para conducir',
-                'Foto',
-                'Firma',
-                'Examen medico general',
-                'Examen de colinesterasa',
-                'Certificado DC3 Alturas',
-                'Certificado DC3 Espacios confinados'
-            ],
-            'product' => [
-                'Ficha del responsable técnico (RP)',
-                'Ficha técnica',
-                'Especificaciones de seguridad',
-                'Especificación de registro',
-                'Registro sanitario'
-            ],
-        ];
-
-        $fileNames = [
-            'customer' => [
                 'Certificado RFC' => 'rfc',
                 'Comprobante domicilio fiscal' => 'tax_address',
                 'Credencial INE' => 'ine',
@@ -80,16 +47,11 @@ class FilenamesFolder extends Seeder
         ];
 
         foreach ($fileNames as $type => $names) {
-            foreach ($names as $name => $type) {
-                Filenames::update(
-                    [
-                        'name' => $name,
-                        'type' => $type,
-                    ], 
-                    [
-                        'folder' => $type
-                    ]
-                );
+            foreach ($names as $name => $folder) {
+                // Actualizamos los registros que coincidan con el nombre y el tipo
+                Filenames::where('name', $name)
+                    ->where('type', $type)
+                    ->update(['folder' => $folder]);
             }
         }
     }
