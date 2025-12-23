@@ -6,15 +6,11 @@ class SimpleGraphicsExport
 {
     protected $data;
     protected $graphType;
-    protected $headers;
-    protected $title;
 
-    public function __construct($data, string $graphType, array $headers, string $title = 'Reporte')
+    public function __construct($data, string $graphType)
     {
         $this->data = $data;
         $this->graphType = $graphType;
-        $this->headers = $headers;
-        $this->title = $title;
     }
 
     public function getRows(): array
@@ -22,86 +18,37 @@ class SimpleGraphicsExport
         $rows = [];
         $index = 1;
 
-        // Convertir data a array si es objeto
-        $dataArray = (array) $this->data;
+        $headers = $this->getHeaders($this->data);        
         
-        // Asegurarnos de que tenemos el array 'detections'
-        $detections = $dataArray['detections'] ?? [];
-
-        foreach ($detections as $detection) {
-            // Convertir detección a array si es objeto
-            $detectionArray = (array) $detection;
-            
-            $row = [
-                '#' => $index,
-                'Servicio' => $detectionArray['service'] ?? '',
-                'Área' => $detectionArray['area_name'] ?? '',
-                'Dispositivo' => $detectionArray['device_name'] ?? '',
-                'Versión' => $this->formatVersion($detectionArray['versions'] ?? null),
+        foreach ($this->data['detections'] as $index => $detection) {
+            $row_data = [
+                ($index + 1),
+                $detection['service'],
+                $detection['area_name'],
+                $detection['device_name'],
+                $this->formatVersion($detection['versions']),
             ];
 
-            if ($this->graphType == 'cptr') {
-                $pestDetections = (array) ($detectionArray['pest_total_detections'] ?? []);
-                foreach ($this->headers as $header) {
-                    $row[$header] = $pestDetections[$header] ?? 0;
-                }
-            } elseif ($this->graphType == 'cnsm') {
-                $weeklyConsumption = (array) ($detectionArray['weekly_consumption'] ?? []);
-                if (!empty($weeklyConsumption)) {
-                    foreach ($this->headers as $header) {
-                        $row[$header] = $weeklyConsumption[$header] ?? 0;
-                    }
-                } else {
-                    foreach ($this->headers as $header) {
-                        $row[$header] = 0;
-                    }
-                    if (isset($detectionArray['consumption_value'])) {
-                        $firstHeader = $this->headers[0] ?? 'Consumo';
-                        $row[$firstHeader] = $detectionArray['consumption_value'];
-                    }
-                }
+            $array_count = [];
+            foreach ($this->data['headers'] as $header_key) {
+                array_push($array_count, $detection['weekly_consumption'][$header_key]);
             }
-
-            $rows[] = $row;
-            $index++;
+            $rows[] = array_merge($row_data, $array_count);
         }
 
-        // Agregar fila de totales
-        if (!empty($detections)) {
-            $totalRow = [
-                '#' => 'TOTAL GENERAL',
-                'Servicio' => '',
-                'Área' => '',
-                'Dispositivo' => '',
-                'Versión' => '',
-            ];
+        return [
+            'headers' => $headers,
+            'rows' => $rows,
+        ];
+    }
 
-            if ($this->graphType == 'cptr') {
-                $grandTotals = (array) ($dataArray['grand_totals'] ?? []);
-                foreach ($this->headers as $header) {
-                    $totalRow[$header] = $grandTotals[$header] ?? 0;
-                }
-            } elseif ($this->graphType == 'cnsm') {
-                $grandTotalsWeekly = (array) ($dataArray['grand_totals_weekly'] ?? []);
-                if (!empty($grandTotalsWeekly)) {
-                    foreach ($this->headers as $header) {
-                        $totalRow[$header] = $grandTotalsWeekly[$header] ?? 0;
-                    }
-                } else {
-                    foreach ($this->headers as $header) {
-                        $totalRow[$header] = 0;
-                    }
-                    if (isset($dataArray['grand_total_consumption'])) {
-                        $firstHeader = $this->headers[0] ?? 'Consumo';
-                        $totalRow[$firstHeader] = $dataArray['grand_total_consumption'];
-                    }
-                }
-            }
-
-            $rows[] = $totalRow;
+    private function getHeaders($data): array
+    {
+        $headers = ['#', 'Servicio', 'Area', 'Dispositivo', 'Version'];
+        if (count($data['headers']) > 0) {
+            $headers = array_merge($headers, $data['headers']);
         }
-
-        return $rows;
+        return $headers;
     }
 
     private function formatVersion($versions): string
@@ -109,7 +56,7 @@ class SimpleGraphicsExport
         if (is_array($versions)) {
             return implode(', ', $versions);
         }
-        
+
         if (is_string($versions)) {
             // Intentar decodificar JSON si es una cadena JSON
             $decoded = json_decode($versions, true);
@@ -118,11 +65,11 @@ class SimpleGraphicsExport
             }
             return $versions;
         }
-        
+
         if (is_object($versions)) {
             return implode(', ', (array) $versions);
         }
-        
+
         return (string) $versions;
     }
 }

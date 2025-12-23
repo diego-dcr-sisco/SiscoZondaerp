@@ -1937,51 +1937,22 @@ class CustomerController extends Controller
             return $response;
         }
 
-        $data = $response->getData();
+        $response_data = $response->getData();
 
-        $customer = $data['customer'];
+        $data = $response_data['data'];
+        //dd($data);
+
+        $customer = $response_data['customer'];
         $graphTypeLabel = $request->graph_type == 'cnsm' ? 'Consumo' : 'Capturas';
         $fileName = "Reporte_{$graphTypeLabel}_{$customer->name}_" . now()->format('Y-m-d_His') . '.xlsx';
 
-        $headers = $this->getHeadersAsArray($data);
+        $export = new SimpleGraphicsExport($data, $request->graph_type);
+        $exportData = $export->getRows();
 
-        // Crear el exportador
-        $exporter = new SimpleGraphicsExport(
-            $data,
-            $request->graph_type,
-            $headers
-        );
-
-        // Obtener las filas
-        $rows = $exporter->getRows();
-
-        // Usar Spatie Simple Excel para escribir el archivo
-        $filePath = storage_path('app/temp/' . $fileName);
-
-        if (!is_dir(dirname($filePath))) {
-            mkdir(dirname($filePath), 0755, true);
-        }
-
-        $writer = SimpleExcelWriter::create($filePath);
-
-        foreach ($rows as $row) {
-            $writer->addRow($row);
-        }
-
-        $writer->close();
-
-        return response()->download($filePath, $fileName)->deleteFileAfterSend(true);
-    }
-
-    /**
-     * Obtener headers como array
-     */
-    private function getHeadersAsArray($data): array
-    {
-        $headers = ['#', 'Servicio', 'Area', 'Dispositivo', 'Version'];
-        if(count($data['pests_headers']) > 0) {
-            $headers = array_merge($headers, $data['pests_headers']);
-        }
-        return $headers;
+        // Stream directo al navegador
+        return SimpleExcelWriter::streamDownload($fileName)
+            ->addHeader($exportData['headers'])
+            ->addRows($exportData['rows'])
+            ->toBrowser();
     }
 }
