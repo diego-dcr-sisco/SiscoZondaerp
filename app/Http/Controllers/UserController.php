@@ -562,7 +562,7 @@ class UserController extends Controller
 			//$originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
 			//$newFileName = $user_file->filename->name . "_{$user->id}_" . Str::slug($originalName) . time() . ".{$extension}";
 			$newFileName = "{$user->id}_" . time() . ".{$extension}";
-			$folder_path = $user_file->filename->name . '/';
+			$folder_path = $user_file->filename->folder . '/';
 
 			dd($folder_path);
 			$filePath = $this->files_path . $folder_path . "{$newFileName}";
