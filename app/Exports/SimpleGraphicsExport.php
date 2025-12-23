@@ -31,14 +31,19 @@ class SimpleGraphicsExport
             ];
 
             $array_count = [];
+            $count = 0;
             foreach ($this->data['headers'] as $header_key) {
                 if ($this->graphType == 'cnsm') {
+                    $count += $detection['weekly_consumption'][$header_key];
                     array_push($array_count, $detection['weekly_consumption'][$header_key]);
                 } else {
                     array_push($array_count, $detection['pest_total_detections'][$header_key]);
                 }
             }
             $rows[] = array_merge($row_data, $array_count);
+            if ($this->graphType == 'cnsm') {
+                array_push($rows[$index], $count);
+            }
         }
 
         $array_count = [];
@@ -60,6 +65,10 @@ class SimpleGraphicsExport
         $headers = ['#', 'Servicio', 'Area', 'Dispositivo', 'Version'];
         if (count($data['headers']) > 0) {
             $headers = array_merge($headers, $data['headers']);
+        }
+
+        if($this->graphType == 'cnsm') {
+            $headers = array_merge($headers, ['Total p/ dispositivo']);
         }
         return $headers;
     }
