@@ -128,9 +128,13 @@
                                 @foreach ($data['headers'] as $header)
                                     <th class="fw-bold" scope="col">{{ $header }}</th>
                                 @endforeach
+                                <th class="fw-bold" scope="col">Total p/ disp.</th>
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $count = 0;
+                            @endphp
                             @forelse ($data['detections'] as $index => $d)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
