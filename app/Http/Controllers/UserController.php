@@ -32,7 +32,7 @@ use App\Models\OrderTechnician;
 
 class UserController extends Controller
 {
-	private $files_path = 'userfiles/';
+	private $files_path = 'users/';
 	private static $states_route = 'datas/json/Mexico_states.json';
 	private static $cities_route = 'datas/json/Mexico_cities.json';
 	private $path = 'client_system/';
@@ -563,6 +563,8 @@ class UserController extends Controller
 			//$newFileName = $user_file->filename->name . "_{$user->id}_" . Str::slug($originalName) . time() . ".{$extension}";
 			$newFileName = "{$user->id}_" . time() . ".{$extension}";
 			$folder_path = $user_file->filename->name . '/';
+
+			dd($folder_path);
 			$filePath = $this->files_path . $folder_path . "{$newFileName}";
 
 			$this->disk->put($filePath, file_get_contents($file));
@@ -613,7 +615,7 @@ class UserController extends Controller
 			$newFileName = Str::slug($request->input('filename')) . "_{$user->id}_" . time() . ".{$extension}";
 
 			// Usar el mismo directorio base
-			$folder_path = $this->files_path . 'adicionales/';
+			$folder_path = $this->files_path . 'files/';
 			$filePath = $folder_path . "{$newFileName}";
 
 			// Crear directorio si no existe
