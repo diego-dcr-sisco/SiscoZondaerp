@@ -413,11 +413,12 @@ class Certificate
             $recs = OrderRecommendation::where('order_id', $this->order->id)->where('service_id', $service->id)->get();
 
             foreach ($recs as $index => $rec) {
-                if ($rec->recommendation_id) {
+                /*if ($rec->recommendation_id) {
                     $this->data['recommendations'] .= (($index + 1 . ') ' . $rec->recommendation->description) ?? '') . "<br>";
                 } else {
                     $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";
-                }
+                }*/
+                $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";
             }
         }
     }
