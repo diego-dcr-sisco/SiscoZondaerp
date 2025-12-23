@@ -170,6 +170,9 @@
 
                             @if (!empty($data['detections']))
                                 <!-- Fila de totales generales -->
+                                @php
+                                    $count = 0;
+                                @endphp
                                 <tr class="table-primary">
                                     <td colspan="5" class="fw-bold text-end">TOTAL GENERAL:</td>
                                     @if (request('graph_type') == 'cptr')
@@ -179,6 +182,9 @@
                                     @elseif (request('graph_type') == 'cnsm')
                                         @if (!empty($data['grand_totals_weekly']))
                                             @foreach ($data['headers'] as $header)
+                                                @php
+                                                    $count += $data['grand_totals_weekly'][$header];
+                                                @endphp
                                                 <td class="fw-bold text-center">
                                                     {{ $data['grand_totals_weekly'][$header] ?? 0 }}</td>
                                             @endforeach
@@ -186,7 +192,9 @@
                                             <td class="fw-bold text-center">{{ $data['grand_total_consumption'] ?? 0 }}
                                             </td>
                                         @endif
-                                        <td></td>
+                                        <td class="fw-bold text-center">
+                                            {{ $count }}
+                                        </td>
                                     @endif
                                 </tr>
                             @endif
