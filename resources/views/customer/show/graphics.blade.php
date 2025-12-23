@@ -186,6 +186,7 @@
                                             <td class="fw-bold text-center">{{ $data['grand_total_consumption'] ?? 0 }}
                                             </td>
                                         @endif
+                                        <td></td>
                                     @endif
                                 </tr>
                             @endif
