@@ -566,7 +566,7 @@ class ReportController extends Controller
             ->get();
 
         $order_status = OrderStatus::all();
-        $user_technicians = User::where('role_id', 3)->orWhere('work_department_id', 8)->orderBy('name')->get();
+        $user_technicians = User::where('role_id', 3)->orWhere('work_department_id', 8)->where('status_id', 2)->orderBy('name')->get();
         $service_types = ServiceType::all();
         $metrics = Metric::all();
         $lots = Lot::all();
