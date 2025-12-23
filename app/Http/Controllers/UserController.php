@@ -564,7 +564,6 @@ class UserController extends Controller
 			$newFileName = "{$user->id}_" . time() . ".{$extension}";
 			$folder_path = $user_file->filename->folder . '/';
 
-			dd($folder_path);
 			$filePath = $this->files_path . $folder_path . "{$newFileName}";
 
 			$this->disk->put($filePath, file_get_contents($file));
