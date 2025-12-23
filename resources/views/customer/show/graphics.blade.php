@@ -132,10 +132,10 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @php
-                                $count = 0;
-                            @endphp
                             @forelse ($data['detections'] as $index => $d)
+                                @php
+                                    $count = 0;
+                                @endphp
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td>{{ $d['service'] }}</td>
@@ -149,11 +149,15 @@
                                     @elseif (request('graph_type') == 'cnsm')
                                         @if (!empty($d['weekly_consumption']))
                                             @foreach ($data['headers'] as $header)
+                                                @php
+                                                    $count += $d['weekly_consumption'][$header];
+                                                @endphp
                                                 <td class="text-center">{{ $d['weekly_consumption'][$header] ?? 0 }}</td>
                                             @endforeach
                                         @else
                                             <td class="text-center">{{ $d['consumption_value'] }}</td>
                                         @endif
+                                        <td class="text-center">{{ $count }}</td>
                                     @endif
                                 </tr>
                             @empty
