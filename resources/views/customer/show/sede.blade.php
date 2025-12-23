@@ -113,10 +113,15 @@
                                 </td>
                                 <td>
                                     @can('write_customer')
-                                        <a href="{{ route('customer.quote', ['id' => $customer->id, 'class' => 'customer']) }}"
+                                        <a href="{{ route('customer.quote', ['id' => $sede->id, 'class' => 'customer']) }}"
                                             class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                                             data-bs-title="Cotizaciones">
                                             <i class="bi bi-calculator-fill"></i>
+                                        </a>
+                                        <a href="{{ route('customer.graphics', ['id' => $sede->id]) }}"
+                                            class="btn btn-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            data-bs-title="Graficas">
+                                            <i class="bi bi-bar-chart-fill"></i>
                                         </a>
 
                                         <a href="{{ route('customer.edit.sede', ['id' => $sede->id]) }}"
@@ -124,7 +129,7 @@
                                             data-bs-title="Editar sede">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
-                                        <a href="{{ route('customer.destroy', ['id' => $customer->id]) }}"
+                                        <a href="{{ route('customer.destroy', ['id' => $sede->id]) }}"
                                             class="btn btn-danger btn-sm"
                                             onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')"
                                             data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Eliminar sede">

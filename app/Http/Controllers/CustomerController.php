@@ -1781,7 +1781,7 @@ class CustomerController extends Controller
                 if ($weekEnd > $endDate)
                     $weekEnd = $endDate->copy();
 
-                $weekKey = "S{$weekNumber}";
+                $weekKey = "Sem_{$weekNumber}";
                 $weekLabel = $weekKey . ' (' . $weekStart->format('d/m') . ' - ' . $weekEnd->format('d/m') . ')';
 
                 $weekHeaders[] = $weekLabel;
@@ -1933,29 +1933,21 @@ class CustomerController extends Controller
         // Obtener los datos
         $response = $this->showGraphics($request, $id);
 
-        if ($response instanceof \Illuminate\Http\RedirectResponse) {
+        if ($response instanceof RedirectResponse) {
             return $response;
         }
 
         $data = $response->getData();
 
-        // Convertir datos a array
-        $dataArray = $this->convertDataToArray($data);
-
-        if (empty($dataArray['detections'])) {
-            return redirect()->back()->with('error', 'No hay datos para exportar');
-        }
-
         $customer = $data['customer'];
         $graphTypeLabel = $request->graph_type == 'cnsm' ? 'Consumo' : 'Capturas';
         $fileName = "Reporte_{$graphTypeLabel}_{$customer->name}_" . now()->format('Y-m-d_His') . '.xlsx';
 
-        // Obtener headers como array
         $headers = $this->getHeadersAsArray($data);
 
         // Crear el exportador
         $exporter = new SimpleGraphicsExport(
-            $dataArray,
+            $data,
             $request->graph_type,
             $headers
         );
@@ -1982,44 +1974,14 @@ class CustomerController extends Controller
     }
 
     /**
-     * Convertir datos del objeto a array
-     */
-    private function convertDataToArray($data): array
-    {
-        $result = [];
-
-        // Convertir data a array recursivamente
-        $dataArray = json_decode(json_encode($data), true);
-
-        // Extraer la estructura que necesitamos
-        if (isset($dataArray['data'])) {
-            $result = $dataArray['data'];
-        }
-
-        return $result;
-    }
-
-    /**
      * Obtener headers como array
      */
     private function getHeadersAsArray($data): array
     {
-        // Verificar si está disponible como propiedad del objeto
-        if (isset($data->pests_headers)) {
-            if (is_array($data->pests_headers)) {
-                return $data->pests_headers;
-            }
-            return (array) $data->pests_headers;
+        $headers = ['#', 'Servicio', 'Area', 'Dispositivo', 'Version'];
+        if(count($data['pests_headers']) > 0) {
+            $headers = array_merge($headers, $data['pests_headers']);
         }
-
-        // Buscar en la estructura de datos
-        if (isset($data->data) && isset($data->data['headers'])) {
-            if (is_array($data->data['headers'])) {
-                return $data->data['headers'];
-            }
-            return (array) $data->data['headers'];
-        }
-
-        return [];
+        return $headers;
     }
 }
