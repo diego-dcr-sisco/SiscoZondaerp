@@ -408,7 +408,7 @@ class ReportController extends Controller
             //dd($found_devices);
             //$found_devices = array_merge($devices_1->pluck('id')->toArray(), array_diff($found_devices, $devices_1->pluck('id')->toArray()));
             $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();*/
-            
+
         } else {
             $found_devices = $this->getDevicesByVersion($id);
             $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
@@ -566,7 +566,13 @@ class ReportController extends Controller
             ->get();
 
         $order_status = OrderStatus::all();
-        $user_technicians = User::where('role_id', 3)->orWhere('work_department_id', 8)->where('status_id', 2)->orderBy('name')->get();
+        $user_technicians = User::where('role_id', 3)
+            ->where(function ($query) {
+                $query->where('status_id', 2)
+                    ->orWhere('work_department_id', 8);
+            })
+            ->orderBy('name')
+            ->get();
         $service_types = ServiceType::all();
         $metrics = Metric::all();
         $lots = Lot::all();
