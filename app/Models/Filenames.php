@@ -14,5 +14,9 @@ class Filenames extends Model
         'id',
         'name',
         'type',
+        'code',
+        'folder',
+        'created_at',
+        'updated_at',
     ];
 }
