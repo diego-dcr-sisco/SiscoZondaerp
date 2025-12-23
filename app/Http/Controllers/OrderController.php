@@ -89,10 +89,10 @@ class OrderController extends Controller
         $navigation = $this->navigation;
 
         $technicians = Technician::with('user')
-            ->whereIn('user_id', Technician::pluck('user_id'))
-            ->join('user', 'technician.user_id', '=', 'user.id')
-            ->orderBy('user.name', 'ASC')
-            ->select('technician.*')
+            ->join('user as u', 'technician.user_id', '=', 'u.id')
+            ->where('u.status_id', 2)
+            ->orderBy('u.name', 'ASC')
+            ->select('technician.*', 'u.name as user_name')
             ->get();
 
         return view(
@@ -114,10 +114,10 @@ class OrderController extends Controller
         $pest_categories = PestCategory::orderBy('category', 'asc')->get();
         $application_methods = ApplicationMethod::orderBy('name', 'asc')->get();
         $technicians = Technician::with('user')
-            ->whereIn('user_id', Technician::pluck('user_id'))
-            ->join('user', 'technician.user_id', '=', 'user.id')
-            ->orderBy('user.name', 'ASC')
-            ->select('technician.*')
+            ->join('user as u', 'technician.user_id', '=', 'u.id')
+            ->where('u.status_id', 2)
+            ->orderBy('u.name', 'ASC')
+            ->select('technician.*', 'u.name as user_name')
             ->get();
         $contracts = Contract::all();
         $order_status = OrderStatus::all();
@@ -876,10 +876,10 @@ class OrderController extends Controller
         $navigation = $this->navigation;
 
         $technicians = Technician::with('user')
-            ->whereIn('user_id', Technician::pluck('user_id'))
-            ->join('user', 'technician.user_id', '=', 'user.id')
-            ->orderBy('user.name', 'ASC')
-            ->select('technician.*')
+            ->join('user as u', 'technician.user_id', '=', 'u.id')
+            ->where('u.status_id', 2)
+            ->orderBy('u.name', 'ASC')
+            ->select('technician.*', 'u.name as user_name')
             ->get();
 
         return view(

@@ -101,10 +101,10 @@ class ContractController extends Controller
     public function create(): View
     {
         $technicians = Technician::with('user')
-            ->whereIn('user_id', Technician::pluck('user_id'))
-            ->join('user', 'technician.user_id', '=', 'user.id')
-            ->orderBy('user.name', 'ASC')
-            ->select('technician.*')
+            ->join('user as u', 'technician.user_id', '=', 'u.id')
+            ->where('u.status_id', 2)
+            ->orderBy('u.name', 'ASC')
+            ->select('technician.*', 'u.name as user_name')
             ->get();
 
         $frequencies = ExecFrequency::all();
@@ -425,10 +425,10 @@ class ContractController extends Controller
     {
         $contract = Contract::find($id);
         $technicians = Technician::with('user')
-            ->whereIn('user_id', Technician::pluck('user_id'))
-            ->join('user', 'technician.user_id', '=', 'user.id')
-            ->orderBy('user.name', 'ASC')
-            ->select('technician.*')
+            ->join('user as u', 'technician.user_id', '=', 'u.id')
+            ->where('u.status_id', 2)
+            ->orderBy('u.name', 'ASC')
+            ->select('technician.*', 'u.name as user_name')
             ->get();
 
         $frequencies = ExecFrequency::all();
@@ -951,10 +951,10 @@ class ContractController extends Controller
     {
         $contract = Contract::find($id);
         $technicians = Technician::with('user')
-            ->whereIn('user_id', Technician::pluck('user_id'))
-            ->join('user', 'technician.user_id', '=', 'user.id')
-            ->orderBy('user.name', 'ASC')
-            ->select('technician.*')
+            ->join('user as u', 'technician.user_id', '=', 'u.id')
+            ->where('u.status_id', 2)
+            ->orderBy('u.name', 'ASC')
+            ->select('technician.*', 'u.name as user_name')
             ->get();
 
         $frequencies = ExecFrequency::all();
