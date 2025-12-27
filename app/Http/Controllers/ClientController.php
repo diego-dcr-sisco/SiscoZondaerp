@@ -259,26 +259,63 @@ class ClientController extends Controller
         }
 
         $disk = $this->getDisk();
+        $uploadedFiles = [];
+        $skippedFiles = [];
+        $errors = [];
 
         foreach ($files as $file) {
             if (!$file->isValid()) {
-                return redirect()->back()->withErrors(['file' => 'Invalid file.']);
+                $errors[] = 'Archivo inválido: ' . $file->getClientOriginalName();
+                continue;
             }
 
-            $filename = str_replace(' ', '_', $file->getClientOriginalName());
+            $originalFilename = $file->getClientOriginalName();
+            $filename = str_replace(' ', '_', $originalFilename);
             $fullPath = $file_path . '/' . $filename;
 
             try {
-                // Usar write para Flysystem v3
+                // Verificar si el archivo ya existe
+                if ($disk->fileExists($fullPath)) {
+                    // Obtener timestamp para nombre único
+                    $timestamp = time();
+                    $pathInfo = pathinfo($filename);
+                    $extension = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';
+                    $basename = $pathInfo['filename'];
+                    
+                    // Crear nuevo nombre con timestamp
+                    $filename = $basename . '_' . $timestamp . $extension;
+                    $fullPath = $file_path . '/' . $filename;
+                    
+                    // Verificar nuevamente (por si acaso)
+                    if ($disk->fileExists($fullPath)) {
+                        $skippedFiles[] = $originalFilename . ' (ya existe)';
+                        continue;
+                    }
+                }
+
+                // Subir el archivo
                 $disk->write($fullPath, file_get_contents($file->getRealPath()));
+                $uploadedFiles[] = $filename;
 
             } catch (\Exception $e) {
                 Log::error("Error uploading file {$filename}: " . $e->getMessage());
-                return redirect()->back()->withErrors(['file' => "Error uploading file {$filename}"]);
+                $errors[] = "Error al subir {$originalFilename}: " . $e->getMessage();
             }
         }
 
-        return back()->with('success', 'Files uploaded successfully!');
+        // Preparar mensaje de respuesta
+        $messages = [];
+        if (!empty($uploadedFiles)) {
+            $messages[] = count($uploadedFiles) . ' archivo(s) subido(s) exitosamente';
+        }
+        if (!empty($skippedFiles)) {
+            $messages[] = count($skippedFiles) . ' archivo(s) omitido(s) (ya existían)';
+        }
+        if (!empty($errors)) {
+            return redirect()->back()->withErrors(['file' => implode(', ', $errors)]);
+        }
+
+        return back()->with('success', implode('. ', $messages));
     }
 
     // ... (mantener los métodos storeSignature, processBase64Image, processUploadedImage iguales)
@@ -1007,9 +1044,14 @@ class ClientController extends Controller
                 'is_mip' => 'nullable|boolean'
             ]);
 
-            $folderName = $request->input('folder_name');
+            $folderName = trim($request->input('folder_name'));
             $parentPath = $request->input('parent_path');
             $isMip = $request->input('is_mip', false);
+
+            // Validar que el nombre no esté vacío después de trim
+            if (empty($folderName)) {
+                return back()->withErrors(['folder_name' => 'El nombre de la carpeta no puede estar vacío']);
+            }
 
             // Determinar la ruta base según el tipo
             $basePath = $isMip ? $this->mip_path : $this->path;
@@ -1021,42 +1063,49 @@ class ClientController extends Controller
 
             $disk = $this->getDisk();
 
-            // Verificar si la carpeta ya existe
+            // Verificar si la carpeta ya existe (doble verificación por seguridad)
             if ($disk->directoryExists($fullPath)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'La carpeta ya existe'
-                ], 409);
+                return back()->withErrors(['folder_name' => 'La carpeta "' . $folderName . '" ya existe en esta ubicación']);
             }
 
-            // Crear la carpeta
-            if ($disk->makeDirectory($fullPath)) {
+            // Crear la carpeta con manejo de errores mejorado
+            try {
+                $created = $disk->makeDirectory($fullPath);
+                
+                if (!$created) {
+                    throw new \Exception('No se pudo crear la carpeta');
+                }
+
+                // Verificar que se creó correctamente
+                if (!$disk->directoryExists($fullPath)) {
+                    throw new \Exception('La carpeta no existe después de crearla');
+                }
+
                 // Si es una carpeta MIP, crear la estructura completa
                 if ($isMip) {
                     $this->createMipStructure($fullPath);
                 }
 
-                return back()->with('success', 'Carpeta creada exitosamente');
+                return back()->with('success', 'Carpeta "' . $folderName . '" creada exitosamente');
+
+            } catch (\Exception $e) {
+                // Si falla, verificar si se creó parcialmente y limpiar
+                if ($disk->directoryExists($fullPath)) {
+                    try {
+                        $disk->deleteDirectory($fullPath);
+                    } catch (\Exception $cleanupError) {
+                        Log::error('Error cleaning up failed directory creation: ' . $cleanupError->getMessage());
+                    }
+                }
+                throw $e;
             }
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al crear la carpeta'
-            ], 500);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error de validación',
-                'errors' => $e->validator->errors()
-            ], 422);
+            return back()->withErrors($e->validator->errors())->withInput();
 
         } catch (\Exception $e) {
             Log::error('Error creating directory: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Error interno del servidor: ' . $e->getMessage()
-            ], 500);
+            return back()->withErrors(['folder_name' => 'Error al crear la carpeta: ' . $e->getMessage()])->withInput();
         }
     }
 

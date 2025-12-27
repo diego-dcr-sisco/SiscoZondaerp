@@ -116,12 +116,14 @@
                                                     data-bs-toggle="tooltip" data-bs-placement="top" title="Editar carpeta">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
-                                                <a href="{{ route('client.directory.destroy', ['path' => $dir['path']]) }}"
-                                                    class="btn btn-danger btn-sm" data-bs-toggle="tooltip"
-                                                    data-bs-placement="top" data-bs-title="Eliminar carpeta"
-                                                    onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')">
+                                                <button type="button" class="btn btn-danger btn-sm delete-directory-btn" 
+                                                    data-path="{{ $dir['path'] }}"
+                                                    data-name="{{ $dir['name'] }}"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-placement="top" 
+                                                    data-bs-title="Eliminar carpeta">
                                                     <i class="bi bi-trash-fill"></i>
-                                                </a>
+                                                </button>
                                             </div>
                                         @endcan
                                     </td>
@@ -153,12 +155,14 @@
                                                         data-bs-toggle="tooltip" data-bs-placement="top" title="Editar carpeta">
                                                         <i class="bi bi-pencil-square"></i>
                                                     </button>
-                                                    <a href="{{ route('client.directory.destroy', ['path' => $dir['path']]) }}"
-                                                        class="btn btn-danger btn-sm" data-bs-toggle="tooltip"
-                                                        data-bs-placement="top" data-bs-title="Eliminar carpeta"
-                                                        onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')">
+                                                    <button type="button" class="btn btn-danger btn-sm delete-directory-btn" 
+                                                        data-path="{{ $dir['path'] }}"
+                                                        data-name="{{ $dir['name'] }}"
+                                                        data-bs-toggle="tooltip"
+                                                        data-bs-placement="top" 
+                                                        data-bs-title="Eliminar carpeta">
                                                         <i class="bi bi-trash-fill"></i> {{ __('buttons.delete') }}
-                                                    </a>
+                                                    </button>
                                                 </div>
                                             @endcan
                                         </td>
@@ -200,12 +204,14 @@
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
 
-                                        <a href="{{ route('client.file.destroy', ['path' => $file['path']]) }}"
-                                            class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                            data-bs-title="Eliminar archivo"
-                                            onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')">
+                                        <button type="button" class="btn btn-danger btn-sm delete-file-btn" 
+                                            data-path="{{ $file['path'] }}"
+                                            data-name="{{ $file['name'] }}"
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top"
+                                            data-bs-title="Eliminar archivo">
                                             <i class="bi bi-trash-fill"></i>
-                                        </a>
+                                        </button>
                                     @endcan
                                 </td>
                             </tr>
@@ -225,5 +231,66 @@
     <script>
         const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
         const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+
+        // Variables para controlar eliminaciones en proceso
+        let deletingItems = new Set();
+
+        // Manejar eliminación de carpetas
+        $(document).on('click', '.delete-directory-btn', function(e) {
+            e.preventDefault();
+            
+            const btn = $(this);
+            const path = btn.data('path');
+            const name = btn.data('name');
+
+            // Verificar si ya se está eliminando
+            if (deletingItems.has(path)) {
+                return false;
+            }
+
+            if (!confirm('{{ __('messages.are_you_sure_delete') }} la carpeta "' + name + '"?')) {
+                return false;
+            }
+
+            // Marcar como en proceso de eliminación
+            deletingItems.add(path);
+
+            // Cambiar apariencia del botón
+            const originalHtml = btn.html();
+            btn.prop('disabled', true)
+               .html('<span class="spinner-border spinner-border-sm me-1"></span>Eliminando...');
+
+            // Realizar la petición
+            window.location.href = '{{ route('client.directory.destroy', ['path' => '__PATH__']) }}'.replace('__PATH__', encodeURIComponent(path));
+        });
+
+        // Manejar eliminación de archivos
+        $(document).on('click', '.delete-file-btn', function(e) {
+            e.preventDefault();
+            
+            const btn = $(this);
+            const path = btn.data('path');
+            const name = btn.data('name');
+
+            // Verificar si ya se está eliminando
+            if (deletingItems.has(path)) {
+                return false;
+            }
+
+            if (!confirm('{{ __('messages.are_you_sure_delete') }} el archivo "' + name + '"?')) {
+                return false;
+            }
+
+            // Marcar como en proceso de eliminación
+            deletingItems.add(path);
+
+            // Cambiar apariencia del botón
+            const originalHtml = btn.html();
+            btn.prop('disabled', true)
+               .html('<span class="spinner-border spinner-border-sm"></span>');
+
+            // Realizar la petición
+            window.location.href = '{{ route('client.file.destroy', ['path' => '__PATH__']) }}'.replace('__PATH__', encodeURIComponent(path));
+        });
     </script>
 @endsection
