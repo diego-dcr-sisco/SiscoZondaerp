@@ -28,4 +28,8 @@ class DevicePest extends Model
     public function pest() {
         return $this->belongsTo(PestCatalog::class, 'pest_id');
     }
+
+    public function order() {
+        return $this->belongsTo(Order::class, 'order_id');
+    }
 }

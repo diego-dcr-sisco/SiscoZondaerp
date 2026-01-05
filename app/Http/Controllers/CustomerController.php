@@ -1641,7 +1641,7 @@ class CustomerController extends Controller
             ->distinct()
             ->pluck('type_control_point_id')
             ->toArray();
-        
+
         $control_points = ControlPoint::whereIn('id', $all_control_point_ids)->get();
 
         // Optimizar consulta de dispositivos y control points
@@ -1690,121 +1690,122 @@ class CustomerController extends Controller
     }
 
     private function getGraphicDataWithDevicesByPests($customer, $orderIds, $devices, $pests, $devicesByArea)
-{
-    // Optimizar consulta usando joins y selects específicos
-    $allDevicePests = DevicePest::whereIn('order_id', $orderIds)
-        ->whereIn('device_id', $devices->pluck('id'))
-        ->when(!empty($pests), function ($query) use ($pests) {
-            $query->whereIn('pest_id', $pests);
-        })
-        ->with([
-            'pest:id,name',
-            'device:id,code,version,application_area_id,floorplan_id,nplan',
-            'device.applicationArea:id,name'
-        ])
-        ->select('id', 'device_id', 'order_id', 'pest_id', 'total')
-        ->get();
+    {
+        // Optimizar consulta usando joins y selects específicos
+        $allDevicePests = DevicePest::whereIn('order_id', $orderIds)
+            ->whereIn('device_id', $devices->pluck('id'))
+            ->when(!empty($pests), function ($query) use ($pests) {
+                $query->whereIn('pest_id', $pests);
+            })
+            ->with([
+                'pest:id,name',
+                'device:id,code,version,application_area_id,floorplan_id,nplan',
+                'device.applicationArea:id,name'
+            ])
+            ->select('id', 'device_id', 'order_id', 'pest_id', 'total')
+            ->get();
 
-    $pests_headers = $allDevicePests->pluck('pest.name')
-        ->unique()
-        ->filter()
-        ->sort()
-        ->values()
-        ->toArray();
+        $pests_headers = $allDevicePests->pluck('pest.name')
+            ->unique()
+            ->filter()
+            ->sort()
+            ->values()
+            ->toArray();
 
-    // Precalcular agrupaciones
-    $devicePestsByDevice = $allDevicePests->groupBy('device_id');
+        // Precalcular agrupaciones
+        $devicePestsByDevice = $allDevicePests->groupBy('device_id');
 
-    $data = [];
-    $groupedByNplan = [];
+        $data = [];
+        $groupedByNplan = [];
 
-    foreach ($customer->applicationAreas as $area) {
-        $areaDevices = $devicesByArea->get($area->id, collect());
+        foreach ($customer->applicationAreas as $area) {
+            $areaDevices = $devicesByArea->get($area->id, collect());
 
-        foreach ($areaDevices as $device) {
-            $dpests = $devicePestsByDevice->get($device->id, collect());
+            foreach ($areaDevices as $device) {
+                $dpests = $devicePestsByDevice->get($device->id, collect());
 
-            if ($dpests->isEmpty()) {
-                continue;
-            }
-
-            // Crear una clave única para agrupar por area_id y device_nplan
-            $groupKey = $area->id . '_' . ($device->nplan ?? 'sin_nplan');
-            
-            if (!isset($groupedByNplan[$groupKey])) {
-                $groupedByNplan[$groupKey] = [
-                    'area_id' => $area->id,
-                    'area_name' => $area->name,
-                    'device_nplan' => $device->nplan,
-                    'device_codes' => [],
-                    'services' => [],
-                    'versions' => [],
-                    'pest_total_detections' => array_fill_keys($pests_headers, 0),
-                    'total_detections' => 0
-                ];
-            }
-
-            // Acumular información de dispositivos
-            $groupedByNplan[$groupKey]['device_codes'][] = $device->code;
-            
-            if ($device->floorplan?->service?->name) {
-                $serviceName = $device->floorplan->service->name;
-                if (!in_array($serviceName, $groupedByNplan[$groupKey]['services'])) {
-                    $groupedByNplan[$groupKey]['services'][] = $serviceName;
+                if ($dpests->isEmpty()) {
+                    continue;
                 }
-            }
-            
-            if ($device->version && !in_array($device->version, $groupedByNplan[$groupKey]['versions'])) {
-                $groupedByNplan[$groupKey]['versions'][] = $device->version;
-            }
 
-            // Sumar los totales de plagas
-            foreach ($dpests as $dpest) {
-                if ($dpest->pest && $dpest->pest->name) {
-                    $pest_name = $dpest->pest->name;
-                    $groupedByNplan[$groupKey]['pest_total_detections'][$pest_name] = 
-                        ($groupedByNplan[$groupKey]['pest_total_detections'][$pest_name] ?? 0) + $dpest->total;
-                    $groupedByNplan[$groupKey]['total_detections'] += $dpest->total;
+                // Crear una clave única para agrupar por area_id y device_nplan
+                $groupKey = $area->id . '_' . ($device->nplan ?? 'sin_nplan');
+
+                if (!isset($groupedByNplan[$groupKey])) {
+                    $groupedByNplan[$groupKey] = [
+                        'area_id' => $area->id,
+                        'area_name' => $area->name,
+                        'device_nplan' => $device->nplan,
+                        'device_codes' => [],
+                        'services' => [],
+                        'versions' => [],
+                        'pest_total_detections' => array_fill_keys($pests_headers, 0),
+                        'total_detections' => 0
+                    ];
+                }
+
+                // Acumular información de dispositivos
+                $groupedByNplan[$groupKey]['device_codes'][] = $device->code;
+
+                if ($device->floorplan?->service?->name) {
+                    $serviceName = $device->floorplan->service->name;
+                    if (!in_array($serviceName, $groupedByNplan[$groupKey]['services'])) {
+                        $groupedByNplan[$groupKey]['services'][] = $serviceName;
+                    }
+                }
+
+                if ($device->version && !in_array($device->version, $groupedByNplan[$groupKey]['versions'])) {
+                    $groupedByNplan[$groupKey]['versions'][] = $device->version;
+                }
+
+                // Sumar los totales de plagas
+                foreach ($dpests as $dpest) {
+                    if ($dpest->pest && $dpest->pest->name) {
+                        $pest_name = $dpest->pest->name;
+                        $groupedByNplan[$groupKey]['pest_total_detections'][$pest_name] =
+                            ($groupedByNplan[$groupKey]['pest_total_detections'][$pest_name] ?? 0) + $dpest->total;
+                        $groupedByNplan[$groupKey]['total_detections'] += $dpest->total;
+                    }
                 }
             }
         }
-    }
 
-    // Formatear los datos agrupados para el resultado
-    foreach ($groupedByNplan as $group) {
-        $data[] = [
-            'area_id' => $group['area_id'],
-            'area_name' => $group['area_name'],
-            'device_nplan' => $group['device_nplan'],
-            'device_names' => $group['device_codes'],
-            'device_name' => implode(', ', array_unique($group['device_codes'])),
-            'services' => $group['services'],
-            'service' => !empty($group['services']) ? implode(', ', $group['services']) : 'N/A',
-            'versions' => $group['versions'],
-            'pest_total_detections' => $group['pest_total_detections'],
-            'total_detections' => $group['total_detections'],
-            'device_count' => count($group['device_codes'])
+        // Formatear los datos agrupados para el resultado
+        foreach ($groupedByNplan as $group) {
+            $data[] = [
+                'area_id' => $group['area_id'],
+                'area_name' => $group['area_name'],
+                'device_nplan' => $group['device_nplan'],
+                'device_names' => $group['device_codes'],
+                'device_name' => implode(', ', array_unique($group['device_codes'])),
+                'services' => $group['services'],
+                'service' => !empty($group['services']) ? implode(', ', $group['services']) : 'N/A',
+                'versions' => $group['versions'],
+                'pest_total_detections' => $group['pest_total_detections'],
+                'total_detections' => $group['total_detections'],
+                'device_count' => count($group['device_codes'])
+            ];
+        }
+
+        // Calcular totales generales
+        $grand_totals = array_fill_keys($pests_headers, 0);
+        $grand_total_detections = 0; // Variable para el total general de todas las detecciones
+
+        foreach ($data as $row) {
+            foreach ($row['pest_total_detections'] as $pest => $total) {
+                $grand_totals[$pest] += $total;
+            }
+            $grand_total_detections += $row['total_detections'];
+        }
+
+        return [
+            'detections' => $data,
+            'headers' => $pests_headers,
+            'grand_totals' => $grand_totals, // Totales por tipo de plaga
+            'grand_total_detections' => $grand_total_detections // Total general de todas las detecciones
         ];
     }
-
-    // Calcular totales generales
-    $grand_totals = array_fill_keys($pests_headers, 0);
-    $grand_total_detections = 0; // Variable para el total general de todas las detecciones
     
-    foreach ($data as $row) {
-        foreach ($row['pest_total_detections'] as $pest => $total) {
-            $grand_totals[$pest] += $total;
-        }
-        $grand_total_detections += $row['total_detections'];
-    }
-
-    return [
-        'detections' => $data,
-        'headers' => $pests_headers,
-        'grand_totals' => $grand_totals, // Totales por tipo de plaga
-        'grand_total_detections' => $grand_total_detections // Total general de todas las detecciones
-    ];
-}
     private function normalizeString($string)
     {
         // Convierte a minúsculas y elimina espacios
