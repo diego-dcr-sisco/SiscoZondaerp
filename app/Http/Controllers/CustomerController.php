@@ -1805,7 +1805,7 @@ class CustomerController extends Controller
             'grand_total_detections' => $grand_total_detections // Total general de todas las detecciones
         ];
     }
-
+    
     private function normalizeString($string)
     {
         // Convierte a minúsculas y elimina espacios
@@ -1949,6 +1949,7 @@ class CustomerController extends Controller
                 'versions' => $group['versions'],
                 'consumption_value' => $consumptionValue,
                 'weekly_consumption' => $group['_weekly_consumption'] ?? [],
+                'total_detections' => $consumptionValue ?? 0,
             ];
         }
 
@@ -1975,16 +1976,11 @@ class CustomerController extends Controller
             }
         }
 
-        $total_detections = count(array_filter($groupedData, function ($group) {
-            return $group['_total_incidents'] > 0;
-        }));
-
         return [
             'detections' => $data,
             'headers' => !empty($weekHeaders) ? $weekHeaders : ['Consumo Total'],
-            'grand_total_consumption' => $grand_total_consumption,
-            'grand_totals_weekly' => $grand_totals_weekly,
-            'total_detections' => $total_detections // Agregado
+            'grand_total_detections' => $grand_total_consumption,
+            'grand_totals_weekly' => $grand_totals_weekly
         ];
     }
 
