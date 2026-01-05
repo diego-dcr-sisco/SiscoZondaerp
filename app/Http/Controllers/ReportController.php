@@ -1369,6 +1369,17 @@ class ReportController extends Controller
         $data = json_decode($request->input('order'), true);
 
         try {
+            // Log para debugging en producción
+            Log::info('updateOrder called', ['data' => $data, 'user_id' => Auth::id()]);
+
+            // Validar que tenemos un ID de orden
+            if (empty($data['id'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ID de orden requerido'
+                ], 422);
+            }
+
             // Validar firma solo si no es null y no está vacía
             if (!empty($data['signature_base64']) && !preg_match('/^data:image\/(jpeg|png);base64,/', $data['signature_base64'])) {
                 return response()->json([
@@ -1377,41 +1388,48 @@ class ReportController extends Controller
                 ], 422);
             }
 
+            $order = Order::findOrFail($data['id']);
+
             $updated_order = [
-                'programmed_date' => $data['programmed_date'],
-                'completed_date' => $data['completed_date'],
-                'start_time' => $data['start_time'],
-                'end_time' => $data['end_time'],
-                'status_id' => $data['status'],
+                'programmed_date' => $data['programmed_date'] ?? $order->programmed_date,
+                'completed_date' => !empty($data['completed_date']) ? $data['completed_date'] : null,
+                'start_time' => $data['start_time'] ?? $order->start_time,
+                'end_time' => !empty($data['end_time']) ? $data['end_time'] : null,
+                'status_id' => $data['status'] ?? $order->status_id,
                 'signature_name' => !empty($data['signed_by']) ? $data['signed_by'] : null,
                 'customer_signature' => $data['signature_base64'] ?? null,
             ];
 
-            if (!empty($data['id'])) {
-                $order = Order::findOrFail($data['id']);
-                $order->update($updated_order);
-                $message = 'Order updated successfully';
+            // Manejar closed_by de manera segura
+            if (isset($data['status']) && $data['status'] == 1) {
+                $updated_order['closed_by'] = null;
             } else {
-                $order = Order::create($updated_order);
-                $message = 'Order created successfully';
+                // Solo actualizar closed_by si viene en el request y no está vacío
+                if (isset($data['closed_by']) && $data['closed_by'] !== '' && $data['closed_by'] !== null) {
+                    $updated_order['closed_by'] = (int)$data['closed_by'];
+                }
             }
 
-            if ($data['status'] == 1) {
-                $order->update(['closed_by' => null]);
-            } else {
-                $order->update(['closed_by' => $data['closed_by']]);
-            }
+            $order->update($updated_order);
 
             return response()->json([
                 'success' => true,
-                'message' => $message,
+                'message' => 'Orden actualizada correctamente',
                 'order' => $order
             ], 200);
 
-        } catch (\Exception $e) {
+        } catch (ModelNotFoundException $e) {
+            Log::error('Order not found in updateOrder', ['data' => $data, 'error' => $e->getMessage()]);
             return response()->json([
                 'success' => false,
-                'message' => 'Error processing order',
+                'message' => 'Orden no encontrada',
+                'error' => $e->getMessage(),
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Error in updateOrder', ['data' => $data, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al procesar la orden: ' . $e->getMessage(),
                 'error' => $e->getMessage(),
             ], 500);
         }

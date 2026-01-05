@@ -693,6 +693,17 @@ Route::prefix('branches')
 //RUTAS PARA GENERAR UN REPORTE
 Route::prefix('report')
     ->name('report.')
+    ->middleware(['auth', 'single.session'])
+    ->group(function () {
+        // Rutas de actualización rápida (sin permiso integral)
+        Route::post('/order/update', [ReportController::class, 'updateOrder'])->name('order.update');
+        Route::post('/customer/update', [ReportController::class, 'updateCustomer'])->name('customer.update');
+        Route::post('/description/update', [ReportController::class, 'updateDescription'])->name('description.update');
+        Route::post('/notes/update', [ReportController::class, 'updateNotes'])->name('notes.update');
+    });
+
+Route::prefix('report')
+    ->name('report.')
     ->middleware(['auth', 'single.session', 'can:integral'])
     ->group(function () {
         Route::get('/review/{id}', [ReportController::class, 'create'])->name('review');
@@ -711,12 +722,6 @@ Route::prefix('report')
         Route::post('/device/bulk', [ReportController::class, 'bulkPrint'])->name('bulk');
         Route::get('/device/bulk/download/{timer}', [ReportController::class, 'downloadBulk'])->name('bulk.download');
         Route::get('/device/bulk/delete/{timer}', [ReportController::class, 'deleteBulk'])->name('bulk.delete');
-
-
-        Route::post('/order/update', [ReportController::class, 'updateOrder'])->name('order.update');
-        Route::post('/customer/update', [ReportController::class, 'updateCustomer'])->name('customer.update');
-        Route::post('/description/update', [ReportController::class, 'updateDescription'])->name('description.update');
-        Route::post('/notes/update', [ReportController::class, 'updateNotes'])->name('notes.update');
 
         Route::post('/search/devices', [ReportController::class, 'searchDevices'])->name('search.devices');
         Route::post('/devices/assign', [ReportController::class, 'assignDevices'])->name('assign.devices');

@@ -1466,6 +1466,7 @@ class CustomerController extends Controller
             'pests_headers' => [],
             'data' => ['detections' => [], 'headers' => []],
             'control_points' => collect(),
+            'weeks' => [],
             'app_areas' => $app_areas,
             'graphs_types' => $this->graphs_types,
             'request_data' => $request_data,
@@ -1488,9 +1489,11 @@ class CustomerController extends Controller
             'area' => 'nullable|string|max:255',
             'pest' => 'nullable|string|max:255',
             'service' => 'nullable|string|max:255',
+            'control_point' => 'nullable|integer|exists:control_point,id',
         ], [
             'date_range.string' => 'El rango de fechas debe ser texto',
             'graph_type.in' => 'Tipo de gráfico no válido',
+            'control_point.exists' => 'El punto de control seleccionado no es válido',
         ]);
 
         // Inicializar variables
@@ -1633,20 +1636,32 @@ class CustomerController extends Controller
             ->pluck('device_id')
             ->toArray();
 
+        // Obtener TODOS los control points del customer para el dropdown (antes de filtrar)
+        $all_control_point_ids = Device::whereIn('id', $device_ids)
+            ->distinct()
+            ->pluck('type_control_point_id')
+            ->toArray();
+        
+        $control_points = ControlPoint::whereIn('id', $all_control_point_ids)->get();
+
         // Optimizar consulta de dispositivos y control points
-        $devices = Device::whereIn('id', $device_ids)
+        $devices_query = Device::whereIn('id', $device_ids)
             ->with([
                 'floorplan.service:id,name',
                 'controlPoint:id,name'
             ])
-            ->select('id', 'code', 'version', 'application_area_id', 'floorplan_id', 'type_control_point_id', 'nplan')
-            ->get();
+            ->select('id', 'code', 'version', 'application_area_id', 'floorplan_id', 'type_control_point_id', 'nplan');
 
-        if ($devices->isEmpty()) {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'No se encontraron dispositivos', $navigation);
+        // Aplicar filtro de punto de control si existe
+        if ($request->filled('control_point')) {
+            $devices_query->where('type_control_point_id', $request->input('control_point'));
         }
 
-        $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique()->toArray())->get();
+        $devices = $devices_query->get();
+
+        if ($devices->isEmpty()) {
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'No se encontraron dispositivos con los filtros aplicados', $navigation);
+        }
 
         $graph_type = $request->graph_type;
 
@@ -1782,7 +1797,7 @@ class CustomerController extends Controller
                     $weekEnd = $endDate->copy();
 
                 $weekKey = "Sem_{$weekNumber}";
-                $weekLabel = $weekKey . ' (' . $weekStart->format('d/m') . ' - ' . $weekEnd->format('d/m') . ')';
+                $weekLabel = $weekKey . " \n " . ' (' . $weekStart->format('d/m') . ' - ' . $weekEnd->format('d/m') . ')';
 
                 $weekHeaders[] = $weekLabel;
                 $weekRanges[$weekKey] = [

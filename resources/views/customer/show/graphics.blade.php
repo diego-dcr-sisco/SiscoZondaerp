@@ -60,8 +60,8 @@
                                     </option>
                                     @foreach ($control_points as $cp)
                                         <option value="{{ $cp->id }}"
-                                            {{ request('control_point') == $cp->code ? 'selected' : '' }}>
-                                            {{ $cp->code }}
+                                            {{ request('control_point') == $cp->id ? 'selected' : '' }}>
+                                            {{ $cp->name }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -126,7 +126,7 @@
                                 <th class="fw-bold" scope="col">Dispositivo</th>
                                 <th class="fw-bold" scope="col">Version</th>
                                 @foreach ($data['headers'] as $header)
-                                    <th class="fw-bold" scope="col">{{ $header }}</th>
+                                    <th class="fw-bold" style="font-size: smaller" scope="col">{{ $header }}</th>
                                 @endforeach
                                 <th class="fw-bold" scope="col">Total p/ disp.</th>
                             </tr>

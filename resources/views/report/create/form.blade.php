@@ -12,8 +12,13 @@
         return [];
     }
 
-    function cleanHtmlSimple(string $html, array $config = []): string
+    function cleanHtmlSimple(?string $html, array $config = []): string
     {
+        // Si es null o vacío, retornar string vacío
+        if (empty($html)) {
+            return '';
+        }
+
         // Configuración por defecto
         $defaultConfig = [
             'keepHtml' => true,

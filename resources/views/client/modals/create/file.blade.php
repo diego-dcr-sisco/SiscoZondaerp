@@ -6,7 +6,7 @@
 
 <div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form class="modal-content" method="POST" action="{{ route('client.file.store') }}"enctype="multipart/form-data">
+        <form class="modal-content" method="POST" id="fileUploadForm" action="{{ route('client.file.store') }}" enctype="multipart/form-data">
             @csrf
             <div class="modal-header">
                 <h1 class="modal-title fs-5" id="fileModalLabel">Subir archivo(s)</h1>
@@ -43,7 +43,7 @@
 
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" id="btnCrear">{{ __('buttons.upload') }}</button>
+                <button type="submit" class="btn btn-primary" id="btnUpload">{{ __('buttons.upload') }}</button>
                 <button type="button" class="btn btn-danger"
                     data-bs-dismiss="modal">{{ __('buttons.cancel') }}</button>
             </div>
@@ -57,6 +57,33 @@ $(document).ready(function() {
     const fileInput = $('#fileInput');
     const fileList = $('#file-list');
     let currentFiles = []; // Mantener un registro de los archivos actuales
+    let isSubmitting = false;
+
+    // Protección contra doble submit
+    $('#fileUploadForm').on('submit', function(e) {
+        if (isSubmitting) {
+            e.preventDefault();
+            return false;
+        }
+
+        if (currentFiles.length === 0) {
+            e.preventDefault();
+            alert('Por favor, selecciona al menos un archivo');
+            return false;
+        }
+
+        isSubmitting = true;
+        $('#btnUpload').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Subiendo...');
+    });
+
+    // Resetear al cerrar modal
+    $('#fileModal').on('hidden.bs.modal', function() {
+        isSubmitting = false;
+        $('#btnUpload').prop('disabled', false).html('{{ __('buttons.upload') }}');
+        currentFiles = [];
+        updateFileInput();
+        updateFileList();
+    });
 
     // Evitar el comportamiento por defecto en eventos de arrastre
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
