@@ -1777,7 +1777,7 @@ class CustomerController extends Controller
             'area_name' => $group['area_name'],
             'device_nplan' => $group['device_nplan'],
             'device_names' => $group['device_codes'],
-            'device_name' => implode(', ', array_unique($group['device_codes'])), // Para compatibilidad
+            'device_name' => implode(', ', array_unique($group['device_codes'])),
             'services' => $group['services'],
             'service' => !empty($group['services']) ? implode(', ', $group['services']) : 'N/A',
             'versions' => $group['versions'],
@@ -1787,21 +1787,24 @@ class CustomerController extends Controller
         ];
     }
 
-    // Calcular totales generales (suma de todos los grupos por cada plaga)
+    // Calcular totales generales
     $grand_totals = array_fill_keys($pests_headers, 0);
+    $grand_total_detections = 0; // Variable para el total general de todas las detecciones
+    
     foreach ($data as $row) {
         foreach ($row['pest_total_detections'] as $pest => $total) {
             $grand_totals[$pest] += $total;
         }
+        $grand_total_detections += $row['total_detections'];
     }
 
     return [
         'detections' => $data,
         'headers' => $pests_headers,
-        'grand_totals' => $grand_totals
+        'grand_totals' => $grand_totals, // Totales por tipo de plaga
+        'grand_total_detections' => $grand_total_detections // Total general de todas las detecciones
     ];
 }
-
     private function normalizeString($string)
     {
         // Convierte a minúsculas y elimina espacios
@@ -1978,6 +1981,7 @@ class CustomerController extends Controller
             'grand_totals_weekly' => $grand_totals_weekly
         ];
     }
+
     public function exportGraphics(Request $request, string $id)
     {
         // Obtener los datos
