@@ -1716,7 +1716,6 @@ class CustomerController extends Controller
         $devicePestsByDevice = $allDevicePests->groupBy('device_id');
 
         $data = [];
-        $groupedData = []; // Array temporal para agrupar
 
         foreach ($customer->applicationAreas as $area) {
             $areaDevices = $devicesByArea->get($area->id, collect());
@@ -1740,60 +1739,18 @@ class CustomerController extends Controller
                     }
                 }
 
-                $deviceData = [
+                $data[] = [
                     'area_id' => $area->id,
                     'area_name' => $area->name,
                     'device_id' => $device->id,
                     'device_name' => $device->code,
                     'device_nplan' => $device->nplan,
-                    'service_id' => $device->floorplan?->service_id ?? 'N/A',
                     'service' => $device->floorplan?->service?->name ?? 'N/A',
                     'versions' => [$device->version],
                     'pest_total_detections' => $pest_totals,
                     'total_detections' => $total_detections
                 ];
-
-                // Crear clave única para agrupación
-                $groupKey = $device->nplan . '_' . $area->id . '_' . ($device->floorplan?->service_id ?? 'N/A');
-
-                if (!isset($groupedData[$groupKey])) {
-                    // Primer registro con esta combinación
-                    $groupedData[$groupKey] = $deviceData;
-                } else {
-                    // Ya existe registro, sumar valores
-                    $existing = &$groupedData[$groupKey];
-
-                    // Sumar totales de plagas
-                    foreach ($pest_totals as $pest => $total) {
-                        $existing['pest_total_detections'][$pest] =
-                            ($existing['pest_total_detections'][$pest] ?? 0) + $total;
-                    }
-
-                    // Sumar total de detecciones
-                    $existing['total_detections'] += $total_detections;
-
-                    // Agregar versión si es diferente
-                    if (!in_array($device->version, $existing['versions'])) {
-                        $existing['versions'][] = $device->version;
-                    }
-
-                    // Combinar device_ids y device_names (opcional, para referencia)
-                    $existing['device_id'] = is_array($existing['device_id'])
-                        ? array_merge($existing['device_id'], [$device->id])
-                        : [$existing['device_id'], $device->id];
-
-                    $existing['device_name'] = is_array($existing['device_name'])
-                        ? array_merge($existing['device_name'], [$device->code])
-                        : [$existing['device_name'], $device->code];
-                }
             }
-        }
-
-        // Convertir datos agrupados a array simple
-        foreach ($groupedData as $group) {
-            // Si device_id y device_name son arrays, puedes dejarlos como arrays
-            // o convertirlos a string separado por comas
-            $data[] = $group;
         }
 
         // Calcular totales generales (suma de todos los dispositivos por cada plaga)
