@@ -18,7 +18,6 @@ class SimpleGraphicsExport
         $rows = [];
         $index = 1;
 
-        //dd($this->data);
         $headers = $this->getHeaders($this->data);
 
         foreach ($this->data['detections'] as $index => $detection) {
@@ -37,7 +36,8 @@ class SimpleGraphicsExport
                     $count += $detection['weekly_consumption'][$header_key];
                     array_push($array_count, $detection['weekly_consumption'][$header_key]);
                 } else {
-                    array_push($array_count, $detection['pest_total_detections'][$header_key]);
+                    // Para pestes, usar pest_total_detections
+                    array_push($array_count, $detection['pest_total_detections'][$header_key] ?? 0);
                 }
             }
             $rows[] = array_merge($row_data, $array_count);
@@ -48,8 +48,18 @@ class SimpleGraphicsExport
 
         $array_count = [];
 
-        foreach ($this->data['headers'] as $header_key) {
-            array_push($array_count, $this->data['grand_totals_weekly'][$header_key]);
+        // Usar la clave correcta según el tipo de gráfico
+        $grandTotalsKey = $this->graphType == 'cnsm' ? 'grand_totals_weekly' : 'grand_totals';
+
+        if (isset($this->data[$grandTotalsKey])) {
+            foreach ($this->data['headers'] as $header_key) {
+                array_push($array_count, $this->data[$grandTotalsKey][$header_key] ?? 0);
+            }
+        } else {
+            // Si no existe, llenar con ceros
+            foreach ($this->data['headers'] as $header_key) {
+                array_push($array_count, 0);
+            }
         }
 
         $rows[] = array_merge(['', '', '', '', 'Totales'], $array_count);
@@ -67,7 +77,7 @@ class SimpleGraphicsExport
             $headers = array_merge($headers, $data['headers']);
         }
 
-        if($this->graphType == 'cnsm') {
+        if ($this->graphType == 'cnsm') {
             $headers = array_merge($headers, ['Total p/ dispositivo']);
         }
         return $headers;
@@ -80,7 +90,6 @@ class SimpleGraphicsExport
         }
 
         if (is_string($versions)) {
-            // Intentar decodificar JSON si es una cadena JSON
             $decoded = json_decode($versions, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                 return implode(', ', $decoded);
