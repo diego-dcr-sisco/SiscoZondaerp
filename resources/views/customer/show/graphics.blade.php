@@ -159,7 +159,6 @@
                                         @endif
                                         <td class="text-center">{{ $count }}</td>
                                     @endif
-                                    <td class="text-center">{{ $d['total_detections'] }}</td>
                                 </tr>
                             @empty
                                 <tr>
@@ -197,7 +196,6 @@
                                             {{ $count }}
                                         </td>
                                     @endif
-                                    <td class="fw-bold text-center">{{ $data['grand_total_detections'] }}</td>
                                 </tr>
                             @endif
                         </tbody>
