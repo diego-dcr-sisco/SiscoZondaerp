@@ -1805,7 +1805,7 @@ class CustomerController extends Controller
             'grand_total_detections' => $grand_total_detections // Total general de todas las detecciones
         ];
     }
-    
+
     private function normalizeString($string)
     {
         // Convierte a minúsculas y elimina espacios
@@ -1949,12 +1949,14 @@ class CustomerController extends Controller
                 'versions' => $group['versions'],
                 'consumption_value' => $consumptionValue,
                 'weekly_consumption' => $group['_weekly_consumption'] ?? [],
+                'total_detections' => $group['_total_incidents'], // Agregar total_detections
             ];
         }
 
         // Calcular totales generales
         $grand_total_consumption = 0;
         $grand_totals_weekly = [];
+        $grand_total_detections = 0; // Agregar para calcular total de detecciones
 
         if (!empty($weekHeaders)) {
             // Inicializar totales semanales
@@ -1967,11 +1969,14 @@ class CustomerController extends Controller
                 foreach ($row['weekly_consumption'] as $weekLabel => $value) {
                     $grand_totals_weekly[$weekLabel] += $value;
                 }
+                $grand_total_detections += $row['total_detections']; // Sumar total_detections
+                $grand_total_consumption += $row['consumption_value'];
             }
         } else {
             // Sumar consumo total
             foreach ($data as $row) {
                 $grand_total_consumption += $row['consumption_value'];
+                $grand_total_detections += $row['total_detections']; // Sumar total_detections
             }
         }
 
@@ -1979,7 +1984,8 @@ class CustomerController extends Controller
             'detections' => $data,
             'headers' => !empty($weekHeaders) ? $weekHeaders : ['Consumo Total'],
             'grand_total_consumption' => $grand_total_consumption,
-            'grand_totals_weekly' => $grand_totals_weekly
+            'grand_totals_weekly' => $grand_totals_weekly,
+            'grand_total_detections' => $grand_total_detections, // Agregar al retorno
         ];
     }
 
