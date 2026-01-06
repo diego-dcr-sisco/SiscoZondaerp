@@ -1713,8 +1713,7 @@ class CustomerController extends Controller
             ->toArray();
 
 
-        $values = range(1, count($allPestNames));
-        $grand_totals_pests = array_combine($allPestNames, $values);
+        $grand_totals_pests = array_fill_keys($allPestNames, 0);
 
         // SEGUNDO: Procesar cada grupo
         foreach ($groupedDevices as $key => $group) {
