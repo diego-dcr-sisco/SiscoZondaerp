@@ -1631,7 +1631,7 @@ class CustomerController extends Controller
         $orderIds = $orders->pluck('id')->toArray();
 
         $services = $orders->flatMap->services->unique('id')->values();
-        $floorplans = FloorPlans::where('service_id', $services->pluck('id'))->where('customer_id', $customer->id)->get();
+        $floorplans = FloorPlans::whereIn('service_id', $services->pluck('id'))->where('customer_id', $customer->id)->get();
         $devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
 
         $fetched_devices = [];
