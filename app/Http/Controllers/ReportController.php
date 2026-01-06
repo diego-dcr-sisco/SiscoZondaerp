@@ -1184,7 +1184,7 @@ class ReportController extends Controller
             }
         });*/
 
-        return $pdf->stream('Archivo.pdf');
+        return $pdf->stream($data['filename']);
     }
 
     public function bulkPrint(Request $request)

@@ -98,7 +98,7 @@
                                 </a>
 
                                 <a href="{{ route('customer.graphics.export', array_merge(['id' => $customer->id], request()->all())) }}"
-                                    class="btn btn-success btn-sm">
+                                    class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-title="El archivo generado contiene los mismos datos que aparecen en la tabla, obtenidos a través de los criterios de filtrado aplicados.">
                                     <i class="fas fa-file-excel me-1"></i> Exportar a Excel
                                 </a>
                             </div>

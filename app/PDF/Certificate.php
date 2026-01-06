@@ -76,23 +76,32 @@ class Certificate
 
     public function __construct(int $orderId)
     {
+        $pdf_name = '';
         $this->order_id = $orderId;
         $this->order = Order::find($orderId);
+
+        if ($this->order->folio) {
+            $order_no = explode('-', $this->order->folio);
+            $folio = $order_no[1];
+        } else {
+            $folio = '';
+        }
 
         $order_no = explode('-', $this->order->folio);
         $services_names = $this->order->services->pluck('name')->toArray();
         $services_str = !empty($services_names) ? implode('_', $services_names) : 'Sin_servicio';
 
+
         $pdf_name = $this->cleanFileName(
-            'Certificado ' . $order_no[1] .
-            ' ' . $this->order->customer->name .
-            ' Fecha ' . $this->order->programmed_date .
-            ' Servicio ' . $services_str
+            'Certificado' . $folio .
+            '_' . $this->order->customer->name .
+            '_Fecha ' . $this->order->programmed_date .
+            '_Servicio ' . $services_str
         ) . '.pdf';
 
 
         $this->data = [
-            'title' => 'Certificado de Servicio ' . $order_no[1],
+            'title' => 'Certificado de Servicio ' . $folio,
             'filename' => $pdf_name,
             'order' => [],
             'branch' => [],
