@@ -129,14 +129,10 @@
                                     <th class="fw-bold" style="font-size: smaller" scope="col">{{ $header }}
                                     </th>
                                 @endforeach
-                                <th class="fw-bold" scope="col">Total p/ disp.</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($data['detections'] as $index => $d)
-                                @php
-                                    $count = 0;
-                                @endphp
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
                                     <td>{{ $d['service'] }}</td>
@@ -145,29 +141,23 @@
                                     <td>{{ json_encode($d['versions']) }}</td>
                                     @if (request('graph_type') == 'cptr')
                                         @foreach ($data['headers'] as $header)
-                                            @php
-                                                $count += $d['pest_total_detections'][$header];
-                                            @endphp
-                                            <td>{{ $d['pest_total_detections'][$header] }}</td>
+                                            <td>{{ $d['pests'][$header] }}</td>
                                         @endforeach
-                                        <td class="text-center">{{ $count }}</td>
                                     @elseif (request('graph_type') == 'cnsm')
                                         @if (!empty($d['weekly_consumption']))
                                             @foreach ($data['headers'] as $header)
-                                                @php
-                                                    $count += $d['weekly_consumption'][$header];
-                                                @endphp
-                                                <td class="text-center">{{ $d['weekly_consumption'][$header] ?? 0 }}</td>
+                                                <td class="text-center">{{ $d['weekly_consumption'][$header] ?? 0 }}
+                                                </td>
                                             @endforeach
                                         @else
                                             <td class="text-center">{{ $d['consumption_value'] }}</td>
                                         @endif
-                                        <td class="text-center">{{ $count }}</td>
                                     @endif
                                 </tr>
                             @empty
                                 <tr>
-                                    <td class="fw-bold text-danger" colspan="{{ 5 + count($data['headers']) }}">Utiliza
+                                    <td class="fw-bold text-danger" colspan="{{ 5 + count($data['headers']) }}">
+                                        Utiliza
                                         los
                                         filtros para obtener resultados</td>
                                 </tr>
@@ -182,31 +172,20 @@
                                     <td colspan="5" class="fw-bold text-end">TOTAL GENERAL:</td>
                                     @if (request('graph_type') == 'cptr')
                                         @foreach ($data['headers'] as $header)
-                                            @php
-                                                $count += $data['grand_totals'][$header];
-                                            @endphp
                                             <td class="fw-bold">{{ $data['grand_totals'][$header] ?? 0 }}</td>
                                         @endforeach
 
-                                        <td class="fw-bold text-center">
-                                            {{ $count }}
-                                        </td>
                                     @elseif (request('graph_type') == 'cnsm')
                                         @if (!empty($data['grand_totals_weekly']))
                                             @foreach ($data['headers'] as $header)
-                                                @php
-                                                    $count += $data['grand_totals_weekly'][$header];
-                                                @endphp
                                                 <td class="fw-bold text-center">
                                                     {{ $data['grand_totals_weekly'][$header] ?? 0 }}</td>
                                             @endforeach
                                         @else
-                                            <td class="fw-bold text-center">{{ $data['grand_total_consumption'] ?? 0 }}
+                                            <td class="fw-bold text-center">
+                                                {{ $data['grand_total_consumption'] ?? 0 }}
                                             </td>
                                         @endif
-                                        <td class="fw-bold text-center">
-                                            {{ $count }}
-                                        </td>
                                     @endif
                                 </tr>
                             @endif

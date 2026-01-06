@@ -1630,49 +1630,47 @@ class CustomerController extends Controller
         // Cache orderIds to avoid repeated pluck() calls
         $orderIds = $orders->pluck('id')->toArray();
 
-        // Use DISTINCT in SQL instead of unique() in PHP for better performance
-        $device_ids = OrderIncidents::whereIn('order_id', $orderIds)
-            ->distinct()
-            ->pluck('device_id')
-            ->toArray();
+        $services = $orders->flatMap->services->unique('id')->values();
+        $floorplans = FloorPlans::where('service_id', $services->pluck('id'))->where('customer_id', $customer->id)->get();
+        $devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
 
-        // Obtener TODOS los control points del customer para el dropdown (antes de filtrar)
-        $all_control_point_ids = Device::whereIn('id', $device_ids)
-            ->distinct()
-            ->pluck('type_control_point_id')
-            ->toArray();
+        $fetched_devices = [];
+        $devicesByArea = $devices->groupBy('application_area_id'); // Agregar esta línea
 
-        $control_points = ControlPoint::whereIn('id', $all_control_point_ids)->get();
+        foreach ($devices as $device) {
+            // Construir la clave
+            $area_id = $device->applicationArea->id ?? null;
+            $nplan = $device->nplan ?? null;
+            $service_id = $device->floorplan->service_id ?? null;
 
-        // Optimizar consulta de dispositivos y control points
-        $devices_query = Device::whereIn('id', $device_ids)
-            ->with([
-                'floorplan.service:id,name',
-                'controlPoint:id,name'
-            ])
-            ->select('id', 'code', 'version', 'application_area_id', 'floorplan_id', 'type_control_point_id', 'nplan');
+            if ($area_id && $nplan && $service_id) {
+                $key = 'A' . $area_id . '_N' . $nplan . '_S' . $service_id;
 
-        // Aplicar filtro de punto de control si existe
-        if ($request->filled('control_point')) {
-            $devices_query->where('type_control_point_id', $request->input('control_point'));
-        }
-
-        $devices = $devices_query->get();
-
-        if ($devices->isEmpty()) {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'No se encontraron dispositivos con los filtros aplicados', $navigation);
+                // Verificar si la clave existe usando isset()
+                if (!isset($fetched_devices[$key])) {
+                    $fetched_devices[$key] = [
+                        'area_id' => $area_id,
+                        'area_name' => $device->applicationArea->name ?? 'N/A',
+                        'service_id' => $device->floorplan->service_id,
+                        'service_name' => $device->floorplan->service->name ?? 'N/A',
+                        'versions' => [$device->version],
+                        'nplan' => $nplan,
+                        'code' => $device->code,
+                        'device_ids' => [$device->id]
+                    ];
+                } else {
+                    $fetched_devices[$key]['versions'][] = $device->version;
+                    $fetched_devices[$key]['device_ids'][] = $device->id;
+                }
+            }
         }
 
         $graph_type = $request->graph_type;
-
-        // Pre-calculate devicesByArea once for reuse
-        $devicesByArea = $devices->groupBy('application_area_id');
-
         // Obtener datos según el tipo de gráfico
         if ($graph_type == 'cnsm') {
             $data = $this->getGraphicDataWithDevicesByAnswer($customer, $orderIds, $orders, $devices, $devicesByArea, $startDate, $endDate);
         } else if ($graph_type == 'cptr') {
-            $data = $this->getGraphicDataWithDevicesByPests($customer, $orderIds, $devices, $req_pests, $devicesByArea);
+            $data = $this->getGraphicDataWithDevicesByPests($customer, $orderIds, $fetched_devices, $req_pests);
         } else {
             return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido', $navigation);
         }
@@ -1689,84 +1687,70 @@ class CustomerController extends Controller
         ])->with('success', 'Resultados encontrados');
     }
 
-    private function getGraphicDataWithDevicesByPests($customer, $orderIds, $devices, $pests, $devicesByArea)
+    private function getGraphicDataWithDevicesByPests($customer, $orderIds, $groupedDevices, $pests)
     {
-        // Optimizar consulta usando joins y selects específicos
-        $allDevicePests = DevicePest::whereIn('order_id', $orderIds)
-            ->whereIn('device_id', $devices->pluck('id'))
-            ->when(!empty($pests), function ($query) use ($pests) {
-                $query->whereIn('pest_id', $pests);
-            })
-            ->with([
-                'pest:id,name',
-                'device:id,code,version,application_area_id,floorplan_id',
-                'device.applicationArea:id,name'
-            ])
-            ->select('id', 'device_id', 'order_id', 'pest_id', 'total')
+        $data = [];
+        $allPestNames = []; // Array para recolectar todos los nombres de plagas
+
+        // PRIMERO: Recolectar todos los device_ids de todos los grupos
+        $allDeviceIds = [];
+        foreach ($groupedDevices as $group) {
+            $allDeviceIds = array_merge($allDeviceIds, $group['device_ids']);
+        }
+
+        // Obtener todas las plagas de todos los dispositivos
+        $allDevicePests = DevicePest::whereIn('device_id', $allDeviceIds)
+            ->whereIn('order_id', $orderIds)
+            ->with('pest:id,name') // Cargar relación con pest
             ->get();
 
-        $pests_headers = $allDevicePests->pluck('pest.name')
+        // Obtener todos los nombres únicos de plagas
+        $allPestNames = $allDevicePests->pluck('pest.name')
             ->unique()
             ->filter()
             ->sort()
             ->values()
             ->toArray();
 
-        // Precalcular agrupaciones
-        $devicePestsByDevice = $allDevicePests->groupBy('device_id');
 
-        $data = [];
+        $values = range(1, count($allPestNames));
+        $grand_totals_pests = array_combine($allPestNames, $values);
 
-        foreach ($customer->applicationAreas as $area) {
-            $areaDevices = $devicesByArea->get($area->id, collect());
+        // SEGUNDO: Procesar cada grupo
+        foreach ($groupedDevices as $key => $group) {
+            $device_pests = DevicePest::whereIn('device_id', $group['device_ids'])
+                ->whereIn('order_id', $orderIds)
+                ->with('pest:id,name')
+                ->get();
 
-            foreach ($areaDevices as $device) {
-                $dpests = $devicePestsByDevice->get($device->id, collect());
+            // Agrupar por plaga y sumar totales
+            $pest_totals = $device_pests->groupBy('pest.name')->map->sum('total');
+            $fetched_pests = $pest_totals->toArray();
 
-                if ($dpests->isEmpty()) {
-                    continue;
-                }
-
-                $pest_totals = array_fill_keys($pests_headers, 0);
-                $total_detections = 0;
-
-                // Sumar en un solo paso
-                foreach ($dpests as $dpest) {
-                    if ($dpest->pest && $dpest->pest->name) {
-                        $pest_name = $dpest->pest->name;
-                        $pest_totals[$pest_name] = ($pest_totals[$pest_name] ?? 0) + $dpest->total;
-                        $total_detections += $dpest->total;
-                    }
-                }
-
-                $data[] = [
-                    'area_id' => $area->id,
-                    'area_name' => $area->name,
-                    'device_id' => $device->id,
-                    'device_name' => $device->code,
-                    'device_nplan' => $device->nplan,
-                    'service' => $device->floorplan?->service?->name ?? 'N/A',
-                    'versions' => [$device->version],
-                    'pest_total_detections' => $pest_totals,
-                    'total_detections' => $total_detections
-                ];
+            // Asegurarse de que todas las plagas estén en el array (incluso con 0)
+            $complete_pests = array_fill_keys($allPestNames, 0);
+            foreach ($fetched_pests as $pest_name => $total) {
+                $complete_pests[$pest_name] = $total;
+                $grand_totals_pests[$pest_name] += $total;
             }
-        }
 
-        // Calcular totales generales (suma de todos los dispositivos por cada plaga)
-        $grand_totals = array_fill_keys($pests_headers, 0);
-        foreach ($data as $row) {
-            foreach ($row['pest_total_detections'] as $pest => $total) {
-                $grand_totals[$pest] += $total;
-            }
+            $data[] = [
+                'area_name' => $group['area_name'],
+                'service' => $group['service_name'],
+                'nplan' => $group['nplan'],
+                'device_name' => $group['code'],
+                'versions' => $group['versions'],
+                'pests' => $complete_pests, // Usar el array completo
+            ];
         }
 
         return [
             'detections' => $data,
-            'headers' => $pests_headers,
-            'grand_totals' => $grand_totals
+            'headers' => $allPestNames, // Los headers ya están aquí
+            'grand_totals' => $grand_totals_pests,
         ];
     }
+
 
     private function normalizeString($string)
     {
