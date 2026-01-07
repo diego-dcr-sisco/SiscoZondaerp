@@ -1743,6 +1743,11 @@ class CustomerController extends Controller
             ];
         }
 
+        // Ordenar por device_name (número de dispositivo)
+        usort($data, function($a, $b) {
+            return strnatcasecmp($a['device_name'], $b['device_name']);
+        });
+
         return [
             'detections' => $data,
             'headers' => $allPestNames, // Los headers ya están aquí
@@ -1919,6 +1924,11 @@ class CustomerController extends Controller
                 $grand_total_consumption += $row['consumption_value'];
             }
         }
+
+        // Ordenar por device_name (número de dispositivo)
+        usort($data, function($a, $b) {
+            return strnatcasecmp($a['device_name'], $b['device_name']);
+        });
 
         return [
             'detections' => $data,
