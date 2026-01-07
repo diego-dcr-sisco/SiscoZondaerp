@@ -1641,9 +1641,6 @@ class CustomerController extends Controller
         }
 
         $devices = $devices->get();
-
-        $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique())->get();
-
         $fetched_devices = [];
         $devicesByArea = $devices->groupBy('application_area_id'); // Agregar esta línea
 
