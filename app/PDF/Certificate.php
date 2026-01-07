@@ -212,7 +212,7 @@ class Certificate
         $products_data = [];
         $devices_products = DeviceProduct::where('order_id', $this->order->id)->get();
 
-        $order_products = OrderProduct::where('order_id', $order->id)->get();
+        $order_products = OrderProduct::where('order_id', $this->order->id)->get();
 
 
         if ($devices_products->isNotEmpty() && $order_products->isEmpty()) {
