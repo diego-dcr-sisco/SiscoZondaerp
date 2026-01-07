@@ -589,18 +589,35 @@ class ReportController extends Controller
         $devices_products = DeviceProduct::where('order_id', $order->id)->get();
 
         if ($devices_products->isNotEmpty()) {
-            $order_products = OrderProduct::where('order_id', $order->id)->where('product_id', $devices_products->pluck('product_id')->unique())->get();
-            if ($order_products->isEmpty()) {
-                foreach ($devices_products as $dp) {
-                    $op = OrderProduct::updateOrCreate([
-                        'order_id' => $order->id,
-                        'product_id' => $dp->product_id,
-                        'lot_id' => $dp->lot_id ?? null,
-                    ], [
+            $order_products = OrderProduct::where('order_id', $order->id)
+                ->whereIn('product_id', $devices_products->pluck('product_id')->unique())
+                ->get()
+                ->keyBy(function ($item) {
+                    return $item->product_id . '_' . ($item->lot_id ?? 'null');
+                });
+
+            foreach ($devices_products as $dp) {
+                $key = $dp->product_id . '_' . ($dp->lot_id ?? 'null');
+
+                if (isset($order_products[$key])) {
+                    // Si existe, sumar la cantidad
+                    $order_products[$key]->update([
+                        'amount' => $order_products[$key]->amount + $dp->quantity,
                         'service_id' => $dp->service_id,
                         'metric_id' => $dp->metric_id,
                         'application_method_id' => $dp->application_method_id,
-                        'amount' => $dp->amount,
+                        'dosage' => $dp->dosage ?? null,
+                    ]);
+                } else {
+                    // Si no existe, crear nuevo
+                    OrderProduct::create([
+                        'order_id' => $order->id,
+                        'product_id' => $dp->product_id,
+                        'lot_id' => $dp->lot_id ?? null,
+                        'service_id' => $dp->service_id,
+                        'metric_id' => $dp->metric_id,
+                        'application_method_id' => $dp->application_method_id,
+                        'amount' => $dp->quantity,
                         'dosage' => $dp->dosage ?? null,
                     ]);
                 }
