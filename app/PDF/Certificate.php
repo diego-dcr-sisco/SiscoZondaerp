@@ -13,7 +13,7 @@ use App\Models\ControlPoint;
 use App\Models\Question;
 use App\Models\ControlPointQuestion;
 use App\Models\DeviceProduct;
-use App\Models\DevicePest;
+use App\Models\OrderProduct;
 use App\Models\OrderIncidents;
 use App\Models\OrderRecommendation;
 use App\Models\FloorplanVersion;
@@ -210,6 +210,52 @@ class Certificate
     public function products()
     {
         $products_data = [];
+        $devices_products = DeviceProduct::where('order_id', $this->order->id)->get();
+
+        if ($devices_products->isNotEmpty()) {
+            // Agrupar DeviceProduct por product_id y lot_id
+            $grouped_devices = $devices_products->groupBy(function ($item) {
+                return $item->product_id . '_' . ($item->lot_id ?? 'null');
+            });
+
+            foreach ($grouped_devices as $group_key => $group_items) {
+                // Tomar el primer item del grupo para obtener los datos comunes
+                $first_item = $group_items->first();
+
+                // Sumar todas las cantidades del grupo
+                $total_quantity = $group_items->sum('quantity');
+
+                // Buscar si ya existe un OrderProduct con esta combinación
+                $existing_order_product = OrderProduct::where('order_id', $this->order->id)
+                    ->where('product_id', $first_item->product_id)
+                    ->where('lot_id', $first_item->lot_id)
+                    ->first();
+
+                if ($existing_order_product) {
+                    // Actualizar existente - suma la nueva cantidad total
+                    $existing_order_product->update([
+                        'amount' => $existing_order_product->amount + $total_quantity,
+                        'service_id' => $first_item->service_id,
+                        'metric_id' => $first_item->metric_id,
+                        'application_method_id' => $first_item->application_method_id,
+                        'dosage' => $first_item->dosage ?? null,
+                    ]);
+                } else {
+                    // Crear nuevo
+                    OrderProduct::create([
+                        'order_id' => $this->order->id,
+                        'product_id' => $first_item->product_id,
+                        'lot_id' => $first_item->lot_id ?? null,
+                        'service_id' => $first_item->service_id,
+                        'metric_id' => $first_item->metric_id,
+                        'application_method_id' => $first_item->application_method_id,
+                        'amount' => $total_quantity,
+                        'dosage' => $first_item->dosage ?? null,
+                    ]);
+                }
+            }
+        }
+
 
         foreach ($this->order->products()->get() as $order_product) {
             $products_data[] = [
