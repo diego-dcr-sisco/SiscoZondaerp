@@ -61,7 +61,7 @@
                                     @foreach ($control_points as $cp)
                                         <option value="{{ $cp->id }}"
                                             {{ request('control_point') == $cp->id ? 'selected' : '' }}>
-                                            {{ $cp->name }}
+                                            {{ $cp->name }} ({{ $cp->code }})
                                         </option>
                                     @endforeach
                                 </select>
