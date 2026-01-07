@@ -1632,7 +1632,16 @@ class CustomerController extends Controller
 
         $services = $orders->flatMap->services->unique('id')->values();
         $floorplans = FloorPlans::whereIn('service_id', $services->pluck('id'))->where('customer_id', $customer->id)->get();
-        $devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'))->get();
+        $devices = Device::whereIn('floorplan_id', $floorplans->pluck('id'));
+
+        if($request->filled('control_point')) {
+            $devices = $devices->where('type_control_point_id', $request->input('control_point'));
+        }
+
+        $devices = $devices->get();
+        
+        $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique())->get();
+
 
         $fetched_devices = [];
         $devicesByArea = $devices->groupBy('application_area_id'); // Agregar esta línea

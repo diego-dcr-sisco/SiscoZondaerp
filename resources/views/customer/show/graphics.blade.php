@@ -93,12 +93,9 @@
                                     <i class="bi bi-funnel-fill"></i> Filtrar
                                 </button>
 
-                                <a href="{{ route('order.index') }}" class="btn btn-secondary btn-sm me-2">
-                                    <i class="bi bi-arrow-counterclockwise"></i> Limpiar
-                                </a>
-
                                 <a href="{{ route('customer.graphics.export', array_merge(['id' => $customer->id], request()->all())) }}"
-                                    class="btn btn-success btn-sm" data-bs-toggle="tooltip" data-bs-title="El archivo generado contiene los mismos datos que aparecen en la tabla, obtenidos a través de los criterios de filtrado aplicados.">
+                                    class="btn btn-success btn-sm" data-bs-toggle="tooltip"
+                                    data-bs-title="El archivo generado contiene los mismos datos que aparecen en la tabla, obtenidos a través de los criterios de filtrado aplicados.">
                                     <i class="fas fa-file-excel me-1"></i> Exportar a Excel
                                 </a>
                             </div>
@@ -120,10 +117,9 @@
                     <table class="table table-sm table-bordered table-striped" id="graphics-table">
                         <thead>
                             <tr>
-                                <th class="fw-bold" scope="col">#</th>
+                                <th class="fw-bold" scope="col">Dispositivo</th>
                                 <th class="fw-bold" scope="col">Servicio</th>
                                 <th class="fw-bold" scope="col">Area</th>
-                                <th class="fw-bold" scope="col">Dispositivo</th>
                                 <th class="fw-bold" scope="col">Version</th>
                                 @foreach ($data['headers'] as $header)
                                     <th class="fw-bold" style="font-size: smaller" scope="col">{{ $header }}
@@ -134,10 +130,9 @@
                         <tbody>
                             @forelse ($data['detections'] as $index => $d)
                                 <tr>
-                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $d['device_name'] }}</td>
                                     <td>{{ $d['service'] }}</td>
                                     <td>{{ $d['area_name'] }}</td>
-                                    <td>{{ $d['device_name'] }}</td>
                                     <td>{{ implode(',', $d['versions']) }}</td>
                                     @if (request('graph_type') == 'cptr')
                                         @foreach ($data['headers'] as $header)
@@ -169,12 +164,11 @@
                                     $count = 0;
                                 @endphp
                                 <tr class="table-primary">
-                                    <td colspan="5" class="fw-bold text-end">TOTAL GENERAL:</td>
+                                    <td colspan="4" class="fw-bold text-end">TOTAL GENERAL:</td>
                                     @if (request('graph_type') == 'cptr')
                                         @foreach ($data['headers'] as $header)
                                             <td class="fw-bold">{{ $data['grand_totals'][$header] ?? 0 }}</td>
                                         @endforeach
-
                                     @elseif (request('graph_type') == 'cnsm')
                                         @if (!empty($data['grand_totals_weekly']))
                                             @foreach ($data['headers'] as $header)

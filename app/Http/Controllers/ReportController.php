@@ -941,7 +941,7 @@ class ReportController extends Controller
                 }
             }
         }
-
+        
         /*if ($order->technicians()->count() == 1 && $order->closed_by == null) {
             $order->update(['closed_by' => $order->technicians()->first()->user_id]);
         } else {
