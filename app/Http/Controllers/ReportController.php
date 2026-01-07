@@ -589,36 +589,44 @@ class ReportController extends Controller
         $devices_products = DeviceProduct::where('order_id', $order->id)->get();
 
         if ($devices_products->isNotEmpty()) {
-            $order_products = OrderProduct::where('order_id', $order->id)
-                ->whereIn('product_id', $devices_products->pluck('product_id')->unique())
-                ->get()
-                ->keyBy(function ($item) {
-                    return $item->product_id . '_' . ($item->lot_id ?? 'null');
-                });
+            // Agrupar DeviceProduct por product_id y lot_id
+            $grouped_devices = $devices_products->groupBy(function ($item) {
+                return $item->product_id . '_' . ($item->lot_id ?? 'null');
+            });
 
-            foreach ($devices_products as $dp) {
-                $key = $dp->product_id . '_' . ($dp->lot_id ?? 'null');
+            foreach ($grouped_devices as $group_key => $group_items) {
+                // Tomar el primer item del grupo para obtener los datos comunes
+                $first_item = $group_items->first();
 
-                if (isset($order_products[$key])) {
-                    // Si existe, sumar la cantidad
-                    $order_products[$key]->update([
-                        'amount' => $order_products[$key]->amount + $dp->quantity,
-                        'service_id' => $dp->service_id,
-                        'metric_id' => $dp->metric_id,
-                        'application_method_id' => $dp->application_method_id,
-                        'dosage' => $dp->dosage ?? null,
+                // Sumar todas las cantidades del grupo
+                $total_quantity = $group_items->sum('quantity');
+
+                // Buscar si ya existe un OrderProduct con esta combinación
+                $existing_order_product = OrderProduct::where('order_id', $order->id)
+                    ->where('product_id', $first_item->product_id)
+                    ->where('lot_id', $first_item->lot_id)
+                    ->first();
+
+                if ($existing_order_product) {
+                    // Actualizar existente - suma la nueva cantidad total
+                    $existing_order_product->update([
+                        'amount' => $existing_order_product->amount + $total_quantity,
+                        'service_id' => $first_item->service_id,
+                        'metric_id' => $first_item->metric_id,
+                        'application_method_id' => $first_item->application_method_id,
+                        'dosage' => $first_item->dosage ?? null,
                     ]);
                 } else {
-                    // Si no existe, crear nuevo
+                    // Crear nuevo
                     OrderProduct::create([
                         'order_id' => $order->id,
-                        'product_id' => $dp->product_id,
-                        'lot_id' => $dp->lot_id ?? null,
-                        'service_id' => $dp->service_id,
-                        'metric_id' => $dp->metric_id,
-                        'application_method_id' => $dp->application_method_id,
-                        'amount' => $dp->quantity,
-                        'dosage' => $dp->dosage ?? null,
+                        'product_id' => $first_item->product_id,
+                        'lot_id' => $first_item->lot_id ?? null,
+                        'service_id' => $first_item->service_id,
+                        'metric_id' => $first_item->metric_id,
+                        'application_method_id' => $first_item->application_method_id,
+                        'amount' => $total_quantity,
+                        'dosage' => $first_item->dosage ?? null,
                     ]);
                 }
             }
