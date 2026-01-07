@@ -278,7 +278,7 @@ class ReportController extends Controller
                 'metric_id' => $product->metric_id,
                 'application_method_id' => $product_data['app_method_id'] ?? null,
                 'amount' => $product_data['amount'],
-                'dosage' => $product->dosage
+                'dosage' => $product_data['dosage'] ?? $product->dosage ?? null,
             ]);
 
             $updated_order_products[] = $op->id;
@@ -982,7 +982,6 @@ class ReportController extends Controller
         $op_id = $data['op_id'];
 
         if (!$op_id) {
-            //dd('1');
             $order_product = OrderProduct::create([
                 'order_id' => $order->id,
                 'product_id' => $data['product_id'],
@@ -1021,6 +1020,7 @@ class ReportController extends Controller
                 'lot_id' => $firstProduct->lot_id,
                 'app_method_id' => $firstProduct->application_method_id,
                 'amount' => $totalAmount,
+                'dosage' => $firstProduct->dosage,
             ];
         }
 
@@ -1037,6 +1037,7 @@ class ReportController extends Controller
                 'lot_id' => $firstProduct?->lot_id,
                 'app_method_id' => $firstProduct->application_method_id,
                 'amount' => $totalAmount,
+                'dosage' => $firstProduct->dosage,
             ];
         }
 
