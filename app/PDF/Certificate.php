@@ -212,7 +212,10 @@ class Certificate
         $products_data = [];
         $devices_products = DeviceProduct::where('order_id', $this->order->id)->get();
 
-        if ($devices_products->isNotEmpty()) {
+        $order_products = OrderProduct::where('order_id', $order->id)->get();
+
+
+        if ($devices_products->isNotEmpty() && $order_products->isEmpty()) {
             // Agrupar DeviceProduct por product_id y lot_id
             $grouped_devices = $devices_products->groupBy(function ($item) {
                 return $item->product_id . '_' . ($item->lot_id ?? 'null');
