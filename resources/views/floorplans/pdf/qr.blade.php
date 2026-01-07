@@ -37,7 +37,7 @@
             background-image: url("file://{{ public_path('images/siscoplagas/trans_watermark.png') }}");
             background-repeat: no-repeat;
             background-position: center;
-            background-size: 10%;
+            background-size: 20%;
         }
 
         .device-card:nth-child(odd) {
