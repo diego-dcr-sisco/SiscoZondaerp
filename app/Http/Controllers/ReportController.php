@@ -586,6 +586,26 @@ class ReportController extends Controller
             'Seguimientos' => route('tracking.create.order', ['id' => $order->id]),
         ];
 
+        $devices_products = DeviceProduct::where('order_id', $order->id)->get();
+
+        if ($devices_products->isNotEmpty()) {
+            $order_products = OrderProduct::where('order_id', $order->id)->where('product_id', $devices_products->pluck('product_id')->unique())->get();
+            if ($order_products->isEmpty()) {
+                foreach ($devices_products as $dp) {
+                    $op = OrderProduct::updateOrCreate([
+                        'order_id' => $order->id,
+                        'product_id' => $dp->product_id,
+                        'lot_id' => $dp->lot_id ?? null,
+                    ], [
+                        'service_id' => $dp->service_id,
+                        'metric_id' => $dp->metric_id,
+                        'application_method_id' => $dp->application_method_id,
+                        'amount' => $dp->amount,
+                        'dosage' => $dp->dosage ?? null,
+                    ]);
+                }
+            }
+        }
 
         return view('report.create', compact(
             'order',
@@ -1146,6 +1166,8 @@ class ReportController extends Controller
         $certificate->photoEvidences();
         $data = $certificate->getData();
 
+        dd($data);
+
         // Obtener la configuración de apariencia
         $appearance = AppearanceSetting::first();
 
@@ -1407,7 +1429,7 @@ class ReportController extends Controller
             } else {
                 // Solo actualizar closed_by si viene en el request y no está vacío
                 if (isset($data['closed_by']) && $data['closed_by'] !== '' && $data['closed_by'] !== null) {
-                    $updated_order['closed_by'] = (int)$data['closed_by'];
+                    $updated_order['closed_by'] = (int) $data['closed_by'];
                 }
             }
 
