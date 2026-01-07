@@ -34,11 +34,10 @@
             vertical-align: top;
             position: relative;
 
-            background-image: url("file://{{ public_path('images/siscoplagas/watermark.png') }}");
+            background-image: url("file://{{ public_path('images/siscoplagas/trans_watermark.png') }}");
             background-repeat: no-repeat;
             background-position: center;
             background-size: 50%;
-
         }
 
         .device-card:nth-child(odd) {
