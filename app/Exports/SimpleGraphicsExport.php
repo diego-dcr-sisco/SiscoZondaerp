@@ -95,7 +95,7 @@ class SimpleGraphicsExport
 
     private function getHeaders($data): array
     {
-        $headers = ['#', 'Servicio', 'Área', 'Dispositivo', 'Versión'];
+        $headers = ['Dispositivo', 'Servicio', 'Área', 'Versión'];
         
         // Verificar si existen headers en los datos
         if (isset($data['headers']) && count($data['headers']) > 0) {
