@@ -22,10 +22,9 @@ class SimpleGraphicsExport
 
         foreach ($this->data['detections'] as $index => $detection) {
             $row_data = [
-                ($index + 1),
+                $detection['device_name'] ?? '',
                 $detection['service'] ?? '',
                 $detection['area_name'] ?? '',
-                $detection['device_name'] ?? '',
                 $this->formatVersion($detection['versions'] ?? ''),
             ];
 
