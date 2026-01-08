@@ -1855,7 +1855,7 @@ class CustomerController extends Controller
                     }
                 }
 
-                $key = $area->id . '_' . $device->nplan . '_' . $device->code;
+                $key = $area->id . '_' . $device->nplan . '_' . $device->code . '_' . ($device->floorplan?->service_id ?? 'NA');
 
                 if (!isset($groupedData[$key])) {
                     $groupedData[$key] = [
