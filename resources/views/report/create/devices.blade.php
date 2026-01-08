@@ -50,7 +50,7 @@
                                 @foreach ($device['pests'] as $pest)
                                     <li class="product-item">
                                         <span class="fw-bold">{{ $pest['name'] }}</span>
-                                        (<span class="product-quantity">{{ $pest['total'] }})
+                                        (<span class="product-quantity">{{ $pest['quantity'] }})
                                     </li>
                                 @endforeach
                             </ul>

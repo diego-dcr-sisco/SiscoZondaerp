@@ -200,7 +200,7 @@
 
         mockPests?.forEach(pest => {
             const key = pest.key ?? null;
-            addPestToContainer(pest.id, pest.name, pest.total, pest.key);
+            addPestToContainer(pest.id, pest.name, pest.quantity, pest.key);
         });
 
         // Llenar productos
