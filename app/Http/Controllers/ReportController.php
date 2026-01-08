@@ -506,7 +506,7 @@ class ReportController extends Controller
                         'id' => $dp->pest_id,
                         'name' => $dp->pest->name,
                         'device_id' => $dp->device_id,
-                        'total' => $dp->total,
+                        'quantity' => $dp->total,
                     ];
                 })->toArray() ?? null,
 
