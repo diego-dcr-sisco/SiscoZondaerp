@@ -77,7 +77,7 @@
 
 <script>
     // Variable global con todos los lotes (debe estar definida en algún lugar)
-    // var allLots = [...]; // Esto debe estar definido globalmente
+    // var lots = [...]; // Esto debe estar definido globalmente
     
     function loadProductLots() {
         var productId = $('#product').val();
@@ -92,12 +92,12 @@
             return;
         }
         
-        // Buscar lotes del producto seleccionado en allLots
+        // Buscar lotes del producto seleccionado en lots
         var productLots = [];
-        console.log(window.allLots)
+        console.log(window.lots)
         
-        if (window.allLots && Array.isArray(window.allLots)) {
-            productLots = window.allLots.filter(function(lot) {
+        if (window.lots && Array.isArray(window.lots)) {
+            productLots = window.lots.filter(function(lot) {
                 return lot.product_id == productId;
             });
         }
