@@ -140,213 +140,313 @@
         return allPests.find(pest => pest.id == id);
     }
 
-    function addPestToContainer(pestId, pestName, quantity, key) {
-        const container = document.getElementById('modal-pests-container');
+// Función principal para abrir el modal
+function openReviewModal(buttonElement, serviceId) {
+    console.log('Apertura del modal');
+    
+    const deviceData = JSON.parse(buttonElement.getAttribute('data-device'));
+    
+    // CRÍTICO: Siempre limpiar arrays globales al abrir un dispositivo
+    if (currentDeviceId !== deviceData.id) {
+        pests.length = 0;
+        products.length = 0;
+    }
+    
+    currentDeviceId = deviceData.id;
+    currentServiceId = serviceId;
 
-        if (container.innerHTML.includes('No hay plagas asignadas')) {
-            container.innerHTML = '';
-        }
+    document.getElementById('reviewModalLabel').textContent =
+        `Revisión de Dispositivo | ${deviceData.code || 'N/A'} |`;
 
-        // Generar key si no existe
-        const pestKey = key != null ? key : generateTimeKey();
+    // Llenar información básica
+    document.getElementById('modal-code').textContent = deviceData.code || 'N/A';
+    document.getElementById('modal-floorplan').textContent = deviceData.floorplan?.name || 'N/A';
+    document.getElementById('modal-control-point').textContent = deviceData.control_point?.name || 'N/A';
+    document.getElementById('modal-application-area').textContent = deviceData.application_area?.name || 'N/A';
 
-        // Prevenir duplicados por key (permite misma plaga con diferentes keys)
-        if (document.querySelector(`.remove-pest[data-pest-key="${pestKey}"]`)) {
-            console.log('return via KEY')
-            return;
-        }
+    // Llenar preguntas
+    const questionsContainer = document.getElementById('modal-questions-container');
+    questionsContainer.innerHTML = '';
 
-        const pestDiv = document.createElement('div');
-        pestDiv.className = 'border rounded p-2 mb-2 bg-white';
-        pestDiv.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-bold">${pestName}</span>
-                <button class="btn btn-sm btn-danger remove-pest" data-pest-id="${pestId}" data-pest-key="${pestKey}">
-                    <i class="bi bi-trash-fill"></i>
-                </button>
-            </div>
-            <div class="row g-2">
-                <div class="col-12">
-                    <label class="form-label small text-muted">Cantidad</label>
-                    <input type="number" class="form-control form-control-sm pest-quantity" 
-                           data-pest-id="${pestId}" value="${quantity || 1}" min="1">
-                </div>
-            </div>
-        `;
-        container.appendChild(pestDiv);
+    if (deviceData.questions?.length > 0) {
+        deviceData.questions.forEach(question => {
+            const questionDiv = document.createElement('div');
+            questionDiv.className = 'mb-3';
+            questionDiv.innerHTML = `
+                <label class="form-label">${question.question}</label>
+                <select class="form-select form-select-sm question-answer" data-question-id="${question.id}">
+                    <option value="" ${!question.answer ? 'selected' : ''}>Sin Responder</option>
+                    ${question.answers.map(answer => 
+                        `<option value="${answer}" ${answer == question.answer ? 'selected' : ''}>${answer}</option>`
+                    ).join('')}
+                </select>
+            `;
+            questionsContainer.appendChild(questionDiv);
+        });
+    } else {
+        questionsContainer.innerHTML = '<p class="text-muted">No hay preguntas para este dispositivo</p>';
     }
 
-    function addProductToContainer(productId, productName, quantity, selectedMethodId = null, selectedLotId = null,
-        methods = [], lots = [], metric = null, key = null) {
-        const container = document.getElementById('modal-products-container');
+    // Llenar plagas - USAR SIEMPRE datos del servidor primero
+    document.getElementById('modal-pests-container').innerHTML = 
+        '<p class="text-muted">No hay plagas asignadas</p>';
 
-        if (container.innerHTML.includes('No hay productos asignados')) {
-            container.innerHTML = '';
+    // Primero cargar datos del servidor
+    if (deviceData.pests?.length > 0) {
+        deviceData.pests.forEach(pest => {
+            // Verificar si ya existe en el array global (para mantener cambios no guardados)
+            const existingPestIndex = pests.findIndex(p => p.key === pest.key);
+            
+            if (existingPestIndex === -1) {
+                // Solo agregar si no existe en el array global
+                addPestToContainer({
+                    id: pest.id,
+                    name: pest.name,
+                    quantity: pest.total || 1,
+                    key: pest.key
+                });
+            } else {
+                // Usar la versión del array global (con cambios no guardados)
+                addPestToContainer(pests[existingPestIndex]);
+            }
+        });
+    }
+
+    // Llenar productos - USAR SIEMPRE datos del servidor primero
+    document.getElementById('modal-products-container').innerHTML = 
+        '<p class="text-muted">No hay productos asignados</p>';
+
+    if (deviceData.products?.length > 0) {
+        deviceData.products.forEach(product => {
+            const productInAllProducts = allProducts.find(p => p.id == product.id);
+            
+            // Verificar si ya existe en el array global
+            const existingProductIndex = products.findIndex(p => p.key === product.key);
+            
+            if (existingProductIndex === -1) {
+                // Solo agregar si no existe en el array global
+                addProductToContainer({
+                    id: product.id,
+                    name: product.name,
+                    quantity: product.quantity || 1,
+                    application_method_id: product.application_method_id || '',
+                    lot_id: product.lot_id || '',
+                    methods: applicationMethods,
+                    lots: productInAllProducts?.lots || [],
+                    metric: productInAllProducts?.metric,
+                    key: product.key
+                });
+            } else {
+                // Usar la versión del array global (con cambios no guardados)
+                addProductToContainer(products[existingProductIndex]);
+            }
+        });
+    }
+
+    // Llenar observaciones
+    document.getElementById('modal-observations').value = deviceData.states?.observations || '';
+    $('#device-img').attr('src', deviceData.states?.device_image || '');
+
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('reviewModal'));
+    modal.show();
+}
+
+// Función mejorada para añadir plagas
+function addPestToContainer(pestData) {
+    const { id, name, quantity = 1, key = null } = pestData;
+    const container = document.getElementById('modal-pests-container');
+
+    // Limpiar mensaje "No hay plagas asignadas"
+    if (container.innerHTML.includes('No hay plagas asignadas')) {
+        container.innerHTML = '';
+    }
+
+    // Generar key única si no existe
+    const pestKey = key || generateUniqueKey();
+    
+    // Verificar si ya existe en el DOM (evitar duplicados)
+    const existingElement = document.querySelector(`.remove-pest[data-pest-key="${pestKey}"]`);
+    if (existingElement) {
+        // Actualizar cantidad si ya existe
+        const quantityInput = existingElement.closest('.border.rounded').querySelector('.pest-quantity');
+        if (quantityInput) {
+            quantityInput.value = quantity;
         }
+        return;
+    }
 
-        // Generar key si no existe
-        const productKey = key != null ? key : generateTimeKey();
+    const pestDiv = document.createElement('div');
+    pestDiv.className = 'border rounded p-2 mb-2 bg-white';
+    pestDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-bold">${name}</span>
+            <button class="btn btn-sm btn-danger remove-pest" 
+                    data-pest-id="${id}" 
+                    data-pest-key="${pestKey}">
+                <i class="bi bi-trash-fill"></i>
+            </button>
+        </div>
+        <div class="row g-2">
+            <div class="col-12">
+                <label class="form-label small text-muted">Cantidad</label>
+                <input type="number" class="form-control form-control-sm pest-quantity" 
+                       data-pest-id="${id}" 
+                       data-pest-key="${pestKey}"
+                       value="${quantity}" 
+                       min="1">
+            </div>
+        </div>
+    `;
+    container.appendChild(pestDiv);
+    
+    // Añadir al array global si no existe
+    const existsInArray = pests.some(p => p.key === pestKey);
+    if (!existsInArray) {
+        pests.push({
+            key: pestKey,
+            id: id,
+            name: name,
+            quantity: quantity
+        });
+    }
+}
 
-        // Prevenir duplicados por key
-        if (document.querySelector(`.remove-product[data-product-key="${productKey}"]`)) {
-            return;
-        }
+// Función mejorada para añadir productos
+function addProductToContainer(productData) {
+    const {
+        id,
+        name,
+        quantity = 1,
+        application_method_id = null,
+        lot_id = null,
+        methods = [],
+        lots = [],
+        metric = null,
+        key = null
+    } = productData;
+    
+    const container = document.getElementById('modal-products-container');
 
-        // Opciones de métodos con "Sin método"
-        const methodOptions = [
-            `<option value="">Sin método</option>`,
-            ...methods.map(method =>
-                `<option value="${method.id}" ${method.id == selectedMethodId ? 'selected' : ''}>
+    // Limpiar mensaje "No hay productos asignados"
+    if (container.innerHTML.includes('No hay productos asignados')) {
+        container.innerHTML = '';
+    }
+
+    // Generar key única si no existe
+    const productKey = key || generateUniqueKey();
+    
+    // Verificar si ya existe en el DOM
+    const existingElement = document.querySelector(`.remove-product[data-product-key="${productKey}"]`);
+    if (existingElement) {
+        // Actualizar valores si ya existe
+        const parentDiv = existingElement.closest('.border.rounded');
+        const quantityInput = parentDiv.querySelector('.product-quantity');
+        const methodSelect = parentDiv.querySelector('.product-method');
+        const lotSelect = parentDiv.querySelector('.product-lot');
+        
+        if (quantityInput) quantityInput.value = quantity;
+        if (methodSelect && application_method_id) methodSelect.value = application_method_id;
+        if (lotSelect && lot_id) lotSelect.value = lot_id;
+        return;
+    }
+
+    // Opciones de métodos con "Sin método"
+    const methodOptions = [
+        `<option value="">Sin método</option>`,
+        ...methods.map(method =>
+            `<option value="${method.id}" ${method.id == application_method_id ? 'selected' : ''}>
                 ${method.name}
             </option>`
-            )
-        ].join('');
+        )
+    ].join('');
 
-        // Opciones de lotes con "Sin lote"
-        const lotOptions = [
-            `<option value="">Sin lote</option>`,
-            ...lots.map(lot =>
-                `<option value="${lot.id}" ${lot.id == selectedLotId ? 'selected' : ''}>
+    // Opciones de lotes con "Sin lote"
+    const lotOptions = [
+        `<option value="">Sin lote</option>`,
+        ...lots.map(lot =>
+            `<option value="${lot.id}" ${lot.id == lot_id ? 'selected' : ''}>
                 ${lot.registration_number}
             </option>`
-            )
-        ].join('');
+        )
+    ].join('');
 
-        const productDiv = document.createElement('div');
-        productDiv.className = 'border rounded p-2 mb-2 bg-white';
-        productDiv.innerHTML = `
+    const productDiv = document.createElement('div');
+    productDiv.className = 'border rounded p-2 mb-2 bg-white';
+    productDiv.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="fw-bold">${productName}</span>
-                <button class="btn btn-sm btn-danger remove-product" data-product-id="${productId}" data-product-key="${productKey}">
-                    <i class="bi bi-trash-fill"></i>
-                </button>
+            <span class="fw-bold">${name}</span>
+            <button class="btn btn-sm btn-danger remove-product" 
+                    data-product-id="${id}" 
+                    data-product-key="${productKey}">
+                <i class="bi bi-trash-fill"></i>
+            </button>
         </div>
         <div class="row g-2">
             <div class="col-12">
                 <label class="form-label small text-muted">Cantidad</label>
                 <div class="input-group">
                     <input type="number" class="form-control form-control-sm product-quantity" 
-                       data-product-id="${productId}" value="${quantity || 1}" min="1">
-                    <span class="input-group-text">${metric ?? '-'}</span>
+                           data-product-id="${id}"
+                           data-product-key="${productKey}"
+                           value="${quantity}" 
+                           min="1">
+                    <span class="input-group-text">${metric || '-'}</span>
                 </div>
             </div>
             <div class="col-12">
                 <label class="form-label small text-muted">Método</label>
-                <select class="form-select form-select-sm product-method" data-product-id="${productId}" required>
+                <select class="form-select form-select-sm product-method" 
+                        data-product-id="${id}"
+                        data-product-key="${productKey}">
                     ${methodOptions}
                 </select>
             </div>
             <div class="col-12">
                 <label class="form-label small text-muted">Lote</label>
-                <select class="form-select form-select-sm product-lot" data-product-id="${productId}" required>
+                <select class="form-select form-select-sm product-lot" 
+                        data-product-id="${id}"
+                        data-product-key="${productKey}">
                     ${lotOptions}
                 </select>
             </div>
         </div>
     `;
-        container.appendChild(productDiv);
-    }
-
-    // Función principal para abrir el modal
-    function openReviewModal(buttonElement, serviceId) {
-        console.log('Apertura del modal')
-        const deviceData = JSON.parse(buttonElement.getAttribute('data-device'));
-        
-        // CRÍTICO: Limpiar arrays globales solo si es un dispositivo diferente
-        //if (currentDeviceId !== deviceData.id) {
-            pests.length = 0;
-            products.length = 0;
-        //}
-        
-        currentDeviceId = deviceData.id;
-        currentServiceId = serviceId;
-
-        document.getElementById('reviewModalLabel').textContent =
-            `Revisión de Dispositivo | ${deviceData.code || 'N/A'} |`;
-
-        // Llenar información básica
-        document.getElementById('modal-code').textContent = deviceData.code || 'N/A';
-        document.getElementById('modal-floorplan').textContent = deviceData.floorplan?.name || 'N/A';
-        document.getElementById('modal-control-point').textContent = deviceData.control_point?.name || 'N/A';
-        document.getElementById('modal-application-area').textContent = deviceData.application_area?.name || 'N/A';
-
-        // Llenar preguntas
-        const questionsContainer = document.getElementById('modal-questions-container');
-        questionsContainer.innerHTML = '';
-
-        if (deviceData.questions?.length > 0) {
-            deviceData.questions.forEach(question => {
-                const questionDiv = document.createElement('div');
-                questionDiv.className = 'mb-3';
-                questionDiv.innerHTML = `
-                    <label class="form-label">${question.question}</label>
-                    <select class="form-select form-select-sm question-answer" data-question-id="${question.id}">
-                        <option value="" ${!question.answer ? 'selected' : ''}>Sin Responder</option>
-                        ${question.answers.map(answer => 
-                            `<option value="${answer}" ${answer == question.answer ? 'selected' : ''}>${answer}</option>`
-                        ).join('')}
-                    </select>
-                `;
-                questionsContainer.appendChild(questionDiv);
-            });
-        } else {
-            questionsContainer.innerHTML = '<p class="text-muted">No hay preguntas para este dispositivo</p>';
-        }
-
-        // Llenar plagas
-        document.getElementById('modal-pests-container').innerHTML = deviceData.pests?.length > 0 ?
-            '' :
-            '<p class="text-muted">No hay plagas asignadas</p>';
-
-        var mockPests = pests.length > 0 ? pests : deviceData.pests;
-
-        console.log('Plagas Encontradas: ', mockPests)
-
-        mockPests?.forEach(pest => {
-            const key = pest.key ?? null;
-            addPestToContainer(pest.id, pest.name, pest.total, pest.key);
+    container.appendChild(productDiv);
+    
+    // Añadir al array global si no existe
+    const existsInArray = products.some(p => p.key === productKey);
+    if (!existsInArray) {
+        products.push({
+            key: productKey,
+            id: id,
+            name: name,
+            quantity: quantity,
+            application_method_id: application_method_id,
+            lot_id: lot_id,
+            metric: metric,
+            methods: methods,
+            lots: lots
         });
-
-        // Llenar productos
-        document.getElementById('modal-products-container').innerHTML = deviceData.products?.length > 0 ?
-            '' :
-            '<p class="text-muted">No hay productos asignados</p>';
-
-        var mockProducts = products.length > 0 ? products : deviceData.products;
-        mockProducts?.forEach(product => {
-            // Buscar el producto en allProducts para obtener los lotes disponibles
-            const productInAllProducts = allProducts.find(p => p.id == product.id);
-            let availableLots = [];
-
-            // Si el producto en deviceData no tiene lotes pero existe en allProducts, usar esos lotes
-            availableLots = productInAllProducts.lots || [];
-
-            // Manejar valores null/undefined para métodos y lotes
-            const methodId = product.application_method_id || '';
-            const lotId = product.lot_id || '';
-            const metric = productInAllProducts.metric ?? null;
-            const key = product.key ?? null;
-
-            addProductToContainer(
-                product.id,
-                product.name,
-                product.quantity,
-                methodId,
-                lotId,
-                applicationMethods,
-                availableLots,
-                metric,
-                key
-            );
-        });
-
-        // Llenar observaciones
-        document.getElementById('modal-observations').value = deviceData.states.observations || '';
-        $('#device-img').attr('src', deviceData.states.device_image);
-
-        // Mostrar modal
-        new bootstrap.Modal(document.getElementById('reviewModal')).show();
     }
+}
+
+// Función mejorada para generar keys únicas
+let keyCounter = 0;
+let lastKeyTimestamp = 0;
+
+function generateUniqueKey() {
+    const now = Date.now();
+    
+    if (now === lastKeyTimestamp) {
+        keyCounter++;
+    } else {
+        keyCounter = 0;
+        lastKeyTimestamp = now;
+    }
+    
+    return `key-${now}-${keyCounter}-${Math.random().toString(36).substr(2, 9)}`;
+}
 
     // Event Listeners
     document.getElementById('add-pest-btn').addEventListener('click', () => {
@@ -424,16 +524,6 @@
             btn.classList.add('btn-primary');
         }, 800);
     });
-
-    /*document.getElementById('modal-pests-container').addEventListener('click', (e) => {
-        if (e.target.closest('.remove-pest')) {
-            e.target.closest('.border.rounded').remove();
-            if (document.getElementById('modal-pests-container').children.length == 0) {
-                document.getElementById('modal-pests-container').innerHTML =
-                    '<p class="text-muted">No hay plagas asignadas</p>';
-            }
-        }
-    });*/
 
     document.getElementById('modal-pests-container').addEventListener('click', (e) => {
         const removeBtn = e.target.closest('.remove-pest');
