@@ -248,6 +248,7 @@
 
     // Función principal para abrir el modal
     function openReviewModal(buttonElement, serviceId) {
+        console.log('Apertura del modal')
         const deviceData = JSON.parse(buttonElement.getAttribute('data-device'));
         
         // CRÍTICO: Limpiar arrays globales solo si es un dispositivo diferente
