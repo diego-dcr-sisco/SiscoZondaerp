@@ -195,6 +195,9 @@
 
         var mockPests = pests.length > 0 ? pests : deviceData.pests;
 
+        console.log('Plagas recopiladas: ', pests);
+        console.log('Plagas en dispositivos: ', deviceData.pests);
+
         mockPests?.forEach(pest => {
             const key = pest.key ?? null;
             addPestToContainer(pest.id, pest.name, pest.total, pest.key);
