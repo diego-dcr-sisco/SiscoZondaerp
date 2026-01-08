@@ -141,40 +141,39 @@
         return allPests.find(pest => pest.id == id);
     }
 
-    Entonces me puedes generar las correcciones en las funciones de favor:
 
-        // Función principal para abrir el modal
-        function openReviewModal(buttonElement, serviceId) {
-            console.log('Apertura del modal')
-            const deviceData = JSON.parse(buttonElement.getAttribute('data-device'));
+    // Función principal para abrir el modal
+    function openReviewModal(buttonElement, serviceId) {
+        console.log('Apertura del modal')
+        const deviceData = JSON.parse(buttonElement.getAttribute('data-device'));
 
-            // CRÍTICO: Limpiar arrays globales solo si es un dispositivo diferente
-            if (currentDeviceId !== deviceData.id) {
-                pests.length = 0;
-                products.length = 0;
-            }
+        // CRÍTICO: Limpiar arrays globales solo si es un dispositivo diferente
+        if (currentDeviceId !== deviceData.id) {
+            pests.length = 0;
+            products.length = 0;
+        }
 
-            currentDeviceId = deviceData.id;
-            currentServiceId = serviceId;
+        currentDeviceId = deviceData.id;
+        currentServiceId = serviceId;
 
-            document.getElementById('reviewModalLabel').textContent =
-                `Revisión de Dispositivo | ${deviceData.code || 'N/A'} |`;
+        document.getElementById('reviewModalLabel').textContent =
+            `Revisión de Dispositivo | ${deviceData.code || 'N/A'} |`;
 
-            // Llenar información básica
-            document.getElementById('modal-code').textContent = deviceData.code || 'N/A';
-            document.getElementById('modal-floorplan').textContent = deviceData.floorplan?.name || 'N/A';
-            document.getElementById('modal-control-point').textContent = deviceData.control_point?.name || 'N/A';
-            document.getElementById('modal-application-area').textContent = deviceData.application_area?.name || 'N/A';
+        // Llenar información básica
+        document.getElementById('modal-code').textContent = deviceData.code || 'N/A';
+        document.getElementById('modal-floorplan').textContent = deviceData.floorplan?.name || 'N/A';
+        document.getElementById('modal-control-point').textContent = deviceData.control_point?.name || 'N/A';
+        document.getElementById('modal-application-area').textContent = deviceData.application_area?.name || 'N/A';
 
-            // Llenar preguntas
-            const questionsContainer = document.getElementById('modal-questions-container');
-            questionsContainer.innerHTML = '';
+        // Llenar preguntas
+        const questionsContainer = document.getElementById('modal-questions-container');
+        questionsContainer.innerHTML = '';
 
-            if (deviceData.questions?.length > 0) {
-                deviceData.questions.forEach(question => {
-                    const questionDiv = document.createElement('div');
-                    questionDiv.className = 'mb-3';
-                    questionDiv.innerHTML = `
+        if (deviceData.questions?.length > 0) {
+            deviceData.questions.forEach(question => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'mb-3';
+                questionDiv.innerHTML = `
                     <label class="form-label">${question.question}</label>
                     <select class="form-select form-select-sm question-answer" data-question-id="${question.id}">
                         <option value="" ${!question.answer ? 'selected' : ''}>Sin Responder</option>
@@ -183,64 +182,64 @@
                         ).join('')}
                     </select>
                 `;
-                    questionsContainer.appendChild(questionDiv);
-                });
-            } else {
-                questionsContainer.innerHTML = '<p class="text-muted">No hay preguntas para este dispositivo</p>';
-            }
-
-            // Llenar plagas
-            document.getElementById('modal-pests-container').innerHTML = deviceData.pests?.length > 0 ?
-                '' :
-                '<p class="text-muted">No hay plagas asignadas</p>';
-
-            var mockPests = pests.length > 0 ? pests : deviceData.pests;
-
-            mockPests?.forEach(pest => {
-                const key = pest.key ?? null;
-                addPestToContainer(pest.id, pest.name, pest.total, pest.key);
+                questionsContainer.appendChild(questionDiv);
             });
-
-            // Llenar productos
-            document.getElementById('modal-products-container').innerHTML = deviceData.products?.length > 0 ?
-                '' :
-                '<p class="text-muted">No hay productos asignados</p>';
-
-            var mockProducts = products.length > 0 ? products : deviceData.products;
-            mockProducts?.forEach(product => {
-                // Buscar el producto en allProducts para obtener los lotes disponibles
-                const productInAllProducts = allProducts.find(p => p.id == product.id);
-                let availableLots = [];
-
-                // Si el producto en deviceData no tiene lotes pero existe en allProducts, usar esos lotes
-                availableLots = productInAllProducts.lots || [];
-
-                // Manejar valores null/undefined para métodos y lotes
-                const methodId = product.application_method_id || '';
-                const lotId = product.lot_id || '';
-                const metric = productInAllProducts.metric ?? null;
-                const key = product.key ?? null;
-
-                addProductToContainer(
-                    product.id,
-                    product.name,
-                    product.quantity,
-                    methodId,
-                    lotId,
-                    applicationMethods,
-                    availableLots,
-                    metric,
-                    key
-                );
-            });
-
-            // Llenar observaciones
-            document.getElementById('modal-observations').value = deviceData.states.observations || '';
-            $('#device-img').attr('src', deviceData.states.device_image);
-
-            // Mostrar modal
-            new bootstrap.Modal(document.getElementById('reviewModal')).show();
+        } else {
+            questionsContainer.innerHTML = '<p class="text-muted">No hay preguntas para este dispositivo</p>';
         }
+
+        // Llenar plagas
+        document.getElementById('modal-pests-container').innerHTML = deviceData.pests?.length > 0 ?
+            '' :
+            '<p class="text-muted">No hay plagas asignadas</p>';
+
+        var mockPests = pests.length > 0 ? pests : deviceData.pests;
+
+        mockPests?.forEach(pest => {
+            const key = pest.key ?? null;
+            addPestToContainer(pest.id, pest.name, pest.total, pest.key);
+        });
+
+        // Llenar productos
+        document.getElementById('modal-products-container').innerHTML = deviceData.products?.length > 0 ?
+            '' :
+            '<p class="text-muted">No hay productos asignados</p>';
+
+        var mockProducts = products.length > 0 ? products : deviceData.products;
+        mockProducts?.forEach(product => {
+            // Buscar el producto en allProducts para obtener los lotes disponibles
+            const productInAllProducts = allProducts.find(p => p.id == product.id);
+            let availableLots = [];
+
+            // Si el producto en deviceData no tiene lotes pero existe en allProducts, usar esos lotes
+            availableLots = productInAllProducts.lots || [];
+
+            // Manejar valores null/undefined para métodos y lotes
+            const methodId = product.application_method_id || '';
+            const lotId = product.lot_id || '';
+            const metric = productInAllProducts.metric ?? null;
+            const key = product.key ?? null;
+
+            addProductToContainer(
+                product.id,
+                product.name,
+                product.quantity,
+                methodId,
+                lotId,
+                applicationMethods,
+                availableLots,
+                metric,
+                key
+            );
+        });
+
+        // Llenar observaciones
+        document.getElementById('modal-observations').value = deviceData.states.observations || '';
+        $('#device-img').attr('src', deviceData.states.device_image);
+
+        // Mostrar modal
+        new bootstrap.Modal(document.getElementById('reviewModal')).show();
+    }
 
 
     function addPestToContainer(pestId, pestName, quantity, key) {
