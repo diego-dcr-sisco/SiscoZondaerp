@@ -94,6 +94,7 @@
         
         // Buscar lotes del producto seleccionado en allLots
         var productLots = [];
+        console.log(window.allLots)
         
         if (window.allLots && Array.isArray(window.allLots)) {
             productLots = window.allLots.filter(function(lot) {
