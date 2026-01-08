@@ -26,7 +26,8 @@
                             <h6><strong>Punto de Control:</strong> <span id="modal-control-point"></span></h6>
                         </div>
                         <div class="col-md-6 mb-2">
-                          Supervisión de áreas de oportunidad.     <h6><strong>Área de Aplicación:</strong> <span id="modal-application-area"></span></h6>
+                            Supervisión de áreas de oportunidad. <h6><strong>Área de Aplicación:</strong> <span
+                                    id="modal-application-area"></span></h6>
                         </div>
                     </div>
                 </div>
@@ -251,13 +252,13 @@
     function openReviewModal(buttonElement, serviceId) {
         console.log('Apertura del modal')
         const deviceData = JSON.parse(buttonElement.getAttribute('data-device'));
-        
+
         // CRÍTICO: Limpiar arrays globales solo si es un dispositivo diferente
         if (currentDeviceId !== deviceData.id) {
             pests.length = 0;
             products.length = 0;
         }
-        
+
         currentDeviceId = deviceData.id;
         currentServiceId = serviceId;
 
@@ -363,7 +364,7 @@
             addPestToContainer(pest.id, pest.name, quantity, null);
             document.getElementById('new-pest-select').value = '';
             document.getElementById('pest-quantity').value = 1;
-            
+
             // Feedback visual
             const btn = document.getElementById('add-pest-btn');
             const originalHTML = btn.innerHTML;
@@ -411,7 +412,7 @@
         // Resetear el formulario
         productSelect.value = '';
         document.getElementById('product-quantity').value = 1;
-        
+
         // Feedback visual
         const btn = document.getElementById('add-product-btn');
         const originalHTML = btn.innerHTML;
@@ -439,22 +440,22 @@
         const removeBtn = e.target.closest('.remove-pest');
         if (removeBtn) {
             e.preventDefault();
-            
+
             const pestName = removeBtn.closest('.border.rounded').querySelector('.fw-bold').textContent;
-            
+
             // Confirmación antes de eliminar
             if (!confirm(`¿Está seguro de eliminar la plaga "${pestName}"?`)) {
                 return;
             }
-            
+
             const pestKey = removeBtn.dataset.pestKey;
-            
+
             // Eliminar del array global
             const index = pests.findIndex(p => p.key == pestKey);
             if (index != -1) {
                 pests.splice(index, 1);
             }
-            
+
             // Eliminar del DOM
             const pestItem = removeBtn.closest('.border.rounded');
             pestItem.remove();
@@ -473,14 +474,14 @@
 
         if (removeBtn) {
             e.preventDefault();
-            
+
             const productName = removeBtn.closest('.border.rounded').querySelector('.fw-bold').textContent;
-            
+
             // Confirmación antes de eliminar
             if (!confirm(`¿Está seguro de eliminar el producto "${productName}"?`)) {
                 return;
             }
-            
+
             const productItem = removeBtn.closest('.border.rounded');
             productItem.remove();
 
@@ -679,6 +680,6 @@
     }
 
     function generateTimeKey() {
-        return Date.now().toString();
+        return performance.now().toString().replace('.', '');
     }
 </script>
