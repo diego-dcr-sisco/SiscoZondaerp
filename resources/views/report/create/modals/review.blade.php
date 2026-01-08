@@ -298,6 +298,8 @@
 
         var mockPests = pests.length > 0 ? pests : deviceData.pests;
 
+        console.log(mockPests)
+
         mockPests?.forEach(pest => {
             const key = pest.key ?? null;
             addPestToContainer(pest.id, pest.name, pest.total, key);

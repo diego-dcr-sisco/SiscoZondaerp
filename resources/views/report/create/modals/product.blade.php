@@ -77,9 +77,6 @@
 </div>
 
 <script>
-    // Variable global con todos los lotes (debe estar definida en algún lugar)
-    // var lots = [...]; // Esto debe estar definido globalmente
-
     function loadProductLots() {
         var productId = $('#product').val();
         var lotSelect = $('#lot');
