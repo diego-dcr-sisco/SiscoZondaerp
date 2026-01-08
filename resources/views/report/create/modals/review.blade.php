@@ -298,7 +298,7 @@
 
         var mockPests = pests.length > 0 ? pests : deviceData.pests;
 
-        console.log(mockPests)
+        console.log('Plagas Encontradas: ', mockPests)
 
         mockPests?.forEach(pest => {
             const key = pest.key ?? null;
