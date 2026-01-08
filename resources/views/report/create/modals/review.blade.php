@@ -253,10 +253,10 @@
         const deviceData = JSON.parse(buttonElement.getAttribute('data-device'));
         
         // CRÍTICO: Limpiar arrays globales solo si es un dispositivo diferente
-        if (currentDeviceId !== deviceData.id) {
+        //if (currentDeviceId !== deviceData.id) {
             pests.length = 0;
             products.length = 0;
-        }
+        //}
         
         currentDeviceId = deviceData.id;
         currentServiceId = serviceId;
@@ -363,8 +363,6 @@
             addPestToContainer(pest.id, pest.name, quantity, null);
             document.getElementById('new-pest-select').value = '';
             document.getElementById('pest-quantity').value = 1;
-
-            console.log('holi')
             
             // Feedback visual
             const btn = document.getElementById('add-pest-btn');
