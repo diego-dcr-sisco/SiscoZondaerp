@@ -363,6 +363,8 @@
             addPestToContainer(pest.id, pest.name, quantity, null);
             document.getElementById('new-pest-select').value = '';
             document.getElementById('pest-quantity').value = 1;
+
+            console.log('holi')
             
             // Feedback visual
             const btn = document.getElementById('add-pest-btn');
