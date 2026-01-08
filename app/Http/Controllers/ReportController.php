@@ -500,11 +500,10 @@ class ReportController extends Controller
                     'name' => $device->applicationArea->name ?? '-'
                 ],
                 'questions' => $questions_data,
-                'pests' => $device->pests($order->id)->map(function ($dp) {
+                'pests' => $device->pests($order->id)->map(function ($dp, $index) {
                     return [
-                        'key' => (string) time(),
+                        'key' => time() . '_' . $index . '_' . $dp->pest_id,
                         'id' => $dp->pest_id,
-                        //'pest_id' => $dp->pest_id,
                         'name' => $dp->pest->name,
                         'device_id' => $dp->device_id,
                         'total' => $dp->total,
@@ -941,7 +940,7 @@ class ReportController extends Controller
                 }
             }
         }
-        
+
         /*if ($order->technicians()->count() == 1 && $order->closed_by == null) {
             $order->update(['closed_by' => $order->technicians()->first()->user_id]);
         } else {
