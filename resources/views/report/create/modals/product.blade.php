@@ -94,10 +94,10 @@
         
         // Buscar lotes del producto seleccionado en lots
         var productLots = [];
-        console.log(window.lots)
+        console.log(lots)
         
-        if (window.lots && Array.isArray(window.lots)) {
-            productLots = window.lots.filter(function(lot) {
+        if (lots && Array.isArray(lots)) {
+            productLots = lots.filter(function(lot) {
                 return lot.product_id == productId;
             });
         }
