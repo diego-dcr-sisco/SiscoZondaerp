@@ -59,8 +59,9 @@
                     <select class="form-select" id="lot" name="lot_id">
                         <option value="" selected>Sin lote</option>
                         @foreach ($lots as $lot)
-                            <option value="{{ $lot->id }}">{{ $lot->product->name ?? '-' }} - No. {{ $lot->registration_number }}
-                                </option>
+                            <option value="{{ $lot->id }}">{{ $lot->product->name ?? '-' }} - No.
+                                {{ $lot->registration_number }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -78,56 +79,57 @@
 <script>
     // Variable global con todos los lotes (debe estar definida en algún lugar)
     // var lots = [...]; // Esto debe estar definido globalmente
-    
+
     function loadProductLots() {
         var productId = $('#product').val();
         var lotSelect = $('#lot');
-        
+
         // Limpiar opciones actuales
         lotSelect.empty();
-        
+
         // Si no hay producto seleccionado
         if (!productId) {
             lotSelect.append('<option value="" selected>Seleccione un producto primero</option>');
             return;
         }
-        
+
         // Buscar lotes del producto seleccionado en lots
         var productLots = [];
         console.log(lots)
-        
+
         if (lots && Array.isArray(lots)) {
             productLots = lots.filter(function(lot) {
                 return lot.product_id == productId;
             });
         }
-        
+
         // Agregar opción "Sin lote" siempre
-        lotSelect.append('<option value="">Sin lote</option>');
-        
+
         // Si hay lotes para el producto, agregarlos
         if (productLots.length > 0) {
             productLots.forEach(function(lot) {
                 var lotText = '';
-                
+
                 // Construir texto del lote
                 if (lot.product && lot.product.name) {
                     lotText += lot.product.name + ' - ';
                 } else if (lot.product_name) {
                     lotText += lot.product_name + ' - ';
                 }
-                
+
                 lotText += 'No. ' + (lot.registration_number || 'N/A');
-                
+
                 lotSelect.append($('<option>', {
                     value: lot.id,
                     text: lotText
                 }));
             });
+        } else {
+            lotSelect.append('<option value="">Sin lote</option>');
         }
         // Si no hay lotes, solo queda la opción "Sin lote"
     }
-    
+
     function setProduct(element) {
         const productData = element.getAttribute("data-product");
         let data;
@@ -151,7 +153,7 @@
         // Cargar los lotes del producto seleccionado
         if (data.product_id) {
             loadProductLots();
-            
+
             // Después de cargar los lotes, seleccionar el lote correspondiente
             // Usamos setTimeout para asegurar que el select se haya actualizado
             setTimeout(function() {
@@ -169,19 +171,19 @@
     // Función cuando cambia el producto (para el modal nuevo)
     function onProductChange() {
         var productId = $('#product').val();
-        
+
         if (productId) {
             // Cargar lotes del producto
             loadProductLots();
-            
+
             // Obtener datos del producto seleccionado para completar otros campos
             var selectedOption = $('#product option:selected');
-            
+
             // Si el producto tiene datos en data attributes, completarlos
             if (selectedOption.data('metric-id')) {
                 $('#metric').val(selectedOption.data('metric-id'));
             }
-            
+
             if (selectedOption.data('dosage')) {
                 $('#dosage').val(selectedOption.data('dosage'));
             }
@@ -204,10 +206,10 @@
         $('#op-id').val(null);
         $('#product-form').find('select').val('');
         $('#product-form').find('input[type="checkbox"], input[type="radio"]').prop('checked', false);
-        
+
         // Restablecer select de lotes
         $('#lot').empty().append('<option value="" selected>Seleccione un producto primero</option>');
-        
+
         $('#service').prop('disabled', false);
         $('#application-method').prop('disabled', false);
         $('#product').prop('disabled', false);
@@ -217,7 +219,7 @@
     $(document).ready(function() {
         // Asegurar que el select de lotes esté vacío al inicio
         $('#lot').empty().append('<option value="" selected>Seleccione un producto primero</option>');
-        
+
         // Si ya hay un producto seleccionado (en caso de edición), cargar sus lotes
         var initialProductId = $('#product').val();
         if (initialProductId) {
