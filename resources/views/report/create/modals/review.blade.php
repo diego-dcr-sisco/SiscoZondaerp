@@ -152,6 +152,7 @@
 
         // Prevenir duplicados por key (permite misma plaga con diferentes keys)
         if (document.querySelector(`.remove-pest[data-pest-key="${pestKey}"]`)) {
+            console.log('return via KEY')
             return;
         }
 
