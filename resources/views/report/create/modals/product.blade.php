@@ -30,7 +30,7 @@
                 <div class="mb-3">
                     <label for="product-id" class="form-label is-required">Método de aplicación</label>
                     <select class="form-select" id="application-method" name="application_method_id"
-                        onchange="completeProduct()" required>
+                        required>
                         <option value="" selected>Sin método de aplicación</option>
                         @foreach ($application_methods as $method)
                             <option value="{{ $method->id }}">{{ $method->name }}</option>
