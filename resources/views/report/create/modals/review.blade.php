@@ -244,6 +244,7 @@
 
     function addPestToContainer(pestId, pestName, quantity, key) {
         const container = document.getElementById('modal-pests-container');
+        console.log("Cantidad: ", quantity);
 
         if (container.innerHTML.includes('No hay plagas asignadas')) {
             container.innerHTML = '';
