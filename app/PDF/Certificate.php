@@ -462,6 +462,39 @@ class Certificate
             : 'Sin notas';
     }
 
+    private function isValidRecommendation($data)
+    {
+        // Verifica si el array está vacío
+        if (empty($data)) {
+            return false;
+        }
+
+        // Si es un array multidimensional (como en el ejemplo)
+        if (isset($data[0]) && is_array($data[0])) {
+            foreach ($data as $item) {
+                if (!isset($item['recommendation_text'])) {
+                    continue;
+                }
+
+                $text = $item['recommendation_text'];
+
+                // Verifica si es null, string vacío o solo whitespace
+                if ($text === null || trim($text) === '') {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Si es un array simple con la clave recommendation_text
+        if (isset($data['recommendation_text'])) {
+            $text = $data['recommendation_text'];
+            return $text !== null && trim($text) !== '';
+        }
+
+        return false;
+    }
+
     public function recommendations()
     {
         $this->data['recommendations'] = ''; // Inicializar
@@ -469,14 +502,17 @@ class Certificate
 
         foreach ($services as $service) {
             $recs = OrderRecommendation::where('order_id', $this->order->id)->where('service_id', $service->id)->get();
-
-            foreach ($recs as $index => $rec) {
+            
+            if($this->isValidRecommendation($recs)) {
+            foreach ($recs as $rec) {
                 /*if ($rec->recommendation_id) {
                     $this->data['recommendations'] .= (($index + 1 . ') ' . $rec->recommendation->description) ?? '') . "<br>";
                 } else {
                     $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";
                 }*/
                 $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";
+            }} else {
+                $this->data['recommendations'] = 'Sin recomendaciones';
             }
         }
     }
