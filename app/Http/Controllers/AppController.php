@@ -76,9 +76,12 @@ class AppController extends Controller
 		$token = $user->createToken('auth-token')->plainTextToken;
 
 		return response()->json([
-			'id' => $user->id,
-			'email' => $user->email,
-			'username' => $user->name,
+			'user' => [
+				'id' => $user->id,
+				'email' => $user->email,
+				'username' => $user->username,
+				'name' => $user->name,
+			],
 			'token' => $token,
 		], 200);
 	}
@@ -410,7 +413,7 @@ class AppController extends Controller
 				return response()->json(['message' => 'Reporte recibido'], 200);
 			} else {
 				// Si la orden no existe o ya fue procesada, devolvemos un error.
-				$message = $order ? 'El reporte de la orden #'. $order->id . '(' . $order->folio . ')' . ' está cerrado. No se puede sincronizar.' : 'Orden #' . $data['order_id'] . ' NO fue encontrada. Favor de contactar a soporte';
+				$message = $order ? 'El reporte de la orden #' . $order->id . '(' . $order->folio . ')' . ' está cerrado. No se puede sincronizar.' : 'Orden #' . $data['order_id'] . ' NO fue encontrada. Favor de contactar a soporte';
 				return response()->json([
 					'error' => 'No se puede sincronizar el reporte.',
 					'message' => $message
