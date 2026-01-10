@@ -76,7 +76,7 @@ class AppController extends Controller
 		$token = $user->createToken('auth-token')->plainTextToken;
 
 		return response()->json([
-			'userId' => $user->id,
+			'id' => $user->id,
 			'email' => $user->email,
 			'username' => $user->name,
 			'token' => $token,
