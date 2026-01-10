@@ -93,7 +93,7 @@
                             <small class="text-muted">
                                 <i class="bi bi-info-circle"></i>
                                 Versión actual: <strong>{{ $f_version->version ?? '---' }}</strong> |
-                                Última actualización: {{ $f_version?->updated_at->format('d/m/Y H:i') }}
+                                Última actualización: {{ $f_version?->updated_at?->format('d/m/Y H:i') }}
                             </small>
                         </div>
 

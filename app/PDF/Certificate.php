@@ -502,16 +502,12 @@ class Certificate
 
         foreach ($services as $service) {
             $recs = OrderRecommendation::where('order_id', $this->order->id)->where('service_id', $service->id)->get();
-            
-            if($this->isValidRecommendation($recs)) {
-            foreach ($recs as $rec) {
-                /*if ($rec->recommendation_id) {
-                    $this->data['recommendations'] .= (($index + 1 . ') ' . $rec->recommendation->description) ?? '') . "<br>";
-                } else {
+
+            if ($this->isValidRecommendation($recs)) {
+                foreach ($recs as $rec) {
                     $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";
-                }*/
-                $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";
-            }} else {
+                }
+            } else {
                 $this->data['recommendations'] = 'Sin recomendaciones';
             }
         }
