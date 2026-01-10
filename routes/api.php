@@ -12,6 +12,7 @@ use App\Http\Controllers\LotController;
 
 Route::get('/token/session/get', [AppController::class, 'getCsrfToken']);
 Route::post('/login', [AppController::class, 'login']);
+Route::post('/logout', [AppController::class, 'logout']);
 
 // Efectivo v1.3
 Route::get('/orders/{id}/{date}', [AppController::class, 'orders']);

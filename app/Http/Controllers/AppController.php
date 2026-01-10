@@ -64,7 +64,7 @@ class AppController extends Controller
 			'password' => 'required',
 		]);
 
-		$user = User::where('email', $request->email)->first();
+		$user = User::where('email', $request->email)->orWhere('username', $request->email)->first();
 
 		if (!$user || !Hash::check($request->password, $user->password)) {
 			throw ValidationException::withMessages([
@@ -74,6 +74,7 @@ class AppController extends Controller
 
 		// Si estás usando tokens de Sanctum
 		$token = $user->createToken('auth-token')->plainTextToken;
+		$user->update(['session_token', $token]);
 
 		return response()->json([
 			'user' => [
@@ -84,6 +85,26 @@ class AppController extends Controller
 			],
 			'token' => $token,
 		], 200);
+	}
+
+	public function logout(Request $request)
+	{
+		$request->validate([
+			'email' => 'required|email',
+			'password' => 'required',
+		]);
+
+		$user = User::where('email', $request->email)->orWhere( 'username', $request->email)->first();
+
+		if (!$user || !Hash::check($request->password, $user->password)) {
+			throw ValidationException::withMessages([
+				'email' => ['Las credenciales proporcionadas son incorrectas.'],
+			]);
+		}
+
+		// Si estás usando tokens de Sanctum
+		$user->update(['session_token', null]);
+		return response()->json([], 200);
 	}
 
 	public function getUsers()
