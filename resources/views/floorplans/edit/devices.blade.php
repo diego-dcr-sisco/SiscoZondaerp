@@ -115,7 +115,7 @@
                                     <input type="number" class="form-control bg-secondary-subtle" name="version"
                                         value="{{ $f_version?->version }}" readonly>
                                     <input type="date" class="form-control" name="version_updated_at"
-                                        value="{{ $f_version?->updated_at->format('Y-m-d') }}">
+                                        value="{{ $f_version?->updated_at?->format('Y-m-d') }}">
                                 </div>
                             @else
                                 <input type="text" class="form-control" value="Sin versión" disabled>
