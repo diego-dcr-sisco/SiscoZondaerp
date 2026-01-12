@@ -77,12 +77,10 @@ class AppController extends Controller
 		$user->update(['session_token', $token]);
 
 		return response()->json([
-			'user' => [
-				'id' => $user->id,
-				'email' => $user->email,
-				'username' => $user->username,
-				'name' => $user->name,
-			],
+			'userId' => $user->id,
+			'email' => $user->email,
+			'username' => $user->username,
+			'name' => $user->name,
 			'token' => $token,
 		], 200);
 	}
@@ -94,7 +92,7 @@ class AppController extends Controller
 			'password' => 'required',
 		]);
 
-		$user = User::where('email', $request->email)->orWhere( 'username', $request->email)->first();
+		$user = User::where('email', $request->email)->orWhere('username', $request->email)->first();
 
 		if (!$user || !Hash::check($request->password, $user->password)) {
 			throw ValidationException::withMessages([
