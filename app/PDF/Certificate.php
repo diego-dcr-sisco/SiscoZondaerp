@@ -470,7 +470,7 @@ class Certificate
         }
 
         // Si es un array multidimensional (como en el ejemplo)
-        if (isset($data[0]) && is_array($data[0])) {
+        if (isset($data[0])) {
             foreach ($data as $item) {
                 if (!isset($item['recommendation_text'])) {
                     continue;
@@ -501,8 +501,8 @@ class Certificate
         $services = $this->order->services()->get();
 
         foreach ($services as $service) {
-            $recs = OrderRecommendation::where('order_id', $this->order->id)->where('service_id', $service->id)->get();
-
+            $recs = OrderRecommendation::where('order_id', $this->order_id)->where('service_id', $service->id)->get();
+            
             if ($this->isValidRecommendation($recs)) {
                 foreach ($recs as $rec) {
                     $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";

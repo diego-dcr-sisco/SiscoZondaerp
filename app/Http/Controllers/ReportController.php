@@ -901,9 +901,10 @@ class ReportController extends Controller
 
             $orders = $query_orders->get();
 
-            foreach ($orders as $ord) {
+            foreach ($orders as $order) {
                 $recs_data = $propagate[$service->id]->recs;
-                if (is_array($recs_data)) {
+                //dd($recs_data);
+                /*if (is_array($recs_data)) {
                     if (count($recs_data) > 0) {
                         $updated_recs = [];
 
@@ -929,15 +930,15 @@ class ReportController extends Controller
                             ->delete();
                     }
                 } else {
-                    $has_text = $recs_data != null && $recs_data != '' && $recs_data != '<p><br></p>';
+                    */
                     OrderRecommendation::updateOrCreate([
                         'order_id' => $order->id,
                         'service_id' => $service->id
                     ], [
                         'recommendation_id' => null,
-                        'recommendation_text' => $has_text ? $recs_data : '<p><strong>ANTES DE LA APLICACIÓN QUÍMICA</strong></p><ol><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Identificar la plaga a controlar.</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>No debe encontrarse personal en el área.</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>No debe de haber materia prima expuesta.</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Asegurar que la aplicación no afecte el proceso, producción o a terceros.</li></ol><p><br></p><p><strong>DURANTE DE LA APLICACIÓN QUÍMICA</strong></p><ol><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>En el área solo debe de encontrarse el técnico aplicador</li></ol><p><br></p><p><strong>DESPUÉS DE LA APLICACIÓN QUÍMICA</strong></p><ol><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Respetar el tiempo de reentrada conforme a la etiqueta del producto a utilizar.</li><li data-list="bullet"><span class="ql-ui" contenteditable="false"></span>Realizar recolección de plaga o limpieza necesaria al tipo de área.</li></ol>',
+                        'recommendation_text' =>  $recs_data ?? null,
                     ]);
-                }
+                //}
             }
         }
 
