@@ -25,7 +25,7 @@
             </span>
         </div>
         <div class="d-flex flex-row justify-content-between align-items-center py-3">
-            @can('write_')
+            @can('write_warehouse')
                 <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
                     <i class="bi bi-plus-lg fw-bold"></i> Crear almacén
                 </button>
