@@ -727,6 +727,8 @@ class StockController extends Controller
             ];
         }
 
+        dd($products_data);
+
         session()->flash('warning', 'Antes de agregar un movimiento de entrada, asegurate de haber registrado los lotes correspondientes en el almacén.');
 
         return view('stock.create.inputs.entries', compact('warehouse', 'all_warehouses', 'products_data', 'input_movements', 'navigation'));
