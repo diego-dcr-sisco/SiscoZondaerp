@@ -45,9 +45,9 @@
                         <th scope="col" class="">Técnico</th>
                         <th scope="col" class="">Tipo</th>
                         <th scope="col" class="">Productos</th>
-                        @if ($hasActionPermission)
+                        @can('write_warehouse')
                             <th scope="col" class=""></th>
-                        @endif
+                        @endcan
                     </tr>
                 </thead>
                 <tbody>
@@ -106,7 +106,7 @@
                             <td class="">
                                 {{ $warehouse->products_count }}
                             </td>
-                            @if ($hasActionPermission)
+                            @can('write_warehouse')
                                 <td>
                                     <a href="{{ route('stock.show', ['id' => $warehouse->id]) }}"
                                         class="btn btn-info btn-sm" data-bs-toggle="tooltip" title="Ver almacén">
@@ -158,7 +158,7 @@
                                         </form>
                                     @endif
                                 </td>
-                            @endif
+                            @endcan
                         </tr>
                     @empty
                         <tr>
