@@ -140,6 +140,17 @@
     <script>
         const directories = @json($local_dirs);
         const paths = @json($user->directories->pluck('path')->toArray());
-        var clients = @json($clients ?? []);
+        var user_clients = @json($clients ?? []);
+        var selected_sedes = [];
+
+
+        console.log(user_clients);
+
+        $(document).ready(function() {
+            if (user_clients && user_clients.length > 0) {
+                selected_sedes = user_clients;
+                showSedes();
+            }
+        });
     </script>
 @endsection
