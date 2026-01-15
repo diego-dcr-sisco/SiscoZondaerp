@@ -695,7 +695,7 @@
             $('#reviewModal').modal('hide');
             
             // Mostrar mensaje de éxito
-            showNotification('success', '¡Datos guardados correctamente!');
+            //showNotification('success', '¡Datos guardados correctamente!');
         },
         error: function(xhr) {
             console.error('Error al guardar:', xhr.responseText);
