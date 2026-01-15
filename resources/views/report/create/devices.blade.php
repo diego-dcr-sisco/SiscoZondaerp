@@ -63,14 +63,14 @@
                                         (<span class="product-quantity">{{ $product['quantity'] }}
                                             {{ extractParenthesesContent($product['metric']) }}</span>)
                                     </li>
-                                @endforeach     
+                                @endforeach
                             </ul>
                         </td>
                         <td>
                             <span id="device{{ $device['id'] }}-is_checked"
                                 class="{{ $device['states']['is_checked'] ? 'text-success' : 'text-danger' }} m-1"
                                 data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip"
-                                data-bs-title="{{ $device['states']['is_checked']  ? 'Revisado' : 'No revisado' }}">
+                                data-bs-title="{{ $device['states']['is_checked'] ? 'Revisado' : 'No revisado' }}">
                                 <i class="bi bi-check-circle-fill"></i>
                             </span>
 
@@ -82,11 +82,11 @@
                             </span>
                         </td>
                         <td>
-                                <button type="button" class="btn btn-secondary btn-sm"
-                                    data-device="{{ json_encode($device) }}"
-                                    onclick="openReviewModal(this, {{ $service->id }})">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
+                            <button type="button" class="btn btn-secondary btn-sm"
+                                data-device="{{ json_encode($device) }}"
+                                onclick="openReviewModal(this, {{ $service->id }})">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
                         </td>
                     </tr>
                 @endforeach
@@ -107,10 +107,7 @@
     const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 </script>
 
-{{-- <script>
-    const lots = @json($lots);
-    var devices = @json($devices);
-    var autoreview = @json($autoreview);
-    var metrics = @json($metrics);
-    var products = @json($products);
-</script> --}}
+<script>
+    var copy_devices = @json($devices);
+    console.log('Dispositivos cargados:', copy_devices);
+</script>
