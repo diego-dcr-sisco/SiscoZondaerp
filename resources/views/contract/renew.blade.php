@@ -41,6 +41,7 @@
         //{{-- const view = @json($view); --}}
 
         $(function() {
+            console.log('Loading renew contract view...');
             displaySelectedServicestoContract();
         });
     </script>
