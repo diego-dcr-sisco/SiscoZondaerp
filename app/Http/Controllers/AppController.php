@@ -23,6 +23,7 @@ use App\Models\PestCatalog;
 use App\Models\ProductCatalog;
 use App\Models\Question;
 use App\Models\Lot;
+use App\Models\OrderRecommendation;
 use App\Models\Technician;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -295,6 +296,18 @@ class AppController extends Controller
 				$order->synchronized_at = now();
 				$order->status_id = 3;
 				$order->save();
+
+				OrderRecommendation::updateOrCreate(
+					[
+						'order_id' => $order->id,
+					],
+					[
+						'service_id' => $order->services()->first()->id ?? null,
+						'recommendation_id' => null,
+						'recommendation_text' => $data['recommendations'] ?? null,
+					]
+				);
+
 
 				$user = User::find($data['user_id']);
 				$products_data = $data['products'];
