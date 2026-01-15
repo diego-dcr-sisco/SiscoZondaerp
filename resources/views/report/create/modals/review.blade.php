@@ -687,7 +687,7 @@
             const updatedDevice = updateDeviceDataInCopyDevices(formattedData);
             
             // 2. Marcar el dispositivo como revisado en la tabla principal
-            markDeviceAsReviewed(currentDeviceId);
+            //markDeviceAsReviewed(currentDeviceId);
             
             // 3. Actualizar el botón de edición con los nuevos datos
             updateDeviceButtonData(currentDeviceId, updatedDevice);
