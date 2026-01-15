@@ -39,11 +39,6 @@
         const prefixes = @json($prefixes);
         const contain_selected_services = @json($selected_services);
         //{{-- const view = @json($view); --}}
-
-        $(function() {
-            console.log('Loading renew contract view...');
-            displaySelectedServicestoContract();
-        });
     </script>
 
     <script src="{{ asset('js/technician.min.js') }}?v={{ time() }}"></script>
