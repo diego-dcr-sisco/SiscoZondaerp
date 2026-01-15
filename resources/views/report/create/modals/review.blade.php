@@ -688,7 +688,7 @@
                 const updatedDevice = updateDeviceDataInCopyDevices(formattedData);
 
                 // 2. Marcar el dispositivo como revisado en la tabla principal
-                markDeviceAsReviewed(currentDeviceId);
+                markDeviceAsReviewed(currentDeviceId, true);
 
                 // 3. Actualizar el botón de edición con los nuevos datos
                 updateDeviceButtonData(currentDeviceId, updatedDevice);
@@ -696,9 +696,10 @@
                 $('#reviewModal').modal('hide');
 
                 alert("✅ Revisión guardada correctamente\n\n" +
-                        `• Hora: ${new Date().toLocaleTimeString()}`);
+                    `• Hora: ${new Date().toLocaleTimeString()}`);
             },
             error: function(xhr) {
+                markDeviceAsReviewed(currentDeviceId, false);
                 console.error('Error al guardar:', xhr.responseText);
                 showNotification('error',
                     'Error al guardar los cambios. Por favor, intente nuevamente.');
@@ -783,81 +784,45 @@
         }
     }
 
-    function markDeviceAsReviewed(deviceId) {
-        const deviceRow = $(`tr[data-device-id="${deviceId}"]`);
+    function markDeviceAsReviewed(deviceId, isChecked) {
+        const $el = $(`#device${deviceId}-is_checked`);
 
-        if (deviceRow.length) {
-            // 1. Actualizar el estado de revisión (is_checked)
-            const checkedIcon = $(`#device${deviceId}-is_checked`);
-            if (checkedIcon.length) {
-                // Cambiar clases para estado revisado
-                checkedIcon.removeClass('text-danger').addClass('text-success');
+        if (!$el.length) return;
 
-                // Actualizar tooltip
-                checkedIcon.attr('data-bs-title', 'Revisado');
+        // Cambiar clases de color
+        $el
+            .removeClass("text-success text-danger")
+            .addClass(isChecked ? "text-success" : "text-danger");
 
-                // Actualizar ícono si es necesario (opcional)
-                checkedIcon.find('i').removeClass('bi-x-circle-fill bi-question-circle-fill').addClass(
-                    'bi-check-circle-fill');
+        // Actualizar tooltip
+        const title = isChecked ? "Revisado" : "No revisado";
+        $el.attr("data-bs-title", title);
 
-                // Reinicializar tooltip
-                if (typeof bootstrap !== 'undefined') {
-                    const tooltip = new bootstrap.Tooltip(checkedIcon[0]);
-                }
-            }
-
-            // 2. Actualizar el estado de escaneado (is_scanned)
-            const scannedIcon = $(`#device${deviceId}-is_scanned`);
-            if (scannedIcon.length) {
-                // Marcar como escaneado (si aplica - depende de tu lógica)
-                // Si siempre se marca como escaneado al guardar:
-                scannedIcon.removeClass('text-danger').addClass('text-success');
-                scannedIcon.attr('data-bs-title', 'Escaneado');
-
-                // Reinicializar tooltip
-                if (typeof bootstrap !== 'undefined') {
-                    const tooltip = new bootstrap.Tooltip(scannedIcon[0]);
-                }
-            }
-
-            // 3. Cambiar estilo de la fila
-            deviceRow.addClass('table-success');
-            deviceRow.removeClass('table-danger table-warning');
-
-            // 4. Actualizar resumen de preguntas si existe
-            const questionsCell = deviceRow.find('.questions-summary');
-            if (questionsCell.length) {
-                const device = copy_devices.find(dev => dev.id == deviceId);
-                if (device) {
-                    const answeredCount = device.questions.filter(q => q.answer && q.answer.trim() !== '').length;
-                    const totalQuestions = device.questions.length;
-                    questionsCell.text(`${answeredCount}/${totalQuestions} respondidas`);
-                }
-            }
-
-            console.log(`Dispositivo ${deviceId} marcado como revisado y escaneado`);
-        } else {
-            console.warn(`Fila para dispositivo ${deviceId} no encontrada`);
+        // Refrescar tooltip si ya estaba inicializado
+        const tooltip = bootstrap.Tooltip.getInstance($el[0]);
+        if (tooltip) {
+            tooltip.setContent({
+                ".tooltip-inner": title
+            });
         }
-    }
 
 
-    function showSpinner() {
-        $("#fullscreen-spinner").removeClass("d-none");
-    }
+        function showSpinner() {
+            $("#fullscreen-spinner").removeClass("d-none");
+        }
 
-    function hideSpinner() {
-        $("#fullscreen-spinner").addClass("d-none");
-    }
+        function hideSpinner() {
+            $("#fullscreen-spinner").addClass("d-none");
+        }
 
-    function extractParenthesesContent(cadena) {
-        // Buscar el contenido entre paréntesis
-        const regex = /\((.*?)\)/;
-        const coincidencias = cadena.match(regex);
-        return coincidencias && coincidencias[1] ? coincidencias[1] : '';
-    }
+        function extractParenthesesContent(cadena) {
+            // Buscar el contenido entre paréntesis
+            const regex = /\((.*?)\)/;
+            const coincidencias = cadena.match(regex);
+            return coincidencias && coincidencias[1] ? coincidencias[1] : '';
+        }
 
-    function generateTimeKey() {
-        return Date.now().toString();
-    }
+        function generateTimeKey() {
+            return Date.now().toString();
+        }
 </script>
