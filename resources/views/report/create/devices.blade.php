@@ -82,7 +82,7 @@
                             </span>
                         </td>
                         <td>
-                            <button type="button" class="btn btn-secondary btn-sm"
+                            <button type="button" class="btn btn-secondary btn-sm" id="btn-review-device{{ $device['id'] }}"
                                 data-device="{{ json_encode($device) }}"
                                 onclick="openReviewModal(this, {{ $service->id }})">
                                 <i class="bi bi-pencil-square"></i>

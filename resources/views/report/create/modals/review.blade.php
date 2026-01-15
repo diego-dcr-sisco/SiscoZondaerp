@@ -495,167 +495,166 @@
     });
 
     document.getElementById('save-review-btn').addEventListener('click', () => {
-        if (!currentDeviceId || !currentServiceId) return;
+    if (!currentDeviceId || !currentServiceId) return;
 
-        // Recopilar plagas
-        document.querySelectorAll('#modal-pests-container > .border.rounded').forEach(item => {
-            const pestId = item.querySelector('.remove-pest').dataset.pestId;
-            const pestKey = item.querySelector('.remove-pest').dataset.pestKey;
-            const pestName = item.querySelector('.fw-bold').textContent;
-            const quantity = item.querySelector('.pest-quantity').value;
+    // Recopilar plagas
+    document.querySelectorAll('#modal-pests-container > .border.rounded').forEach(item => {
+        const pestId = item.querySelector('.remove-pest').dataset.pestId;
+        const pestKey = item.querySelector('.remove-pest').dataset.pestKey;
+        const pestName = item.querySelector('.fw-bold').textContent;
+        const quantity = item.querySelector('.pest-quantity').value;
 
-            // Buscar por key para manejar correctamente múltiples plagas del mismo tipo
-            const pest_index = pests.findIndex(p => p.key == pestKey);
+        // Buscar por key para manejar correctamente múltiples plagas del mismo tipo
+        const pest_index = pests.findIndex(p => p.key == pestKey);
 
-            if (pest_index != -1) {
-                pests[pest_index].quantity = parseInt(quantity) || 1;
-            } else {
-                pests.push({
-                    key: pestKey,
-                    id: pestId,
-                    name: pestName,
-                    quantity: parseInt(quantity) || 1
-                });
-            }
-        });
+        if (pest_index != -1) {
+            pests[pest_index].quantity = parseInt(quantity) || 1;
+        } else {
+            pests.push({
+                key: pestKey,
+                id: pestId,
+                name: pestName,
+                quantity: parseInt(quantity) || 1
+            });
+        }
+    });
 
-        // Recopilar productos
-        document.querySelectorAll('#modal-products-container > .border.rounded').forEach(item => {
-            const productId = item.querySelector('.remove-product').dataset.productId;
-            const productKey = item.querySelector('.remove-product').dataset.productKey;
-            const productName = item.querySelector('.fw-bold').textContent;
-            const quantity = item.querySelector('.product-quantity').value;
-            const methodId = item.querySelector('.product-method').value || null;
-            const lotId = item.querySelector('.product-lot').value || null;
+    // Recopilar productos
+    document.querySelectorAll('#modal-products-container > .border.rounded').forEach(item => {
+        const productId = item.querySelector('.remove-product').dataset.productId;
+        const productKey = item.querySelector('.remove-product').dataset.productKey;
+        const productName = item.querySelector('.fw-bold').textContent;
+        const quantity = item.querySelector('.product-quantity').value;
+        const methodId = item.querySelector('.product-method').value || null;
+        const lotId = item.querySelector('.product-lot').value || null;
 
-            // Buscar el producto en allProducts para referencia
-            const productInAllProducts = allProducts.find(p => p.id == productId);
+        // Buscar el producto en allProducts para referencia
+        const productInAllProducts = allProducts.find(p => p.id == productId);
 
-            // Encontrar el nombre del método y lote para mostrar
-            const method = methodId ? applicationMethods.find(m => m.id == methodId) : null;
-            const lot = lotId ? (productInAllProducts?.lots?.find(l => l.id == lotId) || null) : null;
+        // Encontrar el nombre del método y lote para mostrar
+        const method = methodId ? applicationMethods.find(m => m.id == methodId) : null;
+        const lot = lotId ? (productInAllProducts?.lots?.find(l => l.id == lotId) || null) : null;
 
-            // Buscar por key para manejar correctamente múltiples instancias
-            const product_index = products.findIndex(p => p.key == productKey);
+        // Buscar por key para manejar correctamente múltiples instancias
+        const product_index = products.findIndex(p => p.key == productKey);
 
-            if (product_index != -1) {
-                // Actualizar producto existente
-                products[product_index].quantity = parseInt(quantity) || 1;
-                products[product_index].application_method_id = methodId || null;
-                products[product_index].method_name = method?.name || 'Sin método';
-                products[product_index].lot_id = lotId || null;
-                products[product_index].lot_number = lot?.registration_number || 'Sin lote';
-            } else {
-                products.push({
-                    key: productKey,
-                    id: productId,
-                    name: productName,
-                    quantity: parseInt(quantity) || 1,
-                    application_method_id: methodId || null,
-                    method_name: method?.name || 'Sin método',
-                    lot_id: lotId || null,
-                    lot_number: lot?.registration_number || 'Sin lote',
-                    metric: productInAllProducts.metric,
-                    // Mantener referencia a los lotes disponibles para futuras ediciones
-                    available_lots: productInAllProducts?.lots || []
-                });
-            }
-        });
+        if (product_index != -1) {
+            // Actualizar producto existente
+            products[product_index].quantity = parseInt(quantity) || 1;
+            products[product_index].application_method_id = methodId || null;
+            products[product_index].method_name = method?.name || 'Sin método';
+            products[product_index].lot_id = lotId || null;
+            products[product_index].lot_number = lot?.registration_number || 'Sin lote';
+        } else {
+            products.push({
+                key: productKey,
+                id: productId,
+                name: productName,
+                quantity: parseInt(quantity) || 1,
+                application_method_id: methodId || null,
+                method_name: method?.name || 'Sin método',
+                lot_id: lotId || null,
+                lot_number: lot?.registration_number || 'Sin lote',
+                metric: productInAllProducts.metric,
+                // Mantener referencia a los lotes disponibles para futuras ediciones
+                available_lots: productInAllProducts?.lots || []
+            });
+        }
+    });
 
-        const updatedData = {
+    const updatedData = {
+        device_id: currentDeviceId,
+        service_id: currentServiceId,
+        questions: Array.from(document.querySelectorAll('.question-answer')).map(select => ({
+            id: select.dataset.questionId,
+            answer: select.value
+        })),
+        pests: pests,
+        products: products,
+        observations: document.getElementById('modal-observations').value
+    };
+
+    // Convertir los productos y plagas al formato correcto para copy_devices
+    const formattedData = {
+        device_id: currentDeviceId,
+        service_id: currentServiceId,
+        questions: updatedData.questions,
+        pests: pests.map(pest => ({
+            key: pest.key,
+            id: pest.id.toString(), // Asegurar que sea string para coincidir con el formato
+            name: pest.name,
+            device_id: currentDeviceId.toString(), // Asegurar formato string
+            quantity: pest.quantity.toString() // Convertir a string
+        })),
+        products: products.map(product => ({
+            key: product.key,
+            id: product.id.toString(), // Asegurar string
+            order_id: "{{ $order->id }}", // Obtener del contexto actual
+            device_id: currentDeviceId.toString(), // Asegurar string
+            application_method_id: product.application_method_id ? product.application_method_id.toString() : null,
+            lot_id: product.lot_id ? product.lot_id.toString() : null,
+            name: product.name,
+            quantity: product.quantity.toString(), // Convertir a string
+            metric: product.metric
+        })),
+        states: {
+            order_id: {{ $order->id }},
             device_id: currentDeviceId,
-            service_id: currentServiceId,
-            questions: Array.from(document.querySelectorAll('.question-answer')).map(select => ({
-                id: select.dataset.questionId,
-                answer: select.value
-            })),
-            pests: pests,
-            products: products,
-            observations: document.getElementById('modal-observations').value
-        };
+            is_scanned: "1", // Asumir que se ha escaneado/visitado
+            is_checked: "1", // Marcar como revisado
+            observations: updatedData.observations || null,
+            device_image: null // Puedes añadir lógica para imágenes si es necesario
+        }
+    };
 
-        // Convertir los productos y plagas al formato correcto para copy_devices
-        const formattedData = {
-            device_id: currentDeviceId,
-            service_id: currentServiceId,
-            questions: updatedData.questions,
-            pests: pests.map(pest => ({
-                key: pest.key,
-                id: pest.id.toString(), // Asegurar que sea string para coincidir con el formato
-                name: pest.name,
-                device_id: currentDeviceId.toString(), // Asegurar formato string
-                quantity: pest.quantity.toString() // Convertir a string
-            })),
-            products: products.map(product => ({
-                key: product.key,
-                id: product.id.toString(), // Asegurar string
-                order_id: "{{ $order->id }}", // Obtener del contexto actual
-                device_id: currentDeviceId.toString(), // Asegurar string
-                application_method_id: product.application_method_id ? product
-                    .application_method_id.toString() : null,
-                lot_id: product.lot_id ? product.lot_id.toString() : null,
-                name: product.name,
-                quantity: product.quantity.toString(), // Convertir a string
-                metric: product.metric
-            })),
-            states: {
-                order_id: {{ $order->id }},
-                device_id: currentDeviceId,
-                is_scanned: "1", // Asumir que se ha escaneado/visitado
-                is_checked: "1", // Marcar como revisado
-                observations: updatedData.observations || null,
-                device_image: null // Puedes añadir lógica para imágenes si es necesario
-            }
-        };
+    console.log('Datos a guardar:', JSON.stringify(formattedData, null, 2));
 
-        console.log('Datos a guardar:', JSON.stringify(formattedData, null, 2));
+    new_formdata = new FormData();
+    new_formdata.append('review', JSON.stringify(formattedData));
 
-        new_formdata = new FormData();
-        new_formdata.append('review', JSON.stringify(formattedData));
+    var csrfToken = $('meta[name="csrf-token"]').attr("content");
 
-        var csrfToken = $('meta[name="csrf-token"]').attr("content");
+    showSpinner();
 
-        showSpinner();
+    $.ajax({
+        url: "{{ route('report.set.incident', ['orderId' => $order->id]) }}",
+        type: 'POST',
+        data: new_formdata,
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        },
+        contentType: false,
+        processData: false,
+        success: function(response) {
+            var pest_row_query = $(`#table-row-pest${currentDeviceId}-list`);
+            var product_row_query = $(`#table-row-product${currentDeviceId}-list`);
+            const tbody = $('#products-table-body');
 
-        $.ajax({
-            url: "{{ route('report.set.incident', ['orderId' => $order->id]) }}",
-            type: 'POST',
-            data: new_formdata,
-            headers: {
-                'X-CSRF-TOKEN': csrfToken
-            },
-            contentType: false,
-            processData: false,
-            success: function(response) {
-                var pest_row_query = $(`#table-row-pest${currentDeviceId}-list`);
-                var product_row_query = $(`#table-row-product${currentDeviceId}-list`);
-                const tbody = $('#products-table-body');
+            pest_row_query.empty();
+            product_row_query.empty();
+            tbody.empty();
 
-                pest_row_query.empty();
-                product_row_query.empty();
-                tbody.empty();
-
-                // Actualizar la UI
-                $.each(pests, function(index, p) {
-                    pest_row_query.append(`
+            // Actualizar la UI
+            $.each(pests, function(index, p) {
+                pest_row_query.append(`
                     <li class="product-item">
                         <span class="fw-bold">${p.name}</span>
                         (<span>${p.quantity}</span>)
                     </li>
                 `);
-                });
+            });
 
-                $.each(products, function(index, p) {
-                    product_row_query.append(`
+            $.each(products, function(index, p) {
+                product_row_query.append(`
                     <li class="product-item">
                         <span class="fw-bold">${p.name}</span>
                         (<span>${p.quantity} ${extractParenthesesContent(p.metric)}</span>)
                     </li>
                 `);
-                });
+            });
 
-                $.each(response.order_products, function(i, op) {
-                    const row = `
+            $.each(response.order_products, function(i, op) {
+                const row = `
                 <tr>
                     <th scope="row">${i + 1}</th>
                     <td>${op.product?.name || '-'}</td>
@@ -681,103 +680,112 @@
                     </td>
                 </tr>
             `;
-                    tbody.append(row);
-                });
-
-                // Actualizar copy_devices con los nuevos datos
-                updateDeviceDataInCopyDevices(formattedData);
-
-                // Marcar el dispositivo como revisado en la tabla principal
-                markDeviceAsReviewed(currentDeviceId);
-
-                $('#reviewModal').modal('hide');
-            },
-            error: function(xhr) {
-                console.error('Error al guardar:', xhr.responseText);
-                alert('Error al guardar los cambios. Por favor, intente nuevamente.');
-            },
-            complete: function() {
-                hideSpinner();
-            }
-        });
-    });
-
-    // Función para actualizar copy_devices con el nuevo formato
-    function updateDeviceDataInCopyDevices(updatedData) {
-        // Buscar el dispositivo en copy_devices
-        const deviceIndex = copy_devices.findIndex(dev => dev.id == updatedData.device_id);
-
-        if (deviceIndex !== -1) {
-            // Actualizar preguntas
-            updatedData.questions.forEach(updatedQuestion => {
-                const questionIndex = copy_devices[deviceIndex].questions.findIndex(q => q.id == updatedQuestion
-                    .id);
-                if (questionIndex !== -1) {
-                    copy_devices[deviceIndex].questions[questionIndex].answer = updatedQuestion.answer;
-                }
+                tbody.append(row);
             });
 
-            // Actualizar plagas - convertir al formato correcto
-            copy_devices[deviceIndex].pests = updatedData.pests.map(pest => ({
-                key: pest.key,
-                id: pest.id,
-                name: pest.name,
-                device_id: pest.device_id,
-                quantity: pest.quantity
-            }));
+            // 1. Actualizar copy_devices con los nuevos datos
+            const updatedDevice = updateDeviceDataInCopyDevices(formattedData);
+            
+            // 2. Marcar el dispositivo como revisado en la tabla principal
+            markDeviceAsReviewed(currentDeviceId);
+            
+            // 3. Actualizar el botón de edición con los nuevos datos
+            updateDeviceButtonData(currentDeviceId, updatedDevice);
 
-            // Actualizar productos - convertir al formato correcto
-            copy_devices[deviceIndex].products = updatedData.products.map(product => ({
-                key: product.key,
-                id: product.id,
-                order_id: product.order_id,
-                device_id: product.device_id,
-                application_method_id: product.application_method_id,
-                lot_id: product.lot_id,
-                name: product.name,
-                quantity: product.quantity,
-                metric: product.metric
-            }));
-
-            // Actualizar estados
-            copy_devices[deviceIndex].states = {
-                order_id: updatedData.states.order_id,
-                device_id: updatedData.states.device_id,
-                is_scanned: updatedData.states.is_scanned,
-                is_checked: updatedData.states.is_checked,
-                observations: updatedData.states.observations,
-                device_image: updatedData.states.device_image
-            };
-
-            console.log('Dispositivo actualizado en copy_devices:', copy_devices[deviceIndex]);
-
-            // Opcional: Actualizar la interfaz principal si es necesario
-            updateDeviceInUI(updatedData.device_id);
-        } else {
-            console.warn(`Dispositivo con ID ${updatedData.device_id} no encontrado en copy_devices`);
+            $('#reviewModal').modal('hide');
+            
+            // Mostrar mensaje de éxito
+            showNotification('success', '¡Datos guardados correctamente!');
+        },
+        error: function(xhr) {
+            console.error('Error al guardar:', xhr.responseText);
+            showNotification('error', 'Error al guardar los cambios. Por favor, intente nuevamente.');
+        },
+        complete: function() {
+            hideSpinner();
         }
-    }
+    });
+});
 
-    // Función para marcar dispositivo como revisado en la tabla principal
-    function markDeviceAsReviewed(deviceId) {
-        const deviceRow = $(`tr[data-device-id="${deviceId}"]`);
-        if (deviceRow.length) {
-            deviceRow.find('.device-status').html('<span class="badge bg-success">Revisado</span>');
-            deviceRow.addClass('table-success');
-        }
-    }
+// Función para actualizar copy_devices con el nuevo formato
+function updateDeviceDataInCopyDevices(updatedData) {
+    // Buscar el dispositivo en copy_devices
+    const deviceIndex = copy_devices.findIndex(dev => dev.id == updatedData.device_id);
+    
+    if (deviceIndex !== -1) {
+        // Actualizar preguntas
+        updatedData.questions.forEach(updatedQuestion => {
+            const questionIndex = copy_devices[deviceIndex].questions.findIndex(q => q.id == updatedQuestion.id);
+            if (questionIndex !== -1) {
+                copy_devices[deviceIndex].questions[questionIndex].answer = updatedQuestion.answer;
+            }
+        });
 
-    // Función para actualizar la UI del dispositivo principal si es necesario
-    function updateDeviceInUI(deviceId) {
-        const deviceIndex = copy_devices.findIndex(dev => dev.id == deviceId);
-        if (deviceIndex !== -1) {
-            const device = copy_devices[deviceIndex];
+        // Actualizar plagas - convertir al formato correcto
+        copy_devices[deviceIndex].pests = updatedData.pests.map(pest => ({
+            key: pest.key,
+            id: pest.id,
+            name: pest.name,
+            device_id: pest.device_id,
+            quantity: pest.quantity
+        }));
 
-            // Aquí puedes actualizar cualquier elemento de la UI que muestre información del dispositivo
-            // Por ejemplo, actualizar contadores, resúmenes, etc.
-            console.log(`UI actualizada para dispositivo ${deviceId}`);
-        }
+        // Actualizar productos - convertir al formato correcto
+        copy_devices[deviceIndex].products = updatedData.products.map(product => ({
+            key: product.key,
+            id: product.id,
+            order_id: product.order_id,
+            device_id: product.device_id,
+            application_method_id: product.application_method_id,
+            lot_id: product.lot_id,
+            name: product.name,
+            quantity: product.quantity,
+            metric: product.metric
+        }));
+
+        // Actualizar estados
+        copy_devices[deviceIndex].states = {
+            order_id: updatedData.states.order_id,
+            device_id: updatedData.states.device_id,
+            is_scanned: updatedData.states.is_scanned,
+            is_checked: updatedData.states.is_checked,
+            observations: updatedData.states.observations,
+            device_image: updatedData.states.device_image
+        };
+
+        console.log('Dispositivo actualizado en copy_devices:', copy_devices[deviceIndex]);
+        
+        // Devolver el dispositivo actualizado
+        return copy_devices[deviceIndex];
+    } else {
+        console.warn(`Dispositivo con ID ${updatedData.device_id} no encontrado en copy_devices`);
+        return null;
     }
+}
+
+// Función para actualizar el botón de edición con los nuevos datos
+function updateDeviceButtonData(deviceId, updatedDevice) {
+    if (!updatedDevice) return;
+    
+    // Encontrar el botón por su ID
+    const buttonId = `btn-review-device${deviceId}`;
+    const button = document.getElementById(buttonId);
+    
+    if (button) {
+        // Actualizar el atributo data-device con el objeto actualizado
+        button.setAttribute('data-device', JSON.stringify(updatedDevice));
+        
+        // También puedes cambiar el ícono o color si es necesario
+        button.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+        button.classList.remove('btn-secondary');
+        button.classList.add('btn-success');
+        
+        console.log(`Botón ${buttonId} actualizado con nuevos datos`);
+    } else {
+        console.warn(`Botón con ID ${buttonId} no encontrado`);
+    }
+}
+
 
     function showSpinner() {
         $("#fullscreen-spinner").removeClass("d-none");
