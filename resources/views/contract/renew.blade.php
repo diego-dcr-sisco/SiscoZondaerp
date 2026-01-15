@@ -21,26 +21,24 @@
         @include('contract.modals.describe-service')
     </div>
 
-    <script>
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
+<script>
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+        const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
     </script>
 
     <script>
         let contract_configurations = @json($configurations);
         let configurations = [];
+        let updated_services = [];
         let configCounter = 0;
         let configDates = {};
         let configDescriptions = {};
         let intervals = @json($intervals);
         let frequencies = @json($frequencies);
-        const can_renew = true;
+        const can_renew = false;
         const prefixes = @json($prefixes);
-
-        selected_services = @json($selected_services);
-        //displaySelectedServices();
+        const contain_selected_services = @json($selected_services);
+        const view = @json($view);
     </script>
 
     <script src="{{ asset('js/technician.min.js') }}?v={{ time() }}"></script>
