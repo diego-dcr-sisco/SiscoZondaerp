@@ -171,6 +171,7 @@
 
         if (deviceData.questions?.length > 0) {
             deviceData.questions.forEach(question => {
+                console.log('Pregunta procesada: ', question);
                 const questionDiv = document.createElement('div');
                 questionDiv.className = 'mb-3';
                 questionDiv.innerHTML = `
