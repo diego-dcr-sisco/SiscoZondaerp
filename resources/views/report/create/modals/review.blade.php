@@ -700,6 +700,7 @@
             },
             error: function(xhr) {
                 markDeviceAsReviewed(currentDeviceId, false);
+
                 console.error('Error al guardar:', xhr.responseText);
                 showNotification('error',
                     'Error al guardar los cambios. Por favor, intente nuevamente.');
@@ -805,24 +806,25 @@
                 ".tooltip-inner": title
             });
         }
+    }
 
 
-        function showSpinner() {
-            $("#fullscreen-spinner").removeClass("d-none");
-        }
+    function showSpinner() {
+        $("#fullscreen-spinner").removeClass("d-none");
+    }
 
-        function hideSpinner() {
-            $("#fullscreen-spinner").addClass("d-none");
-        }
+    function hideSpinner() {
+        $("#fullscreen-spinner").addClass("d-none");
+    }
 
-        function extractParenthesesContent(cadena) {
-            // Buscar el contenido entre paréntesis
-            const regex = /\((.*?)\)/;
-            const coincidencias = cadena.match(regex);
-            return coincidencias && coincidencias[1] ? coincidencias[1] : '';
-        }
+    function extractParenthesesContent(cadena) {
+        // Buscar el contenido entre paréntesis
+        const regex = /\((.*?)\)/;
+        const coincidencias = cadena.match(regex);
+        return coincidencias && coincidencias[1] ? coincidencias[1] : '';
+    }
 
-        function generateTimeKey() {
-            return Date.now().toString();
-        }
+    function generateTimeKey() {
+        return Date.now().toString();
+    }
 </script>
