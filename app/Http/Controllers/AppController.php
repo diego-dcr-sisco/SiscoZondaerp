@@ -379,6 +379,7 @@ class AppController extends Controller
 
 						], ['total' => $pest['count']]);
 						$reviews_has_pests = true;
+						$updated_pests[] = $pest['pest_id'];
 					}
 
 					foreach ($review['products'] as $product) {
@@ -396,6 +397,7 @@ class AppController extends Controller
 							]
 						);
 						$reviews_has_products = true;
+						$updated_products[] = $product['product_id'];
 					}
 
 					DevicePest::where('order_id', $order->id)->where('device_id', $review['device_id'])
