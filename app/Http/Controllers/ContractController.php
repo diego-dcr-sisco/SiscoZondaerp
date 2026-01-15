@@ -487,7 +487,7 @@ class ContractController extends Controller
                         'url' => route('order.edit', ['id' => $order->id])
                     ];
                 })->toArray(), // ← Convertir a array
-                'description' =>  $cs->service_description ?? null,
+                'description' => $cs->service_description ?? null,
             ];
         }
 
@@ -606,11 +606,11 @@ class ContractController extends Controller
                             ]);
 
                             $s_propagate = PropagateService::where('order_id', $existing_order->id)
-                            ->where('service_id', $data->service_id)
-                            ->where('contract_id', $contract->id)
-                            ->where('setting_id', $contract_service->id)
-                            ->first();
-                            
+                                ->where('service_id', $data->service_id)
+                                ->where('contract_id', $contract->id)
+                                ->where('setting_id', $contract_service->id)
+                                ->first();
+
                             if (!$s_propagate) {
                                 PropagateService::create([
                                     'order_id' => $existing_order->id,
@@ -626,7 +626,7 @@ class ContractController extends Controller
                             }
                         }
 
-                        if($existing_order && $existing_order->status_id != 1) {
+                        if ($existing_order && $existing_order->status_id != 1) {
                             $keep_settings[] = $existing_order->setting_id;
                         }
 
@@ -966,16 +966,30 @@ class ContractController extends Controller
         $count_indexs = [];
 
         $contract_services = ContractService::where('contract_id', $contract->id)->get();
+        $service_ids = $contract_services->pluck('service_id')->unique()->toArray();
+        $services = Service::whereIn('id', $service_ids)->get();
+
+        foreach ($services as $service) {
+            $setting = $contract->setting($service->id);
+            $selected_services[] = [
+                'id' => $service->id,
+                'prefix' => $service->prefix,
+                'name' => $service->name,
+                'type' => $service->serviceType->name,
+                'line' => $service->businessLine->name,
+                'cost' => $service->cost,
+                'description' => $setting->service_description ?? $service->description ?? null,
+            ];
+        }
 
         foreach ($contract_services as $index => $cs) {
-
             if (!isset($count_indexs[$cs->service_id])) {
                 $count_indexs[$cs->service_id] = 1;
             } else {
                 $count_indexs[$cs->service_id]++;
             }
 
-            $orders = Order::where('setting_id', $cs->id)->get();
+            $orders = Order::where('setting_id', $cs->id)->orderBy('programmed_date')->get();
             $configurations[] = [
                 'config_id' => $count_indexs[$cs->service_id],
                 'setting_id' => $cs->id,
@@ -985,39 +999,35 @@ class ContractController extends Controller
                 'interval' => $this->intervals[$cs->interval],
                 'interval_id' => $cs->interval,
                 'days' => explode(',', json_decode($cs->days)[0] ?? ''),
-                'dates' => array_map(function ($date) {
-                    return $date . 'T00:00:00.000Z';
-                }, $orders->pluck('programmed_date')->toArray())
-            ];
-
-            $selected_services[] = [
-                'id' => $cs->service_id,
-                'prefix' => $cs->service->prefix,
-                'name' => $cs->service->name,
-                'type' => $cs->service->serviceType->name,
-                'line' => $cs->service->businessLine->name,
-                'cost' => $cs->service->cost,
-                'description' => $cs->service->description,
-                #settings: [],
+                'dates' => $orders->pluck('programmed_date')->map(function ($date) {
+                    // Ajustar fechas para la renovación (añadir un año)
+                    $newDate = Carbon::parse($date)->addYear();
+                    return $newDate->format('Y-m-d') . 'T00:00:00.000Z';
+                })->toArray(),
+                'orders' => $orders->map(function ($order) {
+                    // Crear nuevos órdenes para la renovación
+                    $newOrderDate = Carbon::parse($order->programmed_date)->addYear();
+                    return [
+                        'id' => null, // Nuevo orden, sin ID
+                        'folio' => null, // Se generará nuevo folio
+                        'programmed_date' => $newOrderDate->format('Y-m-d') . 'T00:00:00.000Z',
+                        'status_id' => 1, // Estado inicial (pendiente)
+                        'status_name' => 'Pendiente',
+                        'url' => null // Sin URL aún
+                    ];
+                })->toArray(),
+                'description' => $cs->service_description ?? null,
             ];
         }
-
-        /*$customer = [
-            'id' => $contract->customer_id,
-            'name' => $contract->customer->name,
-            'code' => $contract->customer->code,
-            'address' => $contract->customer->address,
-            'type' => $contract->customer->serviceType->name
-        ];*/
 
         $new_dates = [
             Carbon::parse($contract->startdate)->addYear()->format('Y-m-d'),
             Carbon::parse($contract->enddate)->addYear()->format('Y-m-d')
         ];
 
-        //dd($new_dates);
         $prefixes = ServicePrefix::pluck('name', 'id');
         $can_renew = true;
+        $view = 'renew'; // Vista específica para renovación
 
         return view(
             'contract.renew',
@@ -1032,6 +1042,7 @@ class ContractController extends Controller
                 'new_dates',
                 'can_renew',
                 'prefixes',
+                'view'
             )
         );
     }
