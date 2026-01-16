@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 // Modelos
@@ -638,7 +639,7 @@ return [
 
     public function dashboard()
     {
-        if (auth()->user()->type_id == 1) {
+        if (Auth::check() && Auth::user()->type_id == 1) {
             $trackings_data = [];
 
             $startOfWeek = now()->startOfMonth();
@@ -767,7 +768,7 @@ return [
 
     public function qualityOrders(string $status)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $orders = Order::where('status_id', $status);
 
         if ($user->role_id == 1 && $user->work_department_id == 7) {
@@ -870,7 +871,7 @@ return [
 
     public function qualityCustomers()
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         $totalPages = 0;
         if ($user->role_id == 4) {
@@ -1113,45 +1114,6 @@ return [
         }
     }
 
-    public function updateEventDuration(Request $request)
-    {
-        try {
-            $eventId = $request->input('event_id');
-            $startDate = $request->input('start_date');
-            $startTime = $request->input('start_time');
-            $endDate = $request->input('end_date');
-            $endTime = $request->input('end_time');
-
-            // Buscar y actualizar el evento
-            $event = YourEventModel::find($eventId);
-
-            if (!$event) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Evento no encontrado'
-                ]);
-            }
-
-            // Actualizar fechas y horas
-            $event->scheduled_date = $startDate;
-            $event->scheduled_time = $startTime;
-            $event->end_date = $endDate;
-            $event->end_time = $endTime;
-            $event->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Duración actualizada correctamente'
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ]);
-        }
-    }
-
 
     public function getOrdersByCustomer(Request $request)
     {
@@ -1239,7 +1201,7 @@ return [
     public static function log($type, $change, $sql)
     {
         DatabaseLog::insert([
-            'user_id' => auth()->user()->id,
+            'user_id' => Auth::user()->id,
             'changetype' => $type,
             'change' => is_array($change) ? json_encode($change) : $change,
             'sql_command' => $sql,

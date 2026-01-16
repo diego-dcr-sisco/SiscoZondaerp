@@ -49,10 +49,22 @@ class AuthenticatedSessionController extends Controller
                 $request->session()->put('user_session_token', $newToken);
                 $request->session()->regenerate();
                 
-                // Redireccionar según el rol
-                return auth()->user()->type_id == 1
-                    ? redirect()->route('dashboard') 
-                    : redirect()->route('client.index', ['section' => 1]);
+                // Determinar la ruta de destino según el rol
+                $redirectRoute = Auth::user()->type_id == 1 
+                    ? 'dashboard' 
+                    : 'client.index';
+                
+                $routeParams = Auth::user()->type_id == 1 
+                    ? [] 
+                    : ['section' => 1];
+                
+                // Guardar la información de redirección en la sesión
+                $request->session()->put('redirect_route', $redirectRoute);
+                $request->session()->put('route_params', $routeParams);
+                
+                // Redirigir a la pantalla de carga
+                return redirect()->route('loading-erp');
+                
             } else {
                 return redirect('/login')->withErrors([
                     'error' => __('auth.failed_user'),
@@ -72,7 +84,8 @@ class AuthenticatedSessionController extends Controller
     {
         // Limpiar el token de sesión al cerrar sesión
         if (Auth::check()) {
-            $user = Auth::user();
+            $session_user = Auth::user();
+            $user = User::find($session_user->id);
             $user->session_token = null;
             $user->save();
         }
