@@ -257,7 +257,7 @@ class AppController extends Controller
 					],
 					'services' => $services_data,
 					'address' => $order->customer->address,
-					'closed_by' => $order->closed_by,
+					'closed_by' => $order->closed_by ? User::find($order->closed_by)->name : null,
 				];
 
 				$reports[] = $this->constructReport($order->id);
