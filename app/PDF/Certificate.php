@@ -164,7 +164,6 @@ class Certificate
             'signature_base64' => $this->addBase64Prefix($this->order->customer_signature ?? '') // Mantener original
         ];
 
-        dd($this->data['customer']);
     }
 
     public function technician()
