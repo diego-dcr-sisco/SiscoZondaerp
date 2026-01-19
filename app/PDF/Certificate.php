@@ -45,18 +45,28 @@ class Certificate
     }
 
     function addBase64Prefix($base64String)
-    {
-        // Si viene null, vacío o solo espacios → regresar null
-        if ($base64String === null || trim($base64String) === '') {
-            return null;
-        }
+{
+    $prefix = 'data:image/png;base64,';
 
-        $prefix = 'data:image/png;base64,';
-
-        return preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $base64String)
-            ? $prefix . $base64String
-            : $base64String;
+    // null, vacío o solo espacios
+    if ($base64String === null || trim($base64String) === '') {
+        return null;
     }
+
+    // Solo trae el prefix
+    if (trim($base64String) === $prefix) {
+        return null;
+    }
+
+    // Si es base64 puro, agregar prefix
+    if (preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $base64String)) {
+        return $prefix . $base64String;
+    }
+
+    // Ya viene con prefix o no es base64 válido
+    return $base64String;
+}
+
 
 
     private function ensureTempSignatureDir()
@@ -169,8 +179,6 @@ class Certificate
             'signed_by' => $this->order->signature_name ?? '-',
             'signature_base64' => $this->addBase64Prefix($this->order->customer_signature ?? '') // Mantener original
         ];
-
-        dd($this->data['customer']);
     }
 
     public function technician()
