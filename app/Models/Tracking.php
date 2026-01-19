@@ -12,6 +12,7 @@ class Tracking extends Model
         'trackable_id', 
         'trackable_type',
         'service_id',
+        'customer_id',
         'order_id',
         'next_date',
         'range',
