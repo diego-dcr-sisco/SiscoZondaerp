@@ -276,7 +276,7 @@ class OrderController extends Controller
 
         $size = $size ?? $this->size;
         $order_status = OrderStatus::all();
-        $orders = $orders/*->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")*/->orderBy('programmed_date')->paginate($size)->appends([
+        $orders = $orders/*->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")*/ ->orderBy('programmed_date')->paginate($size)->appends([
             'customer' => $customer,
             'date' => $date,
             'time' => $time,
@@ -570,9 +570,10 @@ class OrderController extends Controller
 
             // Optimizar la consulta de técnicos
             $technicians = Technician::with('user')
-                ->join('user', 'technician.user_id', '=', 'user.id')
-                ->orderBy('user.name', 'ASC')
-                ->select('technician.*')
+                ->join('user as u', 'technician.user_id', '=', 'u.id')
+                ->where('u.status_id', 2)
+                ->orderBy('u.name', 'ASC')
+                ->select('technician.*', 'u.name as user_name')
                 ->get();
 
             $navigation = [
