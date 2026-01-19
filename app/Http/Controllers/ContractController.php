@@ -673,7 +673,7 @@ class ContractController extends Controller
             });
 
             OrderService::whereIn('order_id', $delete_orders->pluck('id'))->delete();
-            OrderTechnician::whereIn('order_id', $delete_orders->pluck('id'))->whereIn('technician_id', $inactive_techs->pluck('id'))->delete();
+            OrderTechnician::whereIn('order_id', $delete_orders->pluck('id'))->delete();
         }
 
         $this->generateOrderFolios($contract);

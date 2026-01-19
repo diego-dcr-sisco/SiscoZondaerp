@@ -182,7 +182,7 @@ class UserController extends Controller
 			$query_users = $query_users->where('work_department_id', $request->wk_dept);
 		}
 
-		$users = $query_users->orderBy('name', $direction ?? 'DESC')->paginate($size ?? $this->size)->appends($request->all());
+		$users = $query_users->orderBy('name', $direction)->paginate($size ?? $this->size)->appends($request->all());
 		$roles = SimpleRole::where('id', '!=', 4)->get();
 
 		return view(
