@@ -471,7 +471,7 @@ class ContractController extends Controller
                 'service_id' => $cs->service_id,
                 'frequency' => $cs->execfrequency->name,
                 'frequency_id' => $cs->execution_frequency_id,
-                'interval' => $this->intervals[$cs->interval],
+                'interval' => $cs->interval != 0 ? $this->intervals[$cs->interval - 1] : 0,
                 'interval_id' => $cs->interval,
                 'days' => explode(',', json_decode($cs->days)[0] ?? ''),
                 'dates' => $orders->pluck('programmed_date')->map(function ($date) {
