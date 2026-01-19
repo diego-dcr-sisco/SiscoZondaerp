@@ -810,24 +810,52 @@ class ContractController extends Controller
     // Método auxiliar para actualizar técnicos del contrato
     protected function updateContractTechnicians($contract, $selected_technicians, $inactive_tech_ids)
     {
+        // Limpiar relación del contrato
         ContractTechnician::where('contract_id', $contract->id)->delete();
 
-        $technicians_data = array_map(function ($tech_id) use ($contract) {
-            return [
-                'contract_id' => $contract->id,
-                'technician_id' => $tech_id,
-                'created_at' => now(),
-                'updated_at' => now()
-            ];
-        }, $selected_technicians);
+        // Generar datos SOLO de técnicos activos
+        $technicians_data = array_values(array_filter(
+            array_map(function ($tech_id) use ($contract, $inactive_tech_ids) {
+                if (in_array($tech_id, $inactive_tech_ids)) {
+                    return null; // Saltar técnicos inactivos
+                }
 
-        ContractTechnician::insert($technicians_data);
+                return [
+                    'contract_id' => $contract->id,
+                    'technician_id' => $tech_id,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ];
+            }, $selected_technicians)
+        ));
 
-        Order::where('contract_id', $contract->id)->where('status_id', 1)->each(function ($order) use ($selected_technicians) {
-            OrderTechnician::where('order_id', $order->id)->delete();
-            array_map(fn($id) => OrderTechnician::create(['order_id' => $order->id, 'technician_id' => $id]), $selected_technicians);
-        });
+        // Insertar solo si hay técnicos activos
+        if (!empty($technicians_data)) {
+            ContractTechnician::insert($technicians_data);
+        }
+
+        // Órdenes activas
+        Order::where('contract_id', $contract->id)
+            ->where('status_id', 1)
+            ->each(function ($order) use ($selected_technicians, $inactive_tech_ids) {
+
+                // Limpiar técnicos de la orden
+                OrderTechnician::where('order_id', $order->id)->delete();
+
+                // Agregar solo técnicos activos
+                foreach ($selected_technicians as $tech_id) {
+                    if (in_array($tech_id, $inactive_tech_ids)) {
+                        continue;
+                    }
+
+                    OrderTechnician::create([
+                        'order_id' => $order->id,
+                        'technician_id' => $tech_id
+                    ]);
+                }
+            });
     }
+
 
     // Método auxiliar para generar folios únicos
     protected function generateOrderFolios($contract)
