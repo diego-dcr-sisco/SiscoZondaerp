@@ -46,12 +46,18 @@ class Certificate
 
     function addBase64Prefix($base64String)
     {
+        // Si viene null, vacío o solo espacios → regresar null
+        if ($base64String === null || trim($base64String) === '') {
+            return null;
+        }
+
         $prefix = 'data:image/png;base64,';
 
         return preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $base64String)
             ? $prefix . $base64String
             : $base64String;
     }
+
 
     private function ensureTempSignatureDir()
     {
@@ -163,7 +169,6 @@ class Certificate
             'signed_by' => $this->order->signature_name ?? '-',
             'signature_base64' => $this->addBase64Prefix($this->order->customer_signature ?? '') // Mantener original
         ];
-
     }
 
     public function technician()
@@ -503,7 +508,7 @@ class Certificate
 
         foreach ($services as $service) {
             $recs = OrderRecommendation::where('order_id', $this->order_id)->where('service_id', $service->id)->get();
-            
+
             if ($this->isValidRecommendation($recs)) {
                 foreach ($recs as $rec) {
                     $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";
