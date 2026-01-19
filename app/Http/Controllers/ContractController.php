@@ -658,6 +658,8 @@ class ContractController extends Controller
             ->where('status_id', 1)
             ->get();
 
+        $inactive_users = User::where('status_id', '>=', 3)->get();
+        $inactive_techs = Technician::whereIn('user_id', $inactive_users->pluck('id'))->get();
 
         if ($delete_settings->isNotEmpty()) {
             $delete_settings->each(function ($setting) {
@@ -671,11 +673,11 @@ class ContractController extends Controller
             });
 
             OrderService::whereIn('order_id', $delete_orders->pluck('id'))->delete();
-            OrderTechnician::whereIn('order_id', $delete_orders->pluck('id'))->delete();
+            OrderTechnician::whereIn('order_id', $delete_orders->pluck('id'))->whereIn('technician_id', $inactive_techs->pluck('id'))->delete();
         }
 
         $this->generateOrderFolios($contract);
-        $this->updateContractTechnicians($contract, $selected_technicians);
+        $this->updateContractTechnicians($contract, $selected_technicians, $inactive_techs->pluck('id')->toArray());
         return back()->with('success', 'Contrato y órdenes actualizados correctamente');
     }
 
