@@ -45,29 +45,19 @@ class Certificate
     }
 
     function addBase64Prefix($base64String)
-{
-    $prefix = 'data:image/png;base64,';
-
-    // null, vacío o solo espacios
-    if ($base64String === null || trim($base64String) === '') {
-        return null;
+    {
+        $prefix = 'data:image/png;base64,';
+        if ($base64String === null || trim($base64String) === '') {
+            return null;
+        }
+        if (trim($base64String) === $prefix) {
+            return null;
+        }
+        if (preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $base64String)) {
+            return $prefix . $base64String;
+        }
+        return $base64String;
     }
-
-    // Solo trae el prefix
-    if (trim($base64String) === $prefix) {
-        return null;
-    }
-
-    // Si es base64 puro, agregar prefix
-    if (preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $base64String)) {
-        return $prefix . $base64String;
-    }
-
-    // Ya viene con prefix o no es base64 válido
-    return $base64String;
-}
-
-
 
     private function ensureTempSignatureDir()
     {
@@ -193,7 +183,6 @@ class Certificate
         }
 
         $user = User::find($user_id);
-
         $userfile = UserFile::where('user_id', $user_id)
             ->where('filename_id', 15)
             ->first();
