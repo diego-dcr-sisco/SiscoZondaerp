@@ -446,7 +446,7 @@ class ReportController extends Controller
                         'name' => strtoupper($pest->name),
                         'category' => $pest->pestCategory->category
                     ];
-                })->toArray(),
+                })->sortBy('name')->values()->toArray(),
                 'products' => ProductCatalog::all()->map(function ($product) {
                     return [
                         'id' => $product->id,
@@ -458,7 +458,7 @@ class ReportController extends Controller
                             ];
                         })->toArray(),
                     ];
-                })->toArray()
+                })->sortBy('name')->values()->toArray()
             ];
         }
 
@@ -557,7 +557,7 @@ class ReportController extends Controller
             ->get();
 
         $pests = PestCatalog::select(['pest_catalog.id', 'pest_catalog.name', 'pest_catalog.updated_at'])
-            ->orderBy('name')
+            ->orderBy('pest_catalog.name')
             ->get();
 
         $application_methods = ApplicationMethod::select(['application_method.id', 'application_method.name', 'application_method.updated_at'])
