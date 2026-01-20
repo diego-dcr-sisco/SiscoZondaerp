@@ -60,71 +60,111 @@
         signaturePad.clear();
     }
 
-    function store() {
-    const name = $('#signature-name').val();
-    const has_name = name && name != '';
-    const signatureEmpty = signaturePad.isEmpty();
-    const hasImage = $('#image').get(0).files.length > 0;
-
-    if ((!signatureEmpty || hasImage) && has_name) {
-        var formData = new FormData();
-        const orderId = $('#order').val();
-        const csrfToken = $('meta[name="csrf-token"]').attr("content");
-
-        // Agregar la firma si no está vacía
-        if (!signatureEmpty) {
-            const base64 = signaturePad.toDataURL('image/png');
-            formData.append('signature', base64);
-        }
-
-        // Agregar la imagen si existe
-        if (hasImage) {
-            const imageFile = $('#image')[0].files[0];
-            formData.append('image', imageFile);
-        }
-
-        // Agregar los demás datos
-        formData.append('name', name);
-        formData.append('order', orderId);
-
-        $.ajax({
-            url: "{{ route('client.report.signature.store') }}",
-            type: "POST",
-            data: formData,
-            contentType: false,
-            processData: false,
-            headers: {
-                "X-CSRF-TOKEN": csrfToken,
-            },
-            success: function(response) {
-                if (response.success) {
-                    // Recargar o redirigir según la respuesta
-                    if (response.redirect) {
-                        window.location.href = response.redirect;
-                    } else {
-                        location.reload();
-                    }
-                } else {
-                    alert(response.message || "Error al guardar");
-                }
-            },
-            error: function(xhr) {
-                const errorMessage = xhr.responseJSON?.message || "Error en el servidor";
-                alert(errorMessage);
-                console.error(xhr);
-            },
+    // Función para convertir imagen a base64
+    function convertImageToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
         });
-    } else {
-        alert("Por favor, firme y/o cargue una imagen, y agregue un nombre antes de guardar.");
     }
-}
+
+    // Función para comprobar el tamaño del archivo (5MB máximo)
+    function checkFileSize(file) {
+        const maxSize = 5 * 1024 * 1024; // 5MB en bytes
+        return file.size <= maxSize;
+    }
+
+    async function store() {
+        const name = $('#signature-name').val();
+        const has_name = name && name != '';
+        const signatureEmpty = signaturePad.isEmpty();
+        const hasImage = $('#image').get(0).files.length > 0;
+
+        if ((!signatureEmpty || hasImage) && has_name) {
+            const orderId = $('#order').val();
+            const csrfToken = $('meta[name="csrf-token"]').attr("content");
+            
+            let base64Signature = null;
+            let base64Image = null;
+            
+            // Obtener la firma si no está vacía
+            if (!signatureEmpty) {
+                base64Signature = signaturePad.toDataURL('image/png');
+            }
+
+            // Convertir imagen a base64 si existe
+            if (hasImage) {
+                const imageFile = $('#image')[0].files[0];
+                
+                // Verificar tamaño del archivo
+                if (!checkFileSize(imageFile)) {
+                    alert("La imagen excede el tamaño máximo de 5MB");
+                    return;
+                }
+                
+                try {
+                    base64Image = await convertImageToBase64(imageFile);
+                } catch (error) {
+                    alert("Error al procesar la imagen");
+                    console.error(error);
+                    return;
+                }
+            }
+
+            // Crear objeto JSON para enviar
+            const data = {
+                name: name,
+                order: orderId,
+                signature: base64Signature,
+                image: base64Image
+            };
+
+            console.log('Datos a enviar:', data);
+
+            $.ajax({
+                url: "{{ route('client.report.signature.store') }}",
+                type: "POST",
+                data: JSON.stringify(data),
+                contentType: "application/json",
+                headers: {
+                    "X-CSRF-TOKEN": csrfToken,
+                },
+                success: function(response) {
+                    if (response.success) {
+                        // Recargar o redirigir según la respuesta
+                        if (response.redirect) {
+                            window.location.href = response.redirect;
+                        } else {
+                            location.reload();
+                        }
+                    } else {
+                        alert(response.message || "Error al guardar");
+                    }
+                },
+                error: function(xhr) {
+                    const errorMessage = xhr.responseJSON?.message || "Error en el servidor";
+                    alert(errorMessage);
+                    console.error(xhr);
+                },
+            });
+        } else {
+            alert("Por favor, firme y/o cargue una imagen, y agregue un nombre antes de guardar.");
+        }
+    }
 
     function openModal(id) {
         var confirmed = confirm("¿Estas seguro de firmar el reporte? (Si ya existe una firma, esta se actualizará)");
 
-        if (confirm) {
+        if (confirmed) {
             $('#order').val(id);
-            $('#signatureModal').modal('show')
+            $('#signatureModal').modal('show');
+            
+            // Limpiar campos al abrir el modal
+            $('#signature-name').val('');
+            $('#image').val('');
+            signaturePad.clear();
         }
     }
 </script>

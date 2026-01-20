@@ -281,11 +281,11 @@ class ClientController extends Controller
                     $pathInfo = pathinfo($filename);
                     $extension = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';
                     $basename = $pathInfo['filename'];
-                    
+
                     // Crear nuevo nombre con timestamp
                     $filename = $basename . '_' . $timestamp . $extension;
                     $fullPath = $file_path . '/' . $filename;
-                    
+
                     // Verificar nuevamente (por si acaso)
                     if ($disk->fileExists($fullPath)) {
                         $skippedFiles[] = $originalFilename . ' (ya existe)';
@@ -325,22 +325,45 @@ class ClientController extends Controller
             $request->validate([
                 'order' => 'required|exists:order,id',
                 'name' => 'required|string|max:1024',
-                'signature' => 'nullable|string',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+                'signature' => 'nullable|string', // Firma en base64
+                'image' => 'nullable|string' // Imagen en base64
             ]);
 
             $order = Order::findOrFail($request->input('order'));
             $name = $request->input('name');
             $base64Data = null;
+            $signatureSource = null;
 
-            // Procesar firma digital
+            // Procesar firma digital (viene como string base64)
             if ($request->filled('signature')) {
-                $base64Data = $this->processBase64Image($request->input('signature'));
+                $signatureSource = 'drawing';
+
+                // Validar que sea un string base64 válido
+                $signatureData = $request->input('signature');
+                if (!preg_match('/^data:image\/(png|jpg|jpeg);base64,/', $signatureData)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Formato de firma no válido. Debe ser base64 de imagen.'
+                    ], 422);
+                }
+
+                $base64Data = $this->processBase64Image($signatureData);
             }
 
-            // Procesar imagen subida
-            if ($request->hasFile('image')) {
-                $base64Data = $this->processUploadedImage($request->file('image'));
+            // Procesar imagen subida en base64
+            if ($request->filled('image') && !$base64Data) {
+                $signatureSource = 'upload';
+
+                // Validar que sea un string base64 válido
+                $imageData = $request->input('image');
+                if (!preg_match('/^data:image\/(png|jpg|jpeg);base64,/', $imageData)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Formato de imagen no válido. Debe ser base64 de imagen.'
+                    ], 422);
+                }
+
+                $base64Data = $this->processBase64Image($imageData);
             }
 
             if (empty($base64Data)) {
@@ -359,7 +382,7 @@ class ClientController extends Controller
                     'order_id' => $order->id,
                     'signature_name' => $name,
                     'has_signature' => true,
-                    'signature_source' => $request->filled('signature') ? 'drawing' : 'upload'
+                    'signature_source' => $signatureSource
                 ],
                 'message' => 'Firma/imagen guardada correctamente'
             ]);
@@ -379,10 +402,57 @@ class ClientController extends Controller
         }
     }
 
+    private function processBase64Image($base64Data)
+    {
+        try {
+            // Separar el encabezado de los datos
+            $exploded = explode(',', $base64Data);
+            if (count($exploded) < 2) {
+                throw new \Exception('Formato base64 no válido');
+            }
+
+            $imageData = base64_decode($exploded[1]);
+
+            if ($imageData === false) {
+                throw new \Exception('Error al decodificar base64');
+            }
+
+            // Obtener el tipo MIME del encabezado
+            $mimeType = '';
+            $header = $exploded[0];
+            if (preg_match('/data:image\/(\w+);base64/', $header, $matches)) {
+                $mimeType = $matches[1];
+            }
+
+            // Validar tamaño (máximo 5MB)
+            $sizeInBytes = (int) (strlen(rtrim($base64Data, '=')) * 3 / 4);
+            if ($sizeInBytes > 5 * 1024 * 1024) { // 5MB
+                throw new \Exception('La imagen excede el tamaño máximo de 5MB');
+            }
+
+            // Para Laravel, puedes guardar como base64 directo en la base de datos
+            // O si prefieres guardar como archivo:
+            return $base64Data; // O procesar y guardar como archivo
+
+            // Opcional: Guardar como archivo
+            /*
+            $fileName = 'signature_' . time() . '_' . uniqid() . '.' . $mimeType;
+            $path = 'signatures/' . $fileName;
+
+            // Guardar en storage
+            Storage::disk('public')->put($path, $imageData);
+
+            return $path; // Retornar ruta del archivo
+            */
+
+        } catch (\Exception $e) {
+            throw new \Exception('Error procesando imagen: ' . $e->getMessage());
+        }
+    }
     /**
      * Procesa imagen en base64 (de la firma digital)
      */
-    protected function processBase64Image($base64)
+    /*protected function processBase64Image($base64)
     {
         if (preg_match('/^data:image\/(\w+);base64,/', $base64)) {
             list(, $base64) = explode(',', $base64);
@@ -393,7 +463,7 @@ class ClientController extends Controller
         }
 
         return $base64;
-    }
+    }*/
 
     /**
      * Procesa imagen subida via file input
@@ -633,7 +703,7 @@ class ClientController extends Controller
     {
         try {
             $disk = $this->getDisk();
-            
+
             if (!$disk->directoryExists($path)) {
                 return response()->json(['error' => 'Directory not found.'], 404);
             }
@@ -645,7 +715,7 @@ class ClientController extends Controller
                 // Para almacenamiento local
                 $this->deleteLocalDirectory($disk, $path);
             }
-            
+
             return back()->with('success', 'Directorio eliminado exitosamente');
 
         } catch (\Exception $e) {
@@ -664,11 +734,11 @@ class ClientController extends Controller
     {
         // Listar contenido recursivamente
         $contents = $disk->listContents($path, true)->toArray();
-        
+
         // Separar archivos y directorios
         $files = [];
         $directories = [];
-        
+
         foreach ($contents as $item) {
             if ($item->isFile()) {
                 $files[] = $item->path();
@@ -676,7 +746,7 @@ class ClientController extends Controller
                 $directories[] = $item->path();
             }
         }
-        
+
         // Eliminar primero todos los archivos
         foreach ($files as $file) {
             try {
@@ -685,12 +755,12 @@ class ClientController extends Controller
                 Log::warning("No se pudo eliminar archivo: {$file} - " . $e->getMessage());
             }
         }
-        
+
         // Ordenar directorios por profundidad (más profundo primero)
-        usort($directories, function($a, $b) {
+        usort($directories, function ($a, $b) {
             return substr_count($b, '/') - substr_count($a, '/');
         });
-        
+
         // Eliminar directorios en orden
         foreach ($directories as $directory) {
             try {
@@ -699,7 +769,7 @@ class ClientController extends Controller
                 Log::warning("No se pudo eliminar directorio: {$directory} - " . $e->getMessage());
             }
         }
-        
+
         // Finalmente eliminar el directorio raíz
         $disk->deleteDirectory($path);
     }
@@ -710,12 +780,12 @@ class ClientController extends Controller
     private function deleteLocalDirectory($disk, string $path)
     {
         $contents = $disk->listContents($path, true)->toArray();
-        
+
         // Ordenar por profundidad en orden descendente
-        usort($contents, function($a, $b) {
+        usort($contents, function ($a, $b) {
             return substr_count($b->path(), '/') - substr_count($a->path(), '/');
         });
-        
+
         // Eliminar archivos y directorios en orden inverso
         foreach ($contents as $item) {
             if ($item->isFile()) {
@@ -724,7 +794,7 @@ class ClientController extends Controller
                 $disk->deleteDirectory($item->path());
             }
         }
-        
+
         // Eliminar el directorio raíz
         $disk->deleteDirectory($path);
     }
@@ -1071,7 +1141,7 @@ class ClientController extends Controller
             // Crear la carpeta con manejo de errores mejorado
             try {
                 $created = $disk->makeDirectory($fullPath);
-                
+
                 if (!$created) {
                     throw new \Exception('No se pudo crear la carpeta');
                 }
