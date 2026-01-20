@@ -2,7 +2,7 @@
 namespace App\PDF;
 
 use App\Models\EvidencePhoto;
-use Carbon\Carbon;
+use Carbon\Carbon; 
 
 use App\Models\Order;
 use App\Models\User;
@@ -437,8 +437,8 @@ class Certificate
                     $devices_data[] = [
                         'zone' => $device->applicationArea->name ?? '-',
                         'code' => $device->code,
-                        'intake' => $intake_string ?: '-',
-                        'pests' => $pests_string ?: '-',
+                        'intake' => $intake_string ?: 'Sin producto',
+                        'pests' => $pests_string ?: 'Sin capturas',
                         'questions' => $question_data,
                         'observations' => $observation
                     ];
