@@ -22,7 +22,7 @@
     <form method="GET" action="{{ route('quality.analytics.filterDeviceConsumption', $customer->id) }}" class="mb-4" id="consumptionFilterForm">
         <div class="row g-2 align-items-center">
             <div class="col-auto">
-                <label for="dateRangePicker" class="col-form-label col-form-label-sm">Rango de fechas</label>
+                <label for="dateRangePicker" class="col-form-label col-form-label-sm">Rango de fechas <span class="text-danger">*</span></label>
             </div>
             <div class="col-auto">
                 <input
@@ -34,24 +34,25 @@
                     placeholder="DD/MM/AAAA - DD/MM/AAAA"
                     autocomplete="off"
                     style="min-width:100px"
+                    required
                 >
             </div>
             <div class="col-auto">
                 <label class="col-form-label col-form-label-sm">Tipo de Reporte</label>
             </div>
             <div class="col-auto">
-                <select name="report_type" class="form-select form-select-sm" style="min-width:20px">
+                <select name="report_type" class="form-select form-select-sm" style="min-width:20px" required>
                     <option value="weekly" {{ request('report_type', 'weekly') == 'weekly' ? 'selected' : '' }}>Semanal</option>
                     <option value="daily" {{ request('report_type') == 'daily' ? 'selected' : '' }}>Diario</option>
                 </select>
             </div>
 
             <div class="col-auto">
-                <label for="serviceSelect" class="col-form-label col-form-label-sm">Servicio</label>
+                <label for="serviceSelect" class="col-form-label col-form-label-sm">Servicio <span class="text-danger">*</span></label>
             </div>
             <div class="col-auto">
-                <select name="service_id" id="serviceSelect" class="form-select form-select-sm" style="min-width:260px">
-                    <option value="">Todos los servicios</option>
+                <select name="service_id" id="serviceSelect" class="form-select form-select-sm" style="min-width:260px" required>
+                    <option value="">-- Selecciona un servicio --</option>
                     @foreach($allServices as $service)
                     <option value="{{ $service->id }}" 
                         {{ request('service_id') == $service->id ? 'selected' : '' }}>
@@ -59,6 +60,11 @@
                     </option>
                     @endforeach
                 </select>
+                @if($allServices->isEmpty())
+                    <small class="text-warning d-block mt-1">
+                        <i class="bi bi-exclamation-triangle"></i> No hay servicios disponibles para este cliente
+                    </small>
+                @endif
             </div>
             <div class="col-auto">
                 <label for="weekDaySelect" class="col-form-label col-form-label-sm">Día de corte semanal</label>
@@ -76,7 +82,7 @@
             </div>
 
             <div class="col-auto">
-                <button type="submit" class="btn btn-primary btn-sm">
+                <button type="submit" class="btn btn-primary btn-sm" @if($allServices->isEmpty()) disabled @endif>
                     <i class="bi bi-funnel-fill"></i> Filtrar
                 </button>
                 <a href="{{ route('quality.analytics', $customer->id) }}" class="btn btn-outline-secondary btn-sm">
@@ -85,6 +91,39 @@
             </div>
         </div>
     </form>
+
+    {{-- Mensajes informativos --}}
+    @if($errors->has('service_id'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle"></i> 
+            <strong>Error:</strong> {{ $errors->first('service_id') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if(isset($error))
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> 
+            <strong>Aviso:</strong> {{ $error }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if(isset($message))
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <i class="bi bi-info-circle"></i> 
+            <strong>Información:</strong> {{ $message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if(!$selectedService && !$errors->has('service_id') && !isset($error) && !isset($message))
+        <div class="alert alert-primary alert-dismissible fade show" role="alert">
+            <i class="bi bi-info-circle"></i> 
+            <strong>Por favor,</strong> selecciona un servicio y haz clic en "Filtrar" para ver los datos de consumo.
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
 
     {{-- Tabla de consumo por semanas --}}
     <div id="consumptionResultsContainer">

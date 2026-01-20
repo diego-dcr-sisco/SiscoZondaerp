@@ -34,9 +34,21 @@
 
                             <!-- Servicio -->
                             <div class="col-lg-3">
-                                <label for="service" class="form-label">Servicio</label>
-                                <input type="text" class="form-control form-control-sm" id="service" name="service"
-                                    value="{{ request('service') }}" placeholder="Buscar servicio">
+                                <label for="service_id" class="form-label is-required">Servicio</label>
+                                <select class="form-select form-select-sm" id="service_id" name="service_id" required>
+                                    <option value="">-- Selecciona un servicio --</option>
+                                    @foreach ($availableServices as $service)
+                                        <option value="{{ $service->id }}"
+                                            {{ request('service_id') == $service->id ? 'selected' : '' }}>
+                                            {{ $service->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @if ($availableServices->isEmpty())
+                                    <small class="text-warning d-block mt-1">
+                                        <i class="bi bi-exclamation-triangle"></i> No hay servicios disponibles para esta sede
+                                    </small>
+                                @endif
                             </div>
 
                             <!-- Area -->
@@ -89,19 +101,38 @@
 
                             <!-- Botones -->
                             <div class="col-lg-12 d-flex justify-content-end m-0 mt-3">
-                                <button type="submit" class="btn btn-primary btn-sm me-2">
+                                <button type="submit" class="btn btn-primary btn-sm me-2" @if ($availableServices->isEmpty()) disabled @endif>
                                     <i class="bi bi-funnel-fill"></i> Filtrar
                                 </button>
 
                                 <a href="{{ route('customer.graphics.export', array_merge(['id' => $customer->id], request()->all())) }}"
                                     class="btn btn-success btn-sm" data-bs-toggle="tooltip"
-                                    data-bs-title="El archivo generado contiene los mismos datos que aparecen en la tabla, obtenidos a través de los criterios de filtrado aplicados.">
+                                    data-bs-title="El archivo generado contiene los mismos datos que aparecen en la tabla, obtenidos a través de los criterios de filtrado aplicados."
+                                    @if ($availableServices->isEmpty() || empty($data['detections'])) disabled @endif>
                                     <i class="fas fa-file-excel me-1"></i> Exportar a Excel
                                 </a>
                             </div>
                         </div>
                     </form>
                 </div>
+
+                {{-- Mensaje si no hay servicios disponibles --}}
+                @if ($availableServices->isEmpty())
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i> 
+                        <strong>Aviso:</strong> No hay servicios disponibles para esta sede.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
+
+                {{-- Mensaje si no hay servicio seleccionado --}}
+                @if (!request('service_id') && $availableServices->isNotEmpty())
+                    <div class="alert alert-primary alert-dismissible fade show" role="alert">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Por favor,</strong> selecciona un servicio y haz clic en "Filtrar" para ver los datos.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
 
                 <!-- Botones de acción para la tabla -->
                 @if (!empty($data['detections']))

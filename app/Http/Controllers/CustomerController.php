@@ -1488,11 +1488,12 @@ class CustomerController extends Controller
             'graph_type' => 'nullable|in:cnsm,cptr',
             'area' => 'nullable|string|max:255',
             'pest' => 'nullable|string|max:255',
-            'service' => 'nullable|string|max:255',
+            'service_id' => 'nullable|integer|exists:service,id',
             'control_point' => 'nullable|integer|exists:control_point,id',
         ], [
             'date_range.string' => 'El rango de fechas debe ser texto',
             'graph_type.in' => 'Tipo de gráfico no válido',
+            'service_id.exists' => 'El servicio seleccionado no es válido',
             'control_point.exists' => 'El punto de control seleccionado no es válido',
         ]);
 
@@ -1557,9 +1558,33 @@ class CustomerController extends Controller
         // Obtener áreas de aplicación sin consulta adicional
         $app_areas = $customer->applicationAreas;
 
-        // Si no hay filtros aplicados, solo mostrar la vista con el formulario vacío
-        if (!$this->hasRequiredFields($request->all())) {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'No se tienen filtros aplicados validos', $navigation);
+        // Obtener servicios disponibles en las órdenes del cliente (sin restricción de fecha para el select)
+        $availableServices = Service::whereIn('id', function ($query) use ($customer) {
+            $query->select('service_id')
+                ->from('order_service')
+                ->whereIn('order_id', function ($q) use ($customer) {
+                    $q->select('id')
+                        ->from('order')
+                        ->where('customer_id', $customer->id)
+                        ->where('status_id', self::STATUS_APPROVED);
+                });
+        })
+        ->orderBy('name')
+        ->get(['id', 'name']);
+
+        // Si no hay filtros aplicados o no está seleccionado el servicio, mostrar vista sin datos
+        if (!$this->hasRequiredFields($request->all()) || !$request->filled('service_id')) {
+            return view('customer.show.graphics', [
+                'customer' => $customer,
+                'pests_headers' => [],
+                'data' => ['detections' => [], 'headers' => []],
+                'control_points' => [],
+                'app_areas' => $app_areas,
+                'availableServices' => $availableServices,
+                'graphs_types' => $this->graphs_types,
+                'request_data' => $request->all(),
+                'navigation' => $navigation,
+            ]);
         }
 
         // Aplica filtros usando like solo si es necesario
@@ -1598,10 +1623,8 @@ class CustomerController extends Controller
             }
         }
 
-        if ($request->filled('service')) {
-            $found_services = Service::where('name', 'like', '%' . $request->input('service') . '%')
-                ->pluck('id');
-            $order_ids = OrderService::whereIn('service_id', $found_services)
+        if ($request->filled('service_id')) {
+            $order_ids = OrderService::where('service_id', $request->input('service_id'))
                 ->pluck('order_id');
             $order_query->whereIn('id', $order_ids);
         }
@@ -1688,6 +1711,7 @@ class CustomerController extends Controller
             'data' => $data,
             'control_points' => $control_points,
             'app_areas' => $app_areas,
+            'availableServices' => $availableServices,
             'graphs_types' => $this->graphs_types,
             'request_data' => $request->all(),
             'navigation' => $navigation,
