@@ -557,7 +557,7 @@ class ReportController extends Controller
             ->get();
 
         $pests = PestCatalog::select(['pest_catalog.id', 'pest_catalog.name', 'pest_catalog.updated_at'])
-            ->orderBy('pest_catalog.name')
+            ->orderBy('name')
             ->get();
 
         $application_methods = ApplicationMethod::select(['application_method.id', 'application_method.name', 'application_method.updated_at'])
