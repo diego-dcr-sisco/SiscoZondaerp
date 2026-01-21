@@ -437,8 +437,8 @@ class Certificate
                     $devices_data[] = [
                         'zone' => $device->applicationArea->name ?? '-',
                         'code' => $device->code,
-                        'intake' => $intake_string ?: 'Sin producto',
-                        'pests' => $pests_string ?: 'Sin capturas',
+                        'intake' => $intake_string ?: 'No aplica',
+                        'pests' => $pests_string ?: 'Sin registro',
                         'questions' => $question_data,
                         'observations' => $observation
                     ];

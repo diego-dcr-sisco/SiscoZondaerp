@@ -662,7 +662,7 @@ class ReportController extends Controller
             $questions = $review['questions'];
             $pests = $review['pests'];
             $products = $review['products'];
-            $observations = $review['observations'] ?? null;
+            $observations = $review['states']['observations'] ?? null;
 
             // Arrays para trackear registros actualizados
             $updated_incidents = [];
