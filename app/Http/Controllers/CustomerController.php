@@ -1457,7 +1457,7 @@ class CustomerController extends Controller
     /**
      * Helper method to return graphics view with consistent structure
      */
-    private function returnGraphicsView($customer, $app_areas, $request_data, $messageType = null, $message = null, $navigation)
+    private function returnGraphicsView($customer, $app_areas, $request_data, $messageType = null, $message = null, $navigation, $availableServices = null)
     {
         session()->flash($messageType, $message);
 
@@ -1468,6 +1468,7 @@ class CustomerController extends Controller
             'control_points' => collect(),
             'weeks' => [],
             'app_areas' => $app_areas,
+            'availableServices' => $availableServices ?? collect(),
             'graphs_types' => $this->graphs_types,
             'request_data' => $request_data,
             'navigation' => $navigation,
@@ -1541,7 +1542,7 @@ class CustomerController extends Controller
         ])->find($id);
 
         if (!$customer) {
-            return $this->returnGraphicsView(null, [], $request->all(), 'error', 'Cliente no encontrado', $navigation);
+            return $this->returnGraphicsView(null, [], $request->all(), 'error', 'Cliente no encontrado', $navigation, collect());
         }
 
         $navigation = [
@@ -1559,6 +1560,7 @@ class CustomerController extends Controller
         $app_areas = $customer->applicationAreas;
 
         // Obtener servicios disponibles en las órdenes del cliente (sin restricción de fecha para el select)
+        // MOVER AQUÍ ANTES DE CUALQUIER VALIDACIÓN PARA ASEGURAR QUE SIEMPRE ESTÉ DISPONIBLE
         $availableServices = Service::whereIn('id', function ($query) use ($customer) {
             $query->select('service_id')
                 ->from('order_service')
@@ -1619,7 +1621,7 @@ class CustomerController extends Controller
                     $endDate->format('Y-m-d'),
                 ]);
             } catch (\Exception $e) {
-                return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Formato de fecha inválido', $navigation);
+                return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Formato de fecha inválido', $navigation, $availableServices);
             }
         }
 
@@ -1646,7 +1648,7 @@ class CustomerController extends Controller
             ->get();*/
 
         if ($orders->isEmpty()) {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'info', 'No se encontraron órdenes aprobadas con los filtros aplicados', $navigation);
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'info', 'No se encontraron órdenes aprobadas con los filtros aplicados', $navigation, $availableServices);
         }
 
 
@@ -1702,7 +1704,7 @@ class CustomerController extends Controller
         } else if ($graph_type == 'cptr') {
             $data = $this->getGraphicDataWithDevicesByPests($customer, $orderIds, $fetched_devices, $req_pests);
         } else {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido', $navigation);
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido', $navigation, $availableServices);
         }
 
         return view('customer.show.graphics', [

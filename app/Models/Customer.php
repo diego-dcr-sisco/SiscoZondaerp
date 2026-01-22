@@ -124,7 +124,7 @@ class Customer extends Model
 
     public function applicationAreas()
     {
-        return $this->hasMany(ApplicationArea::class, 'customer_id', 'id');
+        return $this->hasMany(ApplicationArea::class, 'customer_id', 'id')->orderBy('name', 'asc');
     }
 
     public function sedes()
