@@ -198,8 +198,8 @@ class Certificate
         $html = preg_replace('/(\S)<(b|strong|em|i)>/u', '$1 <$2>', $html);
 
 
-        $html = preg_replace('/\s+([,.!?;:])/u', '$1', $html);
-        $html = preg_replace('/\s{2,}/u', ' ', $html);
+        //$html = preg_replace('/\s+([,.!?;:])/u', '$1', $html);
+        //$html = preg_replace('/\s{2,}/u', ' ', $html);
 
 
         /** -------------------------------------------------
