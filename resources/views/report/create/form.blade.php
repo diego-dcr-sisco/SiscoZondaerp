@@ -466,6 +466,7 @@
             height: 250,
             lang: 'es-ES',
             fontSize: ['8', '10', '11', '12', '14', '16'],
+            lineHeights: ['0.5', '1', '1.5', '2']
             fontSizeUnit: 'pt',
             toolbar: [
                 ['style', ['bold', 'italic', 'underline', 'clear']],
