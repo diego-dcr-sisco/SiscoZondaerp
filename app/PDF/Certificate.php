@@ -165,7 +165,8 @@ class Certificate
         $html = preg_replace("/(<br\s*\/?>\s*){2,}/i", "</p><p>", $html);
 
         // 7. Compactar espacios múltiples
-        $html = preg_replace('/\s{2,}/', '', $html);
+        // $html = preg_replace('/\s{2,}/', '', $html);
+        $html = $html = preg_replace('/(>)(\s+)([^<])/u', '$1 $3', $html);
 
         // 8. Asegurar <p> envolviendo todo
         $html = trim($html);
