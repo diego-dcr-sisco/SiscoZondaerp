@@ -566,7 +566,7 @@
                     forceFontSize($(this), 11);
                 },
 
-                onPaste: function() {
+                /*onPaste: function() {
                     const note = $(this);
 
                     setTimeout(() => {
@@ -587,8 +587,43 @@
                         content = normalizeHtmlFromSummernote(content);
                         note.summernote('code', content);
                     }, 0);
-                },
+                },*/
 
+
+                onPaste: function(e) {
+                    e.preventDefault();
+
+                    let clipboardData = (e.originalEvent || e).clipboardData;
+                    let text = clipboardData.getData('text/html') || clipboardData.getData(
+                    'text/plain');
+
+                    // 🚨 Detectar basura de Word
+                    const wordRegex = /class="?Mso|style="[^"]*mso-|<!--\[if|<\/?o:|<\/?w:/i;
+                    const weirdChars = /[\u00A0\u200B\uFEFF]/g;
+
+                    if (wordRegex.test(text) || weirdChars.test(text)) {
+                        alert('⚠️ El texto contiene formato de Word que puede causar errores.');
+                    }
+
+                    // 🔥 LIMPIEZA REAL
+                    text = text
+                        // quitar caracteres invisibles
+                        .replace(/[\u00A0\u200B\uFEFF]/g, ' ')
+                        // quitar basura Word
+                        .replace(/class="?Mso.*?"/gi, '')
+                        .replace(/style="[^"]*"/gi, '')
+                        // arreglar <b>
+                        .replace(/\s*<b>\s*/gi, '<b>')
+                        .replace(/\s*<\/b>\s*/gi, '</b> ')
+                        // evitar </b>pegado
+                        .replace(/<\/b>(\S)/gi, '</b> $1')
+                        // compactar espacios
+                        .replace(/\s{2,}/g, ' ')
+                        .trim();
+
+                    // Insertar limpio
+                    document.execCommand('insertHTML', false, text);
+                }
 
                 /*onChange: function(contents) {
                     const note = $(this);
