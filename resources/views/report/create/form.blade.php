@@ -531,6 +531,21 @@
             return html.trim();
         }
 
+        function hasWordGarbage(html) {
+            const patterns = [
+                /&nbsp;/i,
+                /<span[^>]*>/i,
+                /mso-/i,
+                /font-family/i,
+                /font-size/i,
+                /[\u200B-\u200F\uFEFF]/, // caracteres invisibles
+                /[“”‘’]/, // comillas Word
+                /&[a-zA-Z]{1,6}(?!;)/ // entidades rotas (&ea &lt etc)
+            ];
+
+            return patterns.some(regex => regex.test(html));
+        }
+
 
         let summernoteConfig = {
             height: 250,
@@ -551,15 +566,21 @@
                     forceFontSize($(this), 11);
                 },
 
-                onPaste: function() {
-                    const note = $(this);
+                function hasWordGarbage(html) {
+                    const patterns = [
+                        /&nbsp;/i,
+                        /<span[^>]*>/i,
+                        /mso-/i,
+                        /font-family/i,
+                        /font-size/i,
+                        /[\u200B-\u200F\uFEFF]/, // caracteres invisibles
+                        /[“”‘’]/, // comillas Word
+                        /&[a-zA-Z]{1,6}(?!;)/ // entidades rotas (&ea &lt etc)
+                    ];
 
-                    setTimeout(() => {
-                        let content = note.summernote('code');
-                        content = normalizeHtmlFromSummernote(content);
-                        note.summernote('code', content);
-                    }, 0);
+                    return patterns.some(regex => regex.test(html));
                 }
+
 
                 /*onChange: function(contents) {
                     const note = $(this);
