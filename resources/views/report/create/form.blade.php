@@ -566,21 +566,15 @@
                     forceFontSize($(this), 11);
                 },
 
-                function hasWordGarbage(html) {
-                    const patterns = [
-                        /&nbsp;/i,
-                        /<span[^>]*>/i,
-                        /mso-/i,
-                        /font-family/i,
-                        /font-size/i,
-                        /[\u200B-\u200F\uFEFF]/, // caracteres invisibles
-                        /[“”‘’]/, // comillas Word
-                        /&[a-zA-Z]{1,6}(?!;)/ // entidades rotas (&ea &lt etc)
-                    ];
+                onPaste: function() {
+                    const note = $(this);
 
-                    return patterns.some(regex => regex.test(html));
+                    setTimeout(() => {
+                        let content = note.summernote('code');
+                        content = normalizeHtmlFromSummernote(content);
+                        note.summernote('code', content);
+                    }, 0);
                 }
-
 
                 /*onChange: function(contents) {
                     const note = $(this);
