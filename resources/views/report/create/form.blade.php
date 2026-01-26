@@ -110,6 +110,7 @@
     .note-editor .note-editable,
     .note-editor .note-editable p {
         font-size: 11pt !important;
+        font-family: inherit;
     }
 </style>
 
@@ -481,16 +482,14 @@
                     forceFontSize($(this), 11);
                 },
 
-                onPaste: function() {
-                    const note = $(this);
+                onPaste: function(e) {
+                    e.preventDefault();
 
-                    setTimeout(() => {
-                        let content = note.summernote('code');
-                        content = normalizeFontSize(content);
-                        note.summernote('code', content);
-                        forceFontSize(note, 11);
-                    }, 10);
-                },
+                    const clipboard = (e.originalEvent || e).clipboardData;
+                    const text = clipboard.getData('text/plain');
+
+                    document.execCommand('insertText', false, text);
+                }
 
                 /*onChange: function(contents) {
                     const note = $(this);
