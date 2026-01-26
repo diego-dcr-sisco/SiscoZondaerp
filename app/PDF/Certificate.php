@@ -187,7 +187,7 @@ class Certificate
         /** -------------------------------------------------
          * 8. Compactar espacios SOLO en texto visible
          * ------------------------------------------------*/
-        //$html = preg_replace('/(>)(\s+)([^<])/u', '$1 $3', $html);
+        $html = preg_replace('/(>)(\s+)([^<])/u', '$1 $3', $html);
 
         /** -------------------------------------------------
          * 9. Eliminar basura después de tags inline (CLAVE)
