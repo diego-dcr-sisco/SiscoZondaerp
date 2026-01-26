@@ -525,16 +525,29 @@
 
                     setTimeout(() => {
                         let content = note.summernote('code');
-                        content = normalizeHtmlForPdfFront(content);
-                        note.summernote('code', content);
-                    }, 10);
-                },
 
-                onBlur: function() {
-                    let content = $(this).summernote('code');
-                    content = normalizeHtmlForPdfFront(content);
-                    $(this).summernote('code', content);
+                        content = content
+                            .replace(/style="[^"]*"/gi, '')
+                            .replace(/class="[^"]*"/gi, '')
+                            .replace(/<span[^>]*>/gi, '')
+                            .replace(/<\/span>/gi, '');
+
+                        note.summernote('code', content);
+                    }, 0);
                 }
+
+                /*onChange: function(contents) {
+                    const note = $(this);
+
+                    if (contents === '<p><br></p>' || contents === '') {
+                        setTimeout(() => forceFontSize(note, 11), 0);
+                    }
+                },*/
+
+                /*onKeydown: function() {
+                    const note = $(this);
+                    setTimeout(() => forceFontSize(note, 11), 0);
+                }*/
             }
         };
 
