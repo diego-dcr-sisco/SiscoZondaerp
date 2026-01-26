@@ -155,10 +155,10 @@ class Certificate
         }
 
         // 5. Limitar tags permitidos (CRÍTICO)
-        $html = strip_tags(
+        /*$html = strip_tags(
             $html,
             '<p><br><strong><em><ul><ol><li><table><thead><tbody><tr><td><th>'
-        );
+        );*/
 
         return $html;
     }
