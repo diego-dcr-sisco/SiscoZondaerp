@@ -133,54 +133,54 @@ class Certificate
     }
 
     private function normalizeHtmlForPdf($html)
-{
-    if (empty($html)) {
-        return '';
+    {
+        if (empty($html)) {
+            return '';
+        }
+
+        // 0. Asegurar UTF-8 limpio
+        $html = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
+
+        // 1. Eliminar caracteres invisibles (Word, BOM, NBSP, Zero-width)
+        $html = preg_replace(
+            '/[\x00-\x1F\x7F\xA0\x{200B}-\x{200F}\x{FEFF}]/u',
+            ' ',
+            $html
+        );
+
+        // 2. Quitar &nbsp;
+        $html = str_replace('&nbsp;', ' ', $html);
+
+        // 3. Eliminar estilos y clases
+        $html = preg_replace('/\s*style="[^"]*"/i', '', $html);
+        $html = preg_replace('/\s*class="[^"]*"/i', '', $html);
+
+        // 4. Eliminar spans completamente
+        $html = preg_replace('/<\/?span[^>]*>/', '', $html);
+
+        // 5. Eliminar párrafos vacíos
+        $html = preg_replace('/<p>\s*(<br\s*\/?>)?\s*<\/p>/i', '', $html);
+
+        // 6. Normalizar múltiples <br> a párrafos
+        $html = preg_replace("/(<br\s*\/?>\s*){2,}/i", "</p><p>", $html);
+
+        // 7. Compactar espacios múltiples
+        $html = preg_replace('/\s{2,}/', ' ', $html);
+
+        // 8. Asegurar <p> envolviendo todo
+        $html = trim($html);
+        if (!preg_match('/^<p>/i', $html)) {
+            $html = '<p>' . $html . '</p>';
+        }
+
+        // 9. Limitar tags permitidos (RECOMENDADO activar)
+        /*$html = strip_tags(
+            $html,
+            '<p><br><strong><b><em><ul><ol><li><table><thead><tbody><tr><td><th>'
+        );*/
+
+        return trim($html);
     }
-
-    // 0. Asegurar UTF-8 limpio
-    $html = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
-
-    // 1. Eliminar caracteres invisibles (Word, BOM, NBSP, Zero-width)
-    $html = preg_replace(
-        '/[\x00-\x1F\x7F\xA0\x{200B}-\x{200F}\x{FEFF}]/u',
-        ' ',
-        $html
-    );
-
-    // 2. Quitar &nbsp;
-    $html = str_replace('&nbsp;', ' ', $html);
-
-    // 3. Eliminar estilos y clases
-    $html = preg_replace('/\s*style="[^"]*"/i', '', $html);
-    $html = preg_replace('/\s*class="[^"]*"/i', '', $html);
-
-    // 4. Eliminar spans completamente
-    $html = preg_replace('/<\/?span[^>]*>/', '', $html);
-
-    // 5. Eliminar párrafos vacíos
-    $html = preg_replace('/<p>\s*(<br\s*\/?>)?\s*<\/p>/i', '', $html);
-
-    // 6. Normalizar múltiples <br> a párrafos
-    $html = preg_replace("/(<br\s*\/?>\s*){2,}/i", "</p><p>", $html);
-
-    // 7. Compactar espacios múltiples
-    $html = preg_replace('/\s{2,}/', ' ', $html);
-
-    // 8. Asegurar <p> envolviendo todo
-    $html = trim($html);
-    if (!preg_match('/^<p>/i', $html)) {
-        $html = '<p>' . $html . '</p>';
-    }
-
-    // 9. Limitar tags permitidos (RECOMENDADO activar)
-    /*$html = strip_tags(
-        $html,
-        '<p><br><strong><b><em><ul><ol><li><table><thead><tbody><tr><td><th>'
-    );*/
-
-    return trim($html);
-}
 
 
 

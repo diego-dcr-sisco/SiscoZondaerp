@@ -416,6 +416,44 @@
     const lots = @json($lots);
     var summaryData = [];
 
+    function normalizeHtmlForPdfFront(html) {
+        if (!html) return '';
+
+        // 1. Eliminar caracteres invisibles (BOM, NBSP, zero-width)
+        html = html.replace(/[\u0000-\u001F\u007F\u00A0\u200B-\u200F\uFEFF]/g, ' ');
+
+        // 2. Eliminar &nbsp;
+        html = html.replace(/&nbsp;/gi, ' ');
+
+        // 3. Quitar estilos inline y clases
+        html = html.replace(/\s*style="[^"]*"/gi, '');
+        html = html.replace(/\s*class="[^"]*"/gi, '');
+
+        // 4. Eliminar spans completamente
+        html = html.replace(/<\/?span[^>]*>/gi, '');
+
+        // 5. Eliminar scripts y estilos (seguridad)
+        html = html.replace(/<(script|style)[^>]*>.*?<\/\1>/gis, '');
+
+        // 6. Eliminar párrafos vacíos
+        html = html.replace(/<p>\s*(<br\s*\/?>)?\s*<\/p>/gi, '');
+
+        // 7. Normalizar múltiples <br> a párrafos
+        html = html.replace(/(<br\s*\/?>\s*){2,}/gi, '</p><p>');
+
+        // 8. Compactar espacios múltiples
+        html = html.replace(/\s{2,}/g, ' ');
+
+        // 9. Asegurar envoltura en <p>
+        html = html.trim();
+        if (!/^<p>/i.test(html)) {
+            html = `<p>${html}</p>`;
+        }
+
+        return html.trim();
+    }
+
+
     /*$(document).ready(function() {
         $('.smnote').summernote({
             height: 250,
@@ -487,29 +525,16 @@
 
                     setTimeout(() => {
                         let content = note.summernote('code');
-
-                        content = content
-                            .replace(/style="[^"]*"/gi, '')
-                            .replace(/class="[^"]*"/gi, '')
-                            .replace(/<span[^>]*>/gi, '')
-                            .replace(/<\/span>/gi, '');
-
+                        content = normalizeHtmlForPdfFront(content);
                         note.summernote('code', content);
-                    }, 0);
+                    }, 10);
+                },
+
+                onBlur: function() {
+                    let content = $(this).summernote('code');
+                    content = normalizeHtmlForPdfFront(content);
+                    $(this).summernote('code', content);
                 }
-
-                /*onChange: function(contents) {
-                    const note = $(this);
-
-                    if (contents === '<p><br></p>' || contents === '') {
-                        setTimeout(() => forceFontSize(note, 11), 0);
-                    }
-                },*/
-
-                /*onKeydown: function() {
-                    const note = $(this);
-                    setTimeout(() => forceFontSize(note, 11), 0);
-                }*/
             }
         };
 
