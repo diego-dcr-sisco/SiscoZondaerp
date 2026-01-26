@@ -376,9 +376,7 @@
                 <span class="square"></span>
                 <span class="square-title">{{ $service['name'] }}</span>
             </div>
-            <div class="render-html">
-                {!! $service['text'] !!}
-            </div>
+            <div class="render-html">{!! $service['text'] !!}</div>
 
             <!-- Evidencias del área "servicio" para este servicio específico -->
             @if (isset($photo_evidences['servicio']) && count($photo_evidences['servicio']) > 0)
