@@ -153,7 +153,7 @@
 
             // Después de cargar los lotes, seleccionar el lote correspondiente
             // Usamos setTimeout para asegurar que el select se haya actualizado
-            setTimeout(function() {
+            setTimeout(function() { 
                 $('#lot').val(data.lot_id);
             }, 50);
         } else {
