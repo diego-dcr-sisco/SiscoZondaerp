@@ -602,7 +602,15 @@
                     const weirdChars = /[\u00A0\u200B\uFEFF]/g;
 
                     if (wordRegex.test(text) || weirdChars.test(text)) {
-                        alert('⚠️ El texto contiene formato de Word que puede causar errores.');
+                        alert(
+                                '⚠️ El texto pegado contiene formato de Word.\n\n' +
+                                'Puede causar:\n' +
+                                '• Espacios extra\n' +
+                                '• Caracteres raros\n' +
+                                '• Problemas en el PDF\n\n' +
+                                'Recomendación:\n' +
+                                'Pegue como texto plano (Ctrl + Shift + V).'
+                            );
                     }
 
                     // 🔥 LIMPIEZA REAL
