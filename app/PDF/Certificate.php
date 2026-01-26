@@ -208,8 +208,8 @@ class Certificate
         }
 
         $html = preg_replace('/\s+([,.!?;:])/u', '$1', $html);
-
         $html = preg_replace('/<\/(b|strong|em|i)>([a-zA-Z0-9])/u', '</$1> $2', $html);
+        
         /** -------------------------------------------------
          * 12. Limitar tags permitidos (RECOMENDADO)
          * ------------------------------------------------*/

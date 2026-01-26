@@ -272,6 +272,7 @@
                                     <option value="10" selected>Normal (10px)</option>
                                     <option value="12">Grande (12px)</option>
                                     <option value="16">Muy Grande (16px)</option>
+                                    <option value="20">Extremadamente Grande (20px)</option>
                                 </select>
                             </div>
                         </div>
