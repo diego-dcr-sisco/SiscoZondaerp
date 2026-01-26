@@ -2,7 +2,7 @@
 namespace App\PDF;
 
 use App\Models\EvidencePhoto;
-use Carbon\Carbon; 
+use Carbon\Carbon;
 
 use App\Models\Order;
 use App\Models\User;
@@ -132,6 +132,38 @@ class Certificate
         return substr($string, 0, 100);
     }
 
+    private function normalizeHtmlForPdf($html)
+    {
+        if (empty($html)) {
+            return '';
+        }
+
+        // 1. Eliminar estilos y clases (Word / Summernote)
+        $html = preg_replace('/style="[^"]*"/i', '', $html);
+        $html = preg_replace('/class="[^"]*"/i', '', $html);
+
+        // 2. Eliminar spans innecesarios
+        $html = preg_replace('/<span[^>]*>/', '', $html);
+        $html = str_replace('</span>', '', $html);
+
+        // 3. Convertir múltiples <br> en párrafos reales
+        $html = preg_replace("/(<br\s*\/?>\s*){2,}/i", "</p><p>", $html);
+
+        // 4. Asegurar que todo esté dentro de <p>
+        if (!preg_match('/^\s*<p>/i', $html)) {
+            $html = '<p>' . $html . '</p>';
+        }
+
+        // 5. Limitar tags permitidos (CRÍTICO)
+        $html = strip_tags(
+            $html,
+            '<p><br><strong><em><ul><ol><li><table><thead><tbody><tr><td><th>'
+        );
+
+        return $html;
+    }
+
+
     public function order()
     {
         $this->data['order'] = [
@@ -205,7 +237,7 @@ class Certificate
         foreach ($this->order->services()->get() as $service) {
             $services_data[] = [
                 'name' => $service->name,
-                'text' => $this->order->propagateByService($service->id)->text ?? '',
+                'text' => $this->normalizeHtmlForPdf($this->order->propagateByService($service->id)->text ?? ''),
             ];
         }
 
@@ -462,9 +494,9 @@ class Certificate
     }
     public function notes()
     {
-        $this->data['notes'] = !empty($this->order->notes) && trim($this->order->notes) != '<br>'
+        $this->data['notes'] = $this->normalizeHtmlForPdf(!empty($this->order->notes) && trim($this->order->notes) != '<br>'
             ? $this->order->notes
-            : 'Sin notas';
+            : 'Sin notas');
     }
 
     private function isValidRecommendation($data)
