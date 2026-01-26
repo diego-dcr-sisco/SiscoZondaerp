@@ -482,13 +482,20 @@
                     forceFontSize($(this), 11);
                 },
 
-                onPaste: function(e) {
-                    e.preventDefault();
+                onPaste: function() {
+                    const note = $(this);
 
-                    const clipboard = (e.originalEvent || e).clipboardData;
-                    const text = clipboard.getData('text/plain');
+                    setTimeout(() => {
+                        let content = note.summernote('code');
 
-                    document.execCommand('insertText', false, text);
+                        content = content
+                            .replace(/style="[^"]*"/gi, '')
+                            .replace(/class="[^"]*"/gi, '')
+                            .replace(/<span[^>]*>/gi, '')
+                            .replace(/<\/span>/gi, '');
+
+                        note.summernote('code', content);
+                    }, 0);
                 }
 
                 /*onChange: function(contents) {
