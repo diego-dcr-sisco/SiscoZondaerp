@@ -138,56 +138,88 @@ class Certificate
             return '';
         }
 
-        // 0. Asegurar UTF-8 limpio
+        /** -------------------------------------------------
+         * 0. Decodificar entidades HTML (CRÍTICO)
+         * ------------------------------------------------*/
+        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        /** -------------------------------------------------
+         * 1. Limpiar UTF-8 (sin romper entidades)
+         * ------------------------------------------------*/
         $html = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
 
-        // 1. Eliminar caracteres invisibles (Word, BOM, NBSP, Zero-width)
+        /** -------------------------------------------------
+         * 2. Eliminar caracteres invisibles (Word / BOM)
+         * ------------------------------------------------*/
         $html = preg_replace(
             '/[\x00-\x1F\x7F\xA0\x{200B}-\x{200F}\x{FEFF}]/u',
             ' ',
             $html
         );
 
-        // 2. Quitar &nbsp;
-        $html = str_replace('&nbsp;', ' ', $html);
+        /** -------------------------------------------------
+         * 3. Eliminar restos de entidades HTML rotas
+         * (&nb, &ea, &lt sin cerrar)
+         * ------------------------------------------------*/
+        $html = preg_replace('/&[a-zA-Z]{1,6};?/', ' ', $html);
 
-        // 3. Eliminar estilos y clases
+        /** -------------------------------------------------
+         * 4. Quitar estilos y clases (Word / Summernote)
+         * ------------------------------------------------*/
         $html = preg_replace('/\s*style="[^"]*"/i', '', $html);
         $html = preg_replace('/\s*class="[^"]*"/i', '', $html);
 
-        // 4. Eliminar spans completamente
-        $html = preg_replace('/<\/?span[^>]*>/', '', $html);
+        /** -------------------------------------------------
+         * 5. Eliminar spans completamente
+         * ------------------------------------------------*/
+        $html = preg_replace('/<\/?span[^>]*>/i', '', $html);
 
-        // 5. Eliminar párrafos vacíos
+        /** -------------------------------------------------
+         * 6. Eliminar párrafos vacíos
+         * ------------------------------------------------*/
         $html = preg_replace('/<p>\s*(<br\s*\/?>)?\s*<\/p>/i', '', $html);
 
-        // 6. Normalizar múltiples <br> a párrafos
-        $html = preg_replace("/(<br\s*\/?>\s*){2,}/i", "</p><p>", $html);
+        /** -------------------------------------------------
+         * 7. Normalizar múltiples <br> a <p>
+         * ------------------------------------------------*/
+        $html = preg_replace('/(<br\s*\/?>\s*){2,}/i', '</p><p>', $html);
 
-        // 7. Compactar espacios múltiples
-        // $html = preg_replace('/\s{2,}/', '', $html);
-        $html = $html = preg_replace('/(>)(\s+)([^<])/u', '$1 $3', $html);
+        /** -------------------------------------------------
+         * 8. Compactar espacios SOLO en texto visible
+         * ------------------------------------------------*/
+        $html = preg_replace('/(>)(\s+)([^<])/u', '$1 $3', $html);
 
-        // 8. Asegurar <p> envolviendo todo
+        /** -------------------------------------------------
+         * 9. Eliminar basura después de tags inline (CLAVE)
+         * ------------------------------------------------*/
+        $html = preg_replace('/<\/(b|strong|em|i)>\s*[^<\w]*/i', '</$1>', $html);
+
+        /** -------------------------------------------------
+         * 10. Limpiar espacios entre tags
+         * ------------------------------------------------*/
+        $html = preg_replace('/>\s+</', '><', $html);
+
+        /** -------------------------------------------------
+         * 11. Asegurar envoltura <p>
+         * ------------------------------------------------*/
         $html = trim($html);
         if (!preg_match('/^<p>/i', $html)) {
             $html = '<p>' . $html . '</p>';
         }
 
-        // 8.5 Eliminar espacios alrededor de tags inline (CRÍTICO)
-        $html = preg_replace('/>\s+</', '><', $html); // entre tags
-        $html = preg_replace('/<\/(b|strong|em|i)>\s+/i', '</$1>', $html); // después
-        $html = preg_replace('/\s+<(b|strong|em|i)>/i', '<$1>', $html); // antes
-
-
-        // 9. Limitar tags permitidos (RECOMENDADO activar)
-        /*$html = strip_tags(
+        /** -------------------------------------------------
+         * 12. Limitar tags permitidos (RECOMENDADO)
+         * ------------------------------------------------*/
+        /*
+        $html = strip_tags(
             $html,
             '<p><br><strong><b><em><ul><ol><li><table><thead><tbody><tr><td><th>'
-        );*/
+        );
+        */
 
         return trim($html);
     }
+
 
 
 
