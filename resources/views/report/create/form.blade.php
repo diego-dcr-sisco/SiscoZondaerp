@@ -476,9 +476,9 @@
             ],
 
             callbacks: {
-                onInit: function() {
+                /*onInit: function() {
                     forceFontSize($(this), 11);
-                },
+                },*/
 
                 onPaste: function() {
                     const note = $(this);
@@ -491,18 +491,18 @@
                     }, 10);
                 },
 
-                onChange: function(contents) {
+                /*onChange: function(contents) {
                     const note = $(this);
 
                     if (contents === '<p><br></p>' || contents === '') {
                         setTimeout(() => forceFontSize(note, 11), 0);
                     }
-                },
+                },*/
 
-                onKeydown: function() {
+                /*onKeydown: function() {
                     const note = $(this);
                     setTimeout(() => forceFontSize(note, 11), 0);
-                }
+                }*/
             }
         };
 
