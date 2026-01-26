@@ -476,9 +476,9 @@
             ],
 
             callbacks: {
-                /*onInit: function() {
+                onInit: function() {
                     forceFontSize($(this), 11);
-                },*/
+                },
 
                 onPaste: function() {
                     const note = $(this);
