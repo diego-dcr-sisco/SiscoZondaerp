@@ -501,6 +501,37 @@
             return html;
         }
 
+        function normalizeHtmlFromSummernote(html) {
+            if (!html) return '';
+
+            // 1. Decodificar entidades rotas (&nbsp;, &lt, etc.)
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = html;
+            html = textarea.value;
+
+            // 2. Eliminar caracteres invisibles (Word, BOM)
+            html = html.replace(/[\u0000-\u001F\u007F\u00A0\u200B-\u200F\uFEFF]/g, ' ');
+
+            // 3. Eliminar estilos y clases
+            html = html.replace(/\s*style="[^"]*"/gi, '');
+            html = html.replace(/\s*class="[^"]*"/gi, '');
+
+            // 4. Eliminar spans SIN romper texto
+            html = html.replace(/<\/?span[^>]*>/gi, '');
+
+            // 5. Quitar espacios antes de signos
+            html = html.replace(/\s+([,.!?;:])/g, '$1');
+
+            // 6. Asegurar espacio después de </b> </strong> </em>
+            html = html.replace(/<\/(b|strong|em|i)>(\S)/gi, '</$1> $2');
+
+            // 7. Compactar espacios múltiples
+            html = html.replace(/\s{2,}/g, ' ');
+
+            return html.trim();
+        }
+
+
         let summernoteConfig = {
             height: 250,
             lang: 'es-ES',
@@ -525,13 +556,7 @@
 
                     setTimeout(() => {
                         let content = note.summernote('code');
-
-                        content = content
-                            .replace(/style="[^"]*"/gi, '')
-                            .replace(/class="[^"]*"/gi, '')
-                            .replace(/<span[^>]*>/gi, '')
-                            .replace(/<\/span>/gi, '');
-
+                        content = normalizeHtmlFromSummernote(content);
                         note.summernote('code', content);
                     }, 0);
                 }
