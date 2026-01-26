@@ -1,0 +1,34 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class InvoiceCustomer extends Model
+{
+    use HasFactory;
+    protected $table = 'customer_tax_data';
+    protected $fillable = [
+        'customer_id',
+        'tax_address',
+        'payment_frequency',
+        'payment_days',
+        'payment_start_date',
+        'payment_end_date',
+        'payment_method',
+        'billing_cycle',
+        'status'
+    ];
+
+    protected $casts = [
+        'payment_start_date' => 'date',
+        'payment_end_date' => 'date',
+        'payment_days' => 'array', // Ideal si guardas los días como un JSON, ej: [1, 15]
+    ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'customer_id');
+    }
+}

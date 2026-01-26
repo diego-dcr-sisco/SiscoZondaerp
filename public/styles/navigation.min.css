@@ -1,0 +1,29 @@
+
+
+.static-header {
+    display: block !important;
+}
+
+.nav-static-header {
+    display: flex !important;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.nav-res-header {
+    display: none !important;
+}
+
+img {
+    width: 75%;
+    height: auto;
+}
+
+.border-none {
+    border: none !important;
+}
+
+.img-width {
+    width: 25%;
+    height: auto;
+}
