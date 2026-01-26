@@ -607,7 +607,8 @@
                                 'Puede causar:\n' +
                                 '• Espacios extra\n' +
                                 '• Caracteres raros\n' +
-                                '• Problemas en el PDF\n\n' +
+                                '• Problemas con el tamaño de letra\n' +
+                                '• Mal diseño en el PDF\n\n' +
                                 'Recomendación:\n' +
                                 'Pegue como texto plano (Ctrl + Shift + V).'
                             );
