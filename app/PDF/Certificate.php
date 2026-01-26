@@ -132,112 +132,94 @@ class Certificate
         return substr($string, 0, 100);
     }
 
+
     private function normalizeHtmlForPdf($html)
     {
-        if (empty($html)) {
+        if (trim($html) === '') {
             return '';
         }
 
         /** -------------------------------------------------
-         * 0. Decodificar entidades HTML (CRÍTICO)
+         * 1. Decodificar entidades HTML
          * ------------------------------------------------*/
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
         /** -------------------------------------------------
-         * 1. Limpiar UTF-8 (sin romper entidades)
+         * 2. Asegurar UTF-8
          * ------------------------------------------------*/
         $html = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
 
         /** -------------------------------------------------
-         * 2. Eliminar caracteres invisibles (Word / BOM)
+         * 3. Eliminar caracteres invisibles (Word)
          * ------------------------------------------------*/
         $html = preg_replace(
-            '/[\x00-\x1F\x7F\xA0\x{200B}-\x{200F}\x{FEFF}]/u',
+            '/[\x{00A0}\x{200B}-\x{200F}\x{FEFF}]/u',
             ' ',
             $html
         );
 
         /** -------------------------------------------------
-         * 3. Eliminar restos de entidades HTML rotas
-         * (&nb, &ea, &lt sin cerrar)
+         * 4. Eliminar estilos y clases
          * ------------------------------------------------*/
-        $html = preg_replace('/&[a-zA-Z]{1,6};?/', ' ', $html);
+        $html = preg_replace('/\s*(style|class)="[^"]*"/i', '', $html);
 
         /** -------------------------------------------------
-         * 4. Quitar estilos y clases (Word / Summernote)
-         * ------------------------------------------------*/
-        $html = preg_replace('/\s*style="[^"]*"/i', '', $html);
-        $html = preg_replace('/\s*class="[^"]*"/i', '', $html);
-
-        /** -------------------------------------------------
-         * 5. Eliminar spans completamente
+         * 5. Eliminar <span> completamente
          * ------------------------------------------------*/
         $html = preg_replace('/<\/?span[^>]*>/i', '', $html);
 
         /** -------------------------------------------------
-         * 5.5 Eliminar <u> completamente (SIN romper texto)
+         * 6. Eliminar <u> (NO lo quieres)
          * ------------------------------------------------*/
         $html = preg_replace('/<\/?u[^>]*>/i', '', $html);
 
         /** -------------------------------------------------
-         * 6. Eliminar párrafos vacíos
+         * 7. Eliminar tags inline vacíos
+         * ------------------------------------------------*/
+        $html = preg_replace('/<(b|strong|em|i)>\s*<\/\1>/i', '', $html);
+
+        /** -------------------------------------------------
+         * 8. Normalizar <br> múltiples
+         * ------------------------------------------------*/
+        $html = preg_replace('/(<br\s*\/?>\s*){2,}/i', '<br>', $html);
+
+        /** -------------------------------------------------
+         * 9. Limpiar espacios dentro del texto
+         * ------------------------------------------------*/
+        $html = preg_replace('/\s{2,}/u', ' ', $html);
+
+        /** -------------------------------------------------
+         * 10. Asegurar separación correcta de inline tags
+         * texto<b>negrita</b>texto → texto <b>negrita</b> texto
+         * ------------------------------------------------*/
+        $html = preg_replace('/(\S)<(b|strong|em|i)>/u', '$1 <$2>', $html);
+        $html = preg_replace('/<\/(b|strong|em|i)>(\S)/u', '</$1> $2', $html);
+
+        /** -------------------------------------------------
+         * 11. Eliminar <p> vacíos
          * ------------------------------------------------*/
         $html = preg_replace('/<p>\s*(<br\s*\/?>)?\s*<\/p>/i', '', $html);
 
         /** -------------------------------------------------
-         * 7. Normalizar múltiples <br> a <p>
-         * ------------------------------------------------*/
-        $html = preg_replace('/(<br\s*\/?>\s*){2,}/i', '</p><p>', $html);
-
-        /** -------------------------------------------------
-         * 8. Compactar espacios SOLO en texto visible
-         * ------------------------------------------------*/
-        //$html = preg_replace('/(>)(\s+)([^<])/u', '$1 $3', $html);
-
-        $html = preg_replace('/\s+<(b|strong|em|i)>/u', '<$1>', $html);
-        $html = preg_replace('/<\/(b|strong|em|i)>\s+/u', '</$1>', $html);
-
-
-        //$html = preg_replace('/\s+([,.!?;:])/u', '$1', $html);
-        //$html = preg_replace('/\s{2,}/u', ' ', $html);
-
-
-        /** -------------------------------------------------
-         * 9. Eliminar basura después de tags inline (CLAVE)
-         * ------------------------------------------------*/
-        $html = preg_replace('/<\/(b|strong|em|i)>\s*[^<\w]*/i', '</$1>', $html);
-
-        /** -------------------------------------------------
-         * 10. Limpiar espacios entre tags
-         * ------------------------------------------------*/
-        $html = preg_replace('/>\s+</', '><', $html);
-
-        /** -------------------------------------------------
-         * 11. Asegurar envoltura <p>
+         * 12. Asegurar envoltura en <p>
          * ------------------------------------------------*/
         $html = trim($html);
         if (!preg_match('/^<p>/i', $html)) {
             $html = '<p>' . $html . '</p>';
         }
 
-        /*$html = preg_replace('/\s+([,.!?;:])/u', '$1', $html);
-        $html = preg_replace('/<\/(b|strong|em|i)>([a-zA-Z0-9])/u', '</$1> $2', $html);*/
-
         /** -------------------------------------------------
-         * 12. Limitar tags permitidos (RECOMENDADO)
+         * 13. Limitar tags permitidos (OPCIONAL pero recomendado)
          * ------------------------------------------------*/
         /*
         $html = strip_tags(
             $html,
-            '<p><br><strong><b><em><ul><ol><li><table><thead><tbody><tr><td><th>'
+            '<p><br><b><strong><em><i><ul><ol><li><table><thead><tbody><tr><td><th>'
         );
         */
 
         return trim($html);
     }
-
-
-
 
     public function order()
     {

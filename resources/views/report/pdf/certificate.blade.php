@@ -304,6 +304,11 @@
             font-style: italic;
             padding: 10px;
         }
+
+        p {
+            line-height: 1.3;
+            margin: 0 0 6px 0;
+        }
     </style>
 </head>
 
