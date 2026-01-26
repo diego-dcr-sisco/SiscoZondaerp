@@ -571,10 +571,24 @@
 
                     setTimeout(() => {
                         let content = note.summernote('code');
+
+                        if (hasWordGarbage(content)) {
+                            alert(
+                                '⚠️ El texto pegado contiene formato de Word.\n\n' +
+                                'Puede causar:\n' +
+                                '• Espacios extra\n' +
+                                '• Caracteres raros\n' +
+                                '• Problemas en el PDF\n\n' +
+                                'Recomendación:\n' +
+                                'Pegue como texto plano (Ctrl + Shift + V).'
+                            );
+                        }
+
                         content = normalizeHtmlFromSummernote(content);
                         note.summernote('code', content);
                     }, 0);
-                }
+                },
+
 
                 /*onChange: function(contents) {
                     const note = $(this);

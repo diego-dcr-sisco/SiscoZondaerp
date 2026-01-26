@@ -175,6 +175,11 @@ class Certificate
         $html = preg_replace('/<\/?span[^>]*>/i', '', $html);
 
         /** -------------------------------------------------
+         * 5.5 Eliminar <u> completamente (SIN romper texto)
+         * ------------------------------------------------*/
+        $html = preg_replace('/<\/?u[^>]*>/i', '', $html);
+
+        /** -------------------------------------------------
          * 6. Eliminar párrafos vacíos
          * ------------------------------------------------*/
         $html = preg_replace('/<p>\s*(<br\s*\/?>)?\s*<\/p>/i', '', $html);
