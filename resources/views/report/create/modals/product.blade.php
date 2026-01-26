@@ -77,6 +77,8 @@
 </div>
 
 <script>
+    const dataProducts = @json($products);
+
     function loadProductLots() {
         var productId = $('#product').val();
         var lotSelect = $('#lot');
@@ -137,8 +139,6 @@
             data = productData;
         }
 
-        console.log(data);
-
         $('#op-id').val(data.id);
         $('#service').val(data.service_id);
         $('#application-method').val(data.application_method_id ?? 1);
@@ -167,22 +167,18 @@
 
     // Función cuando cambia el producto (para el modal nuevo)
     function onProductChange() {
+        console.log('Productos: ', dataProducts);
         var productId = $('#product').val();
 
         if (productId) {
             // Cargar lotes del producto
             loadProductLots();
 
-            // Obtener datos del producto seleccionado para completar otros campos
-            var selectedOption = $('#product option:selected');
+            var fetch_product = dataProducts.find(p => p.id == productId);
 
-            // Si el producto tiene datos en data attributes, completarlos
-            if (selectedOption.data('metric-id')) {
-                $('#metric').val(selectedOption.data('metric-id'));
-            }
-
-            if (selectedOption.data('dosage')) {
-                $('#dosage').val(selectedOption.data('dosage'));
+            if (fetch_product) {
+                $('#metric').val(fetch_product.metric_id);
+                $('#dosage').val(fetch_product.dosage);
             }
         } else {
             // Si no hay producto seleccionado, resetear

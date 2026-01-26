@@ -551,6 +551,8 @@ class ReportController extends Controller
                 'product_catalog.id',
                 'product_catalog.name',
                 'product_catalog.updated_at',
+                'product_catalog.dosage',
+                'product_catalog.metric_id',
                 'metric.value as metric'
             ])
             ->orderBy('product_catalog.name')
