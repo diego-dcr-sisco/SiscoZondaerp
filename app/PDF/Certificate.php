@@ -174,6 +174,12 @@ class Certificate
             $html = '<p>' . $html . '</p>';
         }
 
+        // 8.5 Eliminar espacios alrededor de tags inline (CRÍTICO)
+        $html = preg_replace('/>\s+</', '><', $html); // entre tags
+        $html = preg_replace('/<\/(b|strong|em|i)>\s+/i', '</$1>', $html); // después
+        $html = preg_replace('/\s+<(b|strong|em|i)>/i', '<$1>', $html); // antes
+
+
         // 9. Limitar tags permitidos (RECOMENDADO activar)
         /*$html = strip_tags(
             $html,
