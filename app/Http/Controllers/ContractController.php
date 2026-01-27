@@ -611,6 +611,8 @@ class ContractController extends Controller
                                 ->where('setting_id', $contract_service->id)
                                 ->first();
 
+                            dd($s_propagate);
+
                             if (!$s_propagate) {
                                 PropagateService::create([
                                     'order_id' => $existing_order->id,
