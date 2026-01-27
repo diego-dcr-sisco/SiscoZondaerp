@@ -589,13 +589,15 @@ class ContractController extends Controller
                             'service_id' => $data->service_id,
                         ]);
 
-                        PropagateService::create([
+                        $s_propagate = PropagateService::create([
                             'order_id' => $existing_order->id,
                             'service_id' => $data->service_id,
                             'contract_id' => $contract->id,
                             'setting_id' => $contract_service->id,
                             'text' => $data->description ?? null
                         ]);
+
+                        $contract_service->update(['service_description' => $s_propagate->text]);
 
                     } else {
                         $existing_order = Order::find($order->id);
@@ -614,7 +616,7 @@ class ContractController extends Controller
                             //dd($s_propagate);
 
                             if (!$s_propagate) {
-                                PropagateService::create([
+                                $s_propagate = PropagateService::create([
                                     'order_id' => $existing_order->id,
                                     'service_id' => $data->service_id,
                                     'contract_id' => $contract->id,
@@ -626,6 +628,8 @@ class ContractController extends Controller
                                     'text' => $data->description ?? null
                                 ]);
                             }
+
+                            $contract_service->update(['service_description' => $s_propagate->text]);
                         }
 
                         if ($existing_order && $existing_order->status_id != 1) {
