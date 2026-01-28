@@ -304,7 +304,7 @@ class Certificate
     public function products()
     {
         $products_data = [];
-        $devices_products = DeviceProduct::where('order_id', $this->order->id)->get();
+        /*$devices_products = DeviceProduct::where('order_id', $this->order->id)->get();
 
         $order_products = OrderProduct::where('order_id', $this->order->id)->get();
 
@@ -351,7 +351,7 @@ class Certificate
                     ]);
                 }
             }
-        }
+        }*/
 
 
         foreach ($this->order->products()->get() as $order_product) {
