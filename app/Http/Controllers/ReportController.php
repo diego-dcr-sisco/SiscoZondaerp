@@ -1030,7 +1030,7 @@ class ReportController extends Controller
         $order = Order::find($orderId);
         $op_id = $data['op_id'];
 
-        dd($data);
+       // dd($data);
 
         if (!$op_id) {
             $order_product = OrderProduct::create([
