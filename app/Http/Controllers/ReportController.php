@@ -1275,7 +1275,7 @@ class ReportController extends Controller
                 ], 400);
             }
 
-            /*foreach ($selected_orders as $order_id) {
+            foreach ($selected_orders as $order_id) {
                 try {
                     $certificate = new Certificate($order_id);
                     $certificate->order();
@@ -1309,20 +1309,46 @@ class ReportController extends Controller
             }
 
             $zip_name = 'certificados.zip';
-            $zip_path = Storage::path($this->temp_bulk . $timer . '/' . $zip_name);
-            $folder_path = Storage::path($this->temp_bulk . $timer);
+            $folder_relative = $this->temp_bulk . $timer . '/';
+            $zip_path = Storage::path($folder_relative . $zip_name);
+            $folder_path = Storage::path($folder_relative);
+
+            // Asegurar que el directorio existe
+            if (!File::isDirectory($folder_path)) {
+                File::makeDirectory($folder_path, 0755, true, true);
+            }
 
             $zip = new ZipArchive;
-            if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+            $zip_status = $zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+            if ($zip_status === TRUE) {
                 $files = File::allFiles($folder_path);
+
+                // Solo añadir archivos PDF, excluir el ZIP si ya existe
                 foreach ($files as $file) {
-                    $relativePath = substr($file->getPathname(), strlen($folder_path) + 1);
-                    $zip->addFile($file->getPathname(), $relativePath);
+                    if ($file->getExtension() === 'pdf') {
+                        $relativePath = $file->getFilename();
+                        $zip->addFile($file->getPathname(), $relativePath);
+                    }
                 }
+
                 $zip->close();
+
+                // Verificar que el ZIP se creó
+                if (!file_exists($zip_path)) {
+                    Log::error("ZIP no se creó en: " . $zip_path);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se pudo crear el archivo ZIP'
+                    ], 500);
+                }
             } else {
-                //return back()->with('error', 'No se pudo crear el archivo ZIP');
-            }*/
+                Log::error("Error al abrir ZIP: " . $zip_status . " - Ruta: " . $zip_path);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se pudo crear el archivo ZIP (código: ' . $zip_status . ')'
+                ], 500);
+            }
 
             return response()->json([
                 'success' => true,

@@ -90,7 +90,7 @@
 
         .bg-blue {
             background-color: #79C4F2;
-            /* background-color: {{ $primaryColor }}; */
+            /*{{-- background-color: {{ $primaryColor }}; --}}*/
             font-weight: bold;
             padding-left: 5px;
             width: 100%;
@@ -123,8 +123,8 @@
         }
 
         .product-table thead tr {
-            /* background-color: #b0bec5; */
-            background-color: {{ $secondaryColor }};
+            background-color: #b0bec5;
+            /*{{-- background-color: {{ $secondaryColor }}; --}}*/
             text-align: left;
         }
 
@@ -248,8 +248,8 @@
             text-align: center;
             pointer-events: none;
             z-index: -1;
-            /* opacity: 0.1; */
-            opacity: {{ $watermarkOpacity }};
+            opacity: 0.1;
+            /* {{-- opacity: {{ $watermarkOpacity }}; --}} */
         }
 
         .watermark img {
