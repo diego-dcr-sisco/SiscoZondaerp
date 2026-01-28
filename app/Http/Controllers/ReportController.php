@@ -1275,7 +1275,7 @@ class ReportController extends Controller
                 ], 400);
             }
 
-            foreach ($selected_orders as $order_id) {
+            /*foreach ($selected_orders as $order_id) {
                 try {
                     $certificate = new Certificate($order_id);
                     $certificate->order();
@@ -1322,7 +1322,7 @@ class ReportController extends Controller
                 $zip->close();
             } else {
                 //return back()->with('error', 'No se pudo crear el archivo ZIP');
-            }
+            }*/
 
             return response()->json([
                 'success' => true,
