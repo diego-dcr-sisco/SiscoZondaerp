@@ -232,6 +232,7 @@ class ReportController extends Controller
                     'product_id' => $product_id,
                     'service_id' => $service->id ?? null,
                     'lot_id' => $firstProduct->lot_id ?? null,
+                    'metric_id' => $firstProduct?->metric_id,
                     'app_method_id' => $firstProduct->application_method_id,
                     'amount' => $totalAmount,
                 ];
@@ -240,7 +241,7 @@ class ReportController extends Controller
             $user = Auth::user();
             $technician = $order->closed_by ? Technician::where('user_id', $order->closed_by)->first() : null;
             $this->handleStock($order, $products_data, $technician, $user);
-            $this->handleStock($order, $products_data, $technician, $user);
+            //$this->handleStock($order, $products_data, $technician, $user);
 
 
             return response()->json([
@@ -262,8 +263,9 @@ class ReportController extends Controller
         $updated_products = [];
         $updated_lots = [];
         $updated_order_products = [];
-
         $updated_wos = [];
+
+        $mult_factor = 1;
 
         $warehouse = $technician ? Warehouse::where('technician_id', $technician->id)->first() : null;
         foreach ($products_data as $product_data) {
@@ -275,13 +277,25 @@ class ReportController extends Controller
                 'lot_id' => $product_data['lot_id'] ?? null,
             ], [
                 'service_id' => $product_data['service_id'],
-                'metric_id' => $product->metric_id,
+                'metric_id' => $product_data['metric_id'] ?? $product->metric_id ?? null,
                 'application_method_id' => $product_data['app_method_id'] ?? null,
                 'amount' => $product_data['amount'],
                 'dosage' => $product_data['dosage'] ?? $product->dosage ?? null,
             ]);
 
             $updated_order_products[] = $op->id;
+
+            if ($product->id == 4 && $product_data['metric_id'] == 5) {
+                $mult_factor = 1000;
+            }
+
+            if ($product->id == 2 && $product_data['metric_id'] == 3) {
+                $mult_factor = 1000;
+            }
+
+            if ($product->id == 1 && $product_data['metric_id'] == 2) {
+                $mult_factor = 1000;
+            }
 
             if ($warehouse) {
                 $wm = WarehouseMovement::updateOrCreate(
@@ -307,7 +321,7 @@ class ReportController extends Controller
 
                 ], [
                     'lot_id' => $product_data['lot_id'] ?? null,
-                    'amount' => $product_data['amount'],
+                    'amount' => $product_data['amount'] * $mult_factor,
                 ]);
 
                 $updated_products[] = $mp->product_id;
@@ -323,7 +337,7 @@ class ReportController extends Controller
                 'warehouse_id' => $warehouse->id ?? null,
                 'warehouse_movement_id' => $wm->id ?? null,
                 'lot_id' => $product_data['lot_id'] ?? null,
-                'amount' => $product_data['amount'],
+                'amount' => $product_data['amount'] * $mult_factor,
             ]);
 
             $updated_wos[] = $wo->id;
@@ -933,13 +947,13 @@ class ReportController extends Controller
                     }
                 } else {
                     */
-                    OrderRecommendation::updateOrCreate([
-                        'order_id' => $order->id,
-                        'service_id' => $service->id
-                    ], [
-                        'recommendation_id' => null,
-                        'recommendation_text' =>  $recs_data ?? null,
-                    ]);
+                OrderRecommendation::updateOrCreate([
+                    'order_id' => $order->id,
+                    'service_id' => $service->id
+                ], [
+                    'recommendation_id' => null,
+                    'recommendation_text' => $recs_data ?? null,
+                ]);
                 //}
             }
         }
@@ -1030,7 +1044,7 @@ class ReportController extends Controller
         $order = Order::find($orderId);
         $op_id = $data['op_id'];
 
-       // dd($data);
+        // dd($data);
 
         if (!$op_id) {
             $order_product = OrderProduct::create([
@@ -1069,6 +1083,7 @@ class ReportController extends Controller
                 'product_id' => $product_id,
                 'service_id' => $service->id ?? null,
                 'lot_id' => $firstProduct->lot_id,
+                'metric_id' => $firstProduct?->metric_id,
                 'app_method_id' => $firstProduct->application_method_id,
                 'amount' => $totalAmount,
                 'dosage' => $firstProduct->dosage,
@@ -1086,6 +1101,7 @@ class ReportController extends Controller
                 'product_id' => $product_id,
                 'service_id' => $service->id ?? null,
                 'lot_id' => $firstProduct?->lot_id,
+                'metric_id' => $firstProduct?->metric_id,
                 'app_method_id' => $firstProduct->application_method_id,
                 'amount' => $totalAmount,
                 'dosage' => $firstProduct->dosage,
@@ -1305,7 +1321,7 @@ class ReportController extends Controller
                 }
                 $zip->close();
             } else {
-                return back()->with('error', 'No se pudo crear el archivo ZIP');
+                //return back()->with('error', 'No se pudo crear el archivo ZIP');
             }
 
             return response()->json([
