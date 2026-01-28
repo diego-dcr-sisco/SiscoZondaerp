@@ -204,7 +204,7 @@ class QualityController extends Controller
         $technicians = $techniciansAll->map(function ($techniciansAll) {
             return [
                 'id' => $techniciansAll->id,
-                'name' => $techniciansAll->user->name,
+                'name' => $techniciansAll->user->name ?? '-',
             ];
         });
 
