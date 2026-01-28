@@ -758,6 +758,7 @@ class ReportController extends Controller
                     'product_id' => $product_id,
                     'service_id' => $service->id ?? null,
                     'lot_id' => $firstProduct->lot_id,
+                    'metric_id' => $firstProduct->metric_id ?? null,
                     'app_method_id' => $firstProduct->application_method_id,
                     'amount' => $totalAmount,
                 ];
