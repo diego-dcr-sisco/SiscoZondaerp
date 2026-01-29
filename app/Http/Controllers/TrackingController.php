@@ -130,7 +130,7 @@ class TrackingController extends Controller
             }
         }
 
-        Tracking::whereNotIn('id', $updated_trackings)->delete();
+        Tracking::whereNotIn('id', $updated_trackings)->where('order_id', $order->id)->delete();
         return back();
     }
 
