@@ -620,11 +620,11 @@ class StockController extends Controller
             foreach ($product_data as $data) {
                 $presentation = Presentation::find($data['product']['presentation_id']);
                 $products_data[] = [
-                    'product' => $data['product']['name'],
+                    'product' => $data['product']['name'] ?? '-',
                     'presentation' => $presentation['name'] ?? '-',
-                    'lot' => $data['lot']['registration_number'],
+                    'lot' => $data['lot']['registration_number'] ?? '-',
                     'amount' => $data['amount']['net'],
-                    'metric' => $data['product']['metric']['value'],
+                    'metric' => $data['product']['metric']['value'] ?? '-',
                     'expiration_date' => $data['lot']['expiration_date'] ?? '-'
                 ];
             }
