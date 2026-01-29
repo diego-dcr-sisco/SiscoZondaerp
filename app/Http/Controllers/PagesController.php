@@ -478,7 +478,7 @@ return [
         $technicians = $technicians->get()->map(function ($tech) {
             return [
                 'id' => $tech->id,
-                'name' => $tech->user->name, // Ahora user está cargado eficientemente
+                'name' => $tech->user->name ?? '-', // Ahora user está cargado eficientemente
             ];
         });
 
