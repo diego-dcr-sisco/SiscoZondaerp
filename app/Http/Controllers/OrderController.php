@@ -685,7 +685,7 @@ class OrderController extends Controller
             $updated_techncians[] = $ot->id;
         }
 
-        /*$inactive_users = User::where('status_id', '>=', 3)->pluck('id');
+        $inactive_users = User::where('status_id', '>=', 3)->pluck('id');
 
         $inactive_tech_ids = Technician::whereIn('user_id', $inactive_users)
             ->pluck('id')
@@ -706,9 +706,9 @@ class OrderController extends Controller
                 ]
             );
 
-            $updated_technicians[] = $ot->id;
-        }*/
-            
+            $updated_techncians[] = $ot->id;
+        }
+
         OrderService::where('order_id', $order->id)->whereNotIn('id', $updated_services)->delete();
         OrderTechnician::where('order_id', $order->id)->whereNotIn('id', $updated_techncians)->delete();
         PropagateService::where('order_id', $order->id)->whereNotIn('id', $updated_propagations)->delete();
