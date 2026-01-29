@@ -617,7 +617,6 @@ class StockController extends Controller
         $products = MovementProduct::getProductsGroupedByLot($warehouse->id);
 
         foreach ($products as $lot_id => $product_data) {
-            dd($products, $product_data);
             foreach ($product_data as $data) {
                 $presentation = Presentation::find($data['product']['presentation_id']);
                 $products_data[] = [
