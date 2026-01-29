@@ -132,7 +132,6 @@ class Certificate
         return substr($string, 0, 100);
     }
 
-
     private function normalizeHtmlForPdf($html)
     {
         if (trim($html) === '') {
@@ -159,8 +158,12 @@ class Certificate
         );
 
         /** -------------------------------------------------
-         * 4. Eliminar estilos y clases
+         * 4. Eliminar estilos y clases PERO preservar <br>
          * ------------------------------------------------*/
+        // Primero, preservar los <br> antes de eliminar estilos
+        $html = preg_replace('/<br\s[^>]*>/i', '<br>', $html);
+
+        // Luego eliminar estilos y clases de otros elementos
         $html = preg_replace('/\s*(style|class)="[^"]*"/i', '', $html);
 
         /** -------------------------------------------------
@@ -179,48 +182,54 @@ class Certificate
         $html = preg_replace('/<(b|strong|em|i)>\s*<\/\1>/i', '', $html);
 
         /** -------------------------------------------------
-         * 8. Normalizar <br> múltiples
+         * 8. Normalizar <br> múltiples (solo los consecutivos)
          * ------------------------------------------------*/
-        $html = preg_replace('/(<br\s*\/?>\s*){2,}/i', '<br>', $html);
+        $html = preg_replace('/(<br>\s*){3,}/i', '<br><br>', $html);
 
         /** -------------------------------------------------
-         * 9. Limpiar espacios dentro del texto
+         * 9. Eliminar espacios antes/después de <br>
+         * ------------------------------------------------*/
+        $html = preg_replace('/\s*<br>\s*/', '<br>', $html);
+
+        /** -------------------------------------------------
+         * 10. Limpiar espacios dentro del texto
          * ------------------------------------------------*/
         $html = preg_replace('/\s{2,}/u', ' ', $html);
 
         /** -------------------------------------------------
-         * 10. Asegurar separación correcta de inline tags
-         * texto<b>negrita</b>texto → texto <b>negrita</b> texto
+         * 11. Asegurar separación correcta de inline tags
          * ------------------------------------------------*/
         $html = preg_replace('/(\S)<(b|strong|em|i)>/u', '$1 <$2>', $html);
         $html = preg_replace('/<\/(b|strong|em|i)>(\S)/u', '</$1> $2', $html);
 
         /** -------------------------------------------------
-         * 11. Eliminar <p> vacíos
+         * 12. Eliminar <p> vacíos o con solo <br>
          * ------------------------------------------------*/
-        $html = preg_replace('/<p>\s*(<br\s*\/?>)?\s*<\/p>/i', '', $html);
+        $html = preg_replace('/<p>\s*<br>\s*<\/p>/i', '', $html);
+        $html = preg_replace('/<p>\s*<\/p>/i', '', $html);
 
         /** -------------------------------------------------
-         * 12. Asegurar envoltura en <p>
+         * 13. Manejar <br> al inicio/final de párrafos
+         * ------------------------------------------------*/
+        $html = preg_replace('/<p><br>/i', '<p>', $html);
+        $html = preg_replace('/<br><\/p>/i', '</p>', $html);
+
+        /** -------------------------------------------------
+         * 14. Asegurar envoltura en <p> si es necesario
          * ------------------------------------------------*/
         $html = trim($html);
-        if (!preg_match('/^<p>/i', $html)) {
+
+        // Solo envolver en <p> si no hay etiquetas de bloque
+        if (!preg_match('/^<(p|div|h[1-6]|ul|ol|table)/i', $html)) {
             $html = '<p>' . $html . '</p>';
         }
 
         /** -------------------------------------------------
-         * 13. Limitar tags permitidos (OPCIONAL pero recomendado)
+         * 15. Unir líneas que quedaron separadas incorrectamente
          * ------------------------------------------------*/
-        /*
-        $html = strip_tags(
-            $html,
-            '<p><br><b><strong><em><i><ul><ol><li><table><thead><tbody><tr><td><th>'
-        );
-        */
-
+        $html = preg_replace('/<\/p>\s*<br>\s*<p>/i', '</p><p>', $html);
         return trim($html);
     }
-
     public function order()
     {
         $this->data['order'] = [
