@@ -220,7 +220,11 @@ class AppController extends Controller
 								'name' => $device->floorplan->filename,
 								'service_name' => $device->floorplan->service->name
 							],
-							'questions' => $questions_data
+							'questions' => $questions_data,
+							'location' => [
+								'longitude' => $device->longitude,
+								'latitude' => $device->latitude
+							],
 						];
 					}
 
