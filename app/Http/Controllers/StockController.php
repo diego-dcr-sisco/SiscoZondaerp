@@ -623,7 +623,7 @@ class StockController extends Controller
 
                 $products_data[] = [
                     'product' => $data['product']['name'],
-                    'presentation' => $presentation->name,
+                    'presentation' => $presentation['name'] ?? '-',
                     'lot' => $data['lot']['registration_number'],
                     'amount' => $data['amount']['net'],
                     'metric' => $data['product']['metric']['value'],
