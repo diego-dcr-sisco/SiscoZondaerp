@@ -77,7 +77,7 @@
                             <option value="" selected>Sin técnico asignado</option>
                             @foreach ($technicians as $technician)
                                 <option value="{{ $technician->id }}" {{ old('technician_id') == $technician->id ? 'selected' : '' }}>
-                                    {{ $technician->user->name }}
+                                    {{ $technician->user->name ?? '-' }}
                                 </option>
                             @endforeach
                         </select>
