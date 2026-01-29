@@ -597,6 +597,10 @@ class AppController extends Controller
 						'response' => $r->answer,
 					];
 				}),
+				'location' => [
+					'longitude' => $device->longitude,
+					'latitude' => $device->latitude
+				],
 				'image' => $states->device_image,
 				'observations' => $states->observations,
 				'is_scanned' => $states->is_scanned,
