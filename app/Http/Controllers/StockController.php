@@ -15,8 +15,7 @@ use App\Models\Lot;
 use App\Models\User;
 use App\Models\WarehouseMovement;
 use App\Models\MovementProduct;
-
-
+use App\Models\Presentation;
 use App\Models\WarehouseProduct;
 use App\Models\WarehouseOrder;
 use Illuminate\Http\Request;
@@ -620,9 +619,10 @@ class StockController extends Controller
         foreach ($products as $lot_id => $product_data) {
             dd($products, $product_data);
             foreach ($product_data as $data) {
+                $presentation = Presentation::find($data['product']['presentation_id']);
                 $products_data[] = [
                     'product' => $data['product']['name'],
-                    'presentation' => $data['product']['presentation']['name'],
+                    'presentation' => $presentation->name,
                     'lot' => $data['lot']['registration_number'],
                     'amount' => $data['amount']['net'],
                     'metric' => $data['product']['metric']['value'],
