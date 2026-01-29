@@ -671,7 +671,7 @@ class OrderController extends Controller
             ->pluck('id')
             ->toArray();
 
-        foreach ($selected_technicians as $technicianId) {
+        /*foreach ($selected_technicians as $technicianId) {
             $ot = OrderTechnician::updateOrCreate(
                 [
                     'technician_id' => $technicianId,
@@ -683,7 +683,7 @@ class OrderController extends Controller
             );
 
             $updated_techncians[] = $ot->id;
-        }
+        }*/
 
         $inactive_users = User::where('status_id', '>=', 3)->pluck('id');
 
