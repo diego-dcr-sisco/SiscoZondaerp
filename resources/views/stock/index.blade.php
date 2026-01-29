@@ -56,10 +56,11 @@
                         <tr class="warehouse-row" data-warehouse-id="{{ $warehouse->id }}">
                             <td class=" fw-bold text-muted">{{ $index + 1 }}</td>
                             <td class="">
-                                <a href="{{ route('stock.show', ['id' => $warehouse->id]) }}" class="btn btn-info btn-sm"
+                                {{-- <a href="{{ route('stock.show', ['id' => $warehouse->id]) }}" class="btn btn-info btn-sm"
                                     title="Ver almacén">
                                     <i class="bi bi-eye-fill"></i>
                                 </a>
+                                --}}
                             </td>
                             <td class="text-start">
                                 <div class="d-flex align-items-center gap-2">
@@ -108,10 +109,10 @@
                             </td>
                             @can('write_warehouse')
                                 <td>
-                                    <a href="{{ route('stock.show', ['id' => $warehouse->id]) }}"
+                                    {{--<a href="{{ route('stock.show', ['id' => $warehouse->id]) }}"
                                         class="btn btn-info btn-sm" data-bs-toggle="tooltip" title="Ver almacén">
                                         <i class="bi bi-eye-fill"></i>
-                                    </a>
+                                    </a>--}}
                                     @if (auth()->user()->work_department_id == 1)
                                         <a href="{{ route('stock.edit', ['id' => $warehouse->id]) }}"
                                             class="btn btn-secondary btn-sm" data-bs-toggle="tooltip"
