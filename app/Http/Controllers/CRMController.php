@@ -774,7 +774,7 @@ private function hasAppliedFilters(Request $request)
     public function destroyTracking(string $id)
     {
         $tracking = Tracking::find($id);
-        $tracking->delete();
+        //$tracking->delete();
 
         return back();
     }
