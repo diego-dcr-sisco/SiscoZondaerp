@@ -275,8 +275,8 @@ private function hasAppliedFilters(Request $request)
     {
         $tracking_query = Tracking::query();
 
-        $startDate = now()->startOfWeek();
-        $endDate = now()->endOfWeek();
+        //$startDate = now()->startOfWeek();
+        //$endDate = now()->endOfWeek();
 
         if ($request->filled('trackable')) {
             $searchTerm = '%' . $request->trackable . '%';
