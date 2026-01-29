@@ -619,8 +619,6 @@ class StockController extends Controller
         foreach ($products as $lot_id => $product_data) {
             foreach ($product_data as $data) {
                 $presentation = Presentation::find($data['product']['presentation_id']);
-                dd($data['product']['presentation_id'], $presentation['name']);
-
                 $products_data[] = [
                     'product' => $data['product']['name'],
                     'presentation' => $presentation['name'] ?? '-',
