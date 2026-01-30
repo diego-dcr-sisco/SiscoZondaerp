@@ -130,7 +130,7 @@ class CRMController extends Controller
 
     private function makeAgendaByTrackings($trackings)
     {
-        dd('holi');
+        dd('En desarrollo...');
         $calendar_data = [];
 
         foreach ($trackings as $tracking) {
@@ -209,7 +209,7 @@ class CRMController extends Controller
         $size = $request->input('size');
         $sort = $request->input('sort', 'id');
         $direction = $request->input('direction', 'DESC');
-        $filter_action = $request->input('filter_action', 'orders');
+        $filter_action = $request->input('filter_action', 'orders') ?? 'orders';
 
         if ($filter_action == 'orders') {
 
