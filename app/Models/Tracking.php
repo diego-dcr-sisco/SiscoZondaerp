@@ -9,8 +9,10 @@ class Tracking extends Model
     protected $table = 'tracking';
 
     protected $fillable = [
-        'trackable_id', 
+        'trackable_id',
         'trackable_type',
+        'tenant_id',
+        'user_id',
         'service_id',
         'customer_id',
         'order_id',
