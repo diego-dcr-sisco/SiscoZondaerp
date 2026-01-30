@@ -69,7 +69,7 @@ class TrackingController extends Controller
                 'frequency' => $range->frequency_type,
                 'reps' => $range->frequency,
                 'dates' => $dates,
-                'user_name' => $tracking->user->name ?? '-'
+                'user' => $tracking->user->name ?? '-'
             ];
         }
 
@@ -172,7 +172,8 @@ class TrackingController extends Controller
                 'next_date' => $update_tracking->date,
                 'title' => $update_tracking->title,
                 'description' => $update_tracking->description,
-                'status' => $update_tracking->status
+                'status' => $update_tracking->status,
+                'user_id' => Auth::id(),
             ]);
         }
 
