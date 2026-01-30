@@ -192,6 +192,7 @@ class CRMController extends Controller
         $calendar_data = [];
         $navigation = $this->navigation;
         $initial_date = Carbon::today()->firstOfMonth()->format('Y-m-d');
+        $filter_action = $request->input('filter_action', 'orders') ?? 'orders';
 
         // Si no hay filtros aplicados, retornar vista vacía o con datos por defecto
         if (!$hasFilters) {
@@ -202,6 +203,7 @@ class CRMController extends Controller
                 'nav' => 'c',
                 'hasFilters' => false, // Puedes usar esto en tu vista
                 'initial_date' => $initial_date,
+                'filter_action' => $filter_action
             ]);
         }
 
@@ -209,7 +211,6 @@ class CRMController extends Controller
         $size = $request->input('size');
         $sort = $request->input('sort', 'id');
         $direction = $request->input('direction', 'DESC');
-        $filter_action = $request->input('filter_action', 'orders') ?? 'orders';
 
         if ($filter_action == 'orders') {
 
