@@ -225,21 +225,48 @@
                                         <!-- Lista de seguimientos -->
                                         @if (count($trackings_data) > 0)
                                             @foreach ($trackings_data as $tracking)
-                                                <div
-                                                    class="notification-item notification-priority-medium p-2 mb-2 rounded">
+                                                <div class="notification-item p-2 mb-2 rounded">
                                                     <div class="d-flex justify-content-between align-items-start">
+                                                        <!-- Contenido principal -->
                                                         <div class="flex-grow-1">
-                                                            <h6 class="mb-1 text-dark">
-                                                                {{ $tracking['customer_name'] ?? 'Cliente' }} ({{ $tracking['id'] }})</h6>
-                                                            <p class="mb-1 small text-muted">
-                                                                {{ $tracking['title'] ?? 'Seguimiento' }}</p>
-                                                            <p class="mb-1 small text-muted">
-                                                                Teléfono: {{ $tracking['customer_phone'] ?? 'Sin Telefono' }}</p>
-                                                            <small class="text-primary">
-                                                                <i class="bi bi-calendar-event me-1"></i>
-                                                                {{ $tracking['next_date'] ?? 'Sin fecha' }}
-                                                            </small>
+                                                            <!-- Línea 1: Nombre + ID -->
+                                                            <h6 class="mb-1 text-dark d-inline">
+                                                                {{ $tracking['customer_name'] ?? 'Cliente' }}
+                                                            </h6>
+                                                            <small class="text-muted">#{{ $tracking['id'] }}</small>
+
+                                                            <!-- Línea 2: Título -->
+                                                            @if (!empty($tracking['title']))
+                                                                <p class="mb-1 small text-dark fw-medium">
+                                                                    {{ $tracking['title'] }}
+                                                                </p>
+                                                            @endif
+
+                                                            <!-- Línea 3: Descripción (truncada si es muy larga) -->
+                                                            @if (!empty($tracking['description']))
+                                                                <p class="mb-2 small text-muted text-truncate"
+                                                                    style="max-width: 300px;">
+                                                                    {{ $tracking['description'] }}
+                                                                </p>
+                                                            @endif
+
+                                                            <!-- Línea 4: Fecha y teléfono -->
+                                                            <div class="d-flex flex-wrap gap-3 small">
+                                                                <span class="text-muted">
+                                                                    <i class="bi bi-calendar3 me-1"></i>
+                                                                    {{ $tracking['next_date'] ?? 'Sin fecha' }}
+                                                                </span>
+
+                                                                @if (!empty($tracking['customer_phone']))
+                                                                    <span class="text-muted">
+                                                                        <i class="bi bi-telephone me-1"></i>
+                                                                        {{ $tracking['customer_phone'] }}
+                                                                    </span>
+                                                                @endif
+                                                            </div>
                                                         </div>
+
+                                                        <!-- Estado -->
                                                         <span
                                                             class="badge bg-{{ $statusMap[$tracking['status']]['color'] ?? 'secondary' }} ms-2">
                                                             {{ $statusMap[$tracking['status']]['text'] ?? 'Pendiente' }}
