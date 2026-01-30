@@ -313,7 +313,7 @@ class CRMController extends Controller
         if ($filter_action == 'orders') {
             $calendar_data = $this->makeAgendaByOrders($data);
         }else {
-            $calendar_data = $this->makeAgendaByOrders($data);
+            $calendar_data = $this->makeAgendaByTrackings($data);
         }
 
         return view('crm.agenda.calendar', [
