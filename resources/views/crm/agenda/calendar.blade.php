@@ -405,7 +405,7 @@
                             </div>
                         </div>
 
-                        <input type="hidden" id="filter-action" name="filter_action" value="orders">
+                        <input type="hidden" id="filter-action" name="filter_action" value="{{ $filter_action }}">
                     </form>
                 </div>
             </div>
@@ -720,6 +720,8 @@
                 $('.filter-section').show();
                 $('#filter-action').val('trackings');
             }
+
+            console.log($('#filter-action').val());
         }
     </script>
 @endsection

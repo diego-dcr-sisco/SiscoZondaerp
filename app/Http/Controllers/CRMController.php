@@ -130,6 +130,7 @@ class CRMController extends Controller
 
     private function makeAgendaByTrackings($trackings)
     {
+        dd('holi');
         $calendar_data = [];
 
         foreach ($trackings as $tracking) {
@@ -323,6 +324,7 @@ class CRMController extends Controller
             'nav' => 'c',
             'hasFilters' => true, // Puedes usar esto en tu vista,
             'initial_date' => $initial_date,
+            'filter_action' => $filter_action
         ]);
     }
 
