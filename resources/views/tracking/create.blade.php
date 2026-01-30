@@ -84,7 +84,7 @@
                         <td>${d.description}</td>
                         <td class="${handleColorStatus(d.status)} fw-bold">${handleTranslate(d.status)}</td>
                         <td>${tracking.user}</td>
-                        <td class="col-1">
+                        <td class="col-2">
                             <button type="button" class="btn btn-sm btn-secondary" onclick="editTracking(${i}, ${j})" data-bs-toggle="tooltip" data-bs-placement="top" title="Reprogramar Seguimiento">
                                 <i class="bi bi-pencil-square"></i>
                             </button>
