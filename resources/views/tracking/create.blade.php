@@ -33,6 +33,7 @@
                         <th scope="col">Titulo</th>
                         <th scope="col">Descripción</th>
                         <th scope="col">Estado</th>
+                        <th scope="col">Creado por</th>
                         <th scope="col"></th>
                     </tr>
                 </thead>
@@ -82,6 +83,7 @@
                         <td>${d.title}</td>
                         <td>${d.description}</td>
                         <td class="${handleColorStatus(d.status)} fw-bold">${handleTranslate(d.status)}</td>
+                        <td>${d.user_name}</td>
                         <td>
                             <button type="button" class="btn btn-sm btn-secondary" onclick="editTracking(${i}, ${j})" data-bs-toggle="tooltip" data-bs-placement="top" title="Reprogramar Seguimiento">
                                 <i class="bi bi-pencil-square"></i>
