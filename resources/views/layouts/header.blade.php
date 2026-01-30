@@ -234,7 +234,7 @@
                                                             <p class="mb-1 small text-muted">
                                                                 {{ $tracking['title'] ?? 'Seguimiento' }}</p>
                                                             <p class="mb-1 small text-muted">
-                                                                Teléfono: {{ $tracking['customer_phone'] }}</p>
+                                                                Teléfono: {{ $tracking['customer_phone'] ?? 'Sin Telefono' }}</p>
                                                             <small class="text-primary">
                                                                 <i class="bi bi-calendar-event me-1"></i>
                                                                 {{ $tracking['next_date'] ?? 'Sin fecha' }}
