@@ -667,7 +667,8 @@ return [
 
                 $trackings_data[] = [
                     'id' => $tracking->id,
-                    'customer' => $tracking->trackable->name ?? '-',
+                    'customer_name' => $tracking->trackable->name ?? '-',
+                    'customer_phone' => $tracking->trackable->phone ?? 'Sin Teléfono',
                     'order' => $orderInfo,
                     'service' => $tracking->service_id,
                     'next_date' => $tracking->next_date,

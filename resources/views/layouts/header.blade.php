@@ -32,13 +32,13 @@
         /*background: #182A41;
         background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(48, 64, 84, 1) 100%);*/
         background: #182A41;
-background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 60%, rgba(74, 46, 132, 1) 100%);
+        background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 60%, rgba(74, 46, 132, 1) 100%);
     }
 
     .bg-gradiant-navbar {
         /*background: #18181B;*/
         background: #182A41;
-/*background: linear-gradient(180deg, rgba(24, 24, 27, 1) 30%, rgba(63, 41, 109, 1) 80%, rgba(100, 57, 112, 1) 100%);*/
+        /*background: linear-gradient(180deg, rgba(24, 24, 27, 1) 30%, rgba(63, 41, 109, 1) 80%, rgba(100, 57, 112, 1) 100%);*/
     }
 
     /* Estilos para la notificación de la campana */
@@ -230,9 +230,11 @@ background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 6
                                                     <div class="d-flex justify-content-between align-items-start">
                                                         <div class="flex-grow-1">
                                                             <h6 class="mb-1 text-dark">
-                                                                {{ $tracking['customer'] ?? 'Cliente' }}</h6>
+                                                                {{ $tracking['customer_name'] ?? 'Cliente' }}</h6>
                                                             <p class="mb-1 small text-muted">
                                                                 {{ $tracking['title'] ?? 'Seguimiento' }}</p>
+                                                            <p class="mb-1 small text-muted">
+                                                                {{ $tracking['customer_phone'] ?? 'Teléfono' }}</p>
                                                             <small class="text-primary">
                                                                 <i class="bi bi-calendar-event me-1"></i>
                                                                 {{ $tracking['next_date'] ?? 'Sin fecha' }}
