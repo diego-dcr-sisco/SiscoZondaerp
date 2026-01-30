@@ -14,7 +14,7 @@ return new class extends Migration {
             // Agregar la columna user_id como nullable y con clave foránea
             $table->foreignId('user_id')
                   ->nullable()
-                  ->after('tenant_id') // Opcional: especifica la posición de la columna
+                  ->after('customer_id') // Opcional: especifica la posición de la columna
                   ->constrained('user')
                   ->onDelete('cascade');
         });
