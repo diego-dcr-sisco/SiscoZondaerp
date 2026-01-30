@@ -709,7 +709,7 @@
                     }
                 });
 
-                $('#filter-action').val('orders');
+                $('#filter-action').val('trackings');
 
             } else {
                 $('#btn-orders')
@@ -718,7 +718,7 @@
 
                 // Mostrar todos los filtros
                 $('.filter-section').show();
-                $('#filter-action').val('trackings');
+                $('#filter-action').val('orders');
             }
 
             console.log($('#filter-action').val());
