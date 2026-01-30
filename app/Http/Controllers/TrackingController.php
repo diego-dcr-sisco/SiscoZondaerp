@@ -69,7 +69,7 @@ class TrackingController extends Controller
                 'frequency' => $range->frequency_type,
                 'reps' => $range->frequency,
                 'dates' => $dates,
-                'user_name' => $tracking->user->name 
+                'user_name' => $tracking->user->name ?? '-'
             ];
         }
 
