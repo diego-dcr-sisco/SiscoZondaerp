@@ -32,7 +32,6 @@
              <form action="{{ route('crm.tracking') }}" method="GET">
                  @csrf
                  <div class="row g-2 mb-0">
-
                      <!-- Cliente/Lead -->
                      <div class="col-lg-3">
                          <label class="form-label" for="trackable-id">Nombre del cliente/lead</label>
@@ -122,6 +121,7 @@
                          <th>Descripción</th>
                          <th>Rango</th>
                          <th>Estado</th>
+                         <th>Creado por</th>
                          <th></th>
                      </tr>
                  </thead>
@@ -151,6 +151,7 @@
                                                                 : 'text-secondary')) }}">
                                  {{ $spanish_status[$tracking->status] }}
                              </td>
+                             <td>{{ $tracking->user->name ?? '-' }}</td>
                              <td>
                                  <a href="{{ route('crm.tracking.edit', ['id' => $tracking->id]) }}"
                                      class="btn btn-sm btn-secondary"

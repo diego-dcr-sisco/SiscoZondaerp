@@ -94,7 +94,7 @@ class CRMController extends Controller
         return $colors;
     }
 
-    private function makeAgenda($orders)
+    private function makeAgendaByOrders($orders)
     {
         $calendar_data = [];
 
@@ -128,6 +128,40 @@ class CRMController extends Controller
         return $calendar_data;
     }
 
+    private function makeAgendaByTrackings($trackings)
+    {
+        $calendar_data = [];
+
+        foreach ($trackings as $tracking) {
+            $programmed_date = is_string($tracking->next_date)
+                ? Carbon::parse($tracking->next_date)
+                : $tracking->next_date;
+
+            $calendar_data[] = [
+                'type' => 'tracking',
+                'id' => $tracking->id,
+                'title' => 'Seg #' . $tracking->id . ' - ' . ($tracking->title ?? 'Seguimiento no encontrado'),
+                'start' => $programmed_date->toIso8601String(),
+                'end' => $programmed_date->copy()->addHours(2)->toIso8601String(),
+                'color' => '#000',
+                'extendedProps' => [
+                    //'type' => 'order',
+                    //'customer' => $order->customer->name ?? 'Cliente no disponible',
+                    //'products' => $order->products->pluck('name')->implode(', ') ?? null,
+                    //'services' => $order->services->pluck('name')->implode(', ') ?? null,
+                    //'technicians' => $order->getNameTechnicians()->pluck('name')->implode(', ') ?? null,
+                    //'status' => $order->status->name ?? '-',
+                    //'date' => Carbon::parse($order->programmed_date)->format('d-m-y'),
+                    //'time' => Carbon::parse($order->start_time)->format('H:i') . ' - ' . Carbon::parse($order->end_time)->format('H:i'),
+                    //'edit_url' => route('order.edit', ['id' => $order->id]),
+                    //'report_url' => route('report.review', ['id' => $order->id]),
+                ],
+            ];
+        }
+
+        return $calendar_data;
+    }
+
     public function __construct()
     {
         $this->navigation = [
@@ -148,128 +182,175 @@ class CRMController extends Controller
     }
 
     public function agenda(Request $request)
-{
-    $data = $request->all();
+    {
+        $data = $request->all();
 
-    // Verificar si hay filtros aplicados (excluyendo paginación/ordenación)
-    $hasFilters = $this->hasAppliedFilters($request);
+        // Verificar si hay filtros aplicados (excluyendo paginación/ordenación)
+        $hasFilters = $this->hasAppliedFilters($request);
 
-    $calendar_data = [];
-    $navigation = $this->navigation;
-    $initial_date = Carbon::today()->firstOfMonth()->format('Y-m-d');
+        $calendar_data = [];
+        $navigation = $this->navigation;
+        $initial_date = Carbon::today()->firstOfMonth()->format('Y-m-d');
 
-    // Si no hay filtros aplicados, retornar vista vacía o con datos por defecto
-    if (!$hasFilters) {
+        // Si no hay filtros aplicados, retornar vista vacía o con datos por defecto
+        if (!$hasFilters) {
+            return view('crm.agenda.calendar', [
+                'calendar_events' => json_encode($calendar_data),
+                'order_status' => OrderStatus::all(),
+                'navigation' => $navigation,
+                'nav' => 'c',
+                'hasFilters' => false, // Puedes usar esto en tu vista
+                'initial_date' => $initial_date,
+            ]);
+        }
+
+        // Obtener parámetros de ordenamiento
+        $size = $request->input('size');
+        $sort = $request->input('sort', 'id');
+        $direction = $request->input('direction', 'DESC');
+        $filter_action = $request->input('filter_action', 'orders');
+
+        if ($filter_action == 'orders') {
+
+            // Construir consulta base
+            $query = Order::query();
+
+            // Aplicar filtros (mantén tus filtros existentes)
+            if ($request->filled('folio')) {
+                $query->where('folio', 'like', '%' . $request->input('folio') . '%');
+            }
+
+            if ($request->filled('customer')) {
+                $searchTerm = '%' . $request->input('customer') . '%';
+                $customerIds = Customer::where('name', 'LIKE', $searchTerm)->pluck('id');
+                $query->whereIn('customer_id', $customerIds);
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status_id', $request->input('status'));
+            }
+
+            if ($request->filled('service')) {
+                $serviceName = '%' . $request->input('service') . '%';
+                $serviceIds = Service::where('name', 'LIKE', $serviceName)->pluck('id');
+                $orderIds = OrderService::whereIn('service_id', $serviceIds)->pluck('order_id');
+                $query->whereIn('id', $orderIds);
+            }
+
+            if ($request->filled('date_range')) {
+                [$startDate, $endDate] = array_map(function ($d) {
+                    return Carbon::createFromFormat('d/m/Y', trim($d));
+                }, explode(' - ', $request->input('date_range')));
+
+                $query->whereBetween('programmed_date', [
+                    $startDate->format('Y-m-d'),
+                    $endDate->format('Y-m-d'),
+                ]);
+
+                $initial_date = Carbon::parse($startDate)->firstOfMonth()->format('Y-m-d');
+            }
+
+            if ($request->filled('time')) {
+                $query->whereTime('start_time', $request->input('time'));
+            }
+
+            if ($request->filled('order_type')) {
+                if ($request->input('order_type') == 'MIP') {
+                    $query->where('contract_id', '>', 0);
+                } else {
+                    $query->whereNull('contract_id');
+                }
+            }
+
+            if ($request->filled('signature_status')) {
+                if ($request->input('signature_status') == 'signed') {
+                    $query->whereNotNull('customer_signature');
+                } elseif ($request->input('signature_status') == 'unsigned') {
+                    $query->whereNull('customer_signature');
+                }
+            }
+        } else {
+            $query = Tracking::query();
+            // Aplicar filtros (mantén tus filtros existentes)
+            if ($request->filled('folio')) {
+                $orders = Order::where('folio', 'like', '%' . $request->input('folio') . '%');
+                $query->whereIn('order_id', $orders->pluck('id'));
+            }
+
+            if ($request->filled('customer')) {
+                $searchTerm = '%' . $request->input('customer') . '%';
+                $customerIds = Customer::where('name', 'LIKE', $searchTerm)->pluck('id');
+                $query->whereIn('customer_id', $customerIds);
+            }
+
+            if ($request->filled('service')) {
+                $serviceName = '%' . $request->input('service') . '%';
+                $serviceIds = Service::where('name', 'LIKE', $serviceName)->pluck('id');
+                $query->whereIn('service_id', $serviceIds);
+            }
+
+            if ($request->filled('date_range')) {
+                [$startDate, $endDate] = array_map(function ($d) {
+                    return Carbon::createFromFormat('d/m/Y', trim($d));
+                }, explode(' - ', $request->input('date_range')));
+
+                $query->whereBetween('next_date', [
+                    $startDate->format('Y-m-d'),
+                    $endDate->format('Y-m-d'),
+                ]);
+
+                $initial_date = Carbon::parse($startDate)->firstOfMonth()->format('Y-m-d');
+            }
+        }
+
+        // Aplicar ordenamiento después de los filtros
+        $query->orderBy($sort, $direction);
+        $size = $size ?? $this->size;
+
+        // Paginar resultados
+        $data = $query->get();
+
+        if ($filter_action == 'orders') {
+            $calendar_data = $this->makeAgendaByOrders($data);
+        }else {
+            $calendar_data = $this->makeAgendaByOrders($data);
+        }
+
         return view('crm.agenda.calendar', [
             'calendar_events' => json_encode($calendar_data),
             'order_status' => OrderStatus::all(),
             'navigation' => $navigation,
             'nav' => 'c',
-            'hasFilters' => false, // Puedes usar esto en tu vista
+            'hasFilters' => true, // Puedes usar esto en tu vista,
             'initial_date' => $initial_date,
         ]);
     }
 
-    // Obtener parámetros de ordenamiento
-    $size = $request->input('size');
-    $sort = $request->input('sort', 'id');
-    $direction = $request->input('direction', 'DESC');
+    /**
+     * Verifica si la request tiene filtros aplicados
+     * Excluye campos de paginación y ordenación
+     */
+    private function hasAppliedFilters(Request $request)
+    {
+        $filterableFields = [
+            'folio',
+            'customer',
+            'service',
+            'date_range',
+            'time',
+            'status',
+            'order_type',
+            'signature_status'
+        ];
 
-    // Construir consulta base
-    $query = Order::query();
-
-    // Aplicar filtros (mantén tus filtros existentes)
-    if ($request->filled('folio')) {
-        $query->where('folio', 'like', '%' . $request->input('folio') . '%');
-    }
-
-    if ($request->filled('customer')) {
-        $searchTerm = '%' . $request->input('customer') . '%';
-        $customerIds = Customer::where('name', 'LIKE', $searchTerm)->pluck('id');
-        $query->whereIn('customer_id', $customerIds);
-    }
-
-    if ($request->filled('status')) {
-        $query->where('status_id', $request->input('status'));
-    }
-
-    if ($request->filled('service')) {
-        $serviceName = '%' . $request->input('service') . '%';
-        $serviceIds = Service::where('name', 'LIKE', $serviceName)->pluck('id');
-        $orderIds = OrderService::whereIn('service_id', $serviceIds)->pluck('order_id');
-        $query->whereIn('id', $orderIds);
-    }
-
-    if ($request->filled('date_range')) {
-        [$startDate, $endDate] = array_map(function ($d) {
-            return Carbon::createFromFormat('d/m/Y', trim($d));
-        }, explode(' - ', $request->input('date_range')));
-
-        $query->whereBetween('programmed_date', [
-            $startDate->format('Y-m-d'),
-            $endDate->format('Y-m-d'),
-        ]);
-
-        $initial_date = Carbon::parse($startDate)->firstOfMonth()->format('Y-m-d');
-    }
-
-    if ($request->filled('time')) {
-        $query->whereTime('start_time', $request->input('time'));
-    }
-
-    if ($request->filled('order_type')) {
-        if ($request->input('order_type') == 'MIP') {
-            $query->where('contract_id', '>', 0);
-        } else {
-            $query->whereNull('contract_id');
+        foreach ($filterableFields as $field) {
+            if ($request->filled($field)) {
+                return true;
+            }
         }
+
+        return false;
     }
-
-    if ($request->filled('signature_status')) {
-        if ($request->input('signature_status') == 'signed') {
-            $query->whereNotNull('customer_signature');
-        } elseif ($request->input('signature_status') == 'unsigned') {
-            $query->whereNull('customer_signature');
-        }
-    }
-
-    // Aplicar ordenamiento después de los filtros
-    $query->orderBy($sort, $direction);
-    $size = $size ?? $this->size;
-
-    // Paginar resultados
-    $orders = $query->get();
-    $calendar_data = $this->makeAgenda($orders);
-
-    return view('crm.agenda.calendar', [
-        'calendar_events' => json_encode($calendar_data),
-        'order_status' => OrderStatus::all(),
-        'navigation' => $navigation,
-        'nav' => 'c',
-        'hasFilters' => true, // Puedes usar esto en tu vista,
-        'initial_date' => $initial_date,
-    ]);
-}
-
-/**
- * Verifica si la request tiene filtros aplicados
- * Excluye campos de paginación y ordenación
- */
-private function hasAppliedFilters(Request $request)
-{
-    $filterableFields = [
-        'folio', 'customer', 'service', 'date_range', 
-        'time', 'status', 'order_type', 'signature_status'
-    ];
-    
-    foreach ($filterableFields as $field) {
-        if ($request->filled($field)) {
-            return true;
-        }
-    }
-    
-    return false;
-}
 
     public function tracking(Request $request)
     {

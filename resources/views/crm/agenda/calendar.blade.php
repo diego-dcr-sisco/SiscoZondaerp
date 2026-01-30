@@ -257,6 +257,18 @@
                     </h5>
 
                     <form id="filter-form" action="{{ route('crm.agenda') }}" method="GET">
+
+                        <div class="row border rounded mb-3">
+                            <div class="col-6 text-center bg-secondary-subtle px-0">
+                                <button type="button" class="btn btn-success w-100 ms-0" id="btn-orders"
+                                    onclick="setActiveView('orders')">Ordenes de servicio</button>
+                            </div>
+                            <div class="col-6 text-center bg-secondary-subtle px-0">
+                                <button type="button" class="btn w-100 ms-0" id="btn-trackings"
+                                    onclick="setActiveView('trackings')">Seguimientos</button>
+                            </div>
+                        </div>
+
                         <!-- No. Reporte -->
                         <div class="filter-section">
                             <label for="folio" class="form-label">No. Reporte</label>
@@ -381,20 +393,6 @@
                             </div>
                         </div>
 
-                        <!-- Total de resultados -->
-                        <div class="filter-section">
-                            <label for="size" class="form-label">Resultados por página</label>
-                            <div class="input-group input-group-sm mb-3">
-                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-list-ol"></i></span>
-                                <select class="form-select form-select-sm" id="size" name="size">
-                                    <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
-                                    <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
-                                    <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
-                                    <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
-                                </select>
-                            </div>
-                        </div>
-
                         <!-- Botones de acción -->
                         <div class="filter-actions">
                             <div class="d-grid gap-2">
@@ -406,6 +404,8 @@
                                 </a>
                             </div>
                         </div>
+
+                        <input type="hidden" id="filter-action" name="filter_action" value="orders">
                     </form>
                 </div>
             </div>
@@ -444,7 +444,7 @@
                                     <small class="text-muted">Industrial</small>
                                 </div>
                             </div>
-                        </div>  
+                        </div>
                     </div>
                     <div id="calendar"></div>
                 </div>
@@ -683,5 +683,43 @@
                 calendar.updateSize();
             });
         });
+
+        function setActiveView(action) {
+            // Resetear ambos botones
+            $('#btn-orders, #btn-trackings')
+                .removeClass('btn-success')
+                .addClass('');
+
+            // Activar el botón correspondiente
+            if (action === 'trackings') {
+                $('#btn-trackings')
+                    .removeClass('')
+                    .addClass('btn-success');
+
+                // Ocultar filtros: desde "Hora" hasta "Estado"
+                $('.filter-section').each(function() {
+                    const $section = $(this);
+                    const labelText = $section.find('label').text().trim();
+
+                    // Filtrar por textos de las etiquetas
+                    const filtersToHide = ['Hora Programada', 'Estado', 'Tipo de Orden', 'Estado de Firma'];
+
+                    if (filtersToHide.includes(labelText)) {
+                        $section.hide(); // Ocultar la sección completa
+                    }
+                });
+
+                $('#filter-action').val('orders');
+
+            } else {
+                $('#btn-orders')
+                    .removeClass('')
+                    .addClass('btn-success');
+
+                // Mostrar todos los filtros
+                $('.filter-section').show();
+                $('#filter-action').val('trackings');
+            }
+        }
     </script>
 @endsection
