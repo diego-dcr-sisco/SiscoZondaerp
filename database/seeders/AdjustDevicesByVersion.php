@@ -116,38 +116,18 @@ class AdjustDevicesByVersion extends Seeder
 
         // En tu modelo Device.php o el modelo donde tienes la relación incident()
 
-        echo "Actualizando respuestas vacías...\n";
+        // Obtener todos los dispositivos con type_control_point_id == 16
+        $devices = Device::where('type_control_point_id', 16)->get()->pluck('id')->toArray();
+        $incidents = OrderIncidents::whereIn('device_id', $devices)
+            ->where('answer', '')
+            ->orWhere('answer', ' ')
+            ->get();
 
-        $total = OrderIncidents::whereIn('device_id', function ($query) {
-            $query->select('id')
-                ->from('devices')
-                ->where('type_control_point_id', 16);
-        })
-            ->where(function ($query) {
-                $query->where('answer', '')
-                    ->orWhere('answer', ' ')
-                    ->orWhereNull('answer');
-            })
-            ->count();
 
-        echo "Total: {$total} registros\n";
-
-        if ($total > 0) {
-            $updated = OrderIncidents::whereIn('device_id', function ($query) {
-                $query->select('id')
-                    ->from('devices')
-                    ->where('type_control_point_id', 16);
-            })
-                ->where(function ($query) {
-                    $query->where('answer', '')
-                        ->orWhere('answer', ' ')
-                        ->orWhereNull('answer');
-                })
-                ->update(['answer' => 'Consumo Total']);
-
-            echo "✅ Completado: {$updated}/{$total} actualizados\n";
-        } else {
-            echo "✅ Nada que actualizar\n";
+        foreach($incidents as $incident) {
+            if($incident->answer == '' || $incident->answer == ' ') {
+                $incident->update(['answer' => 'Consumo Total']);
+            }
         }
     }
 }
