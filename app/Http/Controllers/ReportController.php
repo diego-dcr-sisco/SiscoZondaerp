@@ -116,7 +116,7 @@ class ReportController extends Controller
     }
 
 
-    private function isValidAnswer(string $answer, array $answers): bool
+    private function isValidAnswer($answer, $answers): bool
     {
         if ($answer) {
             return false;
