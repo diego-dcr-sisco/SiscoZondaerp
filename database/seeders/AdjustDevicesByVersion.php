@@ -117,17 +117,57 @@ class AdjustDevicesByVersion extends Seeder
         // En tu modelo Device.php o el modelo donde tienes la relación incident()
 
         // Obtener todos los dispositivos con type_control_point_id == 16
-        $devices = Device::where('type_control_point_id', 16)->get()->pluck('id')->toArray();
-        $incidents = OrderIncidents::whereIn('device_id', $devices)
-            ->where('answer', '')
-            ->orWhere('answer', ' ')
-            ->get();
+        $devices = Device::where('type_control_point_id', 16)->get();
+        echo "==========================================\n";
+        echo "DISPOSITIVOS TIPO 16 ENCONTRADOS: {$devices->count()}\n";
+        echo "==========================================\n\n";
 
+        if ($devices->count() > 0) {
+            $deviceIds = $devices->pluck('id')->toArray();
+            echo "IDs de dispositivos: " . implode(', ', $deviceIds) . "\n\n";
 
-        foreach($incidents as $incident) {
-            if($incident->answer == '' || $incident->answer == ' ') {
-                $incident->update(['answer' => 'Consumo Total']);
+            // CORREGIDO: El orWhere debe estar agrupado
+            $incidents = OrderIncidents::whereIn('device_id', $deviceIds)->where('question_id', 13)
+                ->where(function ($query) {
+                    $query->where('answer', '')
+                        ->orWhere('answer', ' ');
+                })
+                ->get();
+
+            echo "==========================================\n";
+            echo "INCIDENCIAS CON RESPUESTAS VACÍAS: {$incidents->count()}\n";
+            echo "==========================================\n\n";
+
+            if ($incidents->count() > 0) {
+                echo "ACTUALIZANDO A 'CONSUMO TOTAL'...\n";
+                echo str_repeat("-", 40) . "\n";
+
+                $counter = 0;
+                foreach ($incidents as $incident) {
+                    $counter++;
+                    $oldValue = $incident->answer == ' ' ? "' '" : "''";
+
+                    $incident->update(['answer' => 'Consumo Total']);
+
+                    echo "[{$counter}] ID {$incident->id}: {$oldValue} → 'Consumo Total'\n";
+
+                    // Mostrar progreso cada 10 registros
+                    if ($counter % 10 === 0) {
+                        echo "Progreso: {$counter}/{$incidents->count()}\n";
+                    }
+                }
+
+                echo "\n" . str_repeat("=", 50) . "\n";
+                echo "✅ ACTUALIZACIÓN COMPLETADA\n";
+                echo "Total actualizado: {$counter} registros\n";
+                echo str_repeat("=", 50) . "\n";
+
+            } else {
+                echo "✅ No se encontraron incidencias con respuestas vacías\n";
             }
+
+        } else {
+            echo "⚠ No se encontraron dispositivos tipo 16\n";
         }
     }
 }
