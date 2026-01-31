@@ -101,29 +101,31 @@ class ReportController extends Controller
     }
 
 
-    private function normalizeString(string $value): string
+
+    private function normalizeString(?string $value): string
     {
-        // Convertir a minúsculas
+        if (empty($value)) {
+            return '';
+        }
+
         $value = mb_strtolower($value, 'UTF-8');
-
-        // Quitar acentos
         $value = Str::ascii($value);
-
-        // Quitar espacios
         $value = str_replace(' ', '', $value);
 
         return $value;
     }
 
 
-    private function isValidAnswer($answer, $answers): bool
+    function isValidAnswer(?string $answer, array $answers): bool
     {
-        if ($answer) {
+        if (empty($answer)) {
             return false;
         }
+
         $normalizedAnswer = $this->normalizeString($answer);
+
         foreach ($answers as $item) {
-            if ($this->normalizeString($item) == $normalizedAnswer) {
+            if ($this->normalizeString($item) === $normalizedAnswer) {
                 return true;
             }
         }
