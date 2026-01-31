@@ -6,6 +6,8 @@ use App\Models\FloorplanVersion;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Device;
+use App\Models\OrderIncidents;
+use Google\Service\Forms\Answer;
 
 class AdjustDevicesByVersion extends Seeder
 {
@@ -60,7 +62,7 @@ class AdjustDevicesByVersion extends Seeder
         echo "\nProceso de actualización completado.\n";*/
 
         // Codigo para Copiar dispositivos en el mismo plano pero con una nueva version con condiciones de accion.
-        $floorplan_id = 77;
+        /*$floorplan_id = 77;
         $devicesV1 = Device::where('floorplan_id', $floorplan_id)->where('version', 1)->get();
         $non_nplans = [144, 145, 146, 147];
         $replace_nplans = [
@@ -110,6 +112,42 @@ class AdjustDevicesByVersion extends Seeder
             echo "✅ Dispositivo clonado: ID V1 = $deviceV1->id, Nuevo ID = $newDevice->id, nplan = $newDevice->nplan\n";
         }
 
-        echo "\nTotal de dispositivos clonados: $count\n";
+        echo "\nTotal de dispositivos clonados: $count\n";*/
+
+        // En tu modelo Device.php o el modelo donde tienes la relación incident()
+
+        echo "Actualizando respuestas vacías...\n";
+
+        $total = OrderIncidents::whereIn('device_id', function ($query) {
+            $query->select('id')
+                ->from('devices')
+                ->where('type_control_point_id', 16);
+        })
+            ->where(function ($query) {
+                $query->where('answer', '')
+                    ->orWhere('answer', ' ')
+                    ->orWhereNull('answer');
+            })
+            ->count();
+
+        echo "Total: {$total} registros\n";
+
+        if ($total > 0) {
+            $updated = OrderIncidents::whereIn('device_id', function ($query) {
+                $query->select('id')
+                    ->from('devices')
+                    ->where('type_control_point_id', 16);
+            })
+                ->where(function ($query) {
+                    $query->where('answer', '')
+                        ->orWhere('answer', ' ')
+                        ->orWhereNull('answer');
+                })
+                ->update(['answer' => 'Consumo Total']);
+
+            echo "✅ Completado: {$updated}/{$total} actualizados\n";
+        } else {
+            echo "✅ Nada que actualizar\n";
+        }
     }
 }
