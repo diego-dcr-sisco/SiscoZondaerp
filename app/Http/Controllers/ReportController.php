@@ -116,21 +116,21 @@ class ReportController extends Controller
     }
 
 
-    function isValidAnswer(?string $answer, array $answers): bool
+    function isValidAnswer(?string $answer, array $answers): ?string
     {
         if (empty($answer)) {
-            return false;
+            return null;
         }
 
         $normalizedAnswer = $this->normalizeString($answer);
 
         foreach ($answers as $item) {
             if ($this->normalizeString($item) === $normalizedAnswer) {
-                return true;
+                return $item; // Retorna el valor original encontrado
             }
         }
 
-        return false;
+        return null; // No se encontró ninguna coincidencia
     }
 
 
@@ -521,10 +521,13 @@ class ReportController extends Controller
                 $options = $this->getOptions($question->question_option_id, $answers);
                 $answer = $device->incident($order->id, $question->id)->answer ?? null;
 
+                // isValidAnswer retorna el valor normalizado si es válido, o null/false si no
+                $validatedAnswer = $this->isValidAnswer($answer, $options);
+
                 $questions_data[] = [
                     'id' => $question->id,
                     'question' => $question->question,
-                    'answer' => $this->isValidAnswer($answer, $options) ? $answer : null,
+                    'answer' => $validatedAnswer ?: null, // Usa el valor validado si existe
                     'answer_default' => $question->answer_default,
                     'answers' => $options
                 ];
