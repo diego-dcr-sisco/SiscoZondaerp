@@ -170,6 +170,8 @@
             frequency: frequency,
             reps: reps,
             dates: createJsonDates(dates, title, description),
+            user_id: "{{ Auth::id() }}",
+            user: "{{ Auth::user()->name ?? '' }}"
         }
 
         tracking_data.push(tracking);

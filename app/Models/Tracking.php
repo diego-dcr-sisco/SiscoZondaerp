@@ -11,10 +11,11 @@ class Tracking extends Model
     protected $fillable = [
         'trackable_id',
         'trackable_type',
+        'customer_id',
         'tenant_id',
         'user_id',
         'service_id',
-        'customer_id',
+        //'customer_id',
         'order_id',
         'next_date',
         'range',

@@ -124,7 +124,7 @@ class TrackingController extends Controller
                             'trackable_type' => $request->trackable_type == 'customer' ? Customer::class : Lead::class,
                             'user_id' => Auth::id(),
                             'service_id' => $tracking->service_id,
-                            'customer_id' => $order->customer_id,
+                            //'customer_id' => $order->customer_id,
                             'order_id' => $order->id,
                             'next_date' => $d->date,
                         ],

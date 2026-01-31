@@ -65,6 +65,8 @@ use App\Models\Customer;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rules\In;
+use Illuminate\Support\Str;
+
 
 class ReportController extends Controller
 {
@@ -97,6 +99,38 @@ class ReportController extends Controller
         }
         return [];
     }
+
+
+    private function normalizeString(string $value): string
+    {
+        // Convertir a minúsculas
+        $value = mb_strtolower($value, 'UTF-8');
+
+        // Quitar acentos
+        $value = Str::ascii($value);
+
+        // Quitar espacios
+        $value = str_replace(' ', '', $value);
+
+        return $value;
+    }
+
+
+    private function isValidAnswer(string $answer, array $answers): bool
+    {
+        if ($answer) {
+            return false;
+        }
+        $normalizedAnswer = $this->normalizeString($answer);
+        foreach ($answers as $item) {
+            if ($this->normalizeString($item) == $normalizedAnswer) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
 
     public function autoreview(Request $request, int $orderId)
     {
@@ -482,12 +516,15 @@ class ReportController extends Controller
             $questions = $device->controlPoint->questions()->get();
 
             foreach ($questions as $question) {
+                $options = $this->getOptions($question->question_option_id, $answers);
+                $answer = $device->incident($order->id, $question->id)->answer ?? null;
+
                 $questions_data[] = [
                     'id' => $question->id,
                     'question' => $question->question,
-                    'answer' => $device->incident($order->id, $question->id)->answer ?? null,
+                    'answer' => $this->isValidAnswer($answer, $options) ? $answer : null,
                     'answer_default' => $question->answer_default,
-                    'answers' => $this->getOptions($question->question_option_id, $answers)
+                    'answers' => $options
                 ];
             }
 
