@@ -2,10 +2,10 @@
 
 return [
     'title' => [
-        'create' => 'Crear calendario',
-        'edit' => 'Editar calendario',
-        'show' => 'Ver calendario',
-        'renew' => 'Renovar calendario',
+        'create' => 'Crear contrato',
+        'edit' => 'Editar contrato',
+        'show' => 'Ver contrato',
+        'renew' => 'Renovar contrato',
         'duration' => 'Duración del contrato',
         'set_customer' => 'Seleccionar cliente',
         'set_services' => 'Seleccionar servicios',

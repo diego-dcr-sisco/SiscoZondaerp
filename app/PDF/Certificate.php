@@ -158,6 +158,17 @@ class Certificate
         );
 
         /** -------------------------------------------------
+         * 3.1 Proteger secuencias largas de &nbsp;
+         * ------------------------------------------------*/
+        $html = preg_replace_callback(
+            '/(?:&nbsp;|\x{00A0}){3,}/u',
+            function ($matches) {
+                return str_repeat('__NBSP__', mb_strlen($matches[0]));
+            },
+            $html
+        );
+
+        /** -------------------------------------------------
          * 4. Eliminar estilos y clases PERO preservar <br>
          * ------------------------------------------------*/
         // Primero, preservar los <br> antes de eliminar estilos
