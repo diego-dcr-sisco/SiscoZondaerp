@@ -329,7 +329,7 @@ class Certificate
             $services_data[] = [
                 'name' => $service->name,
                 //'text' => $this->normalizeHtmlForPdf($this->order->propagateByService($service->id)->text ?? ''),
-                'text' =>  this->order->propagateByService($service->id)->text ?? ''
+                'text' =>  $this->order->propagateByService($service->id)->text ?? ''
             ];
         }
 
