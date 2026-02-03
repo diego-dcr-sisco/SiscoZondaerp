@@ -139,9 +139,16 @@ class Certificate
     }
 
     /** -------------------------------------------------
-     * 1. Decodificar entidades HTML
+     * 1. Decodificar entidades HTML PERO preservar &nbsp;
      * ------------------------------------------------*/
+    // Primero, preservar los &nbsp; antes de decodificar
+    $html = str_replace('&nbsp;', '||NBSP_PRESERVE||', $html);
+    
+    // Decodificar otras entidades HTML
     $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    
+    // Restaurar los &nbsp;
+    $html = str_replace('||NBSP_PRESERVE||', '&nbsp;', $html);
 
     /** -------------------------------------------------
      * 2. Asegurar UTF-8
@@ -149,15 +156,15 @@ class Certificate
     $html = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
 
     /** -------------------------------------------------
-     * 3. Eliminar caracteres invisibles (Word)
+     * 3. Eliminar caracteres invisibles (Word) PERO no &nbsp;
      * ------------------------------------------------*/
+    // Nota: \x{00A0} es el carácter Unicode para &nbsp; en UTF-8
+    // Lo eliminamos de la expresión regular para no afectarlo
     $html = preg_replace(
-        '/[\x{00A0}\x{200B}-\x{200F}\x{FEFF}]/u',
+        '/[\x{200B}-\x{200F}\x{FEFF}]/u',  // Removido: \x{00A0}
         ' ',
         $html
     );
-
-    
     
     return trim($html);
 }
