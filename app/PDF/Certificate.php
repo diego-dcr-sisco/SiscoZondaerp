@@ -133,114 +133,128 @@ class Certificate
     }
 
     private function normalizeHtmlForPdf($html)
-    {
-        if (trim($html) === '') {
-            return '';
-        }
-
-        /** -------------------------------------------------
-         * 1. Decodificar entidades HTML
-         * ------------------------------------------------*/
-        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-        /** -------------------------------------------------
-         * 2. Asegurar UTF-8
-         * ------------------------------------------------*/
-        $html = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
-
-        /** -------------------------------------------------
-         * 3. Eliminar caracteres invisibles (Word)
-         * ------------------------------------------------*/
-        $html = preg_replace(
-            '/[\x{00A0}\x{200B}-\x{200F}\x{FEFF}]/u',
-            ' ',
-            $html
-        );
-
-        /** -------------------------------------------------
-         * 3.1 Proteger secuencias largas de &nbsp;
-         * ------------------------------------------------*/
-        $html = preg_replace_callback(
-            '/(?:&nbsp;|\x{00A0}){3,}/u',
-            function ($matches) {
-                return str_repeat('__NBSP__', mb_strlen($matches[0]));
-            },
-            $html
-        );
-
-        /** -------------------------------------------------
-         * 4. Eliminar estilos y clases PERO preservar <br>
-         * ------------------------------------------------*/
-        // Primero, preservar los <br> antes de eliminar estilos
-        $html = preg_replace('/<br\s[^>]*>/i', '<br>', $html);
-
-        // Luego eliminar estilos y clases de otros elementos
-        $html = preg_replace('/\s*(style|class)="[^"]*"/i', '', $html);
-
-        /** -------------------------------------------------
-         * 5. Eliminar <span> completamente
-         * ------------------------------------------------*/
-        $html = preg_replace('/<\/?span[^>]*>/i', '', $html);
-
-        /** -------------------------------------------------
-         * 6. Eliminar <u> (NO lo quieres)
-         * ------------------------------------------------*/
-        $html = preg_replace('/<\/?u[^>]*>/i', '', $html);
-
-        /** -------------------------------------------------
-         * 7. Eliminar tags inline vacíos
-         * ------------------------------------------------*/
-        $html = preg_replace('/<(b|strong|em|i)>\s*<\/\1>/i', '', $html);
-
-        /** -------------------------------------------------
-         * 8. Normalizar <br> múltiples (solo los consecutivos)
-         * ------------------------------------------------*/
-        $html = preg_replace('/(<br>\s*){3,}/i', '<br><br>', $html);
-
-        /** -------------------------------------------------
-         * 9. Eliminar espacios antes/después de <br>
-         * ------------------------------------------------*/
-        $html = preg_replace('/\s*<br>\s*/', '<br>', $html);
-
-        /** -------------------------------------------------
-         * 10. Limpiar espacios dentro del texto
-         * ------------------------------------------------*/
-        $html = preg_replace('/\s{2,}/u', ' ', $html);
-
-        /** -------------------------------------------------
-         * 11. Asegurar separación correcta de inline tags
-         * ------------------------------------------------*/
-        $html = preg_replace('/(\S)<(b|strong|em|i)>/u', '$1 <$2>', $html);
-        $html = preg_replace('/<\/(b|strong|em|i)>(\S)/u', '</$1> $2', $html);
-
-        /** -------------------------------------------------
-         * 12. Eliminar <p> vacíos o con solo <br>
-         * ------------------------------------------------*/
-        $html = preg_replace('/<p>\s*<br>\s*<\/p>/i', '', $html);
-        $html = preg_replace('/<p>\s*<\/p>/i', '', $html);
-
-        /** -------------------------------------------------
-         * 13. Manejar <br> al inicio/final de párrafos
-         * ------------------------------------------------*/
-        $html = preg_replace('/<p><br>/i', '<p>', $html);
-        $html = preg_replace('/<br><\/p>/i', '</p>', $html);
-
-        /** -------------------------------------------------
-         * 14. Asegurar envoltura en <p> si es necesario
-         * ------------------------------------------------*/
-        $html = trim($html);
-
-        // Solo envolver en <p> si no hay etiquetas de bloque
-        if (!preg_match('/^<(p|div|h[1-6]|ul|ol|table)/i', $html)) {
-            $html = '<p>' . $html . '</p>';
-        }
-
-        /** -------------------------------------------------
-         * 15. Unir líneas que quedaron separadas incorrectamente
-         * ------------------------------------------------*/
-        $html = preg_replace('/<\/p>\s*<br>\s*<p>/i', '</p><p>', $html);
-        return trim($html);
+{
+    if (trim($html) === '') {
+        return '';
     }
+
+    /** -------------------------------------------------
+     * 1. Decodificar entidades HTML
+     * ------------------------------------------------*/
+    $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    /** -------------------------------------------------
+     * 2. Asegurar UTF-8
+     * ------------------------------------------------*/
+    $html = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
+
+    /** -------------------------------------------------
+     * 3. Eliminar caracteres invisibles (Word)
+     * ------------------------------------------------*/
+    $html = preg_replace(
+        '/[\x{00A0}\x{200B}-\x{200F}\x{FEFF}]/u',
+        ' ',
+        $html
+    );
+
+    /** -------------------------------------------------
+     * 4. Eliminar estilos y clases PERO preservar <br>
+     * ------------------------------------------------*/
+    // Primero, preservar los <br> antes de eliminar estilos
+    $html = preg_replace('/<br\s[^>]*>/i', '<br>', $html);
+
+    // Luego eliminar estilos y clases de otros elementos
+    $html = preg_replace('/\s*(style|class)="[^"]*"/i', '', $html);
+
+    /** -------------------------------------------------
+     * 5. Eliminar <span> completamente
+     * ------------------------------------------------*/
+    $html = preg_replace('/<\/?span[^>]*>/i', '', $html);
+
+    /** -------------------------------------------------
+     * 6. Eliminar <u> (NO lo quieres)
+     * ------------------------------------------------*/
+    $html = preg_replace('/<\/?u[^>]*>/i', '', $html);
+
+    /** -------------------------------------------------
+     * 7. Eliminar tags inline vacíos
+     * ------------------------------------------------*/
+    $html = preg_replace('/<(b|strong|em|i)>\s*<\/\1>/i', '', $html);
+
+    /** -------------------------------------------------
+     * 8. Normalizar <br> múltiples (solo los consecutivos)
+     * ------------------------------------------------*/
+    $html = preg_replace('/(<br>\s*){3,}/i', '<br><br>', $html);
+
+    /** -------------------------------------------------
+     * 9. Eliminar espacios antes/después de <br>
+     * ------------------------------------------------*/
+    $html = preg_replace('/\s*<br>\s*/', '<br>', $html);
+
+    /** -------------------------------------------------
+     * 10. Limpiar espacios dentro del texto (PERO preservar 3+ espacios consecutivos)
+     * ------------------------------------------------*/
+    // Primero, reemplazar secuencias de 3 o más espacios con un marcador temporal
+    $html = preg_replace_callback(
+        '/\s{3,}/u',
+        function($matches) {
+            // Reemplazar con un marcador único que indique espacios preservados
+            $spaces = $matches[0];
+            $count = mb_strlen($spaces);
+            return "||PRESERVED_SPACES_{$count}||";
+        },
+        $html
+    );
+    
+    // Luego, comprimir múltiples espacios a un solo espacio
+    $html = preg_replace('/\s{2,}/u', ' ', $html);
+    
+    // Finalmente, restaurar los espacios preservados
+    $html = preg_replace_callback(
+        '/\|\|PRESERVED_SPACES_(\d+)\|\|/u',
+        function($matches) {
+            // Restaurar la cantidad original de espacios
+            $count = (int)$matches[1];
+            return str_repeat(' ', $count);
+        },
+        $html
+    );
+
+    /** -------------------------------------------------
+     * 11. Asegurar separación correcta de inline tags
+     * ------------------------------------------------*/
+    $html = preg_replace('/(\S)<(b|strong|em|i)>/u', '$1 <$2>', $html);
+    $html = preg_replace('/<\/(b|strong|em|i)>(\S)/u', '</$1> $2', $html);
+
+    /** -------------------------------------------------
+     * 12. Eliminar <p> vacíos o con solo <br>
+     * ------------------------------------------------*/
+    $html = preg_replace('/<p>\s*<br>\s*<\/p>/i', '', $html);
+    $html = preg_replace('/<p>\s*<\/p>/i', '', $html);
+
+    /** -------------------------------------------------
+     * 13. Manejar <br> al inicio/final de párrafos
+     * ------------------------------------------------*/
+    $html = preg_replace('/<p><br>/i', '<p>', $html);
+    $html = preg_replace('/<br><\/p>/i', '</p>', $html);
+
+    /** -------------------------------------------------
+     * 14. Asegurar envoltura en <p> si es necesario
+     * ------------------------------------------------*/
+    $html = trim($html);
+
+    // Solo envolver en <p> si no hay etiquetas de bloque
+    if (!preg_match('/^<(p|div|h[1-6]|ul|ol|table)/i', $html)) {
+        $html = '<p>' . $html . '</p>';
+    }
+
+    /** -------------------------------------------------
+     * 15. Unir líneas que quedaron separadas incorrectamente
+     * ------------------------------------------------*/
+    $html = preg_replace('/<\/p>\s*<br>\s*<p>/i', '</p><p>', $html);
+    return trim($html);
+}
+
     public function order()
     {
         $this->data['order'] = [
