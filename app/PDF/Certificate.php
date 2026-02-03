@@ -328,7 +328,8 @@ class Certificate
         foreach ($this->order->services()->get() as $service) {
             $services_data[] = [
                 'name' => $service->name,
-                'text' => $this->normalizeHtmlForPdf($this->order->propagateByService($service->id)->text ?? ''),
+                //'text' => $this->normalizeHtmlForPdf($this->order->propagateByService($service->id)->text ?? ''),
+                'text' =>  this->order->propagateByService($service->id)->text ?? ''
             ];
         }
 
