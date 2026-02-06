@@ -228,18 +228,19 @@
                 // Cargar valores en los formularios
                 $(`#service-frequency-${config.config_id}`).val(config.frequency_id).trigger('change');
                 if (config.frequency_id == 3 || config.frequency_id == 5) {
-                    $(`#service-interval-${config.config_id}`).val(config.interval_id).trigger('change');
+                    $(`#service-interval-${config.config_id}`).val(config.interval_id).trigger(
+                        'change');
                 }
                 $(`#service-days-${config.config_id}`).val(config.days);
-                
+
                 // Cargar fecha para quincenal o día específico
                 if (config.frequency_id == 1 || config.frequency_id == 5) {
                     if (config.frequency_id == 5 && config.interval_id == 7) {
                         // Para quincenal, cargar la fecha directamente
                         if (config.days && config.days[0]) {
                             // Si viene con prefijo QUINCENAL_, extraer la fecha
-                            const dateValue = config.days[0].startsWith('QUINCENAL_') ? 
-                                config.days[0].replace('QUINCENAL_', '') : 
+                            const dateValue = config.days[0].startsWith('QUINCENAL_') ?
+                                config.days[0].replace('QUINCENAL_', '') :
                                 config.days[0];
                             $(`#service-date-${config.config_id}`).val(dateValue);
                         } else if (config.quincenal_start_date) {
@@ -498,7 +499,7 @@
         $(`#service-date-${configId}`).on("change", function() {
             const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
             const interval_id = parseInt($(`#service-interval-${configId}`).val());
-            
+
             if (frequency_id === 1) {
                 // Para frecuencia diaria
                 $(`#service-days-${configId}`).val($(this).val());
@@ -531,29 +532,31 @@
     function addManualDate(configId) {
         const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
         const interval_id = parseInt($(`#service-interval-${configId}`).val());
-        
+
         // Si es quincenal, mostrar mensaje especial
         if (frequency_id === 5 && interval_id === 7) {
-            if (confirm('Esta configuración es quincenal. ¿Desea agregar una fecha adicional además de las fechas generadas automáticamente?')) {
+            if (confirm(
+                    'Esta configuración es quincenal. ¿Desea agregar una fecha adicional además de las fechas generadas automáticamente?'
+                )) {
                 const today = new Date().toISOString().split('T')[0];
                 const newDate = prompt('Ingrese la fecha adicional (YYYY-MM-DD):', today);
-                
+
                 if (newDate) {
                     handleManualDateInput(configId, newDate);
                 }
             }
             return;
         }
-        
+
         // Código normal para otras frecuencias
         const today = new Date().toISOString().split('T')[0];
         const newDate = prompt('Ingrese la fecha (YYYY-MM-DD):', today);
-        
+
         if (newDate) {
             handleManualDateInput(configId, newDate);
         }
     }
-    
+
     function handleManualDateInput(configId, newDate) {
         const dateObj = new Date(newDate + 'T00:00:00');
         if (!isNaN(dateObj.getTime())) {
@@ -788,13 +791,37 @@
                     if (order.status_id == 1) {
                         // Eliminar también la fecha correspondiente en configDates
                         const dateIndex = configDates[configId].findIndex(date =>
-                            new Date(date).toISOString() === order.programmed_date
+                            new Date(date).toISOString().split('T')[0] ===
+                            new Date(order.programmed_date).toISOString().split('T')[0]
                         );
+
                         if (dateIndex !== -1) {
                             configDates[configId].splice(dateIndex, 1);
                         }
 
                         config.orders.splice(orderIndex, 1);
+
+                        // CRÍTICO: Actualizar config.dates para persistir
+                        config.dates = [...configDates[configId]];
+
+                        // Actualizar en contract_configurations
+                        const service_id = $('#service-id').val();
+                        const contractConfigIndex = contract_configurations.findIndex(
+                            c => c.config_id == configId && c.service_id == service_id
+                        );
+
+                        if (contractConfigIndex !== -1) {
+                            contract_configurations[contractConfigIndex].dates = [...configDates[configId]];
+                            contract_configurations[contractConfigIndex].orders = [...config.orders];
+
+                            // Actualizar el campo hidden
+                            $('#contract-configurations').val(JSON.stringify(contract_configurations));
+
+                            // Actualizar contadores
+                            updateServiceCounters(service_id);
+                            updateTotalOrdersCount();
+                        }
+
                         updateOrdersTable(configId, config.orders);
                         updateDatesList(configId);
                         showSuccessMessage('Orden eliminada correctamente');
@@ -935,6 +962,7 @@
 
             // Actualizar contadores
             updateServiceCounters(service_id);
+            updateTotalOrdersCount();
 
             // Mostrar estado vacío si no hay configuraciones
             if ($("#configurations-list").children().length === 0) {
@@ -974,7 +1002,7 @@
                 // Ocultar el input de días normal
                 daysInput.closest('.input-group').hide();
                 daysField.find('.form-text').hide();
-                
+
                 daysLabel.text('Fecha');
                 daysInfo.html('<i class="bi bi-info-circle me-1"></i> Seleccione una fecha específica');
                 $(`#single-date-selector-${configId}`).removeClass('d-none');
@@ -1096,7 +1124,8 @@
         let value = daysInput.val().toUpperCase();
 
         // Validar según el tipo de entrada esperada
-        if (frequency_id === 2 || (frequency_id === 3 && interval_id !== 1) || (frequency_id === 5 && interval_id !== 7)) {
+        if (frequency_id === 2 || (frequency_id === 3 && interval_id !== 1) || (frequency_id === 5 && interval_id !==
+                7)) {
             // Solo permitir letras L,M,I,J,V,S,D y comas
             value = value.replace(/[^LMIJVSD,]/g, '');
 
@@ -1133,12 +1162,13 @@
     }
 
     // Función para guardar una configuración individual
+    // Función para guardar una configuración individual
     function saveConfiguration(configId) {
         const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
         const frequency = frequencies.find(f => f.id === frequency_id);
         const interval_id = parseInt($(`#service-interval-${configId}`).val());
         const interval = interval_id > 0 ? intervals[interval_id - 1] : '';
-        
+
         // Para quincenal, obtener la fecha del selector de fecha individual
         let daysValue;
         if (frequency_id === 5 && interval_id === 7) {
@@ -1158,7 +1188,7 @@
             // Para otras frecuencias, obtener del input normal
             daysValue = $(`#service-days-${configId}`).val();
         }
-        
+
         const days = daysValue;
 
         // Validar campos obligatorios
@@ -1239,10 +1269,11 @@
             // Crear nueva configuración si no existe
             config = {
                 config_id: configId,
-                service_id: $('#service-id').val(),
+                service_id: parseInt($('#service-id').val()),
                 frequency_id: frequency_id,
                 interval_id: interval_id,
                 days: [days],
+                dates: dates, // Agregar dates
                 orders: generatedOrders,
                 quincenal_start_date: (frequency_id === 5 && interval_id === 7) ? startDate : null
             };
@@ -1252,19 +1283,64 @@
             config.frequency_id = frequency_id;
             config.interval_id = interval_id;
             config.days = [days];
+            config.dates = dates; // Actualizar dates
             config.orders = generatedOrders;
             if (frequency_id === 5 && interval_id === 7) {
                 config.quincenal_start_date = startDate;
             }
         }
 
+        // CRÍTICO: Sincronizar con contract_configurations
+        const service_id = parseInt($('#service-id').val());
+        const contractConfigIndex = contract_configurations.findIndex(
+            c => c.config_id == configId && c.service_id == service_id
+        );
+
+        if (contractConfigIndex !== -1) {
+            // Actualizar configuración existente en contract_configurations
+            contract_configurations[contractConfigIndex].frequency_id = frequency_id;
+            contract_configurations[contractConfigIndex].interval_id = interval_id;
+            contract_configurations[contractConfigIndex].days = [days];
+            contract_configurations[contractConfigIndex].dates = dates;
+            contract_configurations[contractConfigIndex].orders = generatedOrders;
+            contract_configurations[contractConfigIndex].description = configDescriptions[configId] || null;
+            if (frequency_id === 5 && interval_id === 7) {
+                contract_configurations[contractConfigIndex].quincenal_start_date = startDate;
+            }
+        } else {
+            // Agregar nueva configuración a contract_configurations
+            const c_config = contract_configurations.find(c => c.config_id == configId && c.service_id == service_id);
+            contract_configurations.push({
+                config_id: configId,
+                setting_id: c_config ? c_config.setting_id : null,
+                service_id: service_id,
+                frequency: frequency ? frequency.name : 'Manual',
+                frequency_id: frequency_id,
+                interval: interval,
+                interval_id: interval_id,
+                days: [days],
+                dates: dates,
+                orders: generatedOrders,
+                description: configDescriptions[configId] || null,
+                quincenal_start_date: (frequency_id === 5 && interval_id === 7) ? startDate : null
+            });
+        }
+
+        // Actualizar el campo hidden
+        $('#contract-configurations').val(JSON.stringify(contract_configurations));
+
+        // Actualizar contadores
+        updateServiceCounters(service_id);
+        updateTotalOrdersCount();
         updateOrdersTable(configId, config.orders);
 
         // Mostrar resultado
         const newOrdersCount = generatedOrders.filter(order => order.id.startsWith('temp_')).length;
         const existingOrdersCount = generatedOrders.length - newOrdersCount;
 
-        console.log(configurations)
+        console.log('Configurations:', configurations);
+        console.log('Contract Configurations:', contract_configurations);
+
         alert(
             `Configuración ${configId} guardada. ${existingOrdersCount} órdenes existentes, ${newOrdersCount} órdenes nuevas.`
         );
@@ -1355,19 +1431,66 @@
     // Función para eliminar una fecha
     function deleteDate(configId, dateIndex) {
         if (confirm('¿Está seguro de que desea eliminar esta fecha?')) {
+            // Obtener la fecha que se va a eliminar
+            const dateToDelete = configDates[configId][dateIndex];
+
             // Eliminar también la orden correspondiente si existe
             const config = configurations.find(c => c.config_id === configId);
-            if (config && config.orders && config.orders[dateIndex]) {
-                config.orders.splice(dateIndex, 1);
-                updateOrdersTable(configId, config.orders);
+            if (config && dateToDelete) {
+                // Inicializar orders si no existe
+                if (!config.orders) {
+                    config.orders = [];
+                }
+
+                // Buscar la orden por fecha programada, comparando en formato ISO
+                const orderIndex = config.orders.findIndex(order =>
+                    new Date(order.programmed_date).toISOString().split('T')[0] ===
+                    new Date(dateToDelete).toISOString().split('T')[0]
+                );
+
+                if (orderIndex !== -1) {
+                    const order = config.orders[orderIndex];
+                    // Verificar que la orden esté en estado pendiente (sin folio)
+                    if (order.status_id == 1) {
+                        config.orders.splice(orderIndex, 1);
+                    } else {
+                        showErrorMessage('No se puede eliminar una orden que ya tiene folio o está procesada');
+                        return;
+                    }
+                }
             }
 
+            // Eliminar la fecha del array de fechas
             configDates[configId].splice(dateIndex, 1);
+
+            // CRÍTICO: Actualizar también config.dates para persistir el cambio
+            if (config) {
+                config.dates = [...configDates[configId]];
+
+                // Actualizar en contract_configurations (persistencia global)
+                const service_id = $('#service-id').val();
+                const contractConfigIndex = contract_configurations.findIndex(
+                    c => c.config_id == configId && c.service_id == service_id
+                );
+
+                if (contractConfigIndex !== -1) {
+                    contract_configurations[contractConfigIndex].dates = [...configDates[configId]];
+                    contract_configurations[contractConfigIndex].orders = [...config.orders];
+
+                    // Actualizar el campo hidden
+                    $('#contract-configurations').val(JSON.stringify(contract_configurations));
+
+                    // Actualizar contadores
+                    updateServiceCounters(service_id);
+                    updateTotalOrdersCount();
+                }
+            }
+
             updateDatesList(configId);
+            updateOrdersTable(configId, config ? config.orders : []);
             showSuccessMessage('Fecha eliminada correctamente');
         }
     }
-
 
     function clearAllDates(configId) {
         const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
@@ -1392,7 +1515,8 @@
         // Si es quincenal, preguntar si también quiere resetear la fecha de inicio
         let additionalMessage = '';
         if (frequency_id === 5 && interval_id === 7) {
-            additionalMessage = '\n\n⚠️  Esta configuración es quincenal. Al eliminar todas las fechas también se reseteará la fecha de inicio.';
+            additionalMessage =
+                '\n\n⚠️  Esta configuración es quincenal. Al eliminar todas las fechas también se reseteará la fecha de inicio.';
         }
 
         // Crear mensaje detallado
@@ -1424,8 +1548,28 @@
             }
 
             // Limpiar TODAS las órdenes independientemente de su estado
-            if (config && config.orders) {
+            if (config) {
                 config.orders = [];
+                config.dates = [];
+
+                // CRÍTICO: Actualizar en contract_configurations
+                const service_id = $('#service-id').val();
+                const contractConfigIndex = contract_configurations.findIndex(
+                    c => c.config_id == configId && c.service_id == service_id
+                );
+
+                if (contractConfigIndex !== -1) {
+                    contract_configurations[contractConfigIndex].dates = [];
+                    contract_configurations[contractConfigIndex].orders = [];
+
+                    // Actualizar el campo hidden
+                    $('#contract-configurations').val(JSON.stringify(contract_configurations));
+
+                    // Actualizar contadores
+                    updateServiceCounters(service_id);
+                    updateTotalOrdersCount();
+                }
+
                 updateOrdersTable(configId, config.orders);
             }
 
@@ -1513,37 +1657,37 @@
 
     function generateQuincenalDatesFromStart(startDate, endDate) {
         const dates = [];
-        
+
         // Convertir fechas a objetos Date
         const start = new Date(startDate + 'T00:00:00');
         const end = new Date(endDate + 'T00:00:00');
-        
+
         // Validar que la fecha de inicio no sea mayor a la de fin
         if (start > end) {
             alert('La fecha de inicio no puede ser mayor a la fecha de fin');
             return [];
         }
-        
+
         // Empezar desde la fecha específica seleccionada
         let currentDate = new Date(start);
-        
+
         // Agregar la fecha de inicio
         dates.push(new Date(currentDate));
-        
+
         // Generar fechas cada 15 días hasta llegar a la fecha de fin
         while (currentDate <= end) {
             // Sumar 15 días
             currentDate.setDate(currentDate.getDate() + 15);
-            
+
             // Verificar que no nos pasemos de la fecha de fin
             if (currentDate <= end) {
                 dates.push(new Date(currentDate));
             }
         }
-        
+
         // Mostrar información de depuración
         console.log(`Quincenal: ${dates.length} fechas generadas desde ${startDate} hasta ${endDate}`);
-        
+
         return dates;
     }
 
@@ -1655,7 +1799,8 @@
                     orders: generateOrdersFromDates(configDates[configId] || [], configId, c_config ?
                         c_config.orders : []),
                     description: configDescriptions[configId] || null,
-                    quincenal_start_date: (frequency_id === 5 && interval_id === 7) ? $(`#service-date-${configId}`).val() : null
+                    quincenal_start_date: (frequency_id === 5 && interval_id === 7) ? $(
+                        `#service-date-${configId}`).val() : null
                 };
 
                 newConfigurationsForThisService.push(newConfig);
@@ -1668,6 +1813,7 @@
 
         // Actualizar contadores para este servicio específico
         updateServiceCounters(service_id);
+        updateTotalOrdersCount();
 
         // Actualizar el campo hidden con TODAS las configuraciones
         $('#contract-configurations').val(JSON.stringify(contract_configurations));
@@ -1694,6 +1840,16 @@
             $(`#service${service_id}-count-configs`).text('0');
             $(`#service${service_id}-count-dates`).text('0');
             $(`#service${service_id}-count-orders`).text('0');
+        }
+    }
+
+    // Función para actualizar el total general de órdenes en la tabla
+    function updateTotalOrdersCount() {
+        if (typeof contract_configurations !== 'undefined') {
+            const totalOrders = contract_configurations.reduce((total, config) =>
+                total + (config.orders ? config.orders.length : 0), 0
+            );
+            $('#total-orders').text(totalOrders);
         }
     }
 </script>
