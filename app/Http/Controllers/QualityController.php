@@ -204,7 +204,7 @@ class QualityController extends Controller
         $technicians = $techniciansAll->map(function ($techniciansAll) {
             return [
                 'id' => $techniciansAll->id,
-                'name' => $techniciansAll->user->name,
+                'name' => $techniciansAll->user->name ?? '-',
             ];
         });
 
@@ -934,12 +934,15 @@ class QualityController extends Controller
         $timeKeys = [];
         $table = [];
         $reportType = 'weekly';
+        $serviceId = null;
 
-        // solo si hay parámetros validarlos
+        $customer = Customer::findOrFail($id);
+
+        // Validación: debe haber parámetros de filtro
         if ($request->hasAny(['date_range', 'service_id', 'week_day'])) {
             $validated = $request->validate([
                 'date_range' => ['required', 'string', 'regex:/^\d{2}\/\d{2}\/\d{4} - \d{2}\/\d{2}\/\d{4}$/'],
-                'service_id' => ['nullable', 'integer', 'exists:service,id'],
+                'service_id' => ['required', 'integer', 'exists:service,id'], // ← AHORA REQUERIDO
                 'week_day' => ['nullable', 'integer', 'between:0,6'],
                 'report_type' => ['required', 'string', 'in:daily,weekly'],
             ]);
@@ -948,27 +951,22 @@ class QualityController extends Controller
             $dates = explode(' - ', $validated['date_range']);
             $start_date = Carbon::createFromFormat('d/m/Y', trim($dates[0]))->startOfDay();
             $end_date = Carbon::createFromFormat('d/m/Y', trim($dates[1]))->endOfDay();
-            $serviceId = $validated['service_id'] ?? null;
+            $serviceId = $validated['service_id']; // ← AHORA SIEMPRE TIENE VALOR
             $weekDay = $validated['week_day'] ?? $defaultWeekDay;
             $reportType = $validated['report_type'];
         } else {
-            // valores por defecto en la carga inicial
+            // En carga inicial: solo retorna servicios disponibles, SIN tabla de datos
             $start_date = Carbon::parse($defaultStartDate)->startOfDay();
             $end_date = Carbon::parse($defaultEndDate)->endOfDay();
-            $serviceId = null;
-            $weekDay = $defaultWeekDay; // Día de corte por defecto viernes
-            $reportType = 'weekly'; // Tipo de reporte por defecto semanal
+            $weekDay = $defaultWeekDay;
+            $reportType = 'weekly';
         }
 
-
-
-        $customer = Customer::findOrFail($id);
-
-        // Obtenemos los IDs de servicios  que aparecen en órdenes del cliente
+        // Obtenemos los IDs de servicios que aparecen en órdenes del cliente
+        // Esto se obtiene SIN dependencia de dates inicialmente para mostrar en select
         $serviceIdsInOrders = DB::table('order_service')
             ->join('order', 'order_service.order_id', '=', 'order.id')
             ->where('order.customer_id', $id)
-            ->whereBetween('order.programmed_date', [$start_date, $end_date])
             ->pluck('order_service.service_id')
             ->unique();
 
@@ -978,23 +976,49 @@ class QualityController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
-        // Servicio seleccionado en el filtro
-        $selectedService = $serviceId ? Service::find($serviceId) : null;
+        // Si no hay filtro completo, retorna vista sin datos (solo para cargar select)
+        if (!$serviceId) {
+            return view('dashboard.quality.device.consumptionTable', [
+                'customer'      => $customer,
+                'table'         => [],
+                'start_date'    => $start_date->format('d/m/Y'),  
+                'end_date'      => $end_date->format('d/m/Y'), 
+                'selectedService' => null,
+                'allServices'   => $allServices,
+                'timeKeys'      => $timeKeys,
+                'reportType'    => $reportType,
+            ]);
+        }
 
-        // Órdenes del cliente, en rango, con servicios prefix=1 y  service_id específico
+        // Validar que el servicio seleccionado exista en los servicios del cliente
+        if (!$allServices->pluck('id')->contains($serviceId)) {
+            return view('dashboard.quality.device.consumptionTable', [
+                'customer'      => $customer,
+                'table'         => [],
+                'start_date'    => $start_date->format('d/m/Y'),  
+                'end_date'      => $end_date->format('d/m/Y'), 
+                'selectedService' => null,
+                'allServices'   => $allServices,
+                'timeKeys'      => $timeKeys,
+                'reportType'    => $reportType,
+                'error'         => 'El servicio seleccionado no existe en las órdenes de este cliente.'
+            ]);
+        }
+
+        // Órdenes del cliente, en rango, con el servicio específico (que ya tiene prefix=1)
         $orders = Order::query()
             ->where('customer_id', $id)
             ->whereBetween('programmed_date', [$start_date, $end_date])
             ->whereHas('orderServices.service', function ($q) use ($serviceId) {
-                $q->where('prefix', 1);
-                if ($serviceId) {
-                    $q->where('service.id', $serviceId);
-                }
+                $q->where('service.id', $serviceId);
             })
             ->get(['id', 'programmed_date']);
-        //Ids de órdenes para usarlos al buscar incidentes
+        
+        // Ids de órdenes para usarlos al buscar incidentes
         $orderIds = $orders->pluck('id');
 
+        // Servicio seleccionado en el filtro
+        $selectedService = Service::find($serviceId);
 
         if ($orders->isEmpty()) {
             return view('dashboard.quality.device.consumptionTable', [
@@ -1002,10 +1026,11 @@ class QualityController extends Controller
                 'table'         => [],
                 'start_date'    => $start_date->format('d/m/Y'),  
                 'end_date'      => $end_date->format('d/m/Y'), 
-                'service'       => $serviceId ? Service::find($serviceId) : null,
+                'selectedService' => $selectedService,
                 'allServices'   => $allServices,
                 'timeKeys'      => $timeKeys,
                 'reportType'    => $reportType,
+                'message'       => 'No hay órdenes registradas para este servicio en el rango de fechas seleccionado.'
             ]);
         }
 
@@ -1143,10 +1168,10 @@ class QualityController extends Controller
         // Ordenar la tabla por clave (CE-1, CE-2, etc.)
         ksort($table, SORT_NATURAL);
         return [
-            'customer -' => $customer,
+            'customer' => $customer,
             'table' => $table,
-            'start_date' => $start_date,
-            'end_date' => $end_date,
+            'start_date' => $start_date->format('d/m/Y'),
+            'end_date' => $end_date->format('d/m/Y'),
             'allServices' => $allServices,
             'selectedService' => $selectedService,
             'timeKeys' => $timeKeys,

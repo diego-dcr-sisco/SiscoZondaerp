@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 use App\Models\Branch;
 use App\Models\IndirectProduct;
@@ -15,8 +16,7 @@ use App\Models\Lot;
 use App\Models\User;
 use App\Models\WarehouseMovement;
 use App\Models\MovementProduct;
-
-
+use App\Models\Presentation;
 use App\Models\WarehouseProduct;
 use App\Models\WarehouseOrder;
 use Illuminate\Http\Request;
@@ -35,6 +35,7 @@ use OpenSpout\Writer\AutoFilter;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
+use Mpdf\Tag\A;
 
 class StockController extends Controller
 {
@@ -64,7 +65,7 @@ class StockController extends Controller
 
     public function index(Request $request)
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $hasActionPermission = $user->role_id == 4 ?? false;
 
         $products = ProductCatalog::all();
@@ -619,12 +620,13 @@ class StockController extends Controller
 
         foreach ($products as $lot_id => $product_data) {
             foreach ($product_data as $data) {
+                $presentation = Presentation::find($data['product']['presentation_id']);
                 $products_data[] = [
-                    'product' => $data['product']['name'],
-                    'presentation' => $data['product']['presentation']['name'],
-                    'lot' => $data['lot']['registration_number'],
+                    'product' => $data['product']['name'] ?? '-',
+                    'presentation' => $presentation['name'] ?? '-',
+                    'lot' => $data['lot']['registration_number'] ?? '-',
                     'amount' => $data['amount']['net'],
-                    'metric' => $data['product']['metric']['value'],
+                    'metric' => $data['product']['metric']['value'] ?? '-',
                     'expiration_date' => $data['lot']['expiration_date'] ?? '-'
                 ];
             }
@@ -634,6 +636,46 @@ class StockController extends Controller
             'stock.show.products',
             compact('warehouse', 'products_data', 'navigation')
         );
+    }
+
+    public function show(string $id)
+    {
+        $navigation = $this->navigation;
+        $warehouse = Warehouse::with('branch','technician.user')->findOrFail($id);
+
+        $rows = MovementProduct::where('warehouse_id', $id)
+            ->selectRaw('lot_id, product_id, SUM(CASE WHEN movement_id BETWEEN 1 AND 4 THEN amount ELSE 0 END) as add_amount, SUM(CASE WHEN movement_id BETWEEN 5 AND 10 THEN amount ELSE 0 END) as less_amount')
+            ->with(['product.metric', 'lot'])
+            ->groupBy('lot_id','product_id')
+            ->get();
+
+        $stocks = $rows->map(function($item) {
+            $net = ($item->add_amount ?? 0) - ($item->less_amount ?? 0);
+            return (object) [
+                'id' => $item->lot->id ?? $item->product_id,
+                'product' => $item->product,
+                'amount' => $net,
+                'add_amount' => $item->add_amount ?? 0,
+                'less_amount' => $item->less_amount ?? 0,
+                'registration_number' => $item->lot->registration_number ?? '-',
+            ];
+        });
+
+        $stockTotals = [
+            'rows' => $rows->count(),
+            'distinct_products' => $rows->pluck('product_id')->unique()->count(),
+            'distinct_lots' => $rows->pluck('lot_id')->unique()->count(),
+            'total_net' => $rows->reduce(function($carry, $item) {
+                return $carry + (($item->add_amount ?? 0) - ($item->less_amount ?? 0));
+            }, 0)
+        ];
+
+        $query_variables = [
+            'select' => "lot_id, product_id, SUM(CASE WHEN movement_id BETWEEN 1 AND 4 THEN amount ELSE 0 END) as add_amount, SUM(CASE WHEN movement_id BETWEEN 5 AND 10 THEN amount ELSE 0 END) as less_amount",
+            'groupBy' => ['lot_id','product_id']
+        ];
+
+        return view('stock.show', compact('warehouse', 'stocks', 'rows', 'navigation', 'stockTotals', 'query_variables'));
     }
 
     // Generar archivo de excel con los productos
@@ -646,7 +688,12 @@ class StockController extends Controller
             abort(404, 'Almacén no encontrado');
         }
 
-        $products = $warehouse->products;
+        // Obtener productos agrupados por lote y producto con cantidades netas
+        $rows = MovementProduct::where('warehouse_id', $id)
+            ->selectRaw('lot_id, product_id, SUM(CASE WHEN movement_id BETWEEN 1 AND 4 THEN amount ELSE 0 END) as add_amount, SUM(CASE WHEN movement_id BETWEEN 5 AND 10 THEN amount ELSE 0 END) as less_amount')
+            ->with(['product.presentation','product.metric','lot'])
+            ->groupBy('lot_id','product_id')
+            ->get();
 
         // propiedades del archivo Excel
         $properties = new Properties(
@@ -675,15 +722,16 @@ class StockController extends Controller
 
         $writer->addRow(Row::fromValues($headers, $headerStyle));
 
-        // Escribir los datos de los productos
-        foreach ($products as $index => $product) {
+        // Escribir los datos de los productos (cantidad neta por lote/producto)
+        foreach ($rows as $index => $item) {
+            $net = ($item->add_amount ?? 0) - ($item->less_amount ?? 0);
             $rowData = [
                 $index + 1, // Número de fila
-                $product->product->name, // Nombre del producto
-                $product->product->presentation ? $product->product->presentation->name : '-',
-                $product->lot ? $product->lot->registration_number : '-', // Lote (o '-' si no hay lote)
-                $product->amount . ' ' . $product->product->metric->value, // Cantidad con métrica
-                $product->lot->expiration_date ?? '-'
+                $item->product->name ?? '-', // Nombre del producto
+                $item->product->presentation ? $item->product->presentation->name : '-',
+                $item->lot ? $item->lot->registration_number : '-', // Lote (o '-' si no hay lote)
+                $net . ' ' . ($item->product->metric->value ?? '-'), // Cantidad con métrica
+                $item->lot->expiration_date ?? '-'
             ];
             $writer->addRow(Row::fromValues($rowData));
         }
@@ -781,7 +829,7 @@ class StockController extends Controller
             'description' => $request->input('description'),
             'date' => $request->input['date'] ?? now()->format('Y-m-d'),
             'time' => now()->format('H:i:s'),
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'warehouse_signature' => $request->input('storekeeper_signature_base64'),
             'technician_signature' => $request->input('technician_signature_base64')
         ]);
@@ -819,7 +867,7 @@ class StockController extends Controller
             'description' => $request->input('description'),
             'date' => $request->input['date'] ?? now()->format('Y-m-d'),
             'time' => now()->format('H:i:s'),
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'warehouse_signature' => $request->warehouse_signature,
             'technician_signature' => $request->technician_signature
         ]);

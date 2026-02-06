@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\Lead;
 use App\Models\Quote;
+use App\Models\Tracking;
 use App\Observers\ModelObserver;
 use App\Observers\QuoteObserver;
 use Illuminate\Support\ServiceProvider;
@@ -41,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         Order::observe(ModelObserver::class);
         Quote::observe(ModelObserver::class);
         Quote::observe(QuoteObserver::class);
+        Tracking::observe(ModelObserver::class);
 
         Storage::extend('google', function ($app, $config) {
             $client = new GoogleClient();

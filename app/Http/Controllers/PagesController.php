@@ -478,7 +478,7 @@ return [
         $technicians = $technicians->get()->map(function ($tech) {
             return [
                 'id' => $tech->id,
-                'name' => $tech->user->name, // Ahora user está cargado eficientemente
+                'name' => $tech->user->name ?? '-', // Ahora user está cargado eficientemente
             ];
         });
 
@@ -667,7 +667,8 @@ return [
 
                 $trackings_data[] = [
                     'id' => $tracking->id,
-                    'customer' => $tracking->trackable->name ?? '-',
+                    'customer_name' => $tracking->trackable->name ?? '-',
+                    'customer_phone' => $tracking->trackable->phone ?? '-',
                     'order' => $orderInfo,
                     'service' => $tracking->service_id,
                     'next_date' => $tracking->next_date,

@@ -22,7 +22,8 @@
         // Configuración por defecto
         $defaultConfig = [
             'keepHtml' => true,
-            'keepOnlyTags' => '<p><br><ul><ol><li><a><b><strong><table><thead><tbody><tfoot><tr><th><td><col><colgroup><caption><div>',
+            'keepOnlyTags' =>
+                '<p><br><ul><ol><li><a><b><strong><table><thead><tbody><tfoot><tr><th><td><col><colgroup><caption><div>',
             'badTags' => ['style', 'script', 'applet', 'embed', 'noframes', 'noscript'],
             'badAttributes' => ['style', 'start', 'dir', 'class'],
             'newline' => '<br>',
@@ -104,6 +105,12 @@
         padding: 30px;
         border-radius: 10px;
         text-align: center;
+    }
+
+    .note-editor .note-editable,
+    .note-editor .note-editable p {
+        font-size: 11pt !important;
+        font-family: inherit;
     }
 </style>
 
@@ -409,6 +416,44 @@
     const lots = @json($lots);
     var summaryData = [];
 
+    function normalizeHtmlForPdfFront(html) {
+        if (!html) return '';
+
+        // 1. Eliminar caracteres invisibles (BOM, NBSP, zero-width)
+        html = html.replace(/[\u0000-\u001F\u007F\u00A0\u200B-\u200F\uFEFF]/g, ' ');
+
+        // 2. Eliminar &nbsp;
+        html = html.replace(/&nbsp;/gi, ' ');
+
+        // 3. Quitar estilos inline y clases
+        html = html.replace(/\s*style="[^"]*"/gi, '');
+        html = html.replace(/\s*class="[^"]*"/gi, '');
+
+        // 4. Eliminar spans completamente
+        html = html.replace(/<\/?span[^>]*>/gi, '');
+
+        // 5. Eliminar scripts y estilos (seguridad)
+        html = html.replace(/<(script|style)[^>]*>.*?<\/\1>/gis, '');
+
+        // 6. Eliminar párrafos vacíos
+        html = html.replace(/<p>\s*(<br\s*\/?>)?\s*<\/p>/gi, '');
+
+        // 7. Normalizar múltiples <br> a párrafos
+        html = html.replace(/(<br\s*\/?>\s*){2,}/gi, '</p><p>');
+
+        // 8. Compactar espacios múltiples
+        html = html.replace(/\s{2,}/g, ' ');
+
+        // 9. Asegurar envoltura en <p>
+        html = html.trim();
+        if (!/^<p>/i.test(html)) {
+            html = `<p>${html}</p>`;
+        }
+
+        return html.trim();
+    }
+
+
     /*$(document).ready(function() {
         $('.smnote').summernote({
             height: 250,
@@ -441,19 +486,73 @@
         });
     });
 */
-
     $(document).ready(function() {
-        // Función para limpiar contenido pegado (si la necesitas)
-        function cleanPaste(html) {
-            // Tu lógica de limpieza aquí
-            return html.replace(/ style="[^"]*"/gi, '')
-                .replace(/ class="[^"]*"/gi, '');
+        function forceFontSize(note, size = 11) {
+            const editable = note.next('.note-editor')
+                .find('.note-editable');
+
+            editable.css('font-size', size + 'pt');
+            note.summernote('fontSize', size);
         }
 
-        // Configuración base del Summernote
+        function normalizeFontSize(html) {
+            html = html.replace(/font-size\s*:\s*[^;"]+;?/gi, '');
+            html = html.replace(/<span[^>]*>(.*?)<\/span>/gi, '$1');
+            return html;
+        }
+
+        function normalizeHtmlFromSummernote(html) {
+            if (!html) return '';
+
+            // 1. Decodificar entidades rotas (&nbsp;, &lt, etc.)
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = html;
+            html = textarea.value;
+
+            // 2. Eliminar caracteres invisibles (Word, BOM)
+            html = html.replace(/[\u0000-\u001F\u007F\u00A0\u200B-\u200F\uFEFF]/g, ' ');
+
+            // 3. Eliminar estilos y clases
+            html = html.replace(/\s*style="[^"]*"/gi, '');
+            html = html.replace(/\s*class="[^"]*"/gi, '');
+
+            // 4. Eliminar spans SIN romper texto
+            html = html.replace(/<\/?span[^>]*>/gi, '');
+
+            // 5. Quitar espacios antes de signos
+            html = html.replace(/\s+([,.!?;:])/g, '$1');
+
+            // 6. Asegurar espacio después de </b> </strong> </em>
+            html = html.replace(/<\/(b|strong|em|i)>(\S)/gi, '</$1> $2');
+
+            // 7. Compactar espacios múltiples
+            html = html.replace(/\s{2,}/g, ' ');
+
+            return html.trim();
+        }
+
+        function hasWordGarbage(html) {
+            const patterns = [
+                /&nbsp;/i,
+                /<span[^>]*>/i,
+                /mso-/i,
+                /font-family/i,
+                /font-size/i,
+                /[\u200B-\u200F\uFEFF]/, // caracteres invisibles
+                /[“”‘’]/, // comillas Word
+                /&[a-zA-Z]{1,6}(?!;)/ // entidades rotas (&ea &lt etc)
+            ];
+
+            return patterns.some(regex => regex.test(html));
+        }
+
+
         let summernoteConfig = {
             height: 250,
             lang: 'es-ES',
+            fontSize: ['8', '10', '11', '12', '14', '16'],
+            lineHeights: ['0.5', '1', '1.5', '2'],
+            fontSizeUnit: 'pt',
             toolbar: [
                 ['style', ['bold', 'italic', 'underline', 'clear']],
                 ['font', ['fontsize', 'fontname']],
@@ -461,219 +560,103 @@
                 ['height', ['height']],
                 ['insert', ['table', 'link']],
             ],
-            fontSize: ['8', '10', '12', '14', '16'],
-            lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
 
-            // Importante: Activar el módulo de tablas
-            tableClassName: 'table table-bordered',
-
-            // Configuración para manejar pegado de tablas de Excel
             callbacks: {
-                onPaste: function(e) {
-                    var thisNote = $(this);
-                    var updatePaste = function() {
-                        var original = thisNote.summernote('code');
-                        var cleaned = cleanPasteForTables(original);
-                        thisNote.summernote('code', cleaned);
-                    };
-                    setTimeout(updatePaste, 10);
-                }
-            },
+                onInit: function() {
+                    forceFontSize($(this), 11);
+                },
 
-            // Configuración del cleaner - PERMITIR TABLAS
-            cleaner: {
-                action: 'both',
-                newline: '<br>',
-                notStyle: 'position:absolute;top:0;left:0;right:0',
-                keepHtml: true,
-                // AÑADIR ETIQUETAS DE TABLA A LA LISTA BLANCA
-                keepOnlyTags: [
-                    '<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>', '<strong>', 'div',
-                    // Etiquetas de tabla
-                    '<table>', '<thead>', '<tbody>', '<tfoot>', '<tr>', '<th>', '<td>',
-                    '<col>', '<colgroup>', '<caption>'
-                ],
-                keepClasses: false,
-                badTags: ['style', 'script', 'applet', 'embed', 'noframes', 'noscript'],
-                // Permitir algunos atributos de tabla
-                badAttributes: ['style', 'start', 'dir', 'class', 'id', 'onclick']
+                /*onPaste: function() {
+                    const note = $(this);
+
+                    setTimeout(() => {
+                        let content = note.summernote('code');
+
+                        if (hasWordGarbage(content)) {
+                            alert(
+                                '⚠️ El texto pegado contiene formato de Word.\n\n' +
+                                'Puede causar:\n' +
+                                '• Espacios extra\n' +
+                                '• Caracteres raros\n' +
+                                '• Problemas en el PDF\n\n' +
+                                'Recomendación:\n' +
+                                'Pegue como texto plano (Ctrl + Shift + V).'
+                            );
+                        }
+
+                        content = normalizeHtmlFromSummernote(content);
+                        note.summernote('code', content);
+                    }, 0);
+                },*/
+
+
+                onPaste: function(e) {
+                    e.preventDefault();
+
+                    let clipboardData = (e.originalEvent || e).clipboardData;
+                    let text = clipboardData.getData('text/html') || clipboardData.getData(
+                    'text/plain');
+
+                    // 🚨 Detectar basura de Word
+                    const wordRegex = /class="?Mso|style="[^"]*mso-|<!--\[if|<\/?o:|<\/?w:/i;
+                    const weirdChars = /[\u00A0\u200B\uFEFF]/g;
+
+                    if (wordRegex.test(text) || weirdChars.test(text)) {
+                        alert(
+                                '⚠️ El texto pegado contiene formato de Word.\n\n' +
+                                'Puede causar:\n' +
+                                '• Espacios extra\n' +
+                                '• Caracteres raros\n' +
+                                '• Problemas con el tamaño de letra\n' +
+                                '• Mal diseño en el PDF\n\n' +
+                                'Recomendación:\n' +
+                                'Pegue como texto plano (Ctrl + Shift + V).'
+                            );
+                    }
+
+                    // 🔥 LIMPIEZA REAL
+                    text = text
+                        // quitar caracteres invisibles
+                        .replace(/[\u00A0\u200B\uFEFF]/g, ' ')
+                        // quitar basura Word
+                        .replace(/class="?Mso.*?"/gi, '')
+                        .replace(/style="[^"]*"/gi, '')
+                        // arreglar <b>
+                        .replace(/\s*<b>\s*/gi, '<b>')
+                        .replace(/\s*<\/b>\s*/gi, '</b> ')
+                        // evitar </b>pegado
+                        .replace(/<\/b>(\S)/gi, '</b> $1')
+                        // compactar espacios
+                        .replace(/\s{2,}/g, ' ')
+                        .trim();
+
+                    // Insertar limpio
+                    document.execCommand('insertHTML', false, text);
+                }
+
+                /*onChange: function(contents) {
+                    const note = $(this);
+
+                    if (contents === '<p><br></p>' || contents === '') {
+                        setTimeout(() => forceFontSize(note, 11), 0);
+                    }
+                },*/
+
+                /*onKeydown: function() {
+                    const note = $(this);
+                    setTimeout(() => forceFontSize(note, 11), 0);
+                }*/
             }
         };
-        // Función para inicializar el editor
+
         function initializeSummernote() {
-            // Si ya existe, destruirlo primero
-            if ($('.smnote').length && $('.smnote').data('summernote')) {
+            if ($('.smnote').data('summernote')) {
                 $('.smnote').summernote('destroy');
             }
-
-            // Inicializar con la configuración actual
             $('.smnote').summernote(summernoteConfig);
         }
 
-        // Función para actualizar opciones específicas
-        function updateSummernoteOptions(newOptions) {
-            // Guardar el contenido actual si existe
-            let currentContent = '';
-            if ($('.smnote').length && $('.smnote').data('summernote')) {
-                currentContent = $('.smnote').summernote('code');
-            }
-
-            // Actualizar la configuración
-            summernoteConfig = {
-                ...summernoteConfig,
-                ...newOptions,
-                // Mantener siempre los callbacks
-                callbacks: {
-                    ...summernoteConfig.callbacks,
-                    ...(newOptions.callbacks || {})
-                }
-            };
-
-            // Reinicializar
-            initializeSummernote();
-
-            // Restaurar contenido si había
-            if (currentContent) {
-                $('.smnote').summernote('code', currentContent);
-            }
-        }
-
-        // Inicializar por primera vez
         initializeSummernote();
-
-        // Ejemplos de cómo actualizar dinámicamente:
-
-        // 1. Para agregar selector de nombres de fuente
-        function enableFontNames() {
-            updateSummernoteOptions({
-                toolbar: [
-                    ['style', ['bold', 'italic', 'underline', 'clear']],
-                    ['font', ['fontsize', 'fontname']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['height', ['height']],
-                    ['insert', ['table', 'link']],
-                ],
-                fontNames: ['Arial', 'Courier New', 'Helvetica', 'Times New Roman']
-            });
-        }
-
-        // 2. Para cambiar los tamaños de fuente
-        function updateFontSizes(newSizes) {
-            updateSummernoteOptions({
-                fontSize: newSizes
-            });
-        }
-
-        // 3. Para cambiar la altura
-        function updateHeight(newHeight) {
-            updateSummernoteOptions({
-                height: newHeight
-            });
-        }
-
-        // 4. Para cambiar las opciones de interlineado
-        function updateLineHeights(newLineHeights) {
-            updateSummernoteOptions({
-                lineHeights: newLineHeights
-            });
-        }
-
-        // 5. Para agregar más funcionalidades a la toolbar
-        function addFullToolbar() {
-            updateSummernoteOptions({
-                toolbar: [
-                    ['style', ['bold', 'italic', 'underline', 'clear']],
-                    ['font', ['fontsize', 'fontname']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['height', ['height']],
-                    ['insert', ['table', 'link']],
-                ],
-                fontNames: ['Arial', 'Courier New', 'Helvetica', 'Times New Roman', 'Georgia',
-                    'Verdana'
-                ],
-                colors: [
-                    ['#000000', '#424242', '#636363', '#9C9C94', '#CEC6CE', '#EFEFEF', '#F7F7F7',
-                        '#FFFFFF'
-                    ],
-                    ['#FF0000', '#FF9C00', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF', '#9C00FF',
-                        '#FF00FF'
-                    ]
-                ]
-            });
-        }
-
-        // 6. Para volver a la configuración básica
-        function resetToBasic() {
-            summernoteConfig = {
-                height: 250,
-                lang: 'es-ES',
-                toolbar: [
-                    ['style', ['bold', 'italic', 'underline', 'clear']],
-                    ['font', ['fontsize', 'fontname']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['height', ['height']],
-                    ['insert', ['table', 'link']],
-                ],
-                fontSize: ['8', '10', '12', '14', '16'],
-                lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
-                callbacks: {
-                    onPaste: function(e) {
-                        var thisNote = $(this);
-                        var updatePaste = function() {
-                            var original = thisNote.summernote('code');
-                            var cleaned = cleanPaste(original);
-                            thisNote.summernote('code', cleaned);
-                        };
-                        setTimeout(updatePaste, 10);
-                    }
-                }
-            };
-            initializeSummernote();
-        }
-
-        // Función para cambiar el idioma
-        function changeLanguage(langCode) {
-            updateSummernoteOptions({
-                lang: langCode
-            });
-        }
-
-        // Función para agregar callback adicional
-        function addOnChangeCallback() {
-            const newCallbacks = {
-                ...summernoteConfig.callbacks,
-                onChange: function(contents) {
-                    console.log('Contenido cambiado:', contents.length, 'caracteres');
-                    // Aquí puedes agregar lógica adicional
-                }
-            };
-
-            updateSummernoteOptions({
-                callbacks: newCallbacks
-            });
-        }
-
-        // Hacer las funciones disponibles globalmente si es necesario
-        window.summernoteFunctions = {
-            enableFontNames,
-            updateFontSizes,
-            updateHeight,
-            updateLineHeights,
-            addFullToolbar,
-            resetToBasic,
-            changeLanguage,
-            addOnChangeCallback,
-            updateSummernoteOptions
-        };
-
-        // Ejemplos de uso (puedes llamarlas desde botones o eventos):
-        /*
-        <button onclick="summernoteFunctions.enableFontNames()">Agregar fuentes</button>
-        <button onclick="summernoteFunctions.updateFontSizes(['10', '12', '14', '18', '24'])">Tamaños grandes</button>
-        <button onclick="summernoteFunctions.updateHeight(350)">Altura 350px</button>
-        <button onclick="summernoteFunctions.addFullToolbar()">Toolbar completa</button>
-        <button onclick="summernoteFunctions.resetToBasic()">Reset básico</button>
-        */
     });
 
     function cleanPaste(html) {

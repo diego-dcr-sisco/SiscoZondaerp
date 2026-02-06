@@ -41,8 +41,9 @@ class Warehouse extends Model
 
     public function products()
     {
-        return ProductCatalog::whereHas('movementProducts', function ($query) {
-            $query->where('warehouse_id', $this->id);
-        })->get();
+        // Relación a productos a través de la tabla de movimientos (movement_products)
+        return $this->belongsToMany(ProductCatalog::class, 'movement_products', 'warehouse_id', 'product_id')
+            ->withPivot('lot_id', 'amount', 'movement_id')
+            ->distinct();
     }
 }

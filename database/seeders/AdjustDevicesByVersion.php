@@ -6,6 +6,8 @@ use App\Models\FloorplanVersion;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Device;
+use App\Models\OrderIncidents;
+use Google\Service\Forms\Answer;
 
 class AdjustDevicesByVersion extends Seeder
 {
@@ -60,7 +62,7 @@ class AdjustDevicesByVersion extends Seeder
         echo "\nProceso de actualización completado.\n";*/
 
         // Codigo para Copiar dispositivos en el mismo plano pero con una nueva version con condiciones de accion.
-        $floorplan_id = 77;
+        /*$floorplan_id = 77;
         $devicesV1 = Device::where('floorplan_id', $floorplan_id)->where('version', 1)->get();
         $non_nplans = [144, 145, 146, 147];
         $replace_nplans = [
@@ -110,6 +112,62 @@ class AdjustDevicesByVersion extends Seeder
             echo "✅ Dispositivo clonado: ID V1 = $deviceV1->id, Nuevo ID = $newDevice->id, nplan = $newDevice->nplan\n";
         }
 
-        echo "\nTotal de dispositivos clonados: $count\n";
+        echo "\nTotal de dispositivos clonados: $count\n";*/
+
+        // En tu modelo Device.php o el modelo donde tienes la relación incident()
+
+        // Obtener todos los dispositivos con type_control_point_id == 16
+        $devices = Device::where('type_control_point_id', 16)->get();
+        echo "==========================================\n";
+        echo "DISPOSITIVOS TIPO 16 ENCONTRADOS: {$devices->count()}\n";
+        echo "==========================================\n\n";
+
+        if ($devices->count() > 0) {
+            $deviceIds = $devices->pluck('id')->toArray();
+            echo "IDs de dispositivos: " . implode(', ', $deviceIds) . "\n\n";
+
+            // CORREGIDO: El orWhere debe estar agrupado
+            $incidents = OrderIncidents::whereIn('device_id', $deviceIds)->where('question_id', 13)
+                ->where(function ($query) {
+                    $query->where('answer', '')
+                        ->orWhere('answer', ' ');
+                })
+                ->get();
+
+            echo "==========================================\n";
+            echo "INCIDENCIAS CON RESPUESTAS VACÍAS: {$incidents->count()}\n";
+            echo "==========================================\n\n";
+
+            if ($incidents->count() > 0) {
+                echo "ACTUALIZANDO A 'CONSUMO TOTAL'...\n";
+                echo str_repeat("-", 40) . "\n";
+
+                $counter = 0;
+                foreach ($incidents as $incident) {
+                    $counter++;
+                    $oldValue = $incident->answer == ' ' ? "' '" : "''";
+
+                    $incident->update(['answer' => 'Consumo Total']);
+
+                    echo "[{$counter}] ID {$incident->id}: {$oldValue} → 'Consumo Total'\n";
+
+                    // Mostrar progreso cada 10 registros
+                    if ($counter % 10 === 0) {
+                        echo "Progreso: {$counter}/{$incidents->count()}\n";
+                    }
+                }
+
+                echo "\n" . str_repeat("=", 50) . "\n";
+                echo "✅ ACTUALIZACIÓN COMPLETADA\n";
+                echo "Total actualizado: {$counter} registros\n";
+                echo str_repeat("=", 50) . "\n";
+
+            } else {
+                echo "✅ No se encontraron incidencias con respuestas vacías\n";
+            }
+
+        } else {
+            echo "⚠ No se encontraron dispositivos tipo 16\n";
+        }
     }
 }

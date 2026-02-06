@@ -26,4 +26,8 @@ class OrderIncidents extends Model
     {
         return $this->belongsTo(Order::class, 'order_id');
     }
+
+    public function devices() {
+        return $this->hasMany(Device::class, 'device_id');
+    }
 }

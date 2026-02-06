@@ -220,7 +220,11 @@ class AppController extends Controller
 								'name' => $device->floorplan->filename,
 								'service_name' => $device->floorplan->service->name
 							],
-							'questions' => $questions_data
+							'questions' => $questions_data,
+							'location' => [
+								'longitude' => $device->longitude,
+								'latitude' => $device->latitude
+							],
 						];
 					}
 
@@ -593,6 +597,10 @@ class AppController extends Controller
 						'response' => $r->answer,
 					];
 				}),
+				'location' => [
+					'longitude' => $device->longitude,
+					'latitude' => $device->latitude
+				],
 				'image' => $states->device_image,
 				'observations' => $states->observations,
 				'is_scanned' => $states->is_scanned,

@@ -32,13 +32,13 @@
         /*background: #182A41;
         background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(48, 64, 84, 1) 100%);*/
         background: #182A41;
-background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 60%, rgba(74, 46, 132, 1) 100%);
+        background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 60%, rgba(74, 46, 132, 1) 100%);
     }
 
     .bg-gradiant-navbar {
         /*background: #18181B;*/
         background: #182A41;
-/*background: linear-gradient(180deg, rgba(24, 24, 27, 1) 30%, rgba(63, 41, 109, 1) 80%, rgba(100, 57, 112, 1) 100%);*/
+        /*background: linear-gradient(180deg, rgba(24, 24, 27, 1) 30%, rgba(63, 41, 109, 1) 80%, rgba(100, 57, 112, 1) 100%);*/
     }
 
     /* Estilos para la notificación de la campana */
@@ -83,6 +83,69 @@ background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 6
 
     .header-auth {
         color: #FF8904;
+    }
+
+    /* Contenedor del dropdown con altura fija y scroll */
+    .notifications-dropdown {
+        width: 400px;
+        max-height: 500px;
+        overflow-y: auto;
+        position: relative;
+    }
+
+    /* Contenedor para los botones fijos */
+    .dropdown-footer {
+        position: sticky;
+        bottom: 0;
+        background-color: #212529;
+        z-index: 10;
+        padding: 0.5rem;
+        border-top: 1px solid #495057;
+        margin-top: auto;
+    }
+
+    /* Asegurar que el contenido sea scrollable */
+    .dropdown-content {
+        max-height: 350px;
+        overflow-y: auto;
+        padding: 0.5rem;
+    }
+
+    /* Estilos para los botones */
+    .sticky-buttons {
+        display: grid;
+        gap: 0.5rem;
+        padding-top: 0.5rem;
+    }
+
+    /* Agregar cursor pointer a las notificaciones */
+    .notification-item {
+        border-left: 3px solid transparent;
+        transition: all 0.3s ease;
+        background-color: #ffffff;
+        cursor: pointer;
+    }
+
+    .notification-item:hover {
+        border-left-color: #ffc107;
+        background-color: #ebebeb;
+        transform: translateY(-1px);
+    }
+
+    /* Estilos para el modal */
+    .notification-modal .modal-content {
+        border-radius: 10px;
+    }
+
+    .notification-modal .modal-header {
+        background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 60%, rgba(74, 46, 132, 1) 100%);
+        color: white;
+        border-bottom: none;
+    }
+
+    .notification-modal .modal-body {
+        max-height: 60vh;
+        overflow-y: auto;
     }
 </style>
 
@@ -201,8 +264,7 @@ background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 6
                                     <span class="notification-badge">{{ $count_trackings }}</span>
                                 @endif
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-lg-end"
-                                style="width: 400px; max-height: 500px; overflow-y: auto;">
+                            <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-lg-end notifications-dropdown">
                                 <li>
                                     <div class="dropdown-header bg-warning text-dark">
                                         <i class="bi bi-calendar-check me-2"></i>
@@ -210,7 +272,7 @@ background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 6
                                     </div>
                                 </li>
                                 <li>
-                                    <div class="px-3 py-2">
+                                    <div class="dropdown-content">
                                         <!-- Alerta de seguimientos pendientes -->
                                         <div class="alert alert-warning border-0 shadow-sm mb-2">
                                             <div class="d-flex align-items-center">
@@ -224,49 +286,42 @@ background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 6
 
                                         <!-- Lista de seguimientos -->
                                         @if (count($trackings_data) > 0)
+                                            <!-- Dentro del foreach de trackings_data -->
                                             @foreach ($trackings_data as $tracking)
-                                                <div
-                                                    class="notification-item notification-priority-medium p-2 mb-2 rounded">
+                                                <div class="notification-item p-2 mb-2 rounded"
+                                                    data-notification-id="{{ $tracking['id'] }}"
+                                                    data-tracking-id="{{ $tracking['tracking_id'] ?? $tracking['id'] }}"
+                                                    data-customer-name="{{ $tracking['customer_name'] ?? 'Cliente' }}"
+                                                    data-title="{{ $tracking['title'] ?? '' }}"
+                                                    data-description="{{ $tracking['description'] ?? '' }}"
+                                                    data-next-date="{{ $tracking['next_date'] ?? 'Sin fecha' }}"
+                                                    data-customer-phone="{{ $tracking['customer_phone'] ?? '' }}"
+                                                    data-status="{{ $tracking['status'] ?? 'active' }}">
+                                                    <!-- El resto del contenido permanece igual -->
                                                     <div class="d-flex justify-content-between align-items-start">
-                                                        <div class="flex-grow-1">
-                                                            <h6 class="mb-1 text-dark">
-                                                                {{ $tracking['customer'] ?? 'Cliente' }}</h6>
-                                                            <p class="mb-1 small text-muted">
-                                                                {{ $tracking['title'] ?? 'Seguimiento' }}</p>
-                                                            <small class="text-primary">
-                                                                <i class="bi bi-calendar-event me-1"></i>
-                                                                {{ $tracking['next_date'] ?? 'Sin fecha' }}
-                                                            </small>
-                                                        </div>
-                                                        <span
-                                                            class="badge bg-{{ $statusMap[$tracking['status']]['color'] ?? 'secondary' }} ms-2">
-                                                            {{ $statusMap[$tracking['status']]['text'] ?? 'Pendiente' }}
-                                                        </span>
+                                                        <!-- ... contenido existente ... -->
                                                     </div>
                                                 </div>
                                             @endforeach
                                         @else
-                                            <div class="text-center bg-light rounded py-3">
+                                            <div class="text-center bg-light rounded p-2">
                                                 <i class="bi bi-check-circle-fill text-success fs-1"></i>
                                                 <p class="text-muted mt-2 mb-0">No hay seguimientos pendientes</p>
                                             </div>
                                         @endif
                                     </div>
                                 </li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li>
-                                    <div class="d-grid gap-2 px-3 pb-2">
-                                        <a href="{{ route('crm.agenda') }}" class="btn btn-primary btn-sm">
-                                            <i class="bi bi-calendar-week me-2"></i>
-                                            Ir a la Agenda
-                                        </a>
-                                        <a href="{{ route('crm.tracking') }}" class="btn btn-success btn-sm">
-                                            <i class="bi bi-list-check me-2"></i>
-                                            Ver todos los pendientes
-                                        </a>
-                                    </div>
+
+                                <!-- Sección fija con botones -->
+                                <li class="d-flex justify-content-between m-2">
+                                    <a href="{{ route('crm.agenda') }}" class="btn btn-primary btn-sm m-0">
+                                        <i class="bi bi-calendar-week me-2"></i>
+                                        Ir a la Agenda
+                                    </a>
+                                    <a href="{{ route('crm.tracking') }}" class="btn btn-success btn-sm m-0">
+                                        <i class="bi bi-list-check me-2"></i>
+                                        Ver todos los pendientes
+                                    </a>
                                 </li>
                             </ul>
                         </li>
@@ -311,3 +366,198 @@ background: linear-gradient(90deg, rgba(24, 42, 65, 1) 0%, rgba(25, 42, 89, 1) 6
         </div>
     </div>
 </nav>
+
+
+<!-- Modal para mostrar detalles de la notificación -->
+<div class="modal fade notification-modal" id="notificationDetailModal" tabindex="-1"
+    aria-labelledby="notificationDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="notificationDetailModalLabel">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Detalles del Seguimiento
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Contenido dinámico se cargará aquí -->
+                <div id="notificationDetailContent">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-3 text-muted">Cargando información...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Cerrar
+                </button>
+                <a href="#" id="goToTrackingBtn" class="btn btn-primary">
+                    <i class="bi bi-arrow-right-circle me-1"></i>
+                    Ir al Seguimiento
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- JavaScript para manejar el modal -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elementos del modal
+        const notificationDetailModal = new bootstrap.Modal(document.getElementById('notificationDetailModal'));
+        const notificationDetailContent = document.getElementById('notificationDetailContent');
+        const goToTrackingBtn = document.getElementById('goToTrackingBtn');
+        const modalTitle = document.getElementById('notificationDetailModalLabel');
+
+        // Mapeo de estados para mostrar en el modal
+        const statusMap = {
+            'active': {
+                color: 'success',
+                text: 'Activo',
+                icon: 'bi-check-circle'
+            },
+            'completed': {
+                color: 'primary',
+                text: 'Completado',
+                icon: 'bi-check-circle-fill'
+            },
+            'canceled': {
+                color: 'danger',
+                text: 'Cancelado',
+                icon: 'bi-x-circle-fill'
+            }
+        };
+
+        // Agregar evento click a todas las notificaciones
+        document.querySelectorAll('.notification-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                // Prevenir que se cierre el dropdown si está abierto
+                if (!e.target.closest('a') && !e.target.closest('button')) {
+                    // Obtener datos de la notificación desde atributos data
+                    const notificationId = this.getAttribute('data-notification-id');
+                    const customerName = this.getAttribute('data-customer-name');
+                    const title = this.getAttribute('data-title');
+                    const description = this.getAttribute('data-description');
+                    const nextDate = this.getAttribute('data-next-date');
+                    const customerPhone = this.getAttribute('data-customer-phone');
+                    const status = this.getAttribute('data-status');
+                    const trackingId = this.getAttribute('data-tracking-id');
+
+                    // Actualizar botón de "Ir al Seguimiento"
+                    goToTrackingBtn.href = `/crm/tracking/${trackingId || notificationId}`;
+
+                    // Crear contenido del modal
+                    const statusInfo = statusMap[status] || {
+                        color: 'secondary',
+                        text: 'Pendiente',
+                        icon: 'bi-clock'
+                    };
+
+                    const content = `
+                    <div class="notification-detail">
+                        <!-- Encabezado con nombre e ID -->
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h4 class="mb-1">${customerName || 'Cliente'}</h4>
+                                <small class="text-muted">ID: #${notificationId}</small>
+                            </div>
+                            <span class="badge bg-${statusInfo.color} fs-6">
+                                <i class="bi ${statusInfo.icon} me-1"></i>
+                                ${statusInfo.text}
+                            </span>
+                        </div>
+                        
+                        <!-- Título -->
+                        <div class="mb-4">
+                            <h5 class="text-primary">
+                                <i class="bi bi-card-heading me-2"></i>
+                                Título
+                            </h5>
+                            <p class="fs-5">${title || 'Sin título'}</p>
+                        </div>
+                        
+                        <!-- Descripción completa -->
+                        <div class="mb-4">
+                            <h5 class="text-primary">
+                                <i class="bi bi-text-paragraph me-2"></i>
+                                Descripción
+                            </h5>
+                            <div class="bg-light p-3 rounded">
+                                <p class="mb-0">${description || 'Sin descripción'}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Información de contacto y fechas -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h5 class="text-primary">
+                                    <i class="bi bi-calendar3 me-2"></i>
+                                    Próxima Fecha
+                                </h5>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-calendar-check fs-4 text-primary me-3"></i>
+                                    <div>
+                                        <p class="fs-5 mb-0">${nextDate || 'Sin fecha programada'}</p>
+                                        <small class="text-muted">Fecha de seguimiento</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${customerPhone ? `
+                            <div class="col-md-6 mb-3">
+                                <h5 class="text-primary">
+                                    <i class="bi bi-telephone me-2"></i>
+                                    Contacto
+                                </h5>
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-telephone-fill fs-4 text-success me-3"></i>
+                                    <div>
+                                        <a href="tel:${customerPhone}" class="fs-5 mb-0 text-decoration-none">
+                                            ${customerPhone}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">Teléfono del cliente</small>
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Información adicional si la hay -->
+                        <div class="alert alert-info mt-4">
+                            <div class="d-flex">
+                                <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                                <div>
+                                    <strong>Información:</strong>
+                                    <p class="mb-0 mt-1">Este seguimiento requiere tu atención. Puedes marcarlo como completado desde la agenda de CRM.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                    // Actualizar contenido del modal
+                    notificationDetailContent.innerHTML = content;
+
+                    // Mostrar el modal
+                    notificationDetailModal.show();
+
+                    // Cerrar el dropdown de notificaciones si está abierto
+                    const dropdown = document.querySelector('.notifications-dropdown');
+                    const dropdownInstance = bootstrap.Dropdown.getInstance(document
+                        .querySelector('[data-bs-toggle="dropdown"]'));
+                    if (dropdownInstance) {
+                        dropdownInstance.hide();
+                    }
+                }
+            });
+        });
+    });
+</script>

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
 use App\Models\Order;
 use App\Models\Customer;
 use App\Models\Lead;
@@ -67,6 +69,7 @@ class TrackingController extends Controller
                 'frequency' => $range->frequency_type,
                 'reps' => $range->frequency,
                 'dates' => $dates,
+                'user' => $tracking->user->name ?? '-'
             ];
         }
 
@@ -98,6 +101,7 @@ class TrackingController extends Controller
                         'frequency' => $tracking->reps,
                         'frequency_type' => $tracking->frequency
                     ]),
+                    'user_id' => Auth::id(),
                     'title' => $d->title,
                     'description' => $d->description,
                     'status' => $d->status,
@@ -118,8 +122,9 @@ class TrackingController extends Controller
                         [
                             'trackable_id' => $trackable_id,
                             'trackable_type' => $request->trackable_type == 'customer' ? Customer::class : Lead::class,
+                            'user_id' => Auth::id(),
                             'service_id' => $tracking->service_id,
-                            'customer_id' => $order->customer_id,
+                            //'customer_id' => $order->customer_id,
                             'order_id' => $order->id,
                             'next_date' => $d->date,
                         ],
@@ -130,7 +135,7 @@ class TrackingController extends Controller
             }
         }
 
-        Tracking::whereNotIn('id', $updated_trackings)->delete();
+        Tracking::whereNotIn('id', $updated_trackings)->where('order_id', $order->id)->delete();
         return back();
     }
 
@@ -167,7 +172,8 @@ class TrackingController extends Controller
                 'next_date' => $update_tracking->date,
                 'title' => $update_tracking->title,
                 'description' => $update_tracking->description,
-                'status' => $update_tracking->status
+                'status' => $update_tracking->status,
+                'user_id' => Auth::id(),
             ]);
         }
 
@@ -214,7 +220,7 @@ class TrackingController extends Controller
     {
         $startOfWeek = now()->startOfMonth();
         $endOfWeek = now()->endOfMonth();
-        
+
         $update_tracking = json_decode($request->input('tracking'));
         $tracking = Tracking::find($update_tracking->id);
 

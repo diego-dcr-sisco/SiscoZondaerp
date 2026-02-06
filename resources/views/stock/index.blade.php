@@ -21,7 +21,7 @@
     <div class="container-fluid ">
         <div class="d-flex align-items-center border-bottom ps-4 p-2">
             <span class="text-black fw-bold fs-4">
-                LISTA DE ALMACENES 
+                LISTA DE ALMACENES
             </span>
         </div>
         <div class="d-flex flex-row justify-content-between align-items-center py-3">
@@ -30,9 +30,10 @@
                     <i class="bi bi-plus-lg fw-bold"></i> Crear almacén
                 </button>
             @endcan
-                <div class="col-md-6 col-lg-4">
-                    <input type="text" id="warehouseSearch" class="form-control border-success" placeholder="Buscar almacén por nombre...">
-                </div>
+            <div class="col-md-6 col-lg-4">
+                <input type="text" id="warehouseSearch" class="form-control border-success"
+                    placeholder="Buscar almacén por nombre...">
+            </div>
         </div>
         <div class="table-responsive">
             <table class="table table-hover table-bordered table-striped table-sm align-middle">
@@ -108,14 +109,13 @@
                             </td>
                             @can('write_warehouse')
                                 <td>
-                                    <a href="{{ route('stock.show', ['id' => $warehouse->id]) }}"
-                                        class="btn btn-info btn-sm" data-bs-toggle="tooltip" title="Ver almacén">
+                                    <a href="{{ route('stock.show', ['id' => $warehouse->id]) }}" class="btn btn-info btn-sm"
+                                        data-bs-toggle="tooltip" title="Ver almacén">
                                         <i class="bi bi-eye-fill"></i>
                                     </a>
                                     @if (auth()->user()->work_department_id == 1)
                                         <a href="{{ route('stock.edit', ['id' => $warehouse->id]) }}"
-                                            class="btn btn-secondary btn-sm" data-bs-toggle="tooltip"
-                                            title="Editar almacén">
+                                            class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" title="Editar almacén">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
                                     @endif
@@ -123,13 +123,11 @@
                                             auth()->user()->work_department_id == 5 ||
                                             auth()->user()->work_department_id == 6)
                                         <a href="{{ route('stock.entry', ['id' => $warehouse->id]) }}"
-                                            class="btn btn-success btn-sm" data-bs-toggle="tooltip"
-                                            title="Entradas">
+                                            class="btn btn-success btn-sm" data-bs-toggle="tooltip" title="Entradas">
                                             <i class="bi bi-box-arrow-in-down-right"></i>
                                         </a>
                                         <a href="{{ route('stock.exits', ['id' => $warehouse->id]) }}"
-                                            class="btn btn-warning btn-sm" data-bs-toggle="tooltip"
-                                            title="Salidas">
+                                            class="btn btn-warning btn-sm" data-bs-toggle="tooltip" title="Salidas">
                                             <i class="bi bi-box-arrow-up-left"></i>
                                         </a>
                                     @endif
@@ -138,8 +136,7 @@
                                         <i class="bi bi-arrow-left-right"></i>
                                     </a>
                                     <a href="{{ route('stock.showProducts', ['id' => $warehouse->id]) }}"
-                                        class="btn btn-dark btn-sm" data-bs-toggle="tooltip"
-                                        title="Stock de productos">
+                                        class="btn btn-dark btn-sm" data-bs-toggle="tooltip" title="Stock de productos">
                                         <i class="bi bi-boxes"></i>
                                     </a>
                                     @if (auth()->user()->work_department_id == 1)
@@ -151,8 +148,8 @@
 
                                     @if (auth()->user()->work_department_id == 1)
                                         <form id="delete-form-{{ $warehouse->id }}"
-                                            action="{{ route('stock.destroy', ['id' => $warehouse->id]) }}"
-                                            method="POST" style="display: none;">
+                                            action="{{ route('stock.destroy', ['id' => $warehouse->id]) }}" method="POST"
+                                            style="display: none;">
                                             @csrf
                                             @method('DELETE')
                                         </form>
@@ -439,10 +436,11 @@
         }
     </script>
 
-    <script> // Buscar almacén por nombre
-        document.addEventListener('DOMContentLoaded', function () {
+    <script>
+        // Buscar almacén por nombre
+        document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('warehouseSearch');
-            searchInput.addEventListener('input', function () {
+            searchInput.addEventListener('input', function() {
                 const filter = this.value.toLowerCase();
                 document.querySelectorAll('.warehouse-row').forEach(function(row) {
                     const nameCell = row.querySelector('.fw-semibold.text-dark');

@@ -132,6 +132,25 @@ class Certificate
         return substr($string, 0, 100);
     }
 
+    private function normalizeHtmlForPdf($html)
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+        
+        $html = str_replace('&nbsp;', '||NBSP_PRESERVE||', $html);
+        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $html = str_replace('||NBSP_PRESERVE||', '&nbsp;', $html);
+        $html = mb_convert_encoding($html, 'UTF-8', 'UTF-8');
+        $html = preg_replace(
+            '/[\x{200B}-\x{200F}\x{FEFF}]/u',  // Removido: \x{00A0}
+            ' ',
+            $html
+        );
+
+        return trim($html);
+    }
+
     public function order()
     {
         $this->data['order'] = [
@@ -205,7 +224,8 @@ class Certificate
         foreach ($this->order->services()->get() as $service) {
             $services_data[] = [
                 'name' => $service->name,
-                'text' => $this->order->propagateByService($service->id)->text ?? '',
+                'text' => $this->normalizeHtmlForPdf($this->order->propagateByService($service->id)->text ?? ''),
+                //'text' =>  $this->order->propagateByService($service->id)->text ?? ''
             ];
         }
 
@@ -215,7 +235,7 @@ class Certificate
     public function products()
     {
         $products_data = [];
-        $devices_products = DeviceProduct::where('order_id', $this->order->id)->get();
+        /*$devices_products = DeviceProduct::where('order_id', $this->order->id)->get();
 
         $order_products = OrderProduct::where('order_id', $this->order->id)->get();
 
@@ -262,7 +282,7 @@ class Certificate
                     ]);
                 }
             }
-        }
+        }*/
 
 
         foreach ($this->order->products()->get() as $order_product) {
@@ -437,8 +457,8 @@ class Certificate
                     $devices_data[] = [
                         'zone' => $device->applicationArea->name ?? '-',
                         'code' => $device->code,
-                        'intake' => $intake_string ?: '-',
-                        'pests' => $pests_string ?: '-',
+                        'intake' => $intake_string ?: 'No aplica',
+                        'pests' => $pests_string ?: 'Sin registro',
                         'questions' => $question_data,
                         'observations' => $observation
                     ];
@@ -462,9 +482,9 @@ class Certificate
     }
     public function notes()
     {
-        $this->data['notes'] = !empty($this->order->notes) && trim($this->order->notes) != '<br>'
+        $this->data['notes'] = $this->normalizeHtmlForPdf(!empty($this->order->notes) && trim($this->order->notes) != '<br>'
             ? $this->order->notes
-            : 'Sin notas';
+            : 'Sin notas');
     }
 
     private function isValidRecommendation($data)

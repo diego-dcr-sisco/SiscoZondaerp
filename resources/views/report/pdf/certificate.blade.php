@@ -90,7 +90,7 @@
 
         .bg-blue {
             background-color: #79C4F2;
-            /* background-color: {{ $primaryColor }}; */
+            /*{{-- background-color: {{ $primaryColor }}; --}}*/
             font-weight: bold;
             padding-left: 5px;
             width: 100%;
@@ -123,8 +123,8 @@
         }
 
         .product-table thead tr {
-            /* background-color: #b0bec5; */
-            background-color: {{ $secondaryColor }};
+            background-color: #b0bec5;
+            /*{{-- background-color: {{ $secondaryColor }}; --}}*/
             text-align: left;
         }
 
@@ -248,8 +248,8 @@
             text-align: center;
             pointer-events: none;
             z-index: -1;
-            /* opacity: 0.1; */
-            opacity: {{ $watermarkOpacity }};
+            opacity: 0.1;
+            /* {{-- opacity: {{ $watermarkOpacity }}; --}} */
         }
 
         .watermark img {
@@ -303,6 +303,16 @@
             color: #666;
             font-style: italic;
             padding: 10px;
+        }
+
+        p {
+            line-height: 1.3;
+            margin: 0 0 6px 0;
+        }
+
+        b {
+            margin: 0;
+            padding: 0;
         }
     </style>
 </head>
@@ -376,9 +386,7 @@
                 <span class="square"></span>
                 <span class="square-title">{{ $service['name'] }}</span>
             </div>
-            <div class="render-html">
-                {!! $service['text'] !!}
-            </div>
+            <div class="render-html">{!! $service['text'] !!}</div>
 
             <!-- Evidencias del área "servicio" para este servicio específico -->
             @if (isset($photo_evidences['servicio']) && count($photo_evidences['servicio']) > 0)

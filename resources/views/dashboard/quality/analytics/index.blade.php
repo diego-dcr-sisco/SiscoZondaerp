@@ -135,12 +135,12 @@
                                     @include('dashboard.quality.device.consumptionTable', [
                                         'customer' => $customer,
                                         'allServices' => $consumptionData['allServices'] ?? [],
+                                        'selectedService' => $consumptionData['selectedService'] ?? null,
                                         'table' => $consumptionData['table'] ?? [],
                                         'start_date' => $consumptionData['start_date'] ?? now()->subMonth(),
                                         'end_date' => $consumptionData['end_date'] ?? now(),
                                         'reportType' => $consumptionData['reportType'] ?? 'weekly',
                                         'timeKeys' => $consumptionData['timeKeys'] ?? [],
-                                        
                                     ])
                                     <button class="btn btn-secondary mt-3" onclick="copyTableToClipboard()"
                                         data-bs-toggle="tooltip" data-bs-placement="top"

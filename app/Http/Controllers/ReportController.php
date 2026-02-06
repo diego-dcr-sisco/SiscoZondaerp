@@ -65,6 +65,8 @@ use App\Models\Customer;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rules\In;
+use Illuminate\Support\Str;
+
 
 class ReportController extends Controller
 {
@@ -97,6 +99,40 @@ class ReportController extends Controller
         }
         return [];
     }
+
+
+
+    private function normalizeString(?string $value): string
+    {
+        if (empty($value)) {
+            return '';
+        }
+
+        $value = mb_strtolower($value, 'UTF-8');
+        $value = Str::ascii($value);
+        $value = str_replace(' ', '', $value);
+
+        return $value;
+    }
+
+
+    function isValidAnswer(?string $answer, array $answers): ?string
+    {
+        if (empty($answer)) {
+            return null;
+        }
+
+        $normalizedAnswer = $this->normalizeString($answer);
+
+        foreach ($answers as $item) {
+            if ($this->normalizeString($item) === $normalizedAnswer) {
+                return $item; // Retorna el valor original encontrado
+            }
+        }
+
+        return null; // No se encontró ninguna coincidencia
+    }
+
 
     public function autoreview(Request $request, int $orderId)
     {
@@ -232,6 +268,7 @@ class ReportController extends Controller
                     'product_id' => $product_id,
                     'service_id' => $service->id ?? null,
                     'lot_id' => $firstProduct->lot_id ?? null,
+                    'metric_id' => $firstProduct?->metric_id,
                     'app_method_id' => $firstProduct->application_method_id,
                     'amount' => $totalAmount,
                 ];
@@ -240,7 +277,7 @@ class ReportController extends Controller
             $user = Auth::user();
             $technician = $order->closed_by ? Technician::where('user_id', $order->closed_by)->first() : null;
             $this->handleStock($order, $products_data, $technician, $user);
-            $this->handleStock($order, $products_data, $technician, $user);
+            //$this->handleStock($order, $products_data, $technician, $user);
 
 
             return response()->json([
@@ -262,8 +299,9 @@ class ReportController extends Controller
         $updated_products = [];
         $updated_lots = [];
         $updated_order_products = [];
-
         $updated_wos = [];
+
+        $mult_factor = 1;
 
         $warehouse = $technician ? Warehouse::where('technician_id', $technician->id)->first() : null;
         foreach ($products_data as $product_data) {
@@ -275,13 +313,25 @@ class ReportController extends Controller
                 'lot_id' => $product_data['lot_id'] ?? null,
             ], [
                 'service_id' => $product_data['service_id'],
-                'metric_id' => $product->metric_id,
+                'metric_id' => $product_data['metric_id'] ?? $product->metric_id ?? null,
                 'application_method_id' => $product_data['app_method_id'] ?? null,
                 'amount' => $product_data['amount'],
                 'dosage' => $product_data['dosage'] ?? $product->dosage ?? null,
             ]);
 
             $updated_order_products[] = $op->id;
+
+            if ($product->id == 4 && $product_data['metric_id'] == 5) {
+                $mult_factor = 1000;
+            }
+
+            if ($product->id == 2 && $product_data['metric_id'] == 3) {
+                $mult_factor = 1000;
+            }
+
+            if ($product->id == 1 && $product_data['metric_id'] == 2) {
+                $mult_factor = 1000;
+            }
 
             if ($warehouse) {
                 $wm = WarehouseMovement::updateOrCreate(
@@ -307,7 +357,7 @@ class ReportController extends Controller
 
                 ], [
                     'lot_id' => $product_data['lot_id'] ?? null,
-                    'amount' => $product_data['amount'],
+                    'amount' => $product_data['amount'] * $mult_factor,
                 ]);
 
                 $updated_products[] = $mp->product_id;
@@ -323,7 +373,7 @@ class ReportController extends Controller
                 'warehouse_id' => $warehouse->id ?? null,
                 'warehouse_movement_id' => $wm->id ?? null,
                 'lot_id' => $product_data['lot_id'] ?? null,
-                'amount' => $product_data['amount'],
+                'amount' => $product_data['amount'] * $mult_factor,
             ]);
 
             $updated_wos[] = $wo->id;
@@ -468,12 +518,18 @@ class ReportController extends Controller
             $questions = $device->controlPoint->questions()->get();
 
             foreach ($questions as $question) {
+                $options = $this->getOptions($question->question_option_id, $answers);
+                $answer = $device->incident($order->id, $question->id)->answer ?? null;
+
+                // isValidAnswer retorna el valor normalizado si es válido, o null/false si no
+                $validatedAnswer = $this->isValidAnswer($answer, $options);
+
                 $questions_data[] = [
                     'id' => $question->id,
                     'question' => $question->question,
-                    'answer' => $device->incident($order->id, $question->id)->answer ?? null,
+                    'answer' => $validatedAnswer ?: null, // Usa el valor validado si existe
                     'answer_default' => $question->answer_default,
-                    'answers' => $this->getOptions($question->question_option_id, $answers)
+                    'answers' => $options
                 ];
             }
 
@@ -551,6 +607,8 @@ class ReportController extends Controller
                 'product_catalog.id',
                 'product_catalog.name',
                 'product_catalog.updated_at',
+                'product_catalog.dosage',
+                'product_catalog.metric_id',
                 'metric.value as metric'
             ])
             ->orderBy('product_catalog.name')
@@ -662,7 +720,7 @@ class ReportController extends Controller
             $questions = $review['questions'];
             $pests = $review['pests'];
             $products = $review['products'];
-            $observations = $review['observations'] ?? null;
+            $observations = $review['states']['observations'] ?? null;
 
             // Arrays para trackear registros actualizados
             $updated_incidents = [];
@@ -742,6 +800,7 @@ class ReportController extends Controller
                     'product_id' => $product_id,
                     'service_id' => $service->id ?? null,
                     'lot_id' => $firstProduct->lot_id,
+                    'metric_id' => $firstProduct->metric_id ?? null,
                     'app_method_id' => $firstProduct->application_method_id,
                     'amount' => $totalAmount,
                 ];
@@ -931,13 +990,13 @@ class ReportController extends Controller
                     }
                 } else {
                     */
-                    OrderRecommendation::updateOrCreate([
-                        'order_id' => $order->id,
-                        'service_id' => $service->id
-                    ], [
-                        'recommendation_id' => null,
-                        'recommendation_text' =>  $recs_data ?? null,
-                    ]);
+                OrderRecommendation::updateOrCreate([
+                    'order_id' => $order->id,
+                    'service_id' => $service->id
+                ], [
+                    'recommendation_id' => null,
+                    'recommendation_text' => $recs_data ?? null,
+                ]);
                 //}
             }
         }
@@ -1028,6 +1087,8 @@ class ReportController extends Controller
         $order = Order::find($orderId);
         $op_id = $data['op_id'];
 
+        // dd($data);
+
         if (!$op_id) {
             $order_product = OrderProduct::create([
                 'order_id' => $order->id,
@@ -1065,6 +1126,7 @@ class ReportController extends Controller
                 'product_id' => $product_id,
                 'service_id' => $service->id ?? null,
                 'lot_id' => $firstProduct->lot_id,
+                'metric_id' => $firstProduct?->metric_id,
                 'app_method_id' => $firstProduct->application_method_id,
                 'amount' => $totalAmount,
                 'dosage' => $firstProduct->dosage,
@@ -1082,6 +1144,7 @@ class ReportController extends Controller
                 'product_id' => $product_id,
                 'service_id' => $service->id ?? null,
                 'lot_id' => $firstProduct?->lot_id,
+                'metric_id' => $firstProduct?->metric_id,
                 'app_method_id' => $firstProduct->application_method_id,
                 'amount' => $totalAmount,
                 'dosage' => $firstProduct->dosage,
@@ -1289,19 +1352,45 @@ class ReportController extends Controller
             }
 
             $zip_name = 'certificados.zip';
-            $zip_path = Storage::path($this->temp_bulk . $timer . '/' . $zip_name);
-            $folder_path = Storage::path($this->temp_bulk . $timer);
+            $folder_relative = $this->temp_bulk . $timer . '/';
+            $zip_path = Storage::path($folder_relative . $zip_name);
+            $folder_path = Storage::path($folder_relative);
+
+            // Asegurar que el directorio existe
+            if (!File::isDirectory($folder_path)) {
+                File::makeDirectory($folder_path, 0755, true, true);
+            }
 
             $zip = new ZipArchive;
-            if ($zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+            $zip_status = $zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+
+            if ($zip_status === TRUE) {
                 $files = File::allFiles($folder_path);
+
+                // Solo añadir archivos PDF, excluir el ZIP si ya existe
                 foreach ($files as $file) {
-                    $relativePath = substr($file->getPathname(), strlen($folder_path) + 1);
-                    $zip->addFile($file->getPathname(), $relativePath);
+                    if ($file->getExtension() === 'pdf') {
+                        $relativePath = $file->getFilename();
+                        $zip->addFile($file->getPathname(), $relativePath);
+                    }
                 }
+
                 $zip->close();
+
+                // Verificar que el ZIP se creó
+                if (!file_exists($zip_path)) {
+                    Log::error("ZIP no se creó en: " . $zip_path);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se pudo crear el archivo ZIP'
+                    ], 500);
+                }
             } else {
-                return back()->with('error', 'No se pudo crear el archivo ZIP');
+                Log::error("Error al abrir ZIP: " . $zip_status . " - Ruta: " . $zip_path);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se pudo crear el archivo ZIP (código: ' . $zip_status . ')'
+                ], 500);
             }
 
             return response()->json([
