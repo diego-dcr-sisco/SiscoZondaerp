@@ -2,7 +2,8 @@
 @section('content')
     <div class="container-fluid p-0">
         <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('floorplan.devices', ['id' => $device->floorplan_id, 'version' => $device->version]) }}" class="text-decoration-none pe-3">
+            <a href="{{ route('floorplan.devices', ['id' => $device->floorplan_id, 'version' => $device->version]) }}"
+                class="text-decoration-none pe-3">
                 <i class="bi bi-arrow-left fs-4"></i>
             </a>
             <span class="text-black fw-bold fs-4">Estadísticas del dispositivo</span>
@@ -11,7 +12,7 @@
             <div class="col-12">
                 <div class="border rounded shadow p-3">
                     <h5 class="fw-bold">Últimas 10 revisiones</h5>
-                    @if(isset($reviews) && $reviews->count())
+                    @if (isset($reviews) && $reviews->count())
                         <div class="table-responsive">
                             <table class="table table-sm table-striped">
                                 <thead>
@@ -23,14 +24,15 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($reviews as $rev)
+                                    @foreach ($reviews as $rev)
                                         <tr>
                                             <td>{{ \Carbon\Carbon::parse($rev->updated_at)->format('d/m/Y H:i') }}</td>
                                             <td>{{ $rev->question?->text ?? 'Pregunta' }}</td>
                                             <td>{{ $rev->answer }}</td>
                                             <td>
-                                                @if($rev->order)
-                                                    <a href="{{ route('order.show', ['id' => $rev->order->id, 'section' => 1]) }}">#{{ $rev->order->folio }}</a>
+                                                @if ($rev->order)
+                                                    <a
+                                                        href="{{ route('order.show', ['id' => $rev->order->id, 'section' => 1]) }}">#{{ $rev->order->folio }}</a>
                                                 @else
                                                     -
                                                 @endif
@@ -55,11 +57,13 @@
                     <div class="row g-3 mb-3">
                         <div class="col-3">
                             <label class="form-label">Plano</label>
-                            <input type="text" class="form-control form-control-sm" value="{{ $floorplan->filename }}" disabled>
+                            <input type="text" class="form-control form-control-sm" value="{{ $floorplan->filename }}"
+                                disabled>
                         </div>
                         <div class="col-6">
                             <label class="form-label">Rango de Fechas</label>
-                            <input type="text" id="device-date-range" class="form-control form-control-sm" placeholder="Seleccionar rango">
+                            <input type="text" id="device-date-range" class="form-control form-control-sm"
+                                placeholder="Seleccionar rango">
                         </div>
                         <div class="col-3 d-flex align-items-end">
                             <button id="search-device-pests" class="btn btn-primary btn-sm">Buscar</button>
@@ -67,7 +71,8 @@
                     </div>
 
                     <div class="position-relative w-100">
-                        <div id="pests-loader" class="spinner-border spinner-border-sm position-absolute" style="display:none; top: 10px; right: 10px;" role="status">
+                        <div id="pests-loader" class="spinner-border spinner-border-sm position-absolute"
+                            style="display:none; top: 10px; right: 10px;" role="status">
                             <span class="visually-hidden">Cargando...</span>
                         </div>
                         <canvas id="devicePestsChart"></canvas>
@@ -83,8 +88,9 @@
                         <div class="col-3">
                             <label class="form-label">Año</label>
                             <select id="trend-year" class="form-select form-select-sm">
-                                @foreach($years as $y)
-                                    <option value="{{ $y }}" @if($y == \Carbon\Carbon::now()->year) selected @endif>{{ $y }}</option>
+                                @foreach ($years as $y)
+                                    <option value="{{ $y }}" @if ($y == \Carbon\Carbon::now()->year) selected @endif>
+                                        {{ $y }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -94,7 +100,8 @@
                     </div>
 
                     <div class="position-relative w-100">
-                        <div id="trend-loader" class="spinner-border spinner-border-sm position-absolute" style="display:none; top: 10px; right: 10px;" role="status">
+                        <div id="trend-loader" class="spinner-border spinner-border-sm position-absolute"
+                            style="display:none; top: 10px; right: 10px;" role="status">
                             <span class="visually-hidden">Cargando...</span>
                         </div>
                         <canvas id="deviceTrendChart"></canvas>
@@ -109,33 +116,103 @@
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        $(function() {
+
+            console.log('========================================');
+            console.log('SCRIPT DE GRAFICAS CARGADO CORRECTAMENTE');
+            console.log('Fecha de carga:', new Date().toLocaleString());
+            console.log('========================================');
+        });
+
         const deviceId = {{ $device->id }};
         const floorplanId = {{ $floorplan->id }};
         let pestsChart = null;
         let trendChart = null;
 
+        console.log('Configuración inicial:');
+        console.log('- Device ID:', deviceId);
+        console.log('- Floorplan ID:', floorplanId);
+
         function updatePestsChart(labels, data) {
+            console.log('=== updatePestsChart ===');
+            console.log('Labels recibidos:', labels);
+            console.log('Data recibidos:', data);
+
             const ctx = document.getElementById('devicePestsChart').getContext('2d');
             if (pestsChart) pestsChart.destroy();
             pestsChart = new Chart(ctx, {
                 type: 'bar',
-                data: { labels: labels, datasets: [{ label: 'Incidentes por plaga', data: data, backgroundColor: 'rgba(222,82,59,0.5)', borderColor: 'rgba(222,82,59)', borderWidth: 1 }] },
-                options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Incidentes por plaga',
+                        data: data,
+                        backgroundColor: 'rgba(222,82,59,0.5)',
+                        borderColor: 'rgba(222,82,59)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
             });
+            console.log('Gráfica de plagas actualizada');
         }
 
         function updateTrendChart(labels, data) {
+            console.log('=== updateTrendChart ===');
+            console.log('Labels recibidos:', labels);
+            console.log('Data recibidos:', data);
+
             const ctx = document.getElementById('deviceTrendChart').getContext('2d');
             if (trendChart) trendChart.destroy();
             trendChart = new Chart(ctx, {
                 type: 'line',
-                data: { labels: labels, datasets: [{ label: 'Incidentes por mes', data: data, borderColor: 'rgba(75,192,75)', backgroundColor: 'rgba(75,192,75,0.1)', fill: true, tension: 0.4 }] },
-                options: { responsive: true, maintainAspectRatio: true, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Incidentes por mes',
+                        data: data,
+                        borderColor: 'rgba(75,192,75)',
+                        backgroundColor: 'rgba(75,192,75,0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
             });
+            console.log('Gráfica de tendencia actualizada');
         }
 
         // Inicializar con los datos pasados desde el controlador
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== Inicializando gráficas del dispositivo ===');
+            console.log('Device ID:', deviceId);
+            console.log('Floorplan ID:', floorplanId);
+            console.log('Datos iniciales desde PHP:');
+            console.log('graph_per_pests:', {!! json_encode($graph_per_pests) !!});
+            console.log('graph_per_months:', {!! json_encode($graph_per_months) !!});
+
             updatePestsChart({!! json_encode($graph_per_pests['labels']) !!}, {!! json_encode($graph_per_pests['data']) !!});
             updateTrendChart({!! json_encode($graph_per_months['labels']) !!}, {!! json_encode($graph_per_months['data']) !!});
 
@@ -152,7 +229,9 @@
                     customRangeLabel: 'Personalizado',
                     weekLabel: 'S',
                     daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
-                    monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+                    monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto',
+                        'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ],
                     firstDay: 1
                 },
                 ranges: {
@@ -171,7 +250,8 @@
 
             // Actualizar el input cuando se selecciona un rango
             $('#device-date-range').on('apply.daterangepicker', function(ev, picker) {
-                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
+                    'DD/MM/YYYY'));
             });
 
             $('#device-date-range').on('cancel.daterangepicker', function(ev, picker) {
@@ -179,74 +259,123 @@
             });
 
             // Establecer valor inicial
-            $('#device-date-range').val(moment().startOf('month').format('DD/MM/YYYY') + ' - ' + moment().endOf('month').format('DD/MM/YYYY'));
+            $('#device-date-range').val(moment().startOf('month').format('DD/MM/YYYY') + ' - ' + moment().endOf(
+                'month').format('DD/MM/YYYY'));
         });
 
         async function fetchDeviceDataByRange(startDate, endDate) {
+            console.log('=== fetchDeviceDataByRange ===');
+            console.log('Rango solicitado:', startDate, 'a', endDate);
+
             try {
-                const url = `/floorplans/devices/${floorplanId}/device/${deviceId}/stats?start_date=${startDate}&end_date=${endDate}`;
-                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
-                return await res.json();
+                const url =
+                    `/floorplans/devices/${floorplanId}/device/${deviceId}/stats?start_date=${startDate}&end_date=${endDate}`;
+                console.log('URL de petición:', url);
+
+                const res = await fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+                console.log('Status de respuesta:', res.status, res.statusText);
+
+                const jsonData = await res.json();
+                console.log('Respuesta JSON completa:', jsonData);
+
+                return jsonData;
             } catch (e) {
-                console.error(e);
+                console.error('Error en fetchDeviceDataByRange:', e);
                 return null;
             }
         }
 
         async function fetchDeviceDataByYear(year) {
+            console.log('=== fetchDeviceDataByYear ===');
+            console.log('Año solicitado:', year);
+
             try {
                 const url = `/floorplans/devices/${floorplanId}/device/${deviceId}/stats?year=${year}&trend=1`;
-                const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
-                return await res.json();
+                console.log('URL de petición:', url);
+
+                const res = await fetch(url, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+                console.log('Status de respuesta:', res.status, res.statusText);
+
+                const jsonData = await res.json();
+                console.log('Respuesta JSON completa:', jsonData);
+
+                return jsonData;
             } catch (e) {
-                console.error(e);
+                console.error('Error en fetchDeviceDataByYear:', e);
                 return null;
             }
         }
 
         document.getElementById('search-device-pests').addEventListener('click', async function() {
+            console.log('\n=== BUSQUEDA POR RANGO DE FECHAS (PLAGAS) ===');
+
             const dateRange = $('#device-date-range').data('daterangepicker');
             if (!dateRange || !dateRange.startDate || !dateRange.endDate) {
+                console.warn('Rango de fechas no seleccionado');
                 alert('Por favor seleccione un rango de fechas');
                 return;
             }
             const startDate = dateRange.startDate.format('YYYY-MM-DD');
             const endDate = dateRange.endDate.format('YYYY-MM-DD');
-            
+
             console.log('Buscando datos desde:', startDate, 'hasta:', endDate);
             document.getElementById('pests-loader').style.display = 'block';
-            
+
             const data = await fetchDeviceDataByRange(startDate, endDate);
-            console.log('Datos recibidos:', data);
-            
+            console.log('\nDatos recibidos del servidor:', data);
+
             if (data && data.success) {
-                console.log('Actualizando gráfica con:', data.pests);
+                console.log('\n✅ Respuesta exitosa');
+                console.log('Estructura data.pests:', data.pests);
+                console.log('Labels para la gráfica:', data.pests.labels);
+                console.log('Data para la gráfica:', data.pests.data);
+                console.log('Total de plagas encontradas:', data.pests.labels.length);
+
                 updatePestsChart(data.pests.labels, data.pests.data);
             } else {
-                console.error('Error en la respuesta:', data);
+                console.error('❌ Error en la respuesta:', data);
                 alert('Error al obtener los datos');
             }
-            
+
             document.getElementById('pests-loader').style.display = 'none';
+            console.log('=== FIN BUSQUEDA ===\n');
         });
 
         document.getElementById('search-device-trend').addEventListener('click', async function() {
+            console.log('\n=== BUSQUEDA POR AÑO (TENDENCIA) ===');
+
             const year = document.getElementById('trend-year').value;
             console.log('Buscando tendencia para el año:', year);
             document.getElementById('trend-loader').style.display = 'block';
-            
+
             const data = await fetchDeviceDataByYear(year);
-            console.log('Datos de tendencia recibidos:', data);
-            
+            console.log('\nDatos de tendencia recibidos del servidor:', data);
+
             if (data && data.success) {
-                console.log('Actualizando gráfica de tendencia con:', data.trend);
+                console.log('\n✅ Respuesta exitosa');
+                console.log('Estructura data.trend:', data.trend);
+                console.log('Labels para la gráfica (meses):', data.trend.labels);
+                console.log('Data para la gráfica (incidentes):', data.trend.data);
+                console.log('Meses con datos:', data.trend.labels.length);
+
                 updateTrendChart(data.trend.labels, data.trend.data);
             } else {
-                console.error('Error en la respuesta:', data);
+                console.error('❌ Error en la respuesta:', data);
                 alert('Error al obtener los datos de tendencia');
             }
-            
+
             document.getElementById('trend-loader').style.display = 'none';
+            console.log('=== FIN BUSQUEDA ===\n');
         });
     </script>
 @endsection

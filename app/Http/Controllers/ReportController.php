@@ -1540,8 +1540,19 @@ class ReportController extends Controller
 
             // Solo actualizar la firma si fue modificada
             if ($signatureUpdated) {
-                $updated_order['customer_signature'] = $data['signature_base64'] ?? null;
-                Log::info('Signature updated for order', ['order_id' => $order->id, 'signature_size' => strlen($data['signature_base64'] ?? '')]);
+                // Convertir cadena vacía a null explícitamente
+                $signatureValue = $data['signature_base64'] ?? null;
+                if (empty($signatureValue) || $signatureValue === '' || $signatureValue === 'null') {
+                    $signatureValue = null;
+                }
+                
+                $updated_order['customer_signature'] = $signatureValue;
+                
+                Log::info('Signature updated for order', [
+                    'order_id' => $order->id, 
+                    'signature_size' => $signatureValue ? strlen($signatureValue) : 0,
+                    'is_null' => $signatureValue === null ? 'yes' : 'no'
+                ]);
             }
 
             // Manejar closed_by de manera segura

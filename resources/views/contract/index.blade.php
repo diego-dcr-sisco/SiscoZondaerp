@@ -131,23 +131,24 @@
                                 </span>
                             </td>
                             <td>
-                                <a class="btn btn-info btn-sm"
-                                    href="{{ route('contract.show', ['id' => $contract->id, 'section' => 1]) }}"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Ordenes de servicio">
-                                    <i class="bi bi-eye-fill"></i>
-                                </a>
                                 @can('write_order')
                                     <a href="{{ route('contract.edit', ['id' => $contract->id]) }}" data-bs-toggle="tooltip"
                                         data-bs-placement="top" title="Editar contrato" class="btn btn-secondary btn-sm">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
 
+                                    <a class="btn btn-primary btn-sm"
+                                    href="{{ route('contract.show', ['id' => $contract->id, 'section' => 1]) }}"
+                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Ordenes de servicio">
+                                    <i class="bi bi-nut-fill"></i>
+                                </a>
+
                                     <a class="btn btn-success btn-sm"
                                         href="{{ route('contract.renew', ['id' => $contract->id]) }}" data-bs-toggle="tooltip"
                                         data-bs-placement="top" title="Renovar contrato">
                                         <i class="bi bi-arrow-clockwise"></i>
                                     </a>
-                                    <a class="btn btn-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                    <a class="btn btn-warning btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                                         title="Plan de rotación"
                                         href="{{ $contract->hasRotationPlan() ? route('rotation.edit', ['id' => $contract->rotationPlan()->id]) : route('rotation.create', ['contractId' => $contract->id]) }}">
                                         <i class="bi bi-arrow-repeat"></i>
