@@ -1548,11 +1548,11 @@ class ReportController extends Controller
                 
                 $updated_order['customer_signature'] = $signatureValue;
                 
-                Log::info('Signature updated for order', [
+                /*Log::info('Signature updated for order', [
                     'order_id' => $order->id, 
                     'signature_size' => $signatureValue ? strlen($signatureValue) : 0,
                     'is_null' => $signatureValue === null ? 'yes' : 'no'
-                ]);
+                ]);*/
             }
 
             // Manejar closed_by de manera segura
