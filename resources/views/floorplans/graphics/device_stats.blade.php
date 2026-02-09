@@ -184,7 +184,7 @@
 
         async function fetchDeviceDataByRange(startDate, endDate) {
             try {
-                const url = `{{ url('floorplans/devices') }}/${floorplanId}/device/${deviceId}/stats?start_date=${startDate}&end_date=${endDate}`;
+                const url = `/floorplans/devices/${floorplanId}/device/${deviceId}/stats?start_date=${startDate}&end_date=${endDate}`;
                 const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
                 return await res.json();
             } catch (e) {
@@ -195,7 +195,7 @@
 
         async function fetchDeviceDataByYear(year) {
             try {
-                const url = `{{ url('floorplans/devices') }}/${floorplanId}/device/${deviceId}/stats?year=${year}&trend=1`;
+                const url = `/floorplans/devices/${floorplanId}/device/${deviceId}/stats?year=${year}&trend=1`;
                 const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
                 return await res.json();
             } catch (e) {
@@ -219,20 +219,11 @@
             const data = await fetchDeviceDataByRange(startDate, endDate);
             console.log('Datos recibidos:', data);
             
-            if (data) {
-                if (data.success && data.pests) {
-                    console.log('Actualizando gráfica con:', data.pests);
-                    updatePestsChart(data.pests.labels, data.pests.data);
-                } else if (data.graph_per_pests) {
-                    // Formato alternativo del backend
-                    console.log('Actualizando gráfica con formato alternativo:', data.graph_per_pests);
-                    updatePestsChart(data.graph_per_pests.labels, data.graph_per_pests.data);
-                } else {
-                    console.error('Formato de respuesta no reconocido:', data);
-                    alert('Error: formato de respuesta inesperado');
-                }
+            if (data && data.success) {
+                console.log('Actualizando gráfica con:', data.pests);
+                updatePestsChart(data.pests.labels, data.pests.data);
             } else {
-                console.error('No se recibieron datos');
+                console.error('Error en la respuesta:', data);
                 alert('Error al obtener los datos');
             }
             
@@ -241,9 +232,20 @@
 
         document.getElementById('search-device-trend').addEventListener('click', async function() {
             const year = document.getElementById('trend-year').value;
+            console.log('Buscando tendencia para el año:', year);
             document.getElementById('trend-loader').style.display = 'block';
+            
             const data = await fetchDeviceDataByYear(year);
-            if (data && data.success) updateTrendChart(data.trend.labels, data.trend.data);
+            console.log('Datos de tendencia recibidos:', data);
+            
+            if (data && data.success) {
+                console.log('Actualizando gráfica de tendencia con:', data.trend);
+                updateTrendChart(data.trend.labels, data.trend.data);
+            } else {
+                console.error('Error en la respuesta:', data);
+                alert('Error al obtener los datos de tendencia');
+            }
+            
             document.getElementById('trend-loader').style.display = 'none';
         });
     </script>
