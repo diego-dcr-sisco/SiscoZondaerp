@@ -391,14 +391,18 @@
             const img = new Image();
             img.src = imgURL;
 
-            //const img_scale = ~~(window.innerWidth / img_sizes[0]);
-            const img_scale = Math.round(1080 / img_sizes[0]);
+            const canvasContainer = document.getElementById('canvas-container');
+            const containerWidth = canvasContainer ? canvasContainer.clientWidth : 1080;
+            const img_scale = Math.min(1, containerWidth / img_sizes[0]);
+
+            const baseCanvasWidth = img_sizes[0] * img_scale;
+            const baseCanvasHeight = img_sizes[1] * img_scale;
 
             var canvas = new fabric.Canvas('myCanvas', {
                 //width: img_sizes[0] > img_sizes[1] ? 1100 : 800,
                 //height: img_sizes[0] > img_sizes[1] ? 800 : 1100,
-                width: img_sizes[0] * img_scale,
-                height: img_sizes[1] * img_scale,
+                width: baseCanvasWidth,
+                height: baseCanvasHeight,
                 selection: false,
             });
 
@@ -409,6 +413,12 @@
                 if (can_resize) {
                     resizePointsToNewCanvas();
                 }
+
+                resizeCanvasToContainer();
+            });
+
+            window.addEventListener('resize', function() {
+                resizeCanvasToContainer();
             });
 
             function resetInputs() {
@@ -444,8 +454,8 @@
 
             function findColor(id) {
                 var foundObject = []
-                if (points.some(obj => obj.pointID == id)) {
-                    foundObject = points.find(obj => obj.pointID == id);
+                if (points.some(obj => obj.point_id == id)) {
+                    foundObject = points.find(obj => obj.point_id == id);
                 } else {
                     foundObject = data.find(obj => obj.id == id);
                 }
@@ -457,25 +467,25 @@
             }
 
             function findAreaName(id) {
-                return points.find(obj => obj.pointID == id)?.areaID ?
-                    areaNames.find(obj => obj.id == points.find(obj => obj.pointID == id).areaID)?.name ?? null :
+                return points.find(obj => obj.point_id == id)?.area_id ?
+                    areaNames.find(obj => obj.id == points.find(obj => obj.point_id == id).area_id)?.name ?? null :
                     null;
             }
 
             function findZone(id) {
-                return points.find(item => item.pointID == id)?.areaID ?
-                    areaNames.find(item => item.id == points.find(item => item.pointID == id)?.areaID)?.name ?? '' :
+                return points.find(item => item.point_id == id)?.area_id ?
+                    areaNames.find(item => item.id == points.find(item => item.point_id == id)?.area_id)?.name ?? '' :
                     '';
             }
 
             function findProduct(point_id, area_id) {
-                const foundPoint = points.find(item => item.pointID == point_id && item.areaID == area_id);
-                return foundPoint.productID ?? false;
+                const foundPoint = points.find(item => item.point_id == point_id && item.area_id == area_id);
+                return foundPoint?.product_id ?? false;
             }
 
             function findArea(id) {
-                const foundPoint = points.find(item => item.pointID == id);
-                return foundPoint.areaID ?? false;
+                const foundPoint = points.find(item => item.point_id == id);
+                return foundPoint?.area_id ?? false;
             }
 
             function findCode(id) {
@@ -524,6 +534,10 @@
             function addPoint(x, y, pointId, areaId, productId, color, code) {
                 x = parseFloat(x);
                 y = parseFloat(y);
+                const canvasWidth = canvas.getWidth();
+                const canvasHeight = canvas.getHeight();
+                const normalizedX = x / canvasWidth;
+                const normalizedY = y / canvasHeight;
                 const point = new fabric.Circle({
                     left: x, // Posición absoluta inicial (ajustaremos el grupo luego)
                     top: y,
@@ -581,8 +595,10 @@
                     code: code,
                     x: x,
                     y: y,
-                    img_tamx: 0,
-                    img_tamy: 0,
+                    x_norm: normalizedX,
+                    y_norm: normalizedY,
+                    img_tamx: canvasWidth,
+                    img_tamy: canvasHeight,
                     count: count,
                     size: currentPointSize
                 };
@@ -607,6 +623,10 @@
                     if (i != -1) {
                         points[i].x = pointGroup.left;
                         points[i].y = pointGroup.top;
+                        points[i].x_norm = pointGroup.left / canvas.getWidth();
+                        points[i].y_norm = pointGroup.top / canvas.getHeight();
+                        points[i].img_tamx = canvas.getWidth();
+                        points[i].img_tamy = canvas.getHeight();
                     }
                 });
 
@@ -720,6 +740,53 @@
                     scaleY: canvas.height / img.height
                 });
             });
+
+            function resizeCanvasToContainer() {
+                if (!canvasContainer) {
+                    return;
+                }
+
+                const newWidth = canvasContainer.clientWidth || canvas.getWidth();
+                const newHeight = (img_sizes[1] / img_sizes[0]) * newWidth;
+                const currentWidth = canvas.getWidth();
+                const currentHeight = canvas.getHeight();
+
+                if (newWidth === currentWidth && newHeight === currentHeight) {
+                    return;
+                }
+
+                canvas.setWidth(newWidth);
+                canvas.setHeight(newHeight);
+
+                points.forEach(point => {
+                    if (point.x_norm == null || point.y_norm == null) {
+                        point.x_norm = point.x / currentWidth;
+                        point.y_norm = point.y / currentHeight;
+                    }
+
+                    point.x = point.x_norm * newWidth;
+                    point.y = point.y_norm * newHeight;
+                    point.img_tamx = newWidth;
+                    point.img_tamy = newHeight;
+
+                    canvas.getObjects().forEach(obj => {
+                        if (obj.type === 'group' && obj.metadata && obj.metadata.index === point.index) {
+                            obj.set({
+                                left: point.x,
+                                top: point.y
+                            });
+                            obj.setCoords();
+                        }
+                    });
+                });
+
+                if (canvas.backgroundImage) {
+                    canvas.backgroundImage.scaleX = canvas.width / canvas.backgroundImage.width;
+                    canvas.backgroundImage.scaleY = canvas.height / canvas.backgroundImage.height;
+                }
+
+                canvas.renderAll();
+            }
 
             canvas.on('mouse:dblclick', function(event) {
                 const pointer = canvas.getPointer(event.e);
@@ -864,7 +931,7 @@
                                 indexs.includes(metadata.index)
                             ) {
                                 circle.set('fill', color);
-                                text.set('fill', color);
+                                text.set('fill', getContrastColor(color || '#fff'));
                             }
                         }
                     });
@@ -1009,7 +1076,7 @@
                             color: color_replicate.length ? color_replicate[0] : point.color // Evitar undefined
                         };
 
-                        indexs.push(i);
+                        indexs.push(points[i].index);
                     }
                 });
 
@@ -1020,7 +1087,10 @@
                         const metadata = obj.metadata;
 
                         if (metadata && indexs.includes(metadata.index)) {
-                            circle.set('fill', points[metadata.index].color);
+                            const updatedPoint = points.find(p => p.index === metadata.index);
+                            if (updatedPoint) {
+                                circle.set('fill', updatedPoint.color);
+                            }
                         }
                     }
                 });
@@ -1051,9 +1121,20 @@
                         count = device.nplan;
                         index = device.itemnumber;
                         currentPointSize = device.size ?? 10;
+
+                        const [fallbackWidth, fallbackHeight] = getOriginalCanvasDimensions();
+                        const sourceWidth = device.img_tamx && device.img_tamy ? device.img_tamx : fallbackWidth;
+                        const sourceHeight = device.img_tamx && device.img_tamy ? device.img_tamy : fallbackHeight;
+
+                        const normalizedX = device.x_norm ?? (sourceWidth ? device.map_x / sourceWidth : null);
+                        const normalizedY = device.y_norm ?? (sourceHeight ? device.map_y / sourceHeight : null);
+
+                        const scaledX = normalizedX !== null ? normalizedX * canvas.getWidth() : device.map_x;
+                        const scaledY = normalizedY !== null ? normalizedY * canvas.getHeight() : device.map_y;
+
                         addPoint(
-                            device.map_x,
-                            device.map_y,
+                            scaledX,
+                            scaledY,
                             device.type_control_point_id,
                             device.application_area_id,
                             device.product_id,
@@ -1159,11 +1240,11 @@
 
             // FUNCIÓN PARA OBTENER DIMENSIONES ORIGINALES DEL CANVAS
             function getOriginalCanvasDimensions() {
-                const isWide = img_sizes[0] > img_sizes[1];
-                const width = isWide ? 1100 : 800;
-                const height = isWide ? 800 : 1100;
+                if (Array.isArray(img_sizes) && img_sizes.length >= 2) {
+                    return [img_sizes[0], img_sizes[1]];
+                }
 
-                return [width, height];
+                return [baseCanvasWidth, baseCanvasHeight];
             }
 
             // FUNCIÓN PARA REAJUSTAR PUNTOS A NUEVAS DIMENSIONES
@@ -1179,22 +1260,26 @@
                     return;
                 }
 
-                // Calcular factores de escala
-                const scaleX = currentWidth / originalWidth;
-                const scaleY = currentHeight / originalHeight;
-
                 console.log(`Reajustando puntos de ${originalWidth}x${originalHeight} a ${currentWidth}x${currentHeight}`);
-                console.log(`Factores de escala: X=${scaleX.toFixed(4)}, Y=${scaleY.toFixed(4)}`);
 
                 // Actualizar todos los puntos en el array y en el canvas
                 points.forEach(point => {
-                    // Escalar las coordenadas
-                    const newX = point.x * scaleX;
-                    const newY = point.y * scaleY;
+                    if (point.x_norm == null || point.y_norm == null) {
+                        const baseWidth = point.img_tamx && point.img_tamy ? point.img_tamx : originalWidth;
+                        const baseHeight = point.img_tamx && point.img_tamy ? point.img_tamy : originalHeight;
+
+                        point.x_norm = point.x / baseWidth;
+                        point.y_norm = point.y / baseHeight;
+                    }
+
+                    const newX = point.x_norm * currentWidth;
+                    const newY = point.y_norm * currentHeight;
 
                     // Actualizar el punto en el array
                     point.x = newX;
                     point.y = newY;
+                    point.img_tamx = currentWidth;
+                    point.img_tamy = currentHeight;
 
                     // Buscar y actualizar el objeto visual en el canvas
                     canvas.getObjects().forEach(obj => {
@@ -1418,3 +1503,4 @@
         </script>
     @endif
 @endsection
+ 

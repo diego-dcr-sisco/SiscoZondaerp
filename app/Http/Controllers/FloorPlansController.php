@@ -708,6 +708,10 @@ class FloorPlansController extends Controller
         foreach ($pointsData as $point) {
             $found_point = ControlPoint::find($point->point_id);
             $code = $point->code ?? ($found_point->code . '-' . $found_point->nplan);
+            $baseWidth = $point->img_tamx ?? null;
+            $baseHeight = $point->img_tamy ?? null;
+            $xNorm = isset($point->x_norm) ? (float) $point->x_norm : ($baseWidth ? (float) $point->x / $baseWidth : null);
+            $yNorm = isset($point->y_norm) ? (float) $point->y_norm : ($baseHeight ? (float) $point->y / $baseHeight : null);
             $device = Device::updateOrCreate(
                 [
                     'floorplan_id' => $floorplan->id,
@@ -721,6 +725,8 @@ class FloorPlansController extends Controller
                     'itemnumber' => $point->index,
                     'map_x' => $point->x,
                     'map_y' => $point->y,
+                    'x_norm' => $xNorm,
+                    'y_norm' => $yNorm,
                     'color' => $point->color,
                     'code' => $code,
                     'img_tamx' => $point->img_tamx,

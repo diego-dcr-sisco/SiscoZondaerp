@@ -26,6 +26,8 @@ class Device extends Model
         'longitude',
         'map_x',
         'map_y',
+        'x_norm',
+        'y_norm',
         'img_tamx',
         'img_tamy',
         'color',
