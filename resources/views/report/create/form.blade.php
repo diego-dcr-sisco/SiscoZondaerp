@@ -217,6 +217,8 @@
                             <img id="signature-preview" class="border" style="width: 125px;" src="{{ $signature }}"
                                 alt="img_firma">
                             <input type="hidden" id="signature-base64" value="{{ $signature }}">
+                            <input type="hidden" id="signature-changed" value="0">
+                            <input type="hidden" id="signature-original" value="{{ $signature }}">
                         </div>
                     </div>
                     <button type="button" class="btn btn-primary btn-sm mt-2" onclick="updateOrder()">

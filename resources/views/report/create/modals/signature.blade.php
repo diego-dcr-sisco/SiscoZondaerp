@@ -100,6 +100,7 @@
                 $('#signature-base64').val(base64Image);
                 $('#signature-preview').attr('src', base64Image);
                 $('#signature-preview').show();
+                $('#signature-changed').val('1'); // Marcar que la firma ha cambiado
                 $('#signatureModal').modal('hide');
                 alert('Firma actualizada correctamente. Recuerda hacer clic en "Guardar" para almacenar los cambios.');
             };

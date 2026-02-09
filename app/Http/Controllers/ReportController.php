@@ -1517,8 +1517,10 @@ class ReportController extends Controller
                 ], 422);
             }
 
-            // Validar firma solo si no es null y no está vacía
-            if (!empty($data['signature_base64']) && !preg_match('/^data:image\/(jpeg|png);base64,/', $data['signature_base64'])) {
+            // Validar firma solo si fue actualizada y no está vacía
+            $signatureUpdated = isset($data['signature_updated']) && $data['signature_updated'] == 1;
+            
+            if ($signatureUpdated && !empty($data['signature_base64']) && !preg_match('/^data:image\/(jpeg|png);base64,/', $data['signature_base64'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Formato de firma no válido'
@@ -1534,8 +1536,13 @@ class ReportController extends Controller
                 'end_time' => !empty($data['end_time']) ? $data['end_time'] : null,
                 'status_id' => $data['status'] ?? $order->status_id,
                 'signature_name' => !empty($data['signed_by']) ? $data['signed_by'] : null,
-                'customer_signature' => $data['signature_base64'] ?? null,
             ];
+
+            // Solo actualizar la firma si fue modificada
+            if ($signatureUpdated) {
+                $updated_order['customer_signature'] = $data['signature_base64'] ?? null;
+                Log::info('Signature updated for order', ['order_id' => $order->id, 'signature_size' => strlen($data['signature_base64'] ?? '')]);
+            }
 
             // Manejar closed_by de manera segura
             if (isset($data['status']) && $data['status'] == 1) {
