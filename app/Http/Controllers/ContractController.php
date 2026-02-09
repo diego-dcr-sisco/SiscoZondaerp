@@ -27,6 +27,7 @@ use App\Models\Service;
 use App\Models\ServicePrefix;
 
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ContractController extends Controller
 {
@@ -1081,5 +1082,110 @@ class ContractController extends Controller
                 'view'
             )
         );
+    }
+
+    /**
+     * Genera un calendario anual en PDF mostrando los servicios por mes
+     */
+    public function annualCalendarPDF(string $id)
+    {
+        $contract = Contract::with('services.service', 'orders.services')
+            ->find($id);
+        
+        if (!$contract) {
+            return abort(404);
+        }
+        
+        $year = Carbon::parse($contract->startdate)->year;
+        
+        // Preparar datos
+        $calendarData = $this->getCalendarData($contract);
+        $serviceColors = $this->assignServiceColors($contract->services);
+        
+        $monthNames = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+        
+        $data = compact('contract', 'calendarData', 'serviceColors', 'year', 'monthNames');
+        
+        $pdf = Pdf::loadView('contract.pdf.annual_calendar', $data)->setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'defaultFont' => 'Arial'
+        ]);
+        
+        return $pdf->download(
+            'calendario_' . $contract->customer->code . '_' . $year . '.pdf'
+        );
+    }
+
+    /**
+     * Obtiene los datos del calendario agrupados por mes y día
+     */
+    private function getCalendarData(Contract $contract): array
+    {
+        // Array con estructura por mes
+        $calendarData = [];
+        
+        // Obtener año del contrato
+        $year = Carbon::parse($contract->startdate)->year;
+        
+        // Obtener todas las órdenes del contrato en el año
+        $orders = $contract->orders()
+            ->whereYear('programmed_date', $year)
+            ->with('services')
+            ->get();
+        
+        // Agrupar órdenes por fecha y servicio
+        foreach ($orders as $order) {
+            $month = Carbon::parse($order->programmed_date)->month;
+            $day = Carbon::parse($order->programmed_date)->day;
+            
+            foreach ($order->services as $service) {
+                if (!isset($calendarData[$month])) {
+                    $calendarData[$month] = [];
+                }
+                if (!isset($calendarData[$month][$day])) {
+                    $calendarData[$month][$day] = [];
+                }
+                
+                // Evitar duplicados
+                if (!in_array($service->id, $calendarData[$month][$day])) {
+                    $calendarData[$month][$day][] = $service->id;
+                }
+            }
+        }
+        
+        return $calendarData;
+    }
+
+    /**
+     * Asigna colores únicos a cada servicio del contrato
+     */
+    private function assignServiceColors($services): array
+    {
+        $colorPalette = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+            '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+            '#F8B195', '#C7CEEA', '#B4E7FF', '#FFE66D',
+            '#FF9999', '#66B2FF', '#99FF99', '#FFCC99',
+            '#FF99CC', '#99CCFF', '#CCFF99', '#FFFF99'
+        ];
+        
+        $serviceColors = [];
+        $colorIndex = 0;
+        
+        foreach ($services as $service) {
+            $serviceColors[$service->service_id] = [
+                'name' => $service->service->name ?? 'Sin nombre',
+                'color' => $colorPalette[$colorIndex % count($colorPalette)],
+                'hex' => $colorPalette[$colorIndex % count($colorPalette)]
+            ];
+            $colorIndex++;
+        }
+        
+        return $serviceColors;
     }
 }

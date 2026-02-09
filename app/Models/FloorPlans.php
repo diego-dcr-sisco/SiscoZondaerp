@@ -38,7 +38,8 @@ class FloorPlans extends Model
         return $this->hasMany(FloorplanVersion::class, 'floorplan_id', 'id')->orderBy('version', 'desc');
     }
 
-    public function version()
+    // Accesor para obtener la versión actual como propiedad: $floorplan->version
+    public function getVersionAttribute()
     {
         $floorplan_version = $this->versions()->first();
         return $floorplan_version ? $floorplan_version->version : null;

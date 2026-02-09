@@ -147,7 +147,7 @@
                                         data-bs-placement="top" title="Renovar contrato">
                                         <i class="bi bi-arrow-clockwise"></i>
                                     </a>
-                                    <a class="btn btn-dark btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                    <a class="btn btn-info btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                                         title="Plan de rotación"
                                         href="{{ $contract->hasRotationPlan() ? route('rotation.edit', ['id' => $contract->rotationPlan()->id]) : route('rotation.create', ['contractId' => $contract->id]) }}">
                                         <i class="bi bi-arrow-repeat"></i>
@@ -156,6 +156,10 @@
                                         href="{{ route('quality.opportunity-area', ['id' => $contract->customer->id]) }}">
                                         <i class="bi bi-lightbulb-fill"></i>
                                     </a> --}}
+                                    <a href="{{ route('contract.calendar.pdf', $contract->id) }}" class="btn btn-dark btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Calendario PDF">
+                                        <i class="bi bi-file-pdf-fill"></i>
+                                    </a>
                                     <a href="{{ route('contract.destroy', ['id' => $contract->id]) }}"
                                         class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                                         title="Eliminar contrato"

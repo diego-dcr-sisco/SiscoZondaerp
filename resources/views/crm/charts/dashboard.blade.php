@@ -12,25 +12,30 @@
 
     <div class="container-fluid">
         <div class="row p-3">
-                <div class="col-12 mb-4">
-                    {{-- Total de Clientes anuales --}}
-                    @include('crm.charts.comercial.total-customers')
+                <div class="col-lg-6 col-12 mb-4">
+                    {{-- Clientes por mes (todo el año) --}}
+                    @include('crm.charts.comercial.yearly-customers')
                 </div>
-                <div class="col-lg-6 col-12 mb-3">
-                    {{-- Leads captados en el mes --}}
-                    @include('crm.charts.comercial.leads')
+                <div class="col-lg-6 col-12 mb-4">
+                    {{-- Leads por mes (todo el año) --}}
+                    @include('crm.charts.comercial.yearly-leads')
                 </div>
                 <div class="col-lg-6 col-12 mb-3">
                     {{-- Tipos de servicios realizados en el mes --}}
                     @include('crm.charts.comercial.services')
                 </div>
-
-            {{--<div class="p-3 mt-4 border-top" id="graficas-calidad">
-                <h2>Analíticas de calidad</h2>
-                <div class="row m-3">
-                    @include('crm.charts.quality.order-services')
+                <div class="col-lg-6 col-12 mb-3">
+                    {{-- Servicios programados (órdenes generadas) --}}
+                    @include('crm.charts.comercial.services-programmed')
                 </div>
-            </div>--}}
+                <div class="col-lg-6 col-12 mb-3">
+                    {{-- Seguimientos programados por mes --}}
+                    @include('crm.charts.comercial.trackings-by-month')
+                </div>
+                <div class="col-lg-6 col-12 mb-3">
+                    {{-- Plagas más presentadas --}}
+                    @include('crm.charts.comercial.pests-donut')
+                </div>
         </div>
     </div>
 @endsection

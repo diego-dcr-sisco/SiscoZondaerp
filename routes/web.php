@@ -278,7 +278,7 @@ Route::prefix('lot')
         Route::get('/traceability/{id}', [LotController::class, 'getTraceability'])->name('traceability');
     });
 
-Route::prefix('CRM/chart')
+Route::prefix('crm/chart')
     ->middleware(['auth', 'single.session', 'can:integral'])
     ->name('crm.chart.')
     ->group(function () {
@@ -306,10 +306,18 @@ Route::prefix('CRM/chart')
         Route::get('/ordertypes/{service_type}', [GraphicController::class, 'orderTypesDataset'])->name('ordertypes');
         Route::get('/ordertypes/{service_type}/update', [GraphicController::class, 'refreshOrderTypes'])->name('ordertypes.refresh');
 
+        // JSON endpoints for AJAX charts
+        Route::get('/customers-by-month', [GraphicController::class, 'customersByMonthJson'])->name('customersByMonthJson');
+        Route::get('/leads-by-month', [GraphicController::class, 'leadsByMonthJson'])->name('leadsByMonthJson');
+        Route::get('/services-by-type', [GraphicController::class, 'servicesByTypeJson'])->name('servicesByTypeJson');
+        Route::get('/services-programmed', [GraphicController::class, 'servicesProgrammedJson'])->name('servicesProgrammedJson');
+        Route::get('/trackings-by-month', [GraphicController::class, 'trackingsByMonthJson'])->name('trackingsByMonthJson');
+        Route::get('/pests-by-customer', [GraphicController::class, 'pestsByCustomerJson'])->name('pestsByCustomerJson');
+
         // views
         Route::get('/dashboard', [GraphicController::class, 'index'])->name('dashboard');
     }); // CRM CHARTS
-Route::get('/CRM/chart/customers-by-category', [GraphicController::class, 'customersByCategory'])
+Route::get('/crm/chart/customers-by-category', [GraphicController::class, 'customersByCategory'])
     ->name('crm.chart.customersByCategory');
 
 
@@ -493,6 +501,12 @@ Route::prefix('floorplans')
         Route::post('/search/qr/{id}', [FloorPlansController::class, 'searchQRs'])->name('search.qr');
 
         Route::get('/delete/{id}', [FloorplansController::class, 'delete'])->name('delete');
+
+        // Gráficas de incidentes del plano
+        Route::get('/graphic/incidents/{id}', [FloorPlansController::class, 'graphicIncidents'])->name('graphic.incidents');
+        
+        // Estadísticas por dispositivo (vista individual)
+        Route::get('/devices/{floorplan}/device/{device}/stats', [FloorPlansController::class, 'deviceStats'])->name('device.stats');
 
         Route::get('/floorplans/show/{path}', [FloorPlansController::class, 'getImage'])->where('path', '.*')->name('image.show');
         Route::post('/floorplan/{id}/search/version', [FloorPlansController::class, 'searchDevicesbyVersion'])->name('search.device.version');
@@ -792,6 +806,7 @@ Route::prefix('contracts')
         Route::get('/file/download/{id}', [ContractController::class, 'contract_downolad'])->name('file.download');
 
         Route::get('/renew/{id}', [ContractController::class, 'renew'])->name('renew');
+        Route::get('/calendar/pdf/{id}', [ContractController::class, 'annualCalendarPDF'])->name('calendar.pdf');
     });
 
 Route::prefix('opportunity-areas')

@@ -16,6 +16,7 @@ use App\Models\WarehouseLot;
 use App\Models\WarehouseMovement;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class GraphicController extends Controller
 {
@@ -1207,4 +1208,214 @@ class GraphicController extends Controller
     //......................................................................................
     //........................... GRAFICAS DEL AREA DE CALIDAD..............................
     //......................................................................................
+
+    //////////////////////// MÉTODOS JSON PARA AJAX ////////////////////////////////
+
+    /**
+     * Devuelve datos de clientes por mes en formato JSON
+     */
+    public function customersByMonthJson(Request $request)
+    {
+        $year = $request->input('year', Carbon::now()->year);
+        $domestics = [];
+        $comercials = [];
+        $industrials = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $domestics[] = Customer::whereMonth('created_at', $month)
+                ->whereYear('created_at', $year)
+                ->where('service_type_id', 1)
+                ->where(function($query) {
+                    $query->whereNotNull('general_sedes')
+                        ->where('general_sedes', '!=', 0);
+                })
+                ->count();
+
+            $comercials[] = Customer::whereMonth('created_at', $month)
+                ->whereYear('created_at', $year)
+                ->where('service_type_id', 2)
+                ->where(function($query) {
+                    $query->whereNotNull('general_sedes')
+                        ->where('general_sedes', '!=', 0);
+                })
+                ->count();
+
+            $industrials[] = Customer::whereMonth('created_at', $month)
+                ->whereYear('created_at', $year)
+                ->where('service_type_id', 3)
+                ->where(function($query) {
+                    $query->whereNotNull('general_sedes')
+                        ->where('general_sedes', '!=', 0);
+                })
+                ->count();
+        }
+
+        return response()->json([
+            'labels' => [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+            ],
+            'domestics' => $domestics,
+            'comercials' => $comercials,
+            'industrials' => $industrials,
+        ]);
+    }
+
+    /**
+     * Devuelve datos de leads por mes en formato JSON
+     */
+    public function leadsByMonthJson(Request $request)
+    {
+        $year = $request->input('year', Carbon::now()->year);
+        $domestics = [];
+        $comercials = [];
+        $industrials = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $domestics[] = Lead::whereMonth('created_at', $month)
+                ->whereYear('created_at', $year)
+                ->where('service_type_id', 1)
+                ->count();
+
+            $comercials[] = Lead::whereMonth('created_at', $month)
+                ->whereYear('created_at', $year)
+                ->where('service_type_id', 2)
+                ->count();
+
+            $industrials[] = Lead::whereMonth('created_at', $month)
+                ->whereYear('created_at', $year)
+                ->where('service_type_id', 3)
+                ->count();
+        }
+
+        return response()->json([
+            'labels' => [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+            ],
+            'domestics' => $domestics,
+            'comercials' => $comercials,
+            'industrials' => $industrials,
+        ]);
+    }
+
+    /**
+     * Devuelve datos de servicios por tipo de cliente en formato JSON
+     */
+    public function servicesByTypeJson(Request $request)
+    {
+        $month = $request->input('month', Carbon::now()->month);
+        $year = $request->input('year', Carbon::now()->year);
+
+        $domestics = Order::whereMonth('programmed_date', $month)
+            ->whereYear('programmed_date', $year)
+            ->whereHas('customer', function ($query) {
+                $query->where('service_type_id', 1);
+            })
+            ->count();
+
+        $comercials = Order::whereMonth('programmed_date', $month)
+            ->whereYear('programmed_date', $year)
+            ->whereHas('customer', function ($query) {
+                $query->where('service_type_id', 2);
+            })
+            ->count();
+
+        $industrials = Order::whereMonth('programmed_date', $month)
+            ->whereYear('programmed_date', $year)
+            ->whereHas('customer', function ($query) {
+                $query->where('service_type_id', 3);
+            })
+            ->count();
+
+        return response()->json([
+            'domestics' => $domestics,
+            'comercials' => $comercials,
+            'industrials' => $industrials,
+        ]);
+    }
+
+    /**
+     * Devuelve datos de servicios programados (órdenes por servicio) en formato JSON
+     */
+    public function servicesProgrammedJson(Request $request)
+    {
+        $month = $request->input('month', Carbon::now()->month);
+        $year = $request->input('year', Carbon::now()->year);
+
+        // Obtener todos los servicios y contar sus órdenes a través de OrderService
+        $servicesData = DB::table('service')
+            ->leftJoin('order_service', 'service.id', '=', 'order_service.service_id')
+            ->leftJoin('order', 'order_service.order_id', '=', 'order.id')
+            ->select('service.id', 'service.name', DB::raw('COUNT(DISTINCT order.id) as orders_count'))
+            ->whereMonth('order.programmed_date', $month)
+            ->whereYear('order.programmed_date', $year)
+            ->groupBy('service.id', 'service.name')
+            ->having('orders_count', '>', 0)
+            ->orderBy('orders_count', 'desc')
+            ->get();
+
+        $labels = $servicesData->pluck('name')->toArray();
+        $data = $servicesData->pluck('orders_count')->toArray();
+
+        return response()->json([
+            'labels' => $labels,
+            'data' => $data,
+        ]);
+    }
+
+    /**
+     * Devuelve datos de seguimientos de clientes por mes en formato JSON
+     */
+    public function trackingsByMonthJson(Request $request)
+    {
+        $year = $request->input('year', Carbon::now()->year);
+        $trackings = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $count = DB::table('tracking')
+                ->whereMonth('next_date', $month)
+                ->whereYear('next_date', $year)
+                ->count();
+            
+            $trackings[] = $count;
+        }
+
+        return response()->json([
+            'labels' => [
+                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+            ],
+            'data' => $trackings,
+        ]);
+    }
+
+    /**
+     * Devuelve datos de plagas más presentadas en formato JSON
+     */
+    public function pestsByCustomerJson(Request $request)
+    {
+        $month = $request->input('month', Carbon::now()->month);
+        $year = $request->input('year', Carbon::now()->year);
+
+        // Obtener las plagas más presentadas basadas en órdenes filtradas por mes/año
+        $pestsData = DB::table('device_pest')
+            ->join('order', 'device_pest.order_id', '=', 'order.id')
+            ->join('pest_catalog', 'device_pest.pest_id', '=', 'pest_catalog.id')
+            ->select('pest_catalog.id', 'pest_catalog.name', DB::raw('SUM(device_pest.total) as total_count'))
+            ->whereMonth('order.programmed_date', $month)
+            ->whereYear('order.programmed_date', $year)
+            ->groupBy('pest_catalog.id', 'pest_catalog.name')
+            ->orderBy('total_count', 'desc')
+            ->limit(10)
+            ->get();
+
+        $labels = $pestsData->pluck('name')->toArray();
+        $data = $pestsData->pluck('total_count')->toArray();
+
+        return response()->json([
+            'labels' => $labels,
+            'data' => $data,
+        ]);
+    }
 }

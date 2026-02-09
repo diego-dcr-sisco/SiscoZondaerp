@@ -347,10 +347,11 @@
                     <input type="hidden" id="point-index" value="" />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary"
-                        onclick="setDevice()">{{ __('buttons.store') }}</button>
+                    <a id="device-stats-link" href="#" target="_blank" class="btn btn-success"><i class="bi bi-bar-chart-fill"></i> Ver estadisticas</a>
                     <button type="button" class="btn btn-danger"
-                        onclick="deleteDevice()">{{ __('buttons.delete') }}</button>
+                        onclick="deleteDevice()"><i class="bi bi-trash-fill"></i> {{ __('buttons.delete') }}</button>
+                    <button type="button" class="btn btn-primary"
+                        onclick="setDevice()"><i class="bi bi-floppy-fill"></i> {{ __('buttons.store') }}</button>
                 </div>
             </div>
         </div>
@@ -382,6 +383,7 @@
             var img_sizes = @json($img_sizes);
             var legendPDF = @json($legend);
             var printData = @json($print_data);
+            var deviceStatsUrlTemplate = "{{ url('floorplans/devices/'.$floorplan->id.'/device/DEVICE_ID/stats') }}";
 
             let currentPointSize = 10;
             let currentBase64 = '';
@@ -707,6 +709,21 @@
 
 
                     $('#reviews').html(html);
+
+                    // Configurar enlace de estadísticas del dispositivo (si existe en la lista de devices)
+                    try {
+                        const statsLink = document.getElementById('device-stats-link');
+                        const deviceObj = devices.find(d => parseInt(d.nplan) == parseInt(points[i].count) && parseInt(d.type_control_point_id) == parseInt(points[i].point_id));
+                        if (deviceObj && statsLink) {
+                            statsLink.href = deviceStatsUrlTemplate.replace('DEVICE_ID', deviceObj.id);
+                            statsLink.style.display = '';
+                        } else if (statsLink) {
+                            statsLink.href = '#';
+                            statsLink.style.display = 'none';
+                        }
+                    } catch (e) {
+                        console.error('Error setting stats link', e);
+                    }
 
                     if (confirm(`Estas seguro de editar el punto: ${points[i].code} (${points[i].index})`)) {
                         $('#pointModal').modal('show');
