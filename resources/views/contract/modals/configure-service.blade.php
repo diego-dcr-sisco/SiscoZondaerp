@@ -378,7 +378,7 @@
                             </select>
                         </div>
                     </div>
-                    <div class="col-md-8 mb-3" id="days-field-${configId}">
+                    <div class="col-md-8 mb-3 d-none" id="days-field-${configId}">
                         <label class="form-label" id="days-label-${configId}">Días</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-calendar-week"></i></span>
@@ -860,6 +860,34 @@
         return intervals.map((interval, index) => `<option value="${index + 1}">${interval}</option>`).join('');
     }
 
+    function updateIntervalOptions(configId, frequency_id) {
+        const $intervalSelect = $(`#service-interval-${configId}`);
+        if (!$intervalSelect.length) return;
+
+        const filtered = intervals
+            .map((interval, index) => ({
+                id: index + 1,
+                name: interval
+            }))
+            .filter(item => {
+                if (frequency_id === 5) {
+                    // Por periodo: solo Quincenal
+                    return item.name.toLowerCase() === 'quincenal';
+                }
+                if (frequency_id === 3) {
+                    // Mensual: excluir Quincenal
+                    return item.name.toLowerCase() !== 'quincenal';
+                }
+                return true;
+            });
+
+        const optionsHtml = ['<option value="0">Seleccione</option>']
+            .concat(filtered.map(item => `<option value="${item.id}">${item.name}</option>`))
+            .join('');
+
+        $intervalSelect.html(optionsHtml);
+    }
+
     function generateMonthDays(configId) {
         let html = '';
         for (let i = 1; i <= 31; i++) {
@@ -992,8 +1020,16 @@
         // Mostrar/ocultar campo de intervalo según la frecuencia
         if (frequency_id === 3 || frequency_id === 5) { // Mensual o Por periodo
             intervalField.removeClass('d-none');
+            updateIntervalOptions(configId, frequency_id);
         } else {
             intervalField.addClass('d-none');
+        }
+
+        // Si no hay frecuencia seleccionada, ocultar el campo de días
+        if (frequency_id === 0) {
+            daysField.addClass('d-none');
+        } else {
+            daysField.removeClass('d-none');
         }
 
         // Configurar según la frecuencia
@@ -1054,6 +1090,16 @@
         // Resetear campo de días
         daysInput.val('');
         daysInput.prop('disabled', false);
+
+        // Si no hay intervalo seleccionado, ocultar selectores de días
+        if (!interval_id || interval_id === 0) {
+            daysInput.closest('.input-group').hide();
+            daysField.find('.form-text').hide();
+            $(`#week-days-selector-${configId}`).addClass('d-none');
+            $(`#month-days-selector-${configId}`).addClass('d-none');
+            $(`#single-date-selector-${configId}`).addClass('d-none');
+            return;
+        }
 
         // Mostrar el campo de días por defecto
         daysInput.closest('.input-group').show();
