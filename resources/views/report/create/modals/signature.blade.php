@@ -57,36 +57,62 @@
             return;
         }
 
+        // Validar tamaño del archivo (5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (file.size > maxSize) {
+            alert('La imagen es demasiado grande. El tamaño máximo es 5MB.');
+            return;
+        }
+
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
+                
+                // Redimensionar si es muy grande (máximo 800px de ancho)
+                const maxWidth = 800;
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
 
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0);
+                ctx.drawImage(img, 0, 0, width, height);
 
-                // Convertimos a PNG (independientemente del formato original)
-                const base64Image = canvas.toDataURL('image/png');
+                // Convertir a PNG con compresión
+                const base64Image = canvas.toDataURL('image/png', 0.8);
+                
+                // Verificar tamaño del base64 (aproximadamente 2MB cuando se codifica)
+                const base64Size = base64Image.length * 0.75; // Aproximado en bytes
+                if (base64Size > 2 * 1024 * 1024) {
+                    alert('La imagen procesada es muy grande. Por favor, usa una imagen más pequeña.');
+                    return;
+                }
 
                 $('#signed-by').val($('#modal-signed_by').val());
                 $('#signature-base64').val(base64Image);
                 $('#signature-preview').attr('src', base64Image);
+                $('#signature-preview').show();
                 $('#signatureModal').modal('hide');
-                alert('Firma actualizada correctamente');
+                alert('Firma actualizada correctamente. Recuerda hacer clic en "Guardar" para almacenar los cambios.');
             };
 
             img.onerror = function() {
-                alert('Error al cargar la imagen');
+                alert('Error al cargar la imagen. Verifica que sea un archivo válido.');
             };
 
             img.src = e.target.result;
         };
 
         reader.onerror = function() {
-            alert('Error al leer el archivo');
+            alert('Error al leer el archivo. Intenta con otra imagen.');
         };
 
         reader.readAsDataURL(file);
