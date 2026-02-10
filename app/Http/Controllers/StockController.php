@@ -759,7 +759,6 @@ class StockController extends Controller
         $input_movements = MovementType::whereBetween('id', [1, 4])->get();
 
         foreach ($products as $product) {
-            dd($product);
             $products_data[] = [
                 'id' => $product->id,
                 'name' => $product->name,
