@@ -490,15 +490,27 @@
                 const point_index = points.findIndex(item => item.index == i);
                 const reviewList = points[i] && reviews[point_index] ? reviews[point_index][points[i].point_id] : [];
                 var aux = count;
-                var message = reviewList && reviewList.length > 0 ?
-                    'La existencia de revisiones en el dispositivo exige la creación obligatoria de una nueva versión, ' : '';
+                const hasReviews = reviewList && reviewList.length > 0;
+                
+                var message = '';
+                
+                if (hasReviews) {
+                    message = '⚠️ IMPORTANTE: Este dispositivo tiene revisiones registradas.\n\n';
+                    message += 'Se creará automáticamente una nueva versión del plano para preservar el historial.\n\n';
+                    message += '¿Deseas eliminar el dispositivo?';
+                } else {
+                    message = 'Este dispositivo no tiene revisiones.\n\n';
+                    message += 'Se eliminará sin necesidad de crear una nueva versión.\n\n';
+                    message += '¿Deseas eliminar el dispositivo?';
+                }
 
                 if (i != -1) {
-                    message += '¿Deseas eliminar el dispositivo?';
-                    if (reviewList && reviewList.length > 0) {
+                    // Solo forzar nueva versión si hay revisiones
+                    if (hasReviews) {
                         $('#create-version').val(1);
                         $('#create-version').prop('checked', true).prop('disabled', true);
                     }
+                    
                     if (confirm(message)) {
                         points = points.filter(item => item.index != i);
                         nplans = points.map(item => item.count);
@@ -515,9 +527,7 @@
                         canvas.renderAll();
                         createLegend();
 
-                        //countPoints++;
-                        //count = --aux;
-                        //$('#count-points').text(`Puntos generados: ${countPoints}`);
+                        console.log(`✅ Dispositivo eliminado (índice: ${i}, tiene revisiones: ${hasReviews})`);
                     }
                 }
                 $('#pointModal').modal('hide');

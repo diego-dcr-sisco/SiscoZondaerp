@@ -1,23 +1,33 @@
 @extends('layouts.app')
 @section('content')
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <!-- <a href="{{ route('order.index') }}" class="text-decoration-none pe-3">
+        <div class="d-flex align-items-center justify-content-between border-bottom ps-4 p-2">
+            <div class="d-flex align-items-center">
+                <!-- <a href="{{ route('order.index') }}" class="text-decoration-none pe-3">
                                                                 <i class="bi bi-arrow-left fs-4"></i>
                                                             </a> -->
-            <a href="#" onclick="window.history.back(); return false;" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                Consultar Grafico
-            </span>
+                <a href="#" onclick="window.history.back(); return false;" class="text-decoration-none pe-3">
+                    <i class="bi bi-arrow-left fs-4"></i>
+                </a>
+                <span class="text-black fw-bold fs-4">
+                    Consultar Grafico
+                </span>
+            </div>
+            <div class="pe-4">
+                <button class="btn btn-dark btn-sm" onclick="exportAllChartsToPDF()">
+                    <i class="bi bi-file-pdf-fill"></i> Exportar Todo a PDF
+                </button>
+            </div>
         </div>
 
         <div class="row row-cols-1 row-cols-lg-2 m-3">
             <div class="col-lg-6 col-12">
                 <div class="border rounded shadow p-3">
-                    <div class="mb-3">
-                        <h4 class="fw-bold">Incidencias por dispositivo</h4>
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <h4 class="fw-bold mb-0">Incidencias por dispositivo</h4>
+                        <button class="btn btn-outline-dark btn-sm" onclick="exportChartToPDF('devicesChart', 'Incidencias_por_Dispositivo')">
+                            <i class="bi bi-file-pdf"></i> Exportar PDF
+                        </button>
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-3">
@@ -65,8 +75,11 @@
             </div>
             <div class="col-lg-6 col-12">
                 <div class="border rounded shadow p-3">
-                    <div class="mb-3">
-                        <h4 class="fw-bold">Incidencias por tipo de plaga</h4>
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <h4 class="fw-bold mb-0">Incidencias por tipo de plaga</h4>
+                        <button class="btn btn-outline-dark btn-sm" onclick="exportChartToPDF('pestsChart', 'Incidencias_por_Plaga')">
+                            <i class="bi bi-file-pdf"></i> Exportar PDF
+                        </button>
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-3">
@@ -117,8 +130,11 @@
         <div class="row m-3">
             <div class="col-12">
                 <div class="border rounded shadow p-3">
-                    <div class="mb-3">
-                        <h4 class="fw-bold">Tendencia de incidencias mensuales</h4>
+                    <div class="mb-3 d-flex justify-content-between align-items-center">
+                        <h4 class="fw-bold mb-0">Tendencia de incidencias mensuales</h4>
+                        <button class="btn btn-outline-dark btn-sm" onclick="exportChartToPDF('trendChart', 'Tendencia_Incidencias_Mensuales')">
+                            <i class="bi bi-file-pdf"></i> Exportar PDF
+                        </button>
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-3">
@@ -176,6 +192,8 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1.0/daterangepicker.min.js"></script>
@@ -234,7 +252,6 @@
 
         // Función para cargar los datos de incidentes vía AJAX con rango de fechas
         async function fetchGraphDataByRange(version, startDate, endDate) {
-            console.log('📊 fetchGraphDataByRange - Parámetros:', { version, startDate, endDate });
             try {
                 const response = await fetch(`{{ route('floorplan.graphic.incidents', $floorplan->id) }}?version=${version}&startDate=${startDate}&endDate=${endDate}`, {
                     method: 'GET',
@@ -250,7 +267,6 @@
                 }
 
                 const data = await response.json();
-                console.log('✅ fetchGraphDataByRange - Datos recibidos:', data);
                 return data;
             } catch (error) {
                 console.error('Error al cargar datos:', error);
@@ -261,7 +277,6 @@
 
         // Función para cargar los datos de incidentes vía AJAX
         async function fetchGraphData(version, month, year) {
-            console.log('📊 fetchGraphData - Parámetros:', { version, month, year });
             try {
                 const response = await fetch(`{{ route('floorplan.graphic.incidents', $floorplan->id) }}?version=${version}&month=${month}&year=${year}`, {
                     method: 'GET',
@@ -277,7 +292,6 @@
                 }
 
                 const data = await response.json();
-                console.log('✅ fetchGraphData - Datos recibidos:', data);
                 return data;
             } catch (error) {
                 console.error('Error al cargar datos:', error);
@@ -288,7 +302,6 @@
 
         // Función para cargar datos de tendencia (todos los meses del año)
         async function fetchTrendData(version, year) {
-            console.log('📊 fetchTrendData - Parámetros:', { version, year });
             try {
                 const response = await fetch(`{{ route('floorplan.graphic.incidents', $floorplan->id) }}?version=${version}&year=${year}&trend=true`, {
                     method: 'GET',
@@ -304,7 +317,6 @@
                 }
 
                 const data = await response.json();
-                console.log('✅ fetchTrendData - Datos recibidos:', data);
                 return data;
             } catch (error) {
                 console.error('Error al cargar datos de tendencia:', error);
@@ -315,8 +327,6 @@
 
         // Función para actualizar el gráfico de dispositivos
         function updateDevicesChart(labels, data) {
-            console.log('📈 updateDevicesChart - Labels:', labels);
-            console.log('📈 updateDevicesChart - Data:', data);
             const ctx_d = document.getElementById('devicesChart').getContext('2d');
 
             if (devicesChart) {
@@ -352,8 +362,6 @@
 
         // Función para actualizar el gráfico de plagas
         function updatePestsChart(labels, data) {
-            console.log('🐛 updatePestsChart - Labels:', labels);
-            console.log('🐛 updatePestsChart - Data:', data);
             const ctx_p = document.getElementById('pestsChart').getContext('2d');
 
             if (pestsChart) {
@@ -389,8 +397,6 @@
 
         // Función para actualizar el gráfico de tendencia
         function updateTrendChart(labels, data) {
-            console.log('📉 updateTrendChart - Labels:', labels);
-            console.log('📉 updateTrendChart - Data:', data);
             const ctx_t = document.getElementById('trendChart').getContext('2d');
 
             if (trendChart) {
@@ -438,19 +444,6 @@
 
         // Inicializar gráficos con datos iniciales
         function initializeCharts() {
-            console.log('🚀 Inicializando gráficos con datos del servidor...');
-            console.log('📦 Datos iniciales dispositivos:', { 
-                labels: {!! json_encode($graph_per_devices['labels']) !!}, 
-                data: {!! json_encode($graph_per_devices['data']) !!} 
-            });
-            console.log('📦 Datos iniciales plagas:', { 
-                labels: {!! json_encode($graph_per_pests['labels']) !!}, 
-                data: {!! json_encode($graph_per_pests['data']) !!} 
-            });
-            console.log('📦 Datos iniciales tendencia:', { 
-                labels: {!! json_encode($graph_per_months['labels']) !!}, 
-                data: {!! json_encode($graph_per_months['data']) !!} 
-            });
             updateDevicesChart({!! json_encode($graph_per_devices['labels']) !!}, {!! json_encode($graph_per_devices['data']) !!});
             updatePestsChart({!! json_encode($graph_per_pests['labels']) !!}, {!! json_encode($graph_per_pests['data']) !!});
             updateTrendChart({!! json_encode($graph_per_months['labels']) !!}, {!! json_encode($graph_per_months['data']) !!});
@@ -478,10 +471,7 @@
 
             const graphData = await fetchGraphDataByRange(version, startDate, endDate);
             if (graphData && graphData.success) {
-                console.log('🔄 Actualizando gráfico de dispositivos con:', graphData.devices);
                 updateDevicesChart(graphData.devices.labels, graphData.devices.data);
-            } else {
-                console.warn('⚠️ No se recibieron datos válidos para dispositivos');
             }
 
             document.getElementById('devices-loader').style.display = 'none';
@@ -508,10 +498,7 @@
 
             const graphData = await fetchGraphDataByRange(version, startDate, endDate);
             if (graphData && graphData.success) {
-                console.log('🔄 Actualizando gráfico de plagas con:', graphData.pests);
                 updatePestsChart(graphData.pests.labels, graphData.pests.data);
-            } else {
-                console.warn('⚠️ No se recibieron datos válidos para plagas');
             }
 
             document.getElementById('pests-loader').style.display = 'none';
@@ -530,10 +517,7 @@
 
             const graphData = await fetchTrendData(version, year);
             if (graphData && graphData.success) {
-                console.log('🔄 Actualizando gráfico de tendencia con:', graphData.trend);
                 updateTrendChart(graphData.trend.labels, graphData.trend.data);
-            } else {
-                console.warn('⚠️ No se recibieron datos válidos para tendencia');
             }
 
             document.getElementById('trend-loader').style.display = 'none';
@@ -543,5 +527,126 @@
         document.addEventListener('DOMContentLoaded', function() {
             initializeCharts();
         });
+
+        // Función para exportar una gráfica individual a PDF
+        async function exportChartToPDF(chartId, filename) {
+            try {
+                const canvas = document.getElementById(chartId);
+                if (!canvas) {
+                    alert('No se encontró la gráfica');
+                    return;
+                }
+
+                // Crear una imagen desde el canvas
+                const imgData = canvas.toDataURL('image/png', 1.0);
+                
+                // Crear el PDF
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Dimensiones del PDF
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                
+                // Calcular dimensiones para mantener la proporción
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+                const imgWidth = canvasWidth * ratio * 0.9;
+                const imgHeight = canvasHeight * ratio * 0.9;
+                
+                // Centrar la imagen
+                const x = (pdfWidth - imgWidth) / 2;
+                const y = (pdfHeight - imgHeight) / 2;
+
+                // Agregar título
+                pdf.setFontSize(16);
+                pdf.text(filename.replace(/_/g, ' '), pdfWidth / 2, 15, { align: 'center' });
+                
+                // Agregar la imagen
+                pdf.addImage(imgData, 'PNG', x, y + 5, imgWidth, imgHeight);
+                
+                // Agregar fecha de generación
+                pdf.setFontSize(10);
+                pdf.text(`Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}`, 10, pdfHeight - 10);
+                
+                // Descargar el PDF
+                pdf.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`);
+            } catch (error) {
+                alert('Error al generar el PDF');
+            }
+        }
+
+        // Función para exportar todas las gráficas en un solo PDF
+        async function exportAllChartsToPDF() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const charts = [
+                    { id: 'devicesChart', title: 'Incidencias por Dispositivo' },
+                    { id: 'pestsChart', title: 'Incidencias por Tipo de Plaga' },
+                    { id: 'trendChart', title: 'Tendencia de Incidencias Mensuales' }
+                ];
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+
+                for (let i = 0; i < charts.length; i++) {
+                    const chart = charts[i];
+                    const canvas = document.getElementById(chart.id);
+                    
+                    if (!canvas) {
+                        continue;
+                    }
+
+                    if (i > 0) {
+                        pdf.addPage();
+                    }
+
+                    // Crear imagen desde el canvas
+                    const imgData = canvas.toDataURL('image/png', 1.0);
+                    
+                    // Calcular dimensiones
+                    const canvasWidth = canvas.width;
+                    const canvasHeight = canvas.height;
+                    const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+                    const imgWidth = canvasWidth * ratio * 0.9;
+                    const imgHeight = canvasHeight * ratio * 0.9;
+                    
+                    const x = (pdfWidth - imgWidth) / 2;
+                    const y = (pdfHeight - imgHeight) / 2;
+
+                    // Agregar título
+                    pdf.setFontSize(16);
+                    pdf.text(chart.title, pdfWidth / 2, 15, { align: 'center' });
+                    
+                    // Agregar la imagen
+                    pdf.addImage(imgData, 'PNG', x, y + 5, imgWidth, imgHeight);
+                    
+                    // Número de página
+                    pdf.setFontSize(10);
+                    pdf.text(`Página ${i + 1} de ${charts.length}`, pdfWidth - 30, pdfHeight - 10);
+                }
+
+                // Agregar fecha en la última página
+                pdf.setFontSize(10);
+                pdf.text(`Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}`, 10, pdfHeight - 10);
+                
+                // Descargar el PDF
+                const filename = `Reporte_Graficas_${new Date().toISOString().split('T')[0]}.pdf`;
+                pdf.save(filename);
+            } catch (error) {
+                alert('Error al generar el PDF');
+            }
+        }
     </script>
 @endsection

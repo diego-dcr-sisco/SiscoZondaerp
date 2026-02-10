@@ -1,12 +1,19 @@
 @extends('layouts.app')
 @section('content')
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('floorplan.devices', ['id' => $device->floorplan_id, 'version' => $device->version]) }}"
-                class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">Estadísticas del dispositivo</span>
+        <div class="d-flex align-items-center justify-content-between border-bottom ps-4 p-2">
+            <div class="d-flex align-items-center">
+                <a href="{{ route('floorplan.devices', ['id' => $device->floorplan_id, 'version' => $device->version]) }}"
+                    class="text-decoration-none pe-3">
+                    <i class="bi bi-arrow-left fs-4"></i>
+                </a>
+                <span class="text-black fw-bold fs-4">Estadísticas del dispositivo</span>
+            </div>
+            <div class="pe-4">
+                <button class="btn btn-danger btn-sm" onclick="exportAllChartsToPDF()">
+                    <i class="bi bi-file-pdf-fill"></i> Exportar Todo a PDF
+                </button>
+            </div>
         </div>
         <div class="row m-3">
             <div class="col-12">
@@ -52,7 +59,12 @@
         <div class="row row-cols-1 row-cols-lg-2 m-3">
             <div class="col-lg-6 col-12">
                 <div class="border rounded shadow p-3">
-                    <h5 class="fw-bold">Incidencias por tipo de plaga - {{ $device->code ?? 'Dispositivo' }}</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">Incidencias por tipo de plaga - {{ $device->code ?? 'Dispositivo' }}</h5>
+                        <button class="btn btn-outline-danger btn-sm" onclick="exportChartToPDF('devicePestsChart', 'Incidencias_Plagas_{{ $device->code }}')">
+                            <i class="bi bi-file-pdf"></i> Exportar PDF
+                        </button>
+                    </div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-3">
@@ -82,7 +94,12 @@
 
             <div class="col-lg-6 col-12">
                 <div class="border rounded shadow p-3">
-                    <h5 class="fw-bold">Tendencia Anual - {{ $device->code ?? 'Dispositivo' }}</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0">Tendencia Anual - {{ $device->code ?? 'Dispositivo' }}</h5>
+                        <button class="btn btn-outline-danger btn-sm" onclick="exportChartToPDF('deviceTrendChart', 'Tendencia_Anual_{{ $device->code }}')">
+                            <i class="bi bi-file-pdf"></i> Exportar PDF
+                        </button>
+                    </div>
 
                     <div class="row g-3 mb-3">
                         <div class="col-3">
@@ -115,28 +132,15 @@
     <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
-        $(function() {
-
-            console.log('========================================');
-            console.log('SCRIPT DE GRAFICAS CARGADO CORRECTAMENTE');
-            console.log('Fecha de carga:', new Date().toLocaleString());
-            console.log('========================================');
-        });
-
         const deviceId = {{ $device->id }};
         const floorplanId = {{ $floorplan->id }};
         let pestsChart = null;
         let trendChart = null;
 
-        console.log('Configuración inicial:');
-        console.log('- Device ID:', deviceId);
-        console.log('- Floorplan ID:', floorplanId);
-
         function updatePestsChart(labels, data) {
-            console.log('=== updatePestsChart ===');
-            console.log('Labels recibidos:', labels);
-            console.log('Data recibidos:', data);
 
             const ctx = document.getElementById('devicePestsChart').getContext('2d');
             if (pestsChart) pestsChart.destroy();
@@ -165,13 +169,9 @@
                     }
                 }
             });
-            console.log('Gráfica de plagas actualizada');
         }
 
         function updateTrendChart(labels, data) {
-            console.log('=== updateTrendChart ===');
-            console.log('Labels recibidos:', labels);
-            console.log('Data recibidos:', data);
 
             const ctx = document.getElementById('deviceTrendChart').getContext('2d');
             if (trendChart) trendChart.destroy();
@@ -201,18 +201,10 @@
                     }
                 }
             });
-            console.log('Gráfica de tendencia actualizada');
         }
 
         // Inicializar con los datos pasados desde el controlador
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('=== Inicializando gráficas del dispositivo ===');
-            console.log('Device ID:', deviceId);
-            console.log('Floorplan ID:', floorplanId);
-            console.log('Datos iniciales desde PHP:');
-            console.log('graph_per_pests:', {!! json_encode($graph_per_pests) !!});
-            console.log('graph_per_months:', {!! json_encode($graph_per_months) !!});
-
             updatePestsChart({!! json_encode($graph_per_pests['labels']) !!}, {!! json_encode($graph_per_pests['data']) !!});
             updateTrendChart({!! json_encode($graph_per_months['labels']) !!}, {!! json_encode($graph_per_months['data']) !!});
 
@@ -264,13 +256,9 @@
         });
 
         async function fetchDeviceDataByRange(startDate, endDate) {
-            console.log('=== fetchDeviceDataByRange ===');
-            console.log('Rango solicitado:', startDate, 'a', endDate);
-
             try {
                 const url =
                     `/floorplans/devices/${floorplanId}/device/${deviceId}/stats?start_date=${startDate}&end_date=${endDate}`;
-                console.log('URL de petición:', url);
 
                 const res = await fetch(url, {
                     headers: {
@@ -278,25 +266,18 @@
                         'Accept': 'application/json'
                     }
                 });
-                console.log('Status de respuesta:', res.status, res.statusText);
 
                 const jsonData = await res.json();
-                console.log('Respuesta JSON completa:', jsonData);
 
                 return jsonData;
             } catch (e) {
-                console.error('Error en fetchDeviceDataByRange:', e);
                 return null;
             }
         }
 
         async function fetchDeviceDataByYear(year) {
-            console.log('=== fetchDeviceDataByYear ===');
-            console.log('Año solicitado:', year);
-
             try {
                 const url = `/floorplans/devices/${floorplanId}/device/${deviceId}/stats?year=${year}&trend=1`;
-                console.log('URL de petición:', url);
 
                 const res = await fetch(url, {
                     headers: {
@@ -304,78 +285,177 @@
                         'Accept': 'application/json'
                     }
                 });
-                console.log('Status de respuesta:', res.status, res.statusText);
 
                 const jsonData = await res.json();
-                console.log('Respuesta JSON completa:', jsonData);
 
                 return jsonData;
             } catch (e) {
-                console.error('Error en fetchDeviceDataByYear:', e);
                 return null;
             }
         }
 
         document.getElementById('search-device-pests').addEventListener('click', async function() {
-            console.log('\n=== BUSQUEDA POR RANGO DE FECHAS (PLAGAS) ===');
-
             const dateRange = $('#device-date-range').data('daterangepicker');
             if (!dateRange || !dateRange.startDate || !dateRange.endDate) {
-                console.warn('Rango de fechas no seleccionado');
                 alert('Por favor seleccione un rango de fechas');
                 return;
             }
             const startDate = dateRange.startDate.format('YYYY-MM-DD');
             const endDate = dateRange.endDate.format('YYYY-MM-DD');
 
-            console.log('Buscando datos desde:', startDate, 'hasta:', endDate);
             document.getElementById('pests-loader').style.display = 'block';
 
             const data = await fetchDeviceDataByRange(startDate, endDate);
-            console.log('\nDatos recibidos del servidor:', data);
 
             if (data && data.success) {
-                console.log('\n✅ Respuesta exitosa');
-                console.log('Estructura data.pests:', data.pests);
-                console.log('Labels para la gráfica:', data.pests.labels);
-                console.log('Data para la gráfica:', data.pests.data);
-                console.log('Total de plagas encontradas:', data.pests.labels.length);
-
                 updatePestsChart(data.pests.labels, data.pests.data);
             } else {
-                console.error('❌ Error en la respuesta:', data);
                 alert('Error al obtener los datos');
             }
 
             document.getElementById('pests-loader').style.display = 'none';
-            console.log('=== FIN BUSQUEDA ===\n');
         });
 
         document.getElementById('search-device-trend').addEventListener('click', async function() {
-            console.log('\n=== BUSQUEDA POR AÑO (TENDENCIA) ===');
-
             const year = document.getElementById('trend-year').value;
-            console.log('Buscando tendencia para el año:', year);
             document.getElementById('trend-loader').style.display = 'block';
 
             const data = await fetchDeviceDataByYear(year);
-            console.log('\nDatos de tendencia recibidos del servidor:', data);
 
             if (data && data.success) {
-                console.log('\n✅ Respuesta exitosa');
-                console.log('Estructura data.trend:', data.trend);
-                console.log('Labels para la gráfica (meses):', data.trend.labels);
-                console.log('Data para la gráfica (incidentes):', data.trend.data);
-                console.log('Meses con datos:', data.trend.labels.length);
-
                 updateTrendChart(data.trend.labels, data.trend.data);
             } else {
-                console.error('❌ Error en la respuesta:', data);
                 alert('Error al obtener los datos de tendencia');
             }
 
             document.getElementById('trend-loader').style.display = 'none';
-            console.log('=== FIN BUSQUEDA ===\n');
         });
+
+        // Función para exportar una gráfica individual a PDF
+        async function exportChartToPDF(chartId, filename) {
+            try {
+                const canvas = document.getElementById(chartId);
+                if (!canvas) {
+                    alert('No se encontró la gráfica');
+                    return;
+                }
+
+                // Crear una imagen desde el canvas
+                const imgData = canvas.toDataURL('image/png', 1.0);
+                
+                // Crear el PDF
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // Dimensiones del PDF
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                
+                // Calcular dimensiones para mantener la proporción
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+                const imgWidth = canvasWidth * ratio * 0.9;
+                const imgHeight = canvasHeight * ratio * 0.9;
+                
+                // Centrar la imagen
+                const x = (pdfWidth - imgWidth) / 2;
+                const y = (pdfHeight - imgHeight) / 2;
+
+                // Agregar título
+                pdf.setFontSize(16);
+                pdf.text(filename.replace(/_/g, ' '), pdfWidth / 2, 15, { align: 'center' });
+                
+                // Agregar la imagen
+                pdf.addImage(imgData, 'PNG', x, y + 5, imgWidth, imgHeight);
+                
+                // Agregar fecha de generación
+                pdf.setFontSize(10);
+                pdf.text(`Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}`, 10, pdfHeight - 10);
+                
+                // Descargar el PDF
+                pdf.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`);
+                
+                console.log('✅ PDF generado correctamente:', filename);
+            } catch (error) {
+                console.error('❌ Error al generar PDF:', error);
+                alert('Error al generar el PDF');
+            }
+        }
+
+        // Función para exportar todas las gráficas en un solo PDF
+        async function exportAllChartsToPDF() {
+            try {
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({
+                    orientation: 'landscape',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const charts = [
+                    { id: 'devicePestsChart', title: 'Incidencias por Tipo de Plaga - {{ $device->code }}' },
+                    { id: 'deviceTrendChart', title: 'Tendencia Anual - {{ $device->code }}' }
+                ];
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+
+                for (let i = 0; i < charts.length; i++) {
+                    const chart = charts[i];
+                    const canvas = document.getElementById(chart.id);
+                    
+                    if (!canvas) {
+                        console.warn(`⚠️ No se encontró el canvas: ${chart.id}`);
+                        continue;
+                    }
+
+                    if (i > 0) {
+                        pdf.addPage();
+                    }
+
+                    // Crear imagen desde el canvas
+                    const imgData = canvas.toDataURL('image/png', 1.0);
+                    
+                    // Calcular dimensiones
+                    const canvasWidth = canvas.width;
+                    const canvasHeight = canvas.height;
+                    const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
+                    const imgWidth = canvasWidth * ratio * 0.9;
+                    const imgHeight = canvasHeight * ratio * 0.9;
+                    
+                    const x = (pdfWidth - imgWidth) / 2;
+                    const y = (pdfHeight - imgHeight) / 2;
+
+                    // Agregar título
+                    pdf.setFontSize(16);
+                    pdf.text(chart.title, pdfWidth / 2, 15, { align: 'center' });
+                    
+                    // Agregar la imagen
+                    pdf.addImage(imgData, 'PNG', x, y + 5, imgWidth, imgHeight);
+                    
+                    // Número de página
+                    pdf.setFontSize(10);
+                    pdf.text(`Página ${i + 1} de ${charts.length}`, pdfWidth - 30, pdfHeight - 10);
+                }
+
+                // Agregar fecha en la última página
+                pdf.setFontSize(10);
+                pdf.text(`Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}`, 10, pdfHeight - 10);
+                
+                // Descargar el PDF
+                const filename = `Estadisticas_{{ $device->code }}_${new Date().toISOString().split('T')[0]}.pdf`;
+                pdf.save(filename);
+                
+                console.log('✅ PDF completo generado correctamente');
+            } catch (error) {
+                console.error('❌ Error al generar PDF completo:', error);
+                alert('Error al generar el PDF');
+            }
+        }
     </script>
 @endsection

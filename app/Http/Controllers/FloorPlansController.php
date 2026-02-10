@@ -708,6 +708,35 @@ class FloorPlansController extends Controller
             $latestVersionNumber = 1;
         }
 
+        // Obtener dispositivos actuales de la versión antes de actualizar
+        $currentDevices = Device::where('floorplan_id', $floorplan->id)
+            ->where('version', $version)
+            ->get();
+
+        // Crear array de nplans que vienen en el request
+        $newNplans = collect($pointsData)->pluck('count')->toArray();
+
+        // Identificar dispositivos que se van a eliminar
+        $devicesToDelete = $currentDevices->filter(function ($device) use ($newNplans) {
+            return !in_array($device->nplan, $newNplans);
+        });
+
+        // Verificar si algún dispositivo eliminado tiene revisiones
+        $forceNewVersion = false;
+        foreach ($devicesToDelete as $device) {
+            $hasReviews = OrderIncidents::where('device_id', $device->id)->exists();
+            if ($hasReviews) {
+                $forceNewVersion = true;
+                break;
+            }
+        }
+
+        // Si se detectó que hay dispositivos con revisiones que se van a eliminar, forzar nueva versión
+        if ($forceNewVersion && !$create_version) {
+            $create_version = true;
+            $latestVersionNumber = $version + 1;
+        }
+
         if ($create_version) {
             FloorplanVersion::insert([
                 'floorplan_id' => $floorplan->id,
@@ -755,6 +784,14 @@ class FloorPlansController extends Controller
                 Device::where('floorplan_id', $device->floorplan_id)->where('nplan', $device->nplan)->where('version', $device->version)->whereNot('type_control_point_id', $device->type_control_point_id)->delete();
                 $device->qr = QrCode::format('png')->size(200)->generate($code);
                 $device->save();
+            }
+        }
+
+        // Si NO se creó una nueva versión, eliminar los dispositivos que ya no están en el plano
+        // Si se creó nueva versión, los dispositivos antiguos se mantienen en la versión anterior
+        if (!$create_version) {
+            foreach ($devicesToDelete as $device) {
+                $device->delete();
             }
         }
 
