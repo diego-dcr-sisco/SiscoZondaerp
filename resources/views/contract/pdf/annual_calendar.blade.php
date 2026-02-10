@@ -93,26 +93,27 @@
            ============================================ */
 
         .legend {
-            margin-top: 3mm;
-            margin-bottom: 2mm;
-            padding: 2mm;
+            margin-top: 2mm;
+            margin-bottom: 1.5mm;
+            padding: 1.5mm;
             background-color: #f5f5f5;
             /* Fondo gris claro */
             border: 1px solid #ccc;
-            font-size: 10px;
+            font-size: 9px;
+            page-break-inside: avoid;
         }
 
         .legend-title {
             font-weight: bold;
-            font-size: 12px;
-            margin-bottom: 1mm;
+            font-size: 11px;
+            margin-bottom: 0.5mm;
             text-align: center;
         }
 
         .legend-item {
             display: block;
-            margin-bottom: 2mm;
-            padding: 1mm 0;
+            margin-bottom: 0.5mm;
+            padding: 0.2mm 0;
         }
 
         /* Cuadrito de color que representa cada servicio */
@@ -123,26 +124,26 @@
             border: 1px solid #999;
             vertical-align: middle;
             /* Alineación con el texto */
-            margin-right: 3px;
+            margin-right: 2px;
         }
 
         .day-name {
             font-weight: bold;
-            font-size: 11px;
+            font-size: 10px;
             display: inline-block;
             margin-left: 2px;
         }
 
         .services-list {
-            margin-left: 16px;
-            margin-top: 0.5mm;
-            font-size: 9px;
+            margin-left: 14px;
+            margin-top: 0.3mm;
+            font-size: 8px;
         }
 
         .services-list li {
-            margin-bottom: 0.3mm;
+            margin-bottom: 0.2mm;
             list-style-type: disc;
-            margin-left: 3mm;
+            margin-left: 2mm;
         }
 
         /* ============================================

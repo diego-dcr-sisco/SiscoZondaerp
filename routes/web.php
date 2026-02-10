@@ -507,6 +507,7 @@ Route::prefix('floorplans')
         
         // Estadísticas por dispositivo (vista individual)
         Route::get('/devices/{floorplan}/device/{device}/stats', [FloorPlansController::class, 'deviceStats'])->name('device.stats');
+        Route::get('/devices/{floorplan}/device/{device}/stats/pdf', [FloorPlansController::class, 'deviceStatsPDF'])->name('device.stats.pdf');
 
         Route::get('/floorplans/show/{path}', [FloorPlansController::class, 'getImage'])->where('path', '.*')->name('image.show');
         Route::post('/floorplan/{id}/search/version', [FloorPlansController::class, 'searchDevicesbyVersion'])->name('search.device.version');
