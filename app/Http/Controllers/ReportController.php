@@ -1538,21 +1538,20 @@ class ReportController extends Controller
                 'signature_name' => !empty($data['signed_by']) ? $data['signed_by'] : null,
             ];
 
-            // Solo actualizar la firma si fue modificada
+            // Solo actualizar la firma si fue modificada Y tiene un valor válido
             if ($signatureUpdated) {
-                // Convertir cadena vacía a null explícitamente
                 $signatureValue = $data['signature_base64'] ?? null;
-                if (empty($signatureValue) || $signatureValue === '' || $signatureValue === 'null') {
-                    $signatureValue = null;
+                
+                // Solo actualizar si hay un valor real (no vacío)
+                // Si viene vacío o null, NO modificar el campo (mantener el valor existente)
+                if (!empty($signatureValue) && $signatureValue !== '' && $signatureValue !== 'null') {
+                    $updated_order['customer_signature'] = $signatureValue;
                 }
-                
-                $updated_order['customer_signature'] = $signatureValue;
-                
-                /*Log::info('Signature updated for order', [
-                    'order_id' => $order->id, 
-                    'signature_size' => $signatureValue ? strlen($signatureValue) : 0,
-                    'is_null' => $signatureValue === null ? 'yes' : 'no'
-                ]);*/
+                // Si específicamente se quiere borrar la firma, debe venir un flag adicional
+                elseif (isset($data['clear_signature']) && $data['clear_signature'] === true) {
+                    $updated_order['customer_signature'] = null;
+                }
+                // Si no, no incluir el campo en el update (mantener valor existente)
             }
 
             // Manejar closed_by de manera segura
