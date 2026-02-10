@@ -923,6 +923,109 @@
         alert(message);
     }
 
+    // Función para resetear todos los checkboxes y el formulario al estado inicial
+    function resetModalToInitialState() {
+        // Resetear todos los checkboxes de preguntas a checked
+        autoreview_data.forEach(controlPoint => {
+            const controlPointId = controlPoint.control_point_id;
+            
+            // Resetear checkboxes de preguntas
+            $(`.checkbox-cp${controlPointId}`).prop('checked', true);
+            
+            // Resetear checkboxes de dispositivos
+            $(`#collapse-control-point${controlPointId} .device-checkbox`).prop('checked', true);
+            
+            // Resetear las opciones de limpieza
+            $(`#clearQuestions-${controlPointId}`).prop('checked', false);
+            $(`#clearProducts-${controlPointId}`).prop('checked', false);
+            $(`#clearPests-${controlPointId}`).prop('checked', false);
+            $(`#clearObservs-${controlPointId}`).prop('checked', false);
+            
+            // Resetear observaciones
+            $(`#observations-${controlPointId}`).val('');
+            observationsData[controlPointId] = '';
+            
+            // Resetear arrays de datos
+            devicesToCheck[controlPointId] = Array.isArray(controlPoint.devices) ?
+                controlPoint.devices.map(device => device.id) : [];
+            
+            cPointsQuestionsToCheck[controlPointId] = Array.isArray(controlPoint.questions) ?
+                controlPoint.questions.map(question => question.id) : [];
+            
+            // Resetear selects de respuestas a sus valores por defecto
+            if (Array.isArray(controlPoint.questions)) {
+                controlPoint.questions.forEach(question => {
+                    const elementId = `question-${controlPointId}-${question.id}`;
+                    const formElement = document.getElementById(elementId);
+                    if (formElement) {
+                        formElement.value = '';
+                    }
+                });
+            }
+            
+            // Resetear productos: eliminar todos excepto el primero y limpiar el primero
+            const productsContainer = document.getElementById(`products-container-${controlPointId}`);
+            if (productsContainer) {
+                // Eliminar todos los productos adicionales (dejar solo el primero)
+                const productRows = productsContainer.querySelectorAll('.product-row');
+                productRows.forEach((row, index) => {
+                    if (index > 0) {
+                        row.remove();
+                    }
+                });
+                
+                // Resetear el primer producto
+                const firstProductRow = productsContainer.querySelector('.product-row');
+                if (firstProductRow) {
+                    const productSelect = firstProductRow.querySelector('.product-select');
+                    const amountInput = firstProductRow.querySelector('.product-amount');
+                    const methodSelect = firstProductRow.querySelector('.product-method');
+                    const lotSelect = firstProductRow.querySelector('.product-lot');
+                    const deleteBtn = firstProductRow.querySelector('.btn-danger');
+                    
+                    if (productSelect) productSelect.value = '';
+                    if (amountInput) {
+                        amountInput.value = '1';
+                        amountInput.disabled = true;
+                    }
+                    if (methodSelect) {
+                        methodSelect.value = '';
+                        methodSelect.disabled = true;
+                    }
+                    if (lotSelect) {
+                        lotSelect.innerHTML = '<option value="" selected>Selecciona un lote</option>';
+                        lotSelect.disabled = true;
+                    }
+                    if (deleteBtn) deleteBtn.disabled = true;
+                }
+            }
+            
+            // Resetear plagas: eliminar todas excepto la primera y limpiar la primera
+            const pestsContainer = document.getElementById(`pests-container-${controlPointId}`);
+            if (pestsContainer) {
+                // Eliminar todas las plagas adicionales (dejar solo la primera)
+                const pestRows = pestsContainer.querySelectorAll('.pest-row');
+                pestRows.forEach((row, index) => {
+                    if (index > 0) {
+                        row.remove();
+                    }
+                });
+                
+                // Resetear la primera plaga
+                const firstPestRow = pestsContainer.querySelector('.pest-row');
+                if (firstPestRow) {
+                    const pestSelect = firstPestRow.querySelector('.pest-select');
+                    const countInput = firstPestRow.querySelector('.pest-count');
+                    const deleteBtn = firstPestRow.querySelector('.btn-danger');
+                    
+                    if (pestSelect) pestSelect.value = '';
+                    if (countInput) countInput.value = '';
+                    if (deleteBtn) deleteBtn.disabled = true;
+                }
+            }
+        });
+    }
+
     // Llamar cuando el modal se muestra
     document.addEventListener('DOMContentLoaded', function() {
         initializeDefaultAnswers();
@@ -930,11 +1033,14 @@
     });
 
     // También inicializar cuando se muestra el modal (por si se carga dinámicamente)
-    document.addEventListener('shown.bs.modal', function(event) {
-        if (event.target.id === 'autoreviewModal') {
-            initializeDefaultAnswers();
-            setupCleanupCheckboxes();
-        }
+    $('#autoreviewModal').on('shown.bs.modal', function() {
+        resetModalToInitialState();
+        initializeDefaultAnswers();
+    });
+    
+    // Resetear cuando se cierra el modal para asegurar estado limpio
+    $('#autoreviewModal').on('hidden.bs.modal', function() {
+        resetModalToInitialState();
     });
 
 
