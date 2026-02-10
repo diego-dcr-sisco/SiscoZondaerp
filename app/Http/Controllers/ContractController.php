@@ -1096,19 +1096,30 @@ class ContractController extends Controller
             return abort(404);
         }
         
-        $year = Carbon::parse($contract->startdate)->year;
+        $startDate = Carbon::parse($contract->startdate);
+        $endDate = Carbon::parse($contract->enddate);
+        
+        // Generar array de meses del periodo del contrato (hasta 12 meses)
+        $months = [];
+        $currentMonth = $startDate->copy()->startOfMonth();
+        $maxMonths = 12;
+        $monthCount = 0;
+        
+        while ($currentMonth <= $endDate && $monthCount < $maxMonths) {
+            $months[] = [
+                'month' => $currentMonth->month,
+                'year' => $currentMonth->year,
+                'name' => $this->getMonthName($currentMonth->month)
+            ];
+            $currentMonth->addMonth();
+            $monthCount++;
+        }
         
         // Preparar datos
-        $calendarData = $this->getCalendarData($contract);
+        $calendarData = $this->getCalendarData($contract, $startDate, $endDate);
         $serviceColors = $this->assignServiceColors($contract->services);
         
-        $monthNames = [
-            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
-            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
-            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
-        ];
-        
-        $data = compact('contract', 'calendarData', 'serviceColors', 'year', 'monthNames');
+        $data = compact('contract', 'calendarData', 'serviceColors', 'months', 'startDate', 'endDate');
         
         $pdf = Pdf::loadView('contract.pdf.annual_calendar', $data)->setOptions([
             'isHtml5ParserEnabled' => true,
@@ -1117,43 +1128,59 @@ class ContractController extends Controller
         ]);
         
         return $pdf->download(
-            'calendario_' . $contract->customer->code . '_' . $year . '.pdf'
+            'calendario_' . $contract->customer->code . '_' . $startDate->format('Y') . '.pdf'
         );
+    }
+    
+    /**
+     * Obtiene el nombre del mes en español
+     */
+    private function getMonthName(int $month): string
+    {
+        $monthNames = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+        
+        return $monthNames[$month];
     }
 
     /**
-     * Obtiene los datos del calendario agrupados por mes y día
+     * Obtiene los datos del calendario agrupados por año-mes y día
      */
-    private function getCalendarData(Contract $contract): array
+    private function getCalendarData(Contract $contract, Carbon $startDate, Carbon $endDate): array
     {
-        // Array con estructura por mes
+        // Array con estructura por año-mes-día
         $calendarData = [];
         
-        // Obtener año del contrato
-        $year = Carbon::parse($contract->startdate)->year;
-        
-        // Obtener todas las órdenes del contrato en el año
+        // Obtener todas las órdenes del contrato en el rango de fechas
         $orders = $contract->orders()
-            ->whereYear('programmed_date', $year)
+            ->whereBetween('programmed_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
             ->with('services')
             ->get();
         
         // Agrupar órdenes por fecha y servicio
         foreach ($orders as $order) {
-            $month = Carbon::parse($order->programmed_date)->month;
-            $day = Carbon::parse($order->programmed_date)->day;
+            $orderDate = Carbon::parse($order->programmed_date);
+            $year = $orderDate->year;
+            $month = $orderDate->month;
+            $day = $orderDate->day;
+            
+            // Clave compuesta año-mes para manejar contratos que cruzan años
+            $yearMonth = $year . '-' . $month;
             
             foreach ($order->services as $service) {
-                if (!isset($calendarData[$month])) {
-                    $calendarData[$month] = [];
+                if (!isset($calendarData[$yearMonth])) {
+                    $calendarData[$yearMonth] = [];
                 }
-                if (!isset($calendarData[$month][$day])) {
-                    $calendarData[$month][$day] = [];
+                if (!isset($calendarData[$yearMonth][$day])) {
+                    $calendarData[$yearMonth][$day] = [];
                 }
                 
                 // Evitar duplicados
-                if (!in_array($service->id, $calendarData[$month][$day])) {
-                    $calendarData[$month][$day][] = $service->id;
+                if (!in_array($service->id, $calendarData[$yearMonth][$day])) {
+                    $calendarData[$yearMonth][$day][] = $service->id;
                 }
             }
         }

@@ -291,12 +291,11 @@
         <div class="header-text">
             <h1>Calendario Anual de Servicios</h1>
             <div class="header-info">
-                <!-- Variables pasadas desde el controlador: $contract, $year -->
+                <!-- Variables pasadas desde el controlador: $contract, $startDate, $endDate -->
                 <span><strong>Cliente:</strong> {{ $contract->customer->name }}</span> |
                 <span><strong>Código:</strong> {{ $contract->customer->code }}</span> |
-                <span><strong>Año:</strong> {{ $year }}</span> |
-                <span><strong>Período:</strong> {{ \Carbon\Carbon::parse($contract->startdate)->format('d/m/Y') }} -
-                    {{ \Carbon\Carbon::parse($contract->enddate)->format('d/m/Y') }}</span>
+                <span><strong>Período:</strong> {{ $startDate->format('d/m/Y') }} -
+                    {{ $endDate->format('d/m/Y') }}</span>
             </div>
         </div>
         <div class="header-logo">
@@ -307,17 +306,23 @@
 
     <!-- ============================================
          CALENDARIOS MENSUALES
-         Loop de 12 meses, cada uno como tabla
+         Loop de meses del periodo del contrato
          ============================================ -->
     <div class="months-container">
-        <!-- Itera del 1 al 12 para generar los 12 meses -->
-        @for ($month = 1; $month <= 12; $month++)
-            @if ($month == 4 || $month == 7 || $month == 10)
+        <!-- Itera sobre los meses del periodo del contrato -->
+        @foreach ($months as $index => $monthData)
+            @php
+                $month = $monthData['month'];
+                $year = $monthData['year'];
+                $monthName = $monthData['name'];
+                $yearMonth = $year . '-' . $month;
+            @endphp
+            @if (($index + 1) % 3 == 1 && $index > 0)
                 <div class="clearfix"></div>
             @endif
-            <div class="month-block {{ $month % 3 == 0 ? 'last-in-row' : '' }}">
-                <!-- Título del mes (viene de $monthNames del controlador) -->
-                <div class="month-title">{{ $monthNames[$month] }} {{ $year }}</div>
+            <div class="month-block {{ ($index + 1) % 3 == 0 ? 'last-in-row' : '' }}">
+                <!-- Título del mes -->
+                <div class="month-title">{{ $monthName }} {{ $year }}</div>
 
                 <!-- Tabla del calendario mensual -->
                 <table class="calendar-table">
@@ -365,7 +370,7 @@
                             @elseif($day <= $daysInMonth)
                                 @php
                                     // Verificar si hay servicio programado este día
-                                    $haService = isset($calendarData[$month][$day]);
+                                    $haService = isset($calendarData[$yearMonth][$day]);
 
                                     // Obtener el día de la semana actual (0=domingo, 1=lunes, ..., 6=sábado)
                                     $currentDate = \Carbon\Carbon::create($year, $month, $day);
@@ -409,7 +414,7 @@
                     </tbody>
                 </table>
             </div>
-        @endfor
+        @endforeach
 
         <!-- Limpiar floats después de todos los meses -->
         <div class="clearfix"></div>
@@ -436,10 +441,13 @@
             // Analizar qué servicios se realizan en cada día de la semana
             $colorServices = []; // [dayOfWeek => [array de service_ids]]
 
-            foreach ($calendarData as $month => $days) {
+            foreach ($calendarData as $yearMonth => $days) {
                 foreach ($days as $day => $serviceIds) {
+                    // Extraer año y mes de la clave compuesta
+                    list($yearPart, $monthPart) = explode('-', $yearMonth);
+                    
                     // Obtener día de la semana para esta fecha
-                    $currentDate = \Carbon\Carbon::create($year, $month, $day);
+                    $currentDate = \Carbon\Carbon::create($yearPart, $monthPart, $day);
                     $dayOfWeek = $currentDate->dayOfWeek;
 
                     if (!isset($colorServices[$dayOfWeek])) {
