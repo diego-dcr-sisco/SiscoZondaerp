@@ -755,6 +755,8 @@ class StockController extends Controller
         $warehouse = Warehouse::find($id);
         $all_warehouses = Warehouse::where('id', '!=', $id)->get();
         $products = $warehouse->products();//ProductCatalog::all();
+
+        dd($products);
         $input_movements = MovementType::whereBetween('id', [1, 4])->get();
 
         foreach ($products as $product) {
