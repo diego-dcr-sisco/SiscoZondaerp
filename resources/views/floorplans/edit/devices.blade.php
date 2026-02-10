@@ -407,10 +407,10 @@
 
             $(document).ready(function() {
                 resetInputs();
-                if (can_resize) {
-                    resizeDevicesCoordinates();
-                }
                 setDevices();
+                if (can_resize) {
+                    resizePointsToNewCanvas();
+                }
             });
 
             function resetInputs() {
@@ -1193,8 +1193,8 @@
                 return [width, height];
             }
 
-            // FUNCIÓN PARA REAJUSTAR COORDENADAS DE DISPOSITIVOS ANTES DE CARGARLOS
-            function resizeDevicesCoordinates() {
+            // FUNCIÓN PARA REAJUSTAR PUNTOS A NUEVAS DIMENSIONES
+            function resizePointsToNewCanvas() {
                 // Obtener dimensiones originales y actuales
                 const [originalWidth, originalHeight] = getOriginalCanvasDimensions();
                 const currentWidth = canvas.getWidth();
@@ -1202,7 +1202,7 @@
 
                 // Si las dimensiones no han cambiado, no hacer nada
                 if (originalWidth === currentWidth && originalHeight === currentHeight) {
-                    console.log('✓ Las dimensiones del canvas no han cambiado');
+                    console.log('Las dimensiones del canvas no han cambiado');
                     return;
                 }
 
@@ -1210,27 +1210,33 @@
                 const scaleX = currentWidth / originalWidth;
                 const scaleY = currentHeight / originalHeight;
 
-                console.log(`📐 Reajustando coordenadas de dispositivos:`);
-                console.log(`   Original: ${originalWidth}x${originalHeight}`);
-                console.log(`   Actual: ${currentWidth}x${currentHeight}`);
-                console.log(`   Factores de escala: X=${scaleX.toFixed(4)}, Y=${scaleY.toFixed(4)}`);
+                console.log(`Reajustando puntos de ${originalWidth}x${originalHeight} a ${currentWidth}x${currentHeight}`);
+                console.log(`Factores de escala: X=${scaleX.toFixed(4)}, Y=${scaleY.toFixed(4)}`);
 
-                // Actualizar las coordenadas en el array de devices ANTES de cargarlos
-                if (devices && devices.length > 0) {
-                    devices.forEach(device => {
-                        const oldX = device.map_x;
-                        const oldY = device.map_y;
-                        
-                        // Aplicar factores de escala
-                        device.map_x = oldX * scaleX;
-                        device.map_y = oldY * scaleY;
+                // Actualizar todos los puntos en el array y en el canvas
+                points.forEach(point => {
+                    // Escalar las coordenadas
+                    const newX = point.x * scaleX;
+                    const newY = point.y * scaleY;
 
-                        console.log(`   📍 Device ${device.code}: (${oldX.toFixed(2)}, ${oldY.toFixed(2)}) → (${device.map_x.toFixed(2)}, ${device.map_y.toFixed(2)})`);
+                    // Actualizar el punto en el array
+                    point.x = newX;
+                    point.y = newY;
+
+                    // Buscar y actualizar el objeto visual en el canvas
+                    canvas.getObjects().forEach(obj => {
+                        if (obj.type === 'group' && obj.metadata && obj.metadata.index === point.index) {
+                            obj.set({
+                                left: newX,
+                                top: newY
+                            });
+                            obj.setCoords(); // Actualizar coordenadas para interacción
+                        }
                     });
-                    console.log(`✅ ${devices.length} dispositivos reajustados`);
-                } else {
-                    console.log('⚠️ No hay dispositivos para reajustar');
-                }
+                });
+
+                // Renderizar los cambios
+                canvas.renderAll();
             }
         </script>
 
