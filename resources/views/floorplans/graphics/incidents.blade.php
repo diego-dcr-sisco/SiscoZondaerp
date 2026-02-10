@@ -234,6 +234,7 @@
 
         // Función para cargar los datos de incidentes vía AJAX con rango de fechas
         async function fetchGraphDataByRange(version, startDate, endDate) {
+            console.log('📊 fetchGraphDataByRange - Parámetros:', { version, startDate, endDate });
             try {
                 const response = await fetch(`{{ route('floorplan.graphic.incidents', $floorplan->id) }}?version=${version}&startDate=${startDate}&endDate=${endDate}`, {
                     method: 'GET',
@@ -249,6 +250,7 @@
                 }
 
                 const data = await response.json();
+                console.log('✅ fetchGraphDataByRange - Datos recibidos:', data);
                 return data;
             } catch (error) {
                 console.error('Error al cargar datos:', error);
@@ -259,6 +261,7 @@
 
         // Función para cargar los datos de incidentes vía AJAX
         async function fetchGraphData(version, month, year) {
+            console.log('📊 fetchGraphData - Parámetros:', { version, month, year });
             try {
                 const response = await fetch(`{{ route('floorplan.graphic.incidents', $floorplan->id) }}?version=${version}&month=${month}&year=${year}`, {
                     method: 'GET',
@@ -274,6 +277,7 @@
                 }
 
                 const data = await response.json();
+                console.log('✅ fetchGraphData - Datos recibidos:', data);
                 return data;
             } catch (error) {
                 console.error('Error al cargar datos:', error);
@@ -284,6 +288,7 @@
 
         // Función para cargar datos de tendencia (todos los meses del año)
         async function fetchTrendData(version, year) {
+            console.log('📊 fetchTrendData - Parámetros:', { version, year });
             try {
                 const response = await fetch(`{{ route('floorplan.graphic.incidents', $floorplan->id) }}?version=${version}&year=${year}&trend=true`, {
                     method: 'GET',
@@ -299,6 +304,7 @@
                 }
 
                 const data = await response.json();
+                console.log('✅ fetchTrendData - Datos recibidos:', data);
                 return data;
             } catch (error) {
                 console.error('Error al cargar datos de tendencia:', error);
@@ -309,6 +315,8 @@
 
         // Función para actualizar el gráfico de dispositivos
         function updateDevicesChart(labels, data) {
+            console.log('📈 updateDevicesChart - Labels:', labels);
+            console.log('📈 updateDevicesChart - Data:', data);
             const ctx_d = document.getElementById('devicesChart').getContext('2d');
 
             if (devicesChart) {
@@ -344,6 +352,8 @@
 
         // Función para actualizar el gráfico de plagas
         function updatePestsChart(labels, data) {
+            console.log('🐛 updatePestsChart - Labels:', labels);
+            console.log('🐛 updatePestsChart - Data:', data);
             const ctx_p = document.getElementById('pestsChart').getContext('2d');
 
             if (pestsChart) {
@@ -379,6 +389,8 @@
 
         // Función para actualizar el gráfico de tendencia
         function updateTrendChart(labels, data) {
+            console.log('📉 updateTrendChart - Labels:', labels);
+            console.log('📉 updateTrendChart - Data:', data);
             const ctx_t = document.getElementById('trendChart').getContext('2d');
 
             if (trendChart) {
@@ -426,6 +438,19 @@
 
         // Inicializar gráficos con datos iniciales
         function initializeCharts() {
+            console.log('🚀 Inicializando gráficos con datos del servidor...');
+            console.log('📦 Datos iniciales dispositivos:', { 
+                labels: {!! json_encode($graph_per_devices['labels']) !!}, 
+                data: {!! json_encode($graph_per_devices['data']) !!} 
+            });
+            console.log('📦 Datos iniciales plagas:', { 
+                labels: {!! json_encode($graph_per_pests['labels']) !!}, 
+                data: {!! json_encode($graph_per_pests['data']) !!} 
+            });
+            console.log('📦 Datos iniciales tendencia:', { 
+                labels: {!! json_encode($graph_per_months['labels']) !!}, 
+                data: {!! json_encode($graph_per_months['data']) !!} 
+            });
             updateDevicesChart({!! json_encode($graph_per_devices['labels']) !!}, {!! json_encode($graph_per_devices['data']) !!});
             updatePestsChart({!! json_encode($graph_per_pests['labels']) !!}, {!! json_encode($graph_per_pests['data']) !!});
             updateTrendChart({!! json_encode($graph_per_months['labels']) !!}, {!! json_encode($graph_per_months['data']) !!});
@@ -453,7 +478,10 @@
 
             const graphData = await fetchGraphDataByRange(version, startDate, endDate);
             if (graphData && graphData.success) {
+                console.log('🔄 Actualizando gráfico de dispositivos con:', graphData.devices);
                 updateDevicesChart(graphData.devices.labels, graphData.devices.data);
+            } else {
+                console.warn('⚠️ No se recibieron datos válidos para dispositivos');
             }
 
             document.getElementById('devices-loader').style.display = 'none';
@@ -480,7 +508,10 @@
 
             const graphData = await fetchGraphDataByRange(version, startDate, endDate);
             if (graphData && graphData.success) {
+                console.log('🔄 Actualizando gráfico de plagas con:', graphData.pests);
                 updatePestsChart(graphData.pests.labels, graphData.pests.data);
+            } else {
+                console.warn('⚠️ No se recibieron datos válidos para plagas');
             }
 
             document.getElementById('pests-loader').style.display = 'none';
@@ -499,7 +530,10 @@
 
             const graphData = await fetchTrendData(version, year);
             if (graphData && graphData.success) {
+                console.log('🔄 Actualizando gráfico de tendencia con:', graphData.trend);
                 updateTrendChart(graphData.trend.labels, graphData.trend.data);
+            } else {
+                console.warn('⚠️ No se recibieron datos válidos para tendencia');
             }
 
             document.getElementById('trend-loader').style.display = 'none';
