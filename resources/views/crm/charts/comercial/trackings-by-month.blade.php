@@ -45,8 +45,8 @@
                 datasets: [{
                     label: 'Seguimientos programados',
                     data: data.data,
-                    backgroundColor: 'rgba(156, 39, 176, 0.2)',
-                    borderColor: '#9C27B0',
+                    backgroundColor: 'rgba(119, 55, 116, 0.2)',
+                    borderColor: '#773774',
                     borderWidth: 2,
                     fill: true,
                     tension: 0.4

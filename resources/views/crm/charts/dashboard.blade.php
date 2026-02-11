@@ -25,6 +25,10 @@
                     @include('crm.charts.comercial.services')
                 </div>
                 <div class="col-lg-6 col-12 mb-3">
+                    {{-- Plagas más presentadas --}}
+                    @include('crm.charts.comercial.pests-donut')
+                </div>
+                <div class="col-lg-6 col-12 mb-3">
                     {{-- Servicios programados (órdenes generadas) --}}
                     @include('crm.charts.comercial.services-programmed')
                 </div>
@@ -32,10 +36,12 @@
                     {{-- Seguimientos programados por mes --}}
                     @include('crm.charts.comercial.trackings-by-month')
                 </div>
+                
                 <div class="col-lg-6 col-12 mb-3">
-                    {{-- Plagas más presentadas --}}
-                    @include('crm.charts.comercial.pests-donut')
+                    {{-- Servicios completados por mes --}}
+                    @include('crm.charts.comercial.yearly-services-completed')
                 </div>
+                
         </div>
     </div>
 @endsection

@@ -45,22 +45,22 @@
                 datasets: [{
                         label: 'Domésticos',
                         data: data.domestics,
-                        borderColor: '#039BE5',
-                        backgroundColor: 'rgba(3, 155, 229, 0.2)',
+                        borderColor: '#0A2986',
+                        backgroundColor: 'rgba(10, 41, 134, 0.2)',
                         fill: true
                     },
                     {
                         label: 'Comerciales',
                         data: data.comercials,
-                        borderColor: '#1A237E',
-                        backgroundColor: 'rgba(26, 35, 126, 0.2)',
+                        borderColor: '#512A87',
+                        backgroundColor: 'rgba(81, 42, 135, 0.2)',
                         fill: true
                     },
                     {
                         label: 'Industrial/Planta',
                         data: data.industrials,
-                        borderColor: '#4CAF50',
-                        backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                        borderColor: '#DE523B',
+                        backgroundColor: 'rgba(222, 82, 59, 0.2)',
                         fill: true
                     }
                 ]

@@ -51,8 +51,8 @@
         // Generar colores dinámicos para cada servicio
         const backgroundColors = data.labels.map((_, index) => {
             const colors = [
-                '#039BE5', '#1A237E', '#4CAF50', '#FF9800', '#E91E63',
-                '#9C27B0', '#00BCD4', '#FFC107', '#795548', '#607D8B'
+                '#012640', '#02265A', '#0A2986', '#512A87', '#773774',
+                '#B74453', '#DE523B', '#012640', '#02265A', '#0A2986'
             ];
             return colors[index % colors.length];
         });
@@ -100,6 +100,6 @@
     });
     document.getElementById('monthServicesProgrammedSelector').addEventListener('change', function() {
         fetchServicesProgrammedData(document.getElementById('yearServicesProgrammedSelector').value, this
-        .value);
+            .value);
     });
 </script>

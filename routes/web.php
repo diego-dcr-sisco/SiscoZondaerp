@@ -293,6 +293,8 @@ Route::prefix('crm/chart')
         Route::get('/monthlyServices/update', [GraphicController::class, 'refreshMonthlyServices'])->name('monthlyServices.refresh');
         Route::get('/serviceOrders', [GraphicController::class, 'serviceOrdersDataset'])->name('serviceOrders');
         Route::get('/serviceOrders/update', [GraphicController::class, 'refreshServiceOrders'])->name('serviceOrders.refresh');
+        Route::get('/pestsDonut', [GraphicController::class, 'pestsDonutDataset'])->name('pestsDonut');
+        Route::get('/pestsDonut/update', [GraphicController::class, 'refreshPestsDonut'])->name('pestsDonut.refresh');
 
         Route::get('/crm/chart/leads', [GraphicController::class, 'leadsByServiceType'])->name('chartLeads');
 
@@ -313,6 +315,7 @@ Route::prefix('crm/chart')
         Route::get('/services-programmed', [GraphicController::class, 'servicesProgrammedJson'])->name('servicesProgrammedJson');
         Route::get('/trackings-by-month', [GraphicController::class, 'trackingsByMonthJson'])->name('trackingsByMonthJson');
         Route::get('/pests-by-customer', [GraphicController::class, 'pestsByCustomerJson'])->name('pestsByCustomerJson');
+        Route::get('/services-completed-by-month', [GraphicController::class, 'servicesCompletedByMonth'])->name('servicesCompletedByMonth');
 
         // views
         Route::get('/dashboard', [GraphicController::class, 'index'])->name('dashboard');
