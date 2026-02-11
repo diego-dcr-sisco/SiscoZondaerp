@@ -262,6 +262,14 @@
         }
 
         /* ============================================
+           BORDE ESPECIAL PARA SERVICIOS CON FRECUENCIA 3
+           ============================================ */
+        .special-frequency-border {
+            border: 3px solid #FFD700 !important; /* Dorado brillante */
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+        }
+
+        /* ============================================
            PIE DE PÁGINA
            ============================================ */
 
@@ -390,10 +398,14 @@
 
                                     // Color según día de la semana si hay servicio
                                     $cellColor = $haService ? $weekDayColors[$dayOfWeek] : 'white';
+                                    
+                                    // Verificar si es un día con frecuencia especial
+                                    $isSpecialFrequency = isset($specialFrequencyDates['dates'][$yearMonth]) && in_array($day, $specialFrequencyDates['dates'][$yearMonth]);
+                                    $specialClass = $isSpecialFrequency ? 'special-frequency-border' : '';
                                 @endphp
 
                                 <!-- Celda coloreada según día de la semana -->
-                                <td
+                                <td class="{{ $specialClass }}"
                                     style="background-color: {{ $cellColor }}; {{ $haService ? 'color: white;' : 'color: #000;' }}">
                                     <span class="day-number">{{ $day }}</span>
                                 </td>
@@ -491,6 +503,21 @@
             </div>
         @endforeach
     </div>
+
+    <!-- ============================================
+         SIMBOLOGÍA DE FRECUENCIA ESPECIAL
+         ============================================ -->
+    @if(!empty($specialFrequencyDates['dates']))
+    <div class="legend">
+        <div class="legend-title">SERVICIOS ESPECIALES</div>
+        @foreach($specialFrequencyDates['services'] as $serviceId => $serviceName)
+        <div class="legend-item">
+            <span class="color-box special-frequency-border" style="background-color: white;"></span>
+            <span class="day-name">{{ $serviceName }}</span>
+        </div>
+        @endforeach
+    </div>
+    @endif
 
     <!-- ============================================
          PIE DE PÁGINA

@@ -1089,7 +1089,7 @@ class ContractController extends Controller
      */
     public function annualCalendarPDF(string $id)
     {
-        $contract = Contract::with('services.service', 'orders.services')
+        $contract = Contract::with('services.service', 'orders.services', 'orders.setting')
             ->find($id);
         
         if (!$contract) {
@@ -1118,8 +1118,9 @@ class ContractController extends Controller
         // Preparar datos
         $calendarData = $this->getCalendarData($contract, $startDate, $endDate);
         $serviceColors = $this->assignServiceColors($contract->services);
+        $specialFrequencyDates = $this->getSpecialFrequencyDates($contract, $startDate, $endDate);
         
-        $data = compact('contract', 'calendarData', 'serviceColors', 'months', 'startDate', 'endDate');
+        $data = compact('contract', 'calendarData', 'serviceColors', 'specialFrequencyDates', 'months', 'startDate', 'endDate');
         
         $pdf = Pdf::loadView('contract.pdf.annual_calendar', $data)->setOptions([
             'isHtml5ParserEnabled' => true,
@@ -1214,5 +1215,57 @@ class ContractController extends Controller
         }
         
         return $serviceColors;
+    }
+
+    /**
+     * Identifica fechas con servicios de frecuencia especial (execution_frequency_id = 3 y menos de 12 órdenes)
+     */
+    private function getSpecialFrequencyDates(Contract $contract, Carbon $startDate, Carbon $endDate): array
+    {
+        $specialDates = [];
+        $specialServices = []; // Array para almacenar los service_ids únicos
+        
+        // Obtener todas las órdenes con setting cargado
+        $orders = $contract->orders()
+            ->whereBetween('programmed_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->with('setting.service')
+            ->get();
+        
+        foreach ($orders as $order) {
+            // Verificar si tiene setting_id y si cumple las condiciones
+            if ($order->setting_id && $order->setting) {
+                $contractService = $order->setting;
+                
+                // Verificar si execution_frequency_id = 3 y total < 12
+                if ($contractService->execution_frequency_id == 3 && $contractService->total < 12) {
+                    $orderDate = Carbon::parse($order->programmed_date);
+                    $year = $orderDate->year;
+                    $month = $orderDate->month;
+                    $day = $orderDate->day;
+                    $yearMonth = $year . '-' . $month;
+                    
+                    if (!isset($specialDates[$yearMonth])) {
+                        $specialDates[$yearMonth] = [];
+                    }
+                    
+                    // Marcar este día como especial
+                    if (!in_array($day, $specialDates[$yearMonth])) {
+                        $specialDates[$yearMonth][] = $day;
+                    }
+                    
+                    // Guardar el service_id si no está ya registrado
+                    $serviceId = $contractService->service_id;
+                    $serviceName = $contractService->service->name ?? 'Servicio sin nombre';
+                    if (!isset($specialServices[$serviceId])) {
+                        $specialServices[$serviceId] = $serviceName;
+                    }
+                }
+            }
+        }
+        
+        return [
+            'dates' => $specialDates,
+            'services' => $specialServices
+        ];
     }
 }
