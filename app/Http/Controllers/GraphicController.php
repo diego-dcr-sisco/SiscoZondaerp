@@ -31,6 +31,13 @@ class GraphicController extends Controller
         'PersianRed'     => '#C63030',
     ];
 
+    // Colores estándar para tipos de servicio (Doméstico, Comercial, Industrial)
+    private $service_colors = [
+        'Domestico'  => '#FFA000',  // Naranja ámbar
+        'Comercial'  => '#0D47A1',  // Azul oscuro
+        'Industrial' => '#D32F2F',  // Rojo
+    ];
+
     private $movement_colors = [
         "#33B5E5", // Devolucion (Azul-verde compuesto)
         "#6A3E98", // Recepcion (Morado-azul compuesto)
@@ -146,16 +153,16 @@ class GraphicController extends Controller
         ]);
 
         $chart->dataset('Domésticos', 'line', $domestics)
-            ->backgroundColor('rgba(3, 155, 229, 0.2)')
-            ->color('#039BE5');
+            ->backgroundColor('rgba(255, 160, 0, 0.2)')
+            ->color('#FFA000');
 
         $chart->dataset('Comerciales', 'line', $comercials)
-            ->backgroundColor('rgba(26, 35, 126, 0.2)')
-            ->color('#1A237E');
+            ->backgroundColor('rgba(13, 71, 161, 0.2)')
+            ->color('#0D47A1');
 
         $chart->dataset('Industrial/Planta', 'line', $industrials)
-            ->backgroundColor('rgba(76, 175, 80, 0.2)')
-            ->color('#4CAF50');
+            ->backgroundColor('rgba(211, 47, 47, 0.2)')
+            ->color('#D32F2F');
 
         return $chart;
     }
@@ -201,7 +208,7 @@ class GraphicController extends Controller
                         'type'      => 'bar',
                         'data'      => [$domestics, $comercials, $industrials],
                         'itemStyle' => [
-                            'color' => ['red', 'blue', 'green'],
+                            'color' => ['#FFA000', '#0D47A1', '#D32F2F'],
                         ],
                     ],
                 ],
@@ -212,8 +219,8 @@ class GraphicController extends Controller
         $chart = new SampleChart;
         $chart->labels(['Domésticos', 'Comerciales', 'Industrial/Planta']);
         $chart->dataset('Leads', 'bar', [$domestics, $comercials, $industrials])
-            ->backgroundColor(['red', 'blue', 'green'])
-            ->color(['red', 'blue', 'green']);
+            ->backgroundColor(['#FFA000', '#0D47A1', '#D32F2F'])
+            ->color(['#FFA000', '#0D47A1', '#D32F2F']);
 
         return $chart;
     }
@@ -256,8 +263,8 @@ class GraphicController extends Controller
 
         $chart = new SampleChart;
         $chart->dataset('Nuevos Clientes', 'bar', $counts)
-            ->backgroundColor(['#039BE5', '#1A237E', '#4CAF50']) // Colores para cada barra
-            ->color(['#039BE5', '#1A237E', '#4CAF50']);          // Bordes para cada barra
+            ->backgroundColor(['#FFA000', '#0D47A1', '#D32F2F']) // Colores para cada barra
+            ->color(['#FFA000', '#0D47A1', '#D32F2F']);          // Bordes para cada barra
 
         return $chart->api();
     }
@@ -292,8 +299,8 @@ class GraphicController extends Controller
         $chart = new SampleChart;
         $chart->labels(['Domésticos', 'Comerciales', 'Industrial/Planta']);
         $chart->dataset('Nuevos Clientes', 'bar', $counts)
-            ->backgroundColor(['#039BE5', '#1A237E', '#4CAF50']) // Colores para cada barra
-            ->color(['#039BE5', '#1A237E', '#4CAF50']);          // Bordes para cada barra
+            ->backgroundColor(['#FFA000', '#0D47A1', '#D32F2F']) // Colores para cada barra
+            ->color(['#FFA000', '#0D47A1', '#D32F2F']);          // Bordes para cada barra
 
         return $chart->api();
     }
@@ -364,16 +371,16 @@ class GraphicController extends Controller
         ]);
 
         $chart->dataset('Domésticos', 'line', $domestics)
-            ->backgroundColor('rgba(3, 155, 229, 0.2)')
-            ->color('#039BE5');
+            ->backgroundColor('rgba(255, 160, 0, 0.2)')
+            ->color('#FFA000');
 
         $chart->dataset('Comerciales', 'line', $comercials)
-            ->backgroundColor('rgba(26, 35, 126, 0.2)')
-            ->color('#1A237E');
+            ->backgroundColor('rgba(13, 71, 161, 0.2)')
+            ->color('#0D47A1');
 
         $chart->dataset('Industrial/Planta', 'line', $industrials)
-            ->backgroundColor('rgba(76, 175, 80, 0.2)')
-            ->color('#4CAF50');
+            ->backgroundColor('rgba(211, 47, 47, 0.2)')
+            ->color('#D32F2F');
 
         return $chart->api();
     }
@@ -419,16 +426,16 @@ class GraphicController extends Controller
         ]);
 
         $chart->dataset('Domésticos', 'line', $domestics)
-            ->backgroundColor('rgba(3, 155, 229, 0.2)')
-            ->color('#039BE5');
+            ->backgroundColor('rgba(255, 160, 0, 0.2)')
+            ->color('#FFA000');
 
         $chart->dataset('Comerciales', 'line', $comercials)
-            ->backgroundColor('rgba(26, 35, 126, 0.2)')
-            ->color('#1A237E');
+            ->backgroundColor('rgba(13, 71, 161, 0.2)')
+            ->color('#0D47A1');
 
         $chart->dataset('Industrial/Planta', 'line', $industrials)
-            ->backgroundColor('rgba(76, 175, 80, 0.2)')
-            ->color('#4CAF50');
+            ->backgroundColor('rgba(211, 47, 47, 0.2)')
+            ->color('#D32F2F');
 
         return $chart->api();
     }
@@ -470,8 +477,8 @@ class GraphicController extends Controller
         $chart = new MonthlyLeadsChart;
         $chart->labels(['Domésticos', 'Comerciales', 'Industrial/Planta']);
         $chart->dataset('Leads', 'bar', $counts)
-            ->backgroundColor(['rgba(3, 155, 229, 0.2), rgba(26, 35, 126, 0.2), rgba(76, 175, 80, 0.2)'])
-            ->color(['#039BE5', '#1A237E', '#4CAF50']);
+            ->backgroundColor(['rgba(255, 160, 0, 0.2), rgba(13, 71, 161, 0.2), rgba(211, 47, 47, 0.2)'])
+            ->color(['#FFA000', '#0D47A1', '#D32F2F']);
 
         return $chart->api();
     }
@@ -501,8 +508,8 @@ class GraphicController extends Controller
         $chart = new MonthlyLeadsChart;
         $chart->labels(['Domésticos', 'Comerciales', 'Industrial/Planta']);
         $chart->dataset('Leads', 'bar', $counts)
-            ->backgroundColor(['rgba(3, 155, 229, 0.2), rgba(26, 35, 126, 0.2), rgba(76, 175, 80, 0.2)'])
-            ->color(['#039BE5', '#1F237E', '#4CAF50']);
+            ->backgroundColor(['rgba(255, 160, 0, 0.2), rgba(13, 71, 161, 0.2), rgba(211, 47, 47, 0.2)'])
+            ->color(['#FFA000', '#0D47A1', '#D32F2F']);
 
         return $chart->api();
     }
@@ -551,7 +558,7 @@ class GraphicController extends Controller
                     'data'      => [$domestics, $comercials, $industrials],
                     'itemStyle' => [
                         'color' => function ($params) {
-                            $colors = ['#039BE5', '#1A237E', '#4CAF50'];
+                            $colors = ['#FFA000', '#0D47A1', '#D32F2F'];
                             return $colors[$params['dataIndex']];
                         },
                     ],
@@ -598,48 +605,12 @@ class GraphicController extends Controller
             })
             ->count();
 
-        if (request()->ajax()) {
-            return response()->json([
-                'title'   => [
-                    'text' => '',
-                ],
-                'tooltip' => [
-                    'trigger' => 'axis',
-                ],
-                'xAxis'   => [
-                    'type' => 'category',
-                    'data' => ['Domésticos', 'Comerciales', 'Industrial/Planta'],
-                ],
-                'yAxis'   => [
-                    'type' => 'value',
-                ],
-                'series'  => [
-                    [
-                        'name'      => 'Servicios',
-                        'type'      => 'bar',
-                        'data'      => [$domestics, $comercials, $industrials],
-                        'itemStyle' => [
-                            'color' => ['red', 'blue', 'green'],
-                        ],
-                    ],
-                ],
-            ]);
-        }
-
         $chart = new SampleChart;
-        $chart->labels(['Servicios']);
+        $chart->labels(['Domésticos', 'Comerciales', 'Industrial/Planta']);
 
-        $chart->dataset('Domésticos', 'bar', [$domestics])
-            ->backgroundColor('red')
-            ->color('red');
-
-        $chart->dataset('Comerciales', 'bar', [$comercials])
-            ->backgroundColor('blue')
-            ->color('blue');
-
-        $chart->dataset('Industrial/Planta', 'bar', [$industrials])
-            ->backgroundColor('green')
-            ->color('green');
+        $chart->dataset('Servicios', 'doughnut', [$domestics, $comercials, $industrials])
+            ->backgroundColor(['#FFA000', '#0D47A1', '#D32F2F'])
+            ->color(['#FFA000', '#0D47A1', '#D32F2F']);
 
         return $chart->api();
     }
@@ -670,31 +641,14 @@ class GraphicController extends Controller
             })
             ->count();
 
-        return response()->json([
-            'title'   => [
-                'text' => '',
-            ],
-            'tooltip' => [
-                'trigger' => 'axis',
-            ],
-            'xAxis'   => [
-                'type' => 'category',
-                'data' => ['Domésticos', 'Comerciales', 'Industrial/Planta'],
-            ],
-            'yAxis'   => [
-                'type' => 'value',
-            ],
-            'series'  => [
-                [
-                    'name'      => 'Servicios',
-                    'type'      => 'bar',
-                    'data'      => [$domestics, $comercials, $industrials],
-                    'itemStyle' => [
-                        'color' => ['red', 'blue', 'green'],
-                    ],
-                ],
-            ],
-        ]);
+        $chart = new SampleChart;
+        $chart->labels(['Domésticos', 'Comerciales', 'Industrial/Planta']);
+
+        $chart->dataset('Servicios', 'doughnut', [$domestics, $comercials, $industrials])
+            ->backgroundColor(['#FFA000', '#0D47A1', '#D32F2F'])
+            ->color(['#FFA000', '#0D47A1', '#D32F2F']);
+
+        return $chart->api();
     }
     //////////////////////// Fin de graficas de CLIENTES ////////////////////////////////////////
     // -------------------------------------------------------------------------------------- //

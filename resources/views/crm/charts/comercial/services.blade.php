@@ -47,7 +47,46 @@
             route_api_url = {{ $monthlyServicesChart->id }}_api_url;
         }
 
-        {{ $monthlyServicesChart->id }}_refresh(route_api_url + '/update' + "?month=" + month + "&year=" + year);
-        console.log(route_api_url + '/update' + "?month=" + month + "&year=" + year);
+        const apiUrl = route_api_url + '/update' + "?month=" + month + "&year=" + year;
+        console.log('🔄 Solicitando datos a:', apiUrl);
+        
+        // Interceptar la respuesta para ver los datos
+        $.ajax({
+            url: apiUrl,
+            method: 'GET',
+            success: function(response) {
+                console.log('📊 Datos recibidos de la gráfica:', response);
+                console.log('📈 Series:', response.series);
+                {{ $monthlyServicesChart->id }}_refresh(apiUrl);
+            },
+            error: function(error) {
+                console.error('❌ Error al cargar datos:', error);
+            }
+        });
     }
+
+    // Ejecutar al cargar la página para ver los datos iniciales
+    $(document).ready(function() {
+        setTimeout(function() {
+            const month = $('#monthServicesSelector').val();
+            const year = $('#yearServicesSelector').val();
+            const initialApiUrl = {{ $monthlyServicesChart->id }}_api_url + '/update' + "?month=" + month + "&year=" + year;
+            
+            console.log('🎨 Carga inicial de la gráfica');
+            console.log('📅 Mes:', month, 'Año:', year);
+            console.log('🔗 URL inicial:', initialApiUrl);
+            
+            $.ajax({
+                url: initialApiUrl,
+                method: 'GET',
+                success: function(response) {
+                    console.log('📊 Datos iniciales de la gráfica:', response);
+                    console.log('📈 Series iniciales:', response.series);
+                },
+                error: function(error) {
+                    console.error('❌ Error al cargar datos iniciales:', error);
+                }
+            });
+        }, 500); // Pequeño delay para asegurar que la gráfica esté cargada
+    });
 </script>
