@@ -39,10 +39,10 @@
                 @php
                     $reviewedDevices = collect($devices)->filter(function($device) {
                         return $device['states']['is_checked'];
-                    });
+                    })->sortBy('nplan');
                     $notReviewedDevices = collect($devices)->filter(function($device) {
                         return !$device['states']['is_checked'];
-                    });
+                    })->sortBy('nplan');
                 @endphp
 
                 {{-- Dispositivos Revisados --}}
