@@ -5,7 +5,7 @@
 <div class="card shadow-sm">
     <div class="card-body">
         <h5 class="card-title fw-bold d-flex justify-content-between">
-            <span class="fs-5 fw-bold">Servicios programados</span>
+            <span class="fs-5 fw-bold">Tipo de servicio por mes</span>
             <div class="input-group w-50">
                 <div class="input-group w-100 mb-3">
                     <select class="form-select" id="yearServicesProgrammedSelector">
@@ -48,34 +48,47 @@
         const ctx = document.getElementById('servicesProgrammedChart').getContext('2d');
         if (servicesProgrammedChart) servicesProgrammedChart.destroy();
 
-        // Generar colores dinámicos para cada servicio
-        const backgroundColors = data.labels.map((_, index) => {
-            const colors = [
-                '#012640', '#02265A', '#0A2986', '#512A87', '#773774',
-                '#B74453', '#DE523B', '#012640', '#02265A', '#0A2986'
-            ];
-            return colors[index % colors.length];
+        // Definir colores para cada tipo de servicio - Paleta corporativa
+        const colors = [
+            '#012640', // Deep Space Blue
+            '#DE523B', // Fiery Terracotta
+            '#02265A', // Deep Navy
+            '#B74453', // Dusty Mauve
+            '#0A2986', // True Cobalt
+            '#512A87', // Indigo Velvet
+            '#773774', // Velvet Purple
+        ];
+
+        // Crear un dataset por cada tipo de servicio
+        const datasets = data.labels.map((label, index) => {
+            const baseColor = colors[index % colors.length];
+            return {
+                label: label,
+                data: [data.data[index]], // Solo el valor de este servicio
+                backgroundColor: baseColor + '40', // Color con transparencia (25%)
+                borderColor: baseColor,
+                borderWidth: 2,
+                categoryPercentage: 0.8,
+                barPercentage: 0.9
+            };
         });
 
         servicesProgrammedChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: data.labels,
-                datasets: [{
-                    label: 'Órdenes programadas',
-                    data: data.data,
-                    backgroundColor: backgroundColors,
-                }]
+                labels: ['Servicios'], // Una sola categoría
+                datasets: datasets
             },
             options: {
                 responsive: true,
                 plugins: {
                     legend: {
-                        display: false
+                        display: true,
+                        position: 'top',
                     },
                     title: {
                         display: true,
-                        text: 'Servicios programados (órdenes generadas)'
+                        text: 'Tipo de servicio por mes'
                     }
                 },
                 scales: {

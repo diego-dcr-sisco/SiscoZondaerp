@@ -113,7 +113,7 @@ Route::prefix('quality')
         Route::get('/customer/{id}', [QualityController::class, 'customer'])->name('customer');
         Route::delete('/customer/{customerId}/{matrixId}/destroy', [QualityController::class, 'destroyRelation'])->name('customer.destroyRelation');
 
-        // rutas de graficas de calidad
+        // rutas de Estadisticas de calidad
         Route::get('/customer/{id}/analytics', [QualityController::class, 'analytics'])->name('analytics');
         Route::get('/customer/{customer}/analytics/device-consumption', [QualityController::class, 'deviceConsumptionTable'])->name('deviceConsumptionTable');
 
@@ -225,7 +225,7 @@ Route::prefix('stock')
         Route::put('/indirect/update/{id}', [StockController::class, 'updateIndirectProduct'])->name('indirect.update');
         Route::delete('/indirect/destroy/{id}', [StockController::class, 'destroyIndirectProduct'])->name('indirect.destroy');
 
-        // Graficas y estadistica
+        // Estadisticas y estadistica
         Route::get('/analytics', [StockController::class, 'analytics'])->name('analytics');
 
         // Exportar stock a excel 

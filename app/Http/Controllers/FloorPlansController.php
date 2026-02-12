@@ -83,7 +83,7 @@ class FloorPlansController extends Controller
             'QRs' => route('floorplan.qr', ['id' => $floorplan->id]),
             'Geolocalización' => route('floorplan.geolocation', ['id' => $floorplan->id]),
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $floorplan->customer_id]),
-            'Graficas' => route('floorplan.graphic.incidents', ['id' => $floorplan->id])
+            'Estadisticas' => route('floorplan.graphic.incidents', ['id' => $floorplan->id])
         ];
 
         return $navigation;
@@ -1164,9 +1164,9 @@ class FloorPlansController extends Controller
 
         // Gráfica por meses (tendencia) - optimizada con una sola query
         $monthlyData = DevicePest::where('device_id', $device->id)
-            ->join('orders', 'device_pests.order_id', '=', 'orders.id')
-            ->whereYear('orders.programmed_date', $year)
-            ->selectRaw('MONTH(orders.programmed_date) as month, SUM(device_pests.total) as total_count')
+            ->join('order', 'device_pest.order_id', '=', 'order.id')
+            ->whereYear('order.programmed_date', $year)
+            ->selectRaw('MONTH(order.programmed_date) as month, SUM(device_pest.total) as total_count')
             ->groupBy('month')
             ->get()
             ->keyBy('month');

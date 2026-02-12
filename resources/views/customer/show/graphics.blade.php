@@ -6,7 +6,7 @@
                     <i class="bi bi-arrow-left fs-4"></i>
                 </a>
                 <span class="text-black fw-bold fs-4">
-                    GRAFICAS DE LA SEDE </span> <span class="ms-2 fs-4"> {{ $customer->name }}</span>
+                    Estadisticas DE LA SEDE </span> <span class="ms-2 fs-4"> {{ $customer->name }}</span>
                 </span>
             </div>
 

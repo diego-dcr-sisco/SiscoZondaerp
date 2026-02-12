@@ -7,11 +7,12 @@
                     class="text-decoration-none pe-3">
                     <i class="bi bi-arrow-left fs-4"></i>
                 </a>
-                <span class="text-black fw-bold fs-4">Estadísticas del dispositivo</span>
+                <span class="text-black fw-bold fs-4">Estadísticas del dispositivo {{ $device->code ?? '' }}</span>
             </div>
             <div class="pe-4">
-                <button class="btn btn-danger btn-sm" onclick="exportAllChartsToPDF()">
-                    <i class="bi bi-file-pdf-fill"></i> Exportar Todo a PDF
+                <button class="btn btn-dark btn-sm" id="generateReportBtn" onclick="exportAllChartsToPDF()">
+                    <i class="bi bi-file-pdf-fill"></i> Generar Reporte
+                    <span id="reportLoading" class="spinner-border spinner-border-sm ms-2" role="status" aria-hidden="true" style="display: none;"></span>
                 </button>
             </div>
         </div>
@@ -61,7 +62,7 @@
                 <div class="border rounded shadow p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold mb-0">Incidencias por tipo de plaga - {{ $device->code ?? 'Dispositivo' }}</h5>
-                        <button class="btn btn-outline-danger btn-sm" onclick="exportChartToPDF('devicePestsChart', 'Incidencias_Plagas_{{ $device->code }}')">
+                        <button class="btn btn-dark btn-sm" onclick="exportChartToPDF('devicePestsChart', 'Incidencias_Plagas_{{ $device->code }}')">
                             <i class="bi bi-file-pdf"></i> Exportar PDF
                         </button>
                     </div>
@@ -95,8 +96,8 @@
             <div class="col-lg-6 col-12">
                 <div class="border rounded shadow p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold mb-0">Tendencia Anual - {{ $device->code ?? 'Dispositivo' }}</h5>
-                        <button class="btn btn-outline-danger btn-sm" onclick="exportChartToPDF('deviceTrendChart', 'Tendencia_Anual_{{ $device->code }}')">
+                        <h5 class="fw-bold mb-0">Tendencia mensual por año - {{ $device->code ?? 'Dispositivo' }}</h5>
+                        <button class="btn btn-dark btn-sm" onclick="exportChartToPDF('deviceTrendChart', 'Tendencia_Anual_{{ $device->code }}')">
                             <i class="bi bi-file-pdf"></i> Exportar PDF
                         </button>
                     </div>
@@ -151,9 +152,9 @@
                     datasets: [{
                         label: 'Incidentes por plaga',
                         data: data,
-                        backgroundColor: 'rgba(222,82,59,0.5)',
-                        borderColor: 'rgba(222,82,59)',
-                        borderWidth: 1
+                        backgroundColor: '#DE523B40', // Fiery Terracotta con transparencia
+                        borderColor: '#DE523B', // Fiery Terracotta
+                        borderWidth: 2
                     }]
                 },
                 options: {
@@ -172,7 +173,6 @@
         }
 
         function updateTrendChart(labels, data) {
-
             const ctx = document.getElementById('deviceTrendChart').getContext('2d');
             if (trendChart) trendChart.destroy();
             trendChart = new Chart(ctx, {
@@ -182,8 +182,8 @@
                     datasets: [{
                         label: 'Incidentes por mes',
                         data: data,
-                        borderColor: 'rgba(75,192,75)',
-                        backgroundColor: 'rgba(75,192,75,0.1)',
+                        borderColor: '#512A87', // Indigo Velvet
+                        backgroundColor: '#512A8720', // Indigo Velvet con transparencia
                         fill: true,
                         tension: 0.4
                     }]
@@ -388,22 +388,102 @@
         }
 
         // Función para exportar todas las gráficas en un solo PDF
+        // Función para cargar imagen como base64
+        function loadImageAsBase64(url) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.onerror = () => resolve(null);
+                img.src = url;
+            });
+        }
+
         async function exportAllChartsToPDF() {
+            const btn = document.getElementById('generateReportBtn');
+            const loading = document.getElementById('reportLoading');
+            
+            btn.disabled = true;
+            loading.style.display = 'inline-block';
+
             try {
+                // Cargar el logo
+                const logoData = await loadImageAsBase64('/images/logo.png');
+                
+                // Esperar a que todas las gráficas estén renderizadas
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4'
-                });
+                const pdf = new jsPDF('p', 'mm', 'letter');
+                
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                const margin = 15;
+                const contentWidth = pageWidth - (margin * 2);
+                
+                let currentY = margin;
 
+                // Header
+                const headerStartY = 10;
+                pdf.setFillColor(255, 255, 255);
+                pdf.rect(0, headerStartY, pageWidth, 20, 'F');
+                
+                // Agregar logo en el header (lado derecho)
+                if (logoData) {
+                    try {
+                        pdf.addImage(logoData, 'PNG', pageWidth - margin - 20, headerStartY + 3, 20, 15);
+                    } catch (error) {
+                        console.error('Error agregando logo:', error);
+                    }
+                }
+                
+                // Texto del lado izquierdo
+                pdf.setTextColor(1, 38, 64); // #012640
+                pdf.setFontSize(14);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Estadísticas del Dispositivo', margin, headerStartY + 10);
+                
+                pdf.setFontSize(8);
+                pdf.setFont(undefined, 'normal');
+                pdf.setTextColor(100, 100, 100);
+                pdf.text('Sistema de Gestión Empresarial SISCO ZONDA', margin, headerStartY + 16);
+
+                currentY = headerStartY + 28;
+
+                // Información del reporte
+                pdf.setTextColor(0, 0, 0);
+                pdf.setFontSize(10);
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Fecha de generación:', margin, currentY);
+                pdf.setFont(undefined, 'normal');
+                pdf.text(new Date().toLocaleString('es-MX'), margin + 50, currentY);
+                
+                currentY += 7;
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Dispositivo:', margin, currentY);
+                pdf.setFont(undefined, 'normal');
+                pdf.text('{{ $device->code }}', margin + 50, currentY);
+                
+                currentY += 7;
+                pdf.setFont(undefined, 'bold');
+                pdf.text('Tipo:', margin, currentY);
+                pdf.setFont(undefined, 'normal');
+                pdf.text('{{ $device->type->name ?? "N/A" }}', margin + 50, currentY);
+
+                currentY += 12;
+
+                // Gráficas
                 const charts = [
-                    { id: 'devicePestsChart', title: 'Incidencias por Tipo de Plaga - {{ $device->code }}' },
-                    { id: 'deviceTrendChart', title: 'Tendencia Anual - {{ $device->code }}' }
+                    { id: 'devicePestsChart', title: 'Incidencias por tipo de plaga', description: 'Distribución de incidencias por tipo de plaga en el dispositivo' },
+                    { id: 'deviceTrendChart', title: 'Tendencia mensual por año', description: 'Evolución temporal de las incidencias del dispositivo' }
                 ];
-
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
 
                 for (let i = 0; i < charts.length; i++) {
                     const chart = charts[i];
@@ -414,47 +494,72 @@
                         continue;
                     }
 
-                    if (i > 0) {
+                    // Verificar si necesitamos nueva página
+                    if (currentY > pageHeight - 100) {
                         pdf.addPage();
+                        currentY = margin;
                     }
 
-                    // Crear imagen desde el canvas
-                    const imgData = canvas.toDataURL('image/png', 1.0);
+                    // Título de la gráfica
+                    pdf.setFontSize(14);
+                    pdf.setFont(undefined, 'bold');
+                    pdf.setTextColor(1, 38, 64);
+                    pdf.text(chart.title, margin, currentY);
                     
-                    // Calcular dimensiones
-                    const canvasWidth = canvas.width;
-                    const canvasHeight = canvas.height;
-                    const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
-                    const imgWidth = canvasWidth * ratio * 0.9;
-                    const imgHeight = canvasHeight * ratio * 0.9;
+                    currentY += 6;
                     
-                    const x = (pdfWidth - imgWidth) / 2;
-                    const y = (pdfHeight - imgHeight) / 2;
+                    // Descripción
+                    pdf.setFontSize(9);
+                    pdf.setFont(undefined, 'normal');
+                    pdf.setTextColor(100, 100, 100);
+                    pdf.text(chart.description, margin, currentY);
+                    
+                    currentY += 8;
 
-                    // Agregar título
-                    pdf.setFontSize(16);
-                    pdf.text(chart.title, pdfWidth / 2, 15, { align: 'center' });
-                    
-                    // Agregar la imagen
-                    pdf.addImage(imgData, 'PNG', x, y + 5, imgWidth, imgHeight);
-                    
-                    // Número de página
-                    pdf.setFontSize(10);
-                    pdf.text(`Página ${i + 1} de ${charts.length}`, pdfWidth - 30, pdfHeight - 10);
+                    // Agregar imagen de la gráfica
+                    try {
+                        const imgData = canvas.toDataURL('image/png', 1.0);
+                        const imgWidth = contentWidth;
+                        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        
+                        // Limitar altura máxima
+                        const maxHeight = 80;
+                        const finalHeight = Math.min(imgHeight, maxHeight);
+                        const finalWidth = (canvas.width * finalHeight) / canvas.height;
+                        
+                        pdf.addImage(imgData, 'PNG', margin, currentY, finalWidth, finalHeight);
+                        currentY += finalHeight + 15;
+                    } catch (error) {
+                        console.error('Error adding chart:', chart.id, error);
+                    }
                 }
 
-                // Agregar fecha en la última página
-                pdf.setFontSize(10);
-                pdf.text(`Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}`, 10, pdfHeight - 10);
-                
-                // Descargar el PDF
-                const filename = `Estadisticas_{{ $device->code }}_${new Date().toISOString().split('T')[0]}.pdf`;
+                // Footer en todas las páginas
+                const totalPages = pdf.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    pdf.setPage(i);
+                    pdf.setFontSize(8);
+                    pdf.setTextColor(100, 100, 100);
+                    pdf.text(
+                        `Página ${i} de ${totalPages} | Generado automáticamente por SISCO ZONDA ERP`,
+                        pageWidth / 2,
+                        pageHeight - 10,
+                        { align: 'center' }
+                    );
+                }
+
+                // Descargar PDF
+                const filename = `estadisticas_{{ $device->code }}_${new Date().toISOString().slice(0, 10)}.pdf`;
                 pdf.save(filename);
                 
                 console.log('✅ PDF completo generado correctamente');
+
             } catch (error) {
                 console.error('❌ Error al generar PDF completo:', error);
-                alert('Error al generar el PDF');
+                alert('Error al generar el PDF. Por favor, intente nuevamente.');
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
             }
         }
     </script>

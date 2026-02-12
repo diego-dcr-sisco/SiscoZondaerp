@@ -75,7 +75,7 @@ class GraphicController extends Controller
         $actualYear  = $request->input('year', Carbon::now()->year);
         $actualMonth = $request->input('month', Carbon::now()->month);
 
-        // Graficas de clientes
+        // Estadisticas de clientes
         $anualCustomersChart  = $this->totalCustomersByYear($actualYear);
         $chart                = $this->newCustomers();                                       // Nuevos clientes por mes
         $categoryChart        = $this->customersByYear();                                    // Total de clientes por categoría
@@ -83,7 +83,7 @@ class GraphicController extends Controller
         $monthlyServicesChart = $this->monthlyServices();                                    // Tipos de servicios captados por mes
         $pestsDonutChart      = $this->pestsDonutChart();                                    // Plagas más presentadas
 
-        // Graficas de calidad
+        // Estadisticas de calidad
         $adminUsers         = Administrative::all();
         $orderServicesChart = $this->serviceOrders(); // Ordenes de servicio por admin
 
@@ -664,10 +664,9 @@ class GraphicController extends Controller
         for ($month = 1; $month <= 12; $month++) {
             $monthLabels[] = Carbon::create()->month($month)->locale('es')->monthName;
             
-            // Contar órdenes completadas (status_id = 2 para finalizadas, 3 para aprovadas)
-            $servicesCount = Order::whereMonth('programmed_date', $month)
-                ->whereYear('programmed_date', $year)
-                ->whereIn('status_id', [2, 3]) // Finalizadas y Aprovadas
+            // Contar todas las órdenes generadas en el mes
+            $servicesCount = Order::whereMonth('created_at', $month)
+                ->whereYear('created_at', $year)
                 ->count();
             
             $monthlyServices[] = $servicesCount;
@@ -679,11 +678,11 @@ class GraphicController extends Controller
         ]);
     }
 
-    //////////////////////// Fin de graficas de CLIENTES ////////////////////////////////////////
+    //////////////////////// Fin de Estadisticas de CLIENTES ////////////////////////////////////////
     // -------------------------------------------------------------------------------------- //
 
     ////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////// GRAFICAS DE CALIDAD //////////////////////////////////////////
+    /////////////////////////////// Estadisticas DE CALIDAD //////////////////////////////////////////
 
     ////////////////////////////// Plagas más presentadas por mes
 
@@ -832,11 +831,11 @@ class GraphicController extends Controller
 
     /////////////////////////////// Consumo por dispositivo en ordenes de servicio
 
-    //////////////////////// Fin de graficas de CALIDAD ////////////////////////////////////////
+    //////////////////////// Fin de Estadisticas de CALIDAD ////////////////////////////////////////
     // -------------------------------------------------------------------------------------- //
 
     ////////////////////////////////////////////////////////////////////////////////////////////
-    // Graficas de ordenes o clientes agendados
+    // Estadisticas de ordenes o clientes agendados
 
     public function orders()
     {
@@ -950,7 +949,7 @@ class GraphicController extends Controller
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////
-    /////////////////////////////// Graficas Almacen //////////////////////////////////////////
+    /////////////////////////////// Estadisticas Almacen //////////////////////////////////////////
 
     // -------------------------------------------------------------------------------------- //
     //                              Uso de productos
@@ -1257,7 +1256,7 @@ class GraphicController extends Controller
     // -------------------------------------------------------------------------------------- //
 
     //......................................................................................
-    //........................... GRAFICAS DEL AREA DE CALIDAD..............................
+    //........................... Estadisticas DEL AREA DE CALIDAD..............................
     //......................................................................................
 
     //////////////////////// MÉTODOS JSON PARA AJAX ////////////////////////////////
@@ -1469,4 +1468,8 @@ class GraphicController extends Controller
             'data' => $data,
         ]);
     }
+
+    /**
+     * Generar reporte PDF con gráficas
+     */
 }

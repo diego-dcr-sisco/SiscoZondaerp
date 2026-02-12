@@ -120,7 +120,7 @@
                                         </a>
                                         <a href="{{ route('customer.graphics', ['id' => $sede->id]) }}"
                                             class="btn btn-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                            data-bs-title="Graficas">
+                                            data-bs-title="Estadisticas">
                                             <i class="bi bi-bar-chart-fill"></i>
                                         </a>
 

@@ -1,6 +1,5 @@
 @php
     use Carbon\Carbon;
-    $date = Carbon::now();
 @endphp
 
 <div class="card shadow-sm">
@@ -9,13 +8,12 @@
             <span class="fs-5 fw-bold">Servicios por mes</span>
             <div class="input-group w-50">
                 <div class="input-group w-100 mb-3">
-                    <!-- Selectores de mes y año -->
-                    <select class="form-select" id="yearServicesSelector" onchange="refreshMonthlyServicesChart()">
+                    <select class="form-select" id="yearServicesSelector">
                         @for ($i = Carbon::now()->year; $i >= Carbon::now()->year - 5; $i--)
                             <option value="{{ $i }}">{{ $i }}</option>
                         @endfor
                     </select>
-                    <select class="form-select" id="monthServicesSelector" onchange="refreshMonthlyServicesChart()">
+                    <select class="form-select" id="monthServicesSelector">
                         @for ($i = 1; $i <= 12; $i++)
                             <option value="{{ $i }}" {{ $i == now()->month ? 'selected' : '' }}>
                                 {{ Carbon::create()->month($i)->locale('es')->monthName }}
@@ -25,67 +23,83 @@
                 </div>
             </div>
         </h5>
-        <div id="monthlyServicesChart">
-            {!! $monthlyServicesChart->container() !!}
+        <div id="monthlyServicesChartContainer">
+            <canvas id="monthlyServicesChart"></canvas>
         </div>
     </div>
 </div>
 
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/4.0.2/echarts-en.min.js" charset="utf-8"></script>
-{!! $monthlyServicesChart->script() !!}
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    var route_api_url = '';
+    let monthlyServicesChart;
+    let msYear;
+    let msMonth;
 
-    function refreshMonthlyServicesChart() {
-        const month = $('#monthServicesSelector').val();
-        const year = $('#yearServicesSelector').val();
-        if (!route_api_url) {
-            route_api_url = {{ $monthlyServicesChart->id }}_api_url;
-        }
+    function fetchMonthlyServicesData(year, month) {
+        fetch(`/crm/chart/services-by-type?year=${year}&month=${month}`)
+            .then(response => response.json())
+            .then(data => {
+                // Transformar los datos al formato esperado
+                const chartData = {
+                    labels: ['Domésticos', 'Comerciales', 'Industrial/Planta'],
+                    data: [data.domestics, data.comercials, data.industrials]
+                };
+                renderMonthlyServicesChart(chartData);
+            })
+            .catch(error => console.error('Error fetching monthly services data:', error));
+    }
 
-        const apiUrl = route_api_url + '/update' + "?month=" + month + "&year=" + year;
-        console.log('🔄 Solicitando datos a:', apiUrl);
+    function renderMonthlyServicesChart(data) {
+        const ctx = document.getElementById('monthlyServicesChart').getContext('2d');
+        if (monthlyServicesChart) monthlyServicesChart.destroy();
 
-        // Interceptar la respuesta para ver los datos
-        $.ajax({
-            url: apiUrl,
-            method: 'GET',
-            success: function(response) {
-                console.log('📊 Datos recibidos de la gráfica:', response);
-                console.log('📈 Series:', response.series);
-                {{ $monthlyServicesChart->id }}_refresh(apiUrl);
+        monthlyServicesChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Servicios',
+                    data: data.data,
+                    backgroundColor: ['#0A2986', '#512A87', '#DE523B'],
+                    borderWidth: 1
+                }]
             },
-            error: function(error) {
-                console.error('❌ Error al cargar datos:', error);
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 15,
+                            padding: 10
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Servicios por tipo'
+                    }
+                }
             }
         });
     }
 
-    // Ejecutar al cargar la página para ver los datos iniciales
-    $(document).ready(function() {
-        setTimeout(function() {
-            const month = $('#monthServicesSelector').val();
-            const year = $('#yearServicesSelector').val();
-            const initialApiUrl = {{ $monthlyServicesChart->id }}_api_url + '/update' + "?month=" +
-                month + "&year=" + year;
+    // Inicializar cuando el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+        const yearSelector = document.getElementById('yearServicesSelector');
+        const monthSelector = document.getElementById('monthServicesSelector');
+        
+        if (yearSelector && monthSelector) {
+            msYear = yearSelector.value;
+            msMonth = monthSelector.value;
+            fetchMonthlyServicesData(msYear, msMonth);
 
-            console.log('🎨 Carga inicial de la gráfica');
-            console.log('📅 Mes:', month, 'Año:', year);
-            console.log('🔗 URL inicial:', initialApiUrl);
-
-            $.ajax({
-                url: initialApiUrl,
-                method: 'GET',
-                success: function(response) {
-                    console.log('📊 Datos iniciales de la gráfica:', response);
-                    console.log('📈 Series iniciales:', response.series);
-                },
-                error: function(error) {
-                    console.error('❌ Error al cargar datos iniciales:', error);
-                }
+            yearSelector.addEventListener('change', function() {
+                fetchMonthlyServicesData(this.value, monthSelector.value);
             });
-        }, 500); // Pequeño delay para asegurar que la gráfica esté cargada
+            
+            monthSelector.addEventListener('change', function() {
+                fetchMonthlyServicesData(yearSelector.value, this.value);
+            });
+        }
     });
 </script>
