@@ -23,7 +23,12 @@
                 </div>
             </div>
         </h5>
-        <div id="monthlyServicesChartContainer">
+        <div id="monthlyServicesChartContainer" class="position-relative">
+            <div id="monthlyServicesSpinner" class="d-none" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
             <canvas id="monthlyServicesChart"></canvas>
         </div>
     </div>
@@ -36,7 +41,8 @@
     let msMonth;
 
     function fetchMonthlyServicesData(year, month) {
-        if (typeof showFullscreenSpinner === 'function') showFullscreenSpinner();
+        const spinner = document.getElementById('monthlyServicesSpinner');
+        if (spinner) spinner.classList.remove('d-none');
         
         fetch(`/crm/chart/services-by-type?year=${year}&month=${month}`)
             .then(response => response.json())
@@ -50,7 +56,7 @@
             })
             .catch(error => {
                 console.error('Error fetching monthly services data:', error);
-                if (typeof hideFullscreenSpinner === 'function') hideFullscreenSpinner();
+                if (spinner) spinner.classList.add('d-none');
             });
     }
 
@@ -87,7 +93,8 @@
             }
         });
         
-        if (typeof hideFullscreenSpinner === 'function') hideFullscreenSpinner();
+        const spinner = document.getElementById('monthlyServicesSpinner');
+        if (spinner) spinner.classList.add('d-none');
     }
 
     // Inicializar cuando el DOM esté listo

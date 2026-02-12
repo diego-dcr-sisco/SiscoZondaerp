@@ -70,60 +70,9 @@
         </div>
     </div>
 
-    <!-- Fullscreen Spinner -->
-    <div id="fullscreen-spinner" class="d-none">
-        <div class="spinner-overlay">
-            <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <div class="text-light mt-2">Procesando...</div>
-        </div>
-    </div>
-
-    <style>
-        #fullscreen-spinner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 9999;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #fullscreen-spinner.d-none {
-            display: none !important;
-        }
-
-        .spinner-overlay {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-    </style>
-
     <!-- jsPDF Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script>
-        // Funciones globales para el spinner fullscreen
-        function showFullscreenSpinner() {
-            const spinner = document.getElementById('fullscreen-spinner');
-            if (spinner) {
-                spinner.classList.remove('d-none');
-            }
-        }
-
-        function hideFullscreenSpinner() {
-            const spinner = document.getElementById('fullscreen-spinner');
-            if (spinner) {
-                spinner.classList.add('d-none');
-            }
-        }
-
         // Función para cargar imagen como base64
         function loadImageAsBase64(url) {
             return new Promise((resolve, reject) => {

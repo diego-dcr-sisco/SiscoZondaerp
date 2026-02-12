@@ -23,7 +23,12 @@
                 </div>
             </div>
         </h5>
-        <div id="pestsDonutChartContainer">
+        <div id="pestsDonutChartContainer" class="position-relative">
+            <div id="pestsSpinner" class="d-none" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
             <canvas id="pestsDonutChart"></canvas>
         </div>
     </div>
@@ -36,7 +41,8 @@
     let pestsMonth;
 
     function fetchPestsData(year, month) {
-        if (typeof showFullscreenSpinner === 'function') showFullscreenSpinner();
+        const spinner = document.getElementById('pestsSpinner');
+        if (spinner) spinner.classList.remove('d-none');
         
         fetch(`/crm/chart/pests-by-customer?year=${year}&month=${month}`)
             .then(response => response.json())
@@ -45,7 +51,7 @@
             })
             .catch(error => {
                 console.error('Error fetching pests data:', error);
-                if (typeof hideFullscreenSpinner === 'function') hideFullscreenSpinner();
+                if (spinner) spinner.classList.add('d-none');
             });
     }
 
@@ -88,7 +94,8 @@
             }
         });
         
-        if (typeof hideFullscreenSpinner === 'function') hideFullscreenSpinner();
+        const spinner = document.getElementById('pestsSpinner');
+        if (spinner) spinner.classList.add('d-none');
     }
 
     // Inicializar cuando el DOM esté listo
