@@ -1393,7 +1393,7 @@ class GraphicController extends Controller
         $month = $request->input('month', Carbon::now()->month);
         $year = $request->input('year', Carbon::now()->year);
 
-        // Obtener todos los servicios y contar sus órdenes a través de OrderService
+        // Obtener los 10 servicios más repetidos y contar sus órdenes a través de OrderService
         $servicesData = DB::table('service')
             ->leftJoin('order_service', 'service.id', '=', 'order_service.service_id')
             ->leftJoin('order', 'order_service.order_id', '=', 'order.id')
@@ -1403,6 +1403,7 @@ class GraphicController extends Controller
             ->groupBy('service.id', 'service.name')
             ->having('orders_count', '>', 0)
             ->orderBy('orders_count', 'desc')
+            ->limit(10)
             ->get();
 
         $labels = $servicesData->pluck('name')->toArray();
