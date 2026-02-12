@@ -566,8 +566,18 @@
                 const minValue = Math.min(...totals);
                 const maxIndex = totals.indexOf(maxValue);
                 const minIndex = totals.indexOf(minValue);
-                const maxLabel = labels[maxIndex] || 'N/A';
-                const minLabel = labels[minIndex] || 'N/A';
+                
+                // Validar que los labels existan y no estén vacíos
+                let maxLabel = 'N/A';
+                let minLabel = 'N/A';
+                
+                if (maxIndex !== -1 && labels[maxIndex]) {
+                    maxLabel = labels[maxIndex];
+                }
+                
+                if (minIndex !== -1 && labels[minIndex]) {
+                    minLabel = labels[minIndex];
+                }
 
 
                 // Análisis específico para plagas
