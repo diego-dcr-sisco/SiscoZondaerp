@@ -15,7 +15,12 @@
                 </select>
             </div>
         </h5>
-        <div id="trackingsYearlyChartContainer">
+        <div id="trackingsYearlyChartContainer" class="position-relative">
+            <div id="trackingsSpinner" class="d-none" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
             <canvas id="trackingsYearlyChart"></canvas>
         </div>
     </div>
@@ -27,12 +32,18 @@
     let trackingsYear;
 
     function fetchTrackingsData(year) {
+        const spinner = document.getElementById('trackingsSpinner');
+        if (spinner) spinner.classList.remove('d-none');
+        
         fetch(`/crm/chart/trackings-by-month?year=${year}`)
             .then(response => response.json())
             .then(data => {
                 renderTrackingsChart(data);
             })
-            .catch(error => console.error('Error fetching trackings data:', error));
+            .catch(error => {
+                console.error('Error fetching trackings data:', error);
+                if (spinner) spinner.classList.add('d-none');
+            });
     }
 
     function renderTrackingsChart(data) {
@@ -73,6 +84,9 @@
                 }
             }
         });
+
+        const spinner = document.getElementById('trackingsSpinner');
+        if (spinner) spinner.classList.add('d-none');
     }
 
     trackingsYear = document.getElementById('yearSelectorTrackings').value;

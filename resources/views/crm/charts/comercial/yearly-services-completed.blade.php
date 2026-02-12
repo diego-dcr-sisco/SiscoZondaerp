@@ -15,7 +15,12 @@
                 </select>
             </div>
         </h5>
-        <div id="servicesCompletedChartContainer">
+        <div id="servicesCompletedChartContainer" class="position-relative">
+            <div id="servicesCompletedSpinner" class="d-none" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+            </div>
             <canvas id="servicesCompletedChart"></canvas>
         </div>
     </div>
@@ -27,12 +32,18 @@
     let servicesCompletedYear;
 
     function fetchServicesCompletedData(year) {
+        const spinner = document.getElementById('servicesCompletedSpinner');
+        if (spinner) spinner.classList.remove('d-none');
+        
         fetch(`/crm/chart/services-completed-by-month?year=${year}`)
             .then(response => response.json())
             .then(data => {
                 renderServicesCompletedChart(data);
             })
-            .catch(error => console.error('Error fetching services completed data:', error));
+            .catch(error => {
+                console.error('Error fetching services completed data:', error);
+                if (spinner) spinner.classList.add('d-none');
+            });
     }
 
     function renderServicesCompletedChart(data) {
@@ -107,7 +118,8 @@
                 }
             }
         });
-    }
+        const spinner = document.getElementById('servicesCompletedSpinner');
+        if (spinner) spinner.classList.add('d-none');    }
 
     servicesCompletedYear = document.getElementById('yearSelectorServicesCompleted').value;
     fetchServicesCompletedData(servicesCompletedYear);
