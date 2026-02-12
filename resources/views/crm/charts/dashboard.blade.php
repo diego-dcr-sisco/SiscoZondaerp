@@ -91,6 +91,112 @@
             });
         }
 
+        // Función para generar análisis descriptivo de las gráficas
+        function generateChartAnalysis(chartId, chartTitle) {
+            const canvas = document.getElementById(chartId);
+            if (!canvas) return '';
+
+            // Obtener la instancia del chart
+            const chartInstance = Chart.getChart(canvas);
+            if (!chartInstance || !chartInstance.data) return '';
+
+            const datasets = chartInstance.data.datasets;
+            const labels = chartInstance.data.labels;
+
+            if (!datasets || datasets.length === 0) return '';
+
+            // Análisis para gráficas de línea/barra con series temporales
+            if (chartInstance.config.type === 'line' || chartInstance.config.type === 'bar') {
+                // Sumar todos los datasets para obtener totales por periodo
+                const totals = labels.map((label, index) => {
+                    return datasets.reduce((sum, dataset) => {
+                        const value = dataset.data[index] || 0;
+                        return sum + value;
+                    }, 0);
+                });
+
+                const total = totals.reduce((a, b) => a + b, 0);
+                const avg = total / totals.length;
+
+                // Encontrar máximo y mínimo
+                const maxValue = Math.max(...totals);
+                const minValue = Math.min(...totals);
+                const maxIndex = totals.indexOf(maxValue);
+                const minIndex = totals.indexOf(minValue);
+                const maxLabel = labels[maxIndex];
+                const minLabel = labels[minIndex];
+
+                // Calcular tendencia
+                let trend = 'estable';
+                let increases = 0, decreases = 0;
+                for (let i = 1; i < totals.length; i++) {
+                    if (totals[i] > totals[i - 1]) increases++;
+                    else if (totals[i] < totals[i - 1]) decreases++;
+                }
+                if (increases > decreases * 1.5) trend = 'creciente';
+                else if (decreases > increases * 1.5) trend = 'descendente';
+
+                // Variación entre último y penúltimo periodo con datos
+                let variationText = '';
+                const nonZeroIndices = totals.map((v, i) => v > 0 ? i : -1).filter(i => i !== -1);
+                if (nonZeroIndices.length >= 2) {
+                    const lastIndex = nonZeroIndices[nonZeroIndices.length - 1];
+                    const prevIndex = nonZeroIndices[nonZeroIndices.length - 2];
+                    const lastValue = totals[lastIndex];
+                    const prevValue = totals[prevIndex];
+                    
+                    if (prevValue > 0) {
+                        const variation = ((lastValue - prevValue) / prevValue * 100).toFixed(1);
+                        const changeType = variation > 0 ? 'incremento' : 'disminución';
+                        variationText = `En comparación con ${labels[prevIndex]}, se registró un ${changeType} del ${Math.abs(variation)}%. `;
+                    }
+                }
+
+                // Generar insight
+                let insight = '';
+                if (maxValue > avg * 1.5) {
+                    insight = `Se destaca un pico significativo en ${maxLabel} que supera el promedio en ${((maxValue / avg - 1) * 100).toFixed(0)}%.`;
+                } else if (trend === 'creciente') {
+                    insight = 'La tendencia general muestra crecimiento sostenido.';
+                } else if (trend === 'descendente') {
+                    insight = 'Se observa una tendencia a la baja que requiere atención.';
+                } else {
+                    insight = 'Los valores se mantienen relativamente estables.';
+                }
+
+                return `Durante el periodo analizado se observa una tendencia ${trend}, alcanzando su punto máximo en ${maxLabel} con ${maxValue} registros. ${variationText}El periodo con menor actividad fue ${minLabel} (${minValue} registros). ${insight}`;
+            }
+
+            // Análisis para gráficas donut/pie
+            if (chartInstance.config.type === 'doughnut' || chartInstance.config.type === 'pie') {
+                const data = datasets[0].data;
+                const total = data.reduce((a, b) => a + b, 0);
+                
+                if (total === 0) return 'No se registraron datos para el periodo seleccionado.';
+
+                const maxValue = Math.max(...data);
+                const maxIndex = data.indexOf(maxValue);
+                const maxLabel = labels[maxIndex];
+                const percentage = ((maxValue / total) * 100).toFixed(1);
+
+                // Encontrar segundo lugar
+                const sortedData = [...data].sort((a, b) => b - a);
+                const secondValue = sortedData[1] || 0;
+                const secondIndex = data.indexOf(secondValue);
+                const secondLabel = labels[secondIndex];
+                const secondPercentage = ((secondValue / total) * 100).toFixed(1);
+
+                // Calcular distribución
+                let distribution = 'equilibrada';
+                if (percentage > 50) distribution = 'concentrada';
+                else if (percentage < 25) distribution = 'diversificada';
+
+                return `La distribución de los datos muestra que ${maxLabel} representa el ${percentage}% del total con ${maxValue} registros, siendo la categoría predominante. Le sigue ${secondLabel} con ${secondPercentage}% (${secondValue} registros). La distribución general es ${distribution}.`;
+            }
+
+            return '';
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const generatePdfBtn = document.getElementById('generatePdfBtn');
             const pdfLoading = document.getElementById('pdfLoading');
@@ -175,41 +281,65 @@
 
                         currentY += 12;
 
+                        // Obtener valores de los filtros
+                        const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+                        
+                        const getFilterText = (yearSelector, monthSelector = null) => {
+                            const yearEl = document.getElementById(yearSelector);
+                            const year = yearEl ? yearEl.value : '';
+                            
+                            if (monthSelector) {
+                                const monthEl = document.getElementById(monthSelector);
+                                const month = monthEl ? monthEl.value : '';
+                                const monthName = month ? monthNames[parseInt(month) - 1] : '';
+                                return `${monthName} ${year}`;
+                            }
+                            return `Año ${year}`;
+                        };
+
                         // Gráficas
                         const charts = [{
                                 id: 'customersYearlyChart',
                                 title: 'Clientes por mes',
-                                description: 'Análisis mensual de nuevos clientes'
+                                description: 'Análisis mensual de nuevos clientes',
+                                period: getFilterText('yearSelectorCustomers')
                             },
                             {
                                 id: 'leadsYearlyChart',
                                 title: 'Leads por mes',
-                                description: 'Clientes potenciales captados'
+                                description: 'Clientes potenciales captados',
+                                period: getFilterText('yearSelectorLeads')
                             },
                             {
                                 id: 'monthlyServicesChart',
                                 title: 'Servicios por mes',
-                                description: 'Distribución de servicios por tipo'
+                                description: 'Distribución de servicios por tipo',
+                                period: getFilterText('yearServicesSelector', 'monthServicesSelector')
                             },
                             {
                                 id: 'pestsDonutChart',
                                 title: 'Plagas más presentadas',
-                                description: 'Top 10 plagas con mayor incidencia'
+                                description: 'Top 10 plagas con mayor incidencia',
+                                period: getFilterText('yearPestsSelector', 'monthPestsSelector')
                             },
                             {
                                 id: 'servicesProgrammedChart',
                                 title: 'Tipo de servicio por mes',
-                                description: 'Órdenes programadas por tipo'
+                                description: 'Órdenes programadas por tipo',
+                                period: getFilterText('yearServicesProgrammedSelector', 'monthServicesProgrammedSelector')
                             },
                             {
                                 id: 'trackingsYearlyChart',
                                 title: 'Seguimientos programados',
-                                description: 'Seguimientos del año'
+                                description: 'Seguimientos del año',
+                                period: getFilterText('yearSelectorTrackings')
                             },
                             {
                                 id: 'servicesCompletedChart',
                                 title: 'Servicios realizados',
-                                description: 'Servicios completados por mes'
+                                description: 'Servicios completados por mes',
+                                period: getFilterText('yearSelectorServicesCompleted')
                             }
                         ];
 
@@ -239,7 +369,43 @@
                             pdf.setTextColor(100, 100, 100);
                             pdf.text(chart.description, margin, currentY);
 
-                            currentY += 8;
+                            currentY += 5;
+
+                            // Periodo filtrado
+                            if (chart.period) {
+                                pdf.setFontSize(8);
+                                pdf.setFont(undefined, 'bold');
+                                pdf.setTextColor(10, 41, 134); // Color corporativo
+                                pdf.text('Periodo: ' + chart.period, margin, currentY);
+                                currentY += 6;
+                            }
+
+                            // Generar y agregar análisis descriptivo
+                            const analysis = generateChartAnalysis(chart.id, chart.title);
+                            if (analysis) {
+                                // Verificar si necesitamos nueva página antes del análisis
+                                if (currentY > pageHeight - 120) {
+                                    pdf.addPage();
+                                    currentY = margin;
+                                }
+
+                                pdf.setFontSize(9);
+                                pdf.setFont(undefined, 'normal');
+                                pdf.setTextColor(40, 40, 40);
+                                
+                                // Dividir el texto en líneas que quepan en el ancho
+                                const maxWidth = contentWidth - 10;
+                                const lines = pdf.splitTextToSize(analysis, maxWidth);
+                                
+                                // Agregar fondo claro para el análisis
+                                const textHeight = lines.length * 4;
+                                pdf.setFillColor(245, 247, 250); // Gris muy claro
+                                pdf.roundedRect(margin, currentY - 2, contentWidth, textHeight + 4, 2, 2, 'F');
+                                
+                                // Agregar el texto
+                                pdf.text(lines, margin + 5, currentY + 2);
+                                currentY += textHeight + 8;
+                            }
 
                             // Agregar imagen de la gráfica
                             try {
