@@ -45,7 +45,7 @@
                 {{-- Leads por mes (todo el año) --}}
                 @include('crm.charts.comercial.yearly-leads')
             </div>
-            <div class="col-lg-6 col-12 mb-3">
+            <div class="col-lg-4 col-12 mb-3">
                 {{-- Tipos de servicios realizados en el mes --}}
                 @include('crm.charts.comercial.services')
             </div>
@@ -53,7 +53,7 @@
                 {{-- Plagas más presentadas --}}
                 @include('crm.charts.comercial.pests-donut')
             </div>
-            <div class="col-lg-6 col-12 mb-3">
+            <div class="col-lg-4 col-12 mb-3">
                 {{-- Tipo de servicio por mes (órdenes generadas) --}}
                 @include('crm.charts.comercial.services-programmed')
             </div>
