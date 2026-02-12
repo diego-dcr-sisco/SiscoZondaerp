@@ -36,12 +36,17 @@
     let pestsMonth;
 
     function fetchPestsData(year, month) {
+        if (typeof showFullscreenSpinner === 'function') showFullscreenSpinner();
+        
         fetch(`/crm/chart/pests-by-customer?year=${year}&month=${month}`)
             .then(response => response.json())
             .then(data => {
                 renderPestsChart(data);
             })
-            .catch(error => console.error('Error fetching pests data:', error));
+            .catch(error => {
+                console.error('Error fetching pests data:', error);
+                if (typeof hideFullscreenSpinner === 'function') hideFullscreenSpinner();
+            });
     }
 
     function renderPestsChart(data) {
@@ -82,6 +87,8 @@
                 }
             }
         });
+        
+        if (typeof hideFullscreenSpinner === 'function') hideFullscreenSpinner();
     }
 
     // Inicializar cuando el DOM esté listo

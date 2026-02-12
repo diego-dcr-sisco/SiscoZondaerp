@@ -36,6 +36,8 @@
     let msMonth;
 
     function fetchMonthlyServicesData(year, month) {
+        if (typeof showFullscreenSpinner === 'function') showFullscreenSpinner();
+        
         fetch(`/crm/chart/services-by-type?year=${year}&month=${month}`)
             .then(response => response.json())
             .then(data => {
@@ -46,7 +48,10 @@
                 };
                 renderMonthlyServicesChart(chartData);
             })
-            .catch(error => console.error('Error fetching monthly services data:', error));
+            .catch(error => {
+                console.error('Error fetching monthly services data:', error);
+                if (typeof hideFullscreenSpinner === 'function') hideFullscreenSpinner();
+            });
     }
 
     function renderMonthlyServicesChart(data) {
@@ -81,6 +86,8 @@
                 }
             }
         });
+        
+        if (typeof hideFullscreenSpinner === 'function') hideFullscreenSpinner();
     }
 
     // Inicializar cuando el DOM esté listo
