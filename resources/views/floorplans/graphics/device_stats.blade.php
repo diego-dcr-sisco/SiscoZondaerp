@@ -60,12 +60,7 @@
         <div class="row row-cols-1 row-cols-lg-2 m-3">
             <div class="col-lg-6 col-12">
                 <div class="border rounded shadow p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold mb-0">Incidencias por tipo de plaga - {{ $device->code ?? 'Dispositivo' }}</h5>
-                        <button class="btn btn-dark btn-sm" onclick="exportChartToPDF('devicePestsChart', 'Incidencias_Plagas_{{ $device->code }}')">
-                            <i class="bi bi-file-pdf"></i> Exportar PDF
-                        </button>
-                    </div>
+                    <h5 class="fw-bold mb-3">Incidencias por tipo de plaga - {{ $device->code ?? 'Dispositivo' }}</h5>
 
                     <div class="row g-3 mb-3">
                         <div class="col-3">
@@ -95,12 +90,7 @@
 
             <div class="col-lg-6 col-12">
                 <div class="border rounded shadow p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold mb-0">Tendencia mensual por año - {{ $device->code ?? 'Dispositivo' }}</h5>
-                        <button class="btn btn-dark btn-sm" onclick="exportChartToPDF('deviceTrendChart', 'Tendencia_Anual_{{ $device->code }}')">
-                            <i class="bi bi-file-pdf"></i> Exportar PDF
-                        </button>
-                    </div>
+                    <h5 class="fw-bold mb-3">Tendencia mensual por año - {{ $device->code ?? 'Dispositivo' }}</h5>
 
                     <div class="row g-3 mb-3">
                         <div class="col-3">
@@ -331,63 +321,6 @@
             document.getElementById('trend-loader').style.display = 'none';
         });
 
-        // Función para exportar una gráfica individual a PDF
-        async function exportChartToPDF(chartId, filename) {
-            try {
-                const canvas = document.getElementById(chartId);
-                if (!canvas) {
-                    alert('No se encontró la gráfica');
-                    return;
-                }
-
-                // Crear una imagen desde el canvas
-                const imgData = canvas.toDataURL('image/png', 1.0);
-                
-                // Crear el PDF
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({
-                    orientation: 'landscape',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                // Dimensiones del PDF
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                
-                // Calcular dimensiones para mantener la proporción
-                const canvasWidth = canvas.width;
-                const canvasHeight = canvas.height;
-                const ratio = Math.min(pdfWidth / canvasWidth, pdfHeight / canvasHeight);
-                const imgWidth = canvasWidth * ratio * 0.9;
-                const imgHeight = canvasHeight * ratio * 0.9;
-                
-                // Centrar la imagen
-                const x = (pdfWidth - imgWidth) / 2;
-                const y = (pdfHeight - imgHeight) / 2;
-
-                // Agregar título
-                pdf.setFontSize(16);
-                pdf.text(filename.replace(/_/g, ' '), pdfWidth / 2, 15, { align: 'center' });
-                
-                // Agregar la imagen
-                pdf.addImage(imgData, 'PNG', x, y + 5, imgWidth, imgHeight);
-                
-                // Agregar fecha de generación
-                pdf.setFontSize(10);
-                pdf.text(`Generado: ${new Date().toLocaleDateString('es-ES')} ${new Date().toLocaleTimeString('es-ES')}`, 10, pdfHeight - 10);
-                
-                // Descargar el PDF
-                pdf.save(`${filename}_${new Date().toISOString().split('T')[0]}.pdf`);
-                
-                console.log('✅ PDF generado correctamente:', filename);
-            } catch (error) {
-                console.error('❌ Error al generar PDF:', error);
-                alert('Error al generar el PDF');
-            }
-        }
-
-        // Función para exportar todas las gráficas en un solo PDF
         // Función para cargar imagen como base64
         function loadImageAsBase64(url) {
             return new Promise((resolve, reject) => {
@@ -404,6 +337,129 @@
                 img.onerror = () => resolve(null);
                 img.src = url;
             });
+        }
+
+        // Función para generar análisis descriptivo de las gráficas
+        function generateChartAnalysis(chartId, chartTitle) {
+            const canvas = document.getElementById(chartId);
+            if (!canvas) return '';
+
+            const chartInstance = Chart.getChart(canvas);
+            if (!chartInstance || !chartInstance.data) return '';
+
+            const datasets = chartInstance.data.datasets;
+            const labels = chartInstance.data.labels;
+
+            if (!datasets || datasets.length === 0) return '';
+
+            // Detectar si es análisis de plagas
+            const isPestAnalysis = chartId === 'devicePestsChart' || chartTitle.toLowerCase().includes('plaga');
+
+            // Análisis para gráficas de línea/barra
+            if (chartInstance.config.type === 'line' || chartInstance.config.type === 'bar') {
+                const totals = labels.map((label, index) => {
+                    return datasets.reduce((sum, dataset) => {
+                        const value = dataset.data[index] || 0;
+                        return sum + value;
+                    }, 0);
+                });
+
+                const total = totals.reduce((a, b) => a + b, 0);
+                const avg = total / totals.length;
+
+                const maxValue = Math.max(...totals);
+                const minValue = Math.min(...totals);
+                const maxIndex = totals.indexOf(maxValue);
+                const minIndex = totals.indexOf(minValue);
+                const maxLabel = labels[maxIndex] || 'N/A';
+                const minLabel = labels[minIndex] || 'N/A';
+
+                // Análisis específico para plagas
+                if (isPestAnalysis) {
+                    const pestCount = labels.length;
+                    const pestList = labels.length <= 3 ? labels.join(' y ') : `${pestCount} tipos de plagas`;
+                    
+                    let insight = '';
+                    if (pestCount === 1) {
+                        insight = 'Se recomienda mantener monitoreo constante y aplicar medidas preventivas.';
+                    } else if (maxValue > avg * 2) {
+                        insight = `La tendencia indica alta concentración en ${maxLabel}, requiere acciones correctivas inmediatas.`;
+                    } else {
+                        insight = 'La tendencia indica una presencia de atención sobre las plagas y acciones correctivas.';
+                    }
+
+                    return `Durante el periodo analizado se registraron ${pestList}, alcanzando su punto máximo en ${maxLabel} con ${maxValue} incidencias. La plaga que menos se registró fue ${minLabel} (${minValue} incidencias). ${insight}`;
+                }
+
+                // Análisis temporal (para gráficas de tendencia por mes)
+                let trend = 'estable';
+                let increases = 0, decreases = 0;
+                for (let i = 1; i < totals.length; i++) {
+                    if (totals[i] > totals[i - 1]) increases++;
+                    else if (totals[i] < totals[i - 1]) decreases++;
+                }
+                if (increases > decreases * 1.5) trend = 'creciente';
+                else if (decreases > increases * 1.5) trend = 'descendente';
+
+                let variationText = '';
+                const nonZeroIndices = totals.map((v, i) => v > 0 ? i : -1).filter(i => i !== -1);
+                if (nonZeroIndices.length >= 2) {
+                    const lastIndex = nonZeroIndices[nonZeroIndices.length - 1];
+                    const prevIndex = nonZeroIndices[nonZeroIndices.length - 2];
+                    const lastValue = totals[lastIndex];
+                    const prevValue = totals[prevIndex];
+                    
+                    if (prevValue > 0) {
+                        const variation = ((lastValue - prevValue) / prevValue * 100).toFixed(1);
+                        const changeType = variation > 0 ? 'incremento' : 'disminución';
+                        variationText = `En comparación con ${labels[prevIndex]}, se registró un ${changeType} del ${Math.abs(variation)}%. `;
+                    }
+                }
+
+                let insight = '';
+                if (maxValue > avg * 1.5) {
+                    insight = `Se destaca un pico significativo en ${maxLabel} que supera el promedio en ${((maxValue / avg - 1) * 100).toFixed(0)}%.`;
+                } else if (trend === 'creciente') {
+                    insight = 'La tendencia general muestra crecimiento sostenido.';
+                } else if (trend === 'descendente') {
+                    insight = 'Se observa una tendencia a la baja que requiere atención.';
+                } else {
+                    insight = 'Los valores se mantienen relativamente estables.';
+                }
+
+                return `Durante el periodo analizado se observa una tendencia ${trend}, alcanzando su punto máximo en ${maxLabel} con ${maxValue} incidencias. ${variationText}El periodo con menor actividad fue ${minLabel} (${minValue} incidencias). ${insight}`;
+            }
+
+            // Análisis para gráficas donut/pie
+            if (chartInstance.config.type === 'doughnut' || chartInstance.config.type === 'pie') {
+                const data = datasets[0].data.map(v => Number(v) || 0);
+                const total = data.reduce((a, b) => a + b, 0);
+                
+                if (total === 0) return 'No se registraron datos para el periodo seleccionado.';
+
+                const maxValue = Math.max(...data);
+                const maxIndex = data.indexOf(maxValue);
+                const maxLabel = labels[maxIndex] || 'N/A';
+                const percentage = ((maxValue / total) * 100).toFixed(1);
+
+                const dataWithIndices = data.map((value, index) => ({ value, index }))
+                    .sort((a, b) => b.value - a.value);
+                
+                const secondItem = dataWithIndices[1] || dataWithIndices[0];
+                const secondValue = secondItem.value;
+                const secondIndex = secondItem.index;
+                const secondLabel = labels[secondIndex] || 'N/A';
+                const secondPercentage = total > 0 ? ((secondValue / total) * 100).toFixed(1) : '0.0';
+
+                let distribution = 'equilibrada';
+                const maxPercent = parseFloat(percentage);
+                if (maxPercent > 50) distribution = 'concentrada';
+                else if (maxPercent < 25) distribution = 'diversificada';
+
+                return `La distribución de los datos muestra que ${maxLabel} representa el ${percentage}% del total con ${maxValue} incidencias, siendo la categoría predominante. Le sigue ${secondLabel} con ${secondPercentage}% (${secondValue} incidencias). La distribución general es ${distribution}.`;
+            }
+
+            return '';
         }
 
         async function exportAllChartsToPDF() {
@@ -479,10 +535,32 @@
 
                 currentY += 12;
 
+                // Obtener periodos de los filtros
+                const getDateRangeText = (inputId) => {
+                    const input = document.getElementById(inputId);
+                    return input && input.value ? input.value : 'Periodo completo';
+                };
+
+                // Obtener año seleccionado
+                const getTrendYearText = () => {
+                    const select = document.getElementById('year-selector-trend');
+                    return select && select.value ? `Año ${select.value}` : 'Periodo completo';
+                };
+
                 // Gráficas
                 const charts = [
-                    { id: 'devicePestsChart', title: 'Incidencias por tipo de plaga', description: 'Distribución de incidencias por tipo de plaga en el dispositivo' },
-                    { id: 'deviceTrendChart', title: 'Tendencia mensual por año', description: 'Evolución temporal de las incidencias del dispositivo' }
+                    { 
+                        id: 'devicePestsChart', 
+                        title: 'Incidencias por tipo de plaga', 
+                        description: 'Distribución de incidencias por tipo de plaga en el dispositivo',
+                        period: getDateRangeText('device-date-range')
+                    },
+                    { 
+                        id: 'deviceTrendChart', 
+                        title: 'Tendencia mensual por año', 
+                        description: 'Evolución temporal de las incidencias del dispositivo',
+                        period: getTrendYearText()
+                    }
                 ];
 
                 for (let i = 0; i < charts.length; i++) {
@@ -514,7 +592,39 @@
                     pdf.setTextColor(100, 100, 100);
                     pdf.text(chart.description, margin, currentY);
                     
-                    currentY += 8;
+                    currentY += 5;
+
+                    // Periodo filtrado
+                    if (chart.period) {
+                        pdf.setFontSize(8);
+                        pdf.setFont(undefined, 'bold');
+                        pdf.setTextColor(10, 41, 134);
+                        pdf.text('Periodo: ' + chart.period, margin, currentY);
+                        currentY += 6;
+                    }
+
+                    // Generar y agregar análisis descriptivo
+                    const analysis = generateChartAnalysis(chart.id, chart.title);
+                    if (analysis) {
+                        if (currentY > pageHeight - 120) {
+                            pdf.addPage();
+                            currentY = margin;
+                        }
+
+                        pdf.setFontSize(9);
+                        pdf.setFont(undefined, 'normal');
+                        pdf.setTextColor(40, 40, 40);
+                        
+                        const maxWidth = contentWidth - 10;
+                        const lines = pdf.splitTextToSize(analysis, maxWidth);
+                        
+                        const textHeight = lines.length * 4;
+                        pdf.setFillColor(245, 247, 250);
+                        pdf.roundedRect(margin, currentY - 2, contentWidth, textHeight + 4, 2, 2, 'F');
+                        
+                        pdf.text(lines, margin + 5, currentY + 2);
+                        currentY += textHeight + 8;
+                    }
 
                     // Agregar imagen de la gráfica
                     try {

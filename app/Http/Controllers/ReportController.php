@@ -446,23 +446,21 @@ class ReportController extends Controller
 
         $incidents = OrderIncidents::where('order_id', $order->id)->get();
 
-        if ($order->status_id == 5 && $incidents->isNotEmpty()) {
-            $devices_incidents = $incidents->pluck('device_id')->toArray();
-            $devices = Device::whereIn('id', $devices_incidents)->orderBy('nplan', 'ASC')->get();
+        // Obtener todos los dispositivos asociados a la orden según versión del floorplan
+        $found_devices = $this->getDevicesByVersion($id);
+        $all_devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
 
-            /*$count = array_count_values($devices_1->pluck('version')->toArray());
-            $maxsum = max($count);
-            $version = array_search($maxsum, $count);
-
-            $found_devices = $this->getDevicesByVersion($id);
-            //dd($found_devices);
-            //$found_devices = array_merge($devices_1->pluck('id')->toArray(), array_diff($found_devices, $devices_1->pluck('id')->toArray()));
-            $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();*/
-
-        } else {
-            $found_devices = $this->getDevicesByVersion($id);
-            $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
-        }
+        // Separar dispositivos revisados y no revisados
+        $devices_incidents_ids = $incidents->pluck('device_id')->unique()->toArray();
+        
+        // Dispositivos revisados (con incidentes registrados)
+        $reviewed_devices = $all_devices->whereIn('id', $devices_incidents_ids);
+        
+        // Dispositivos no revisados (sin incidentes registrados)
+        $not_reviewed_devices = $all_devices->whereNotIn('id', $devices_incidents_ids);
+        
+        // Combinar: primero revisados, luego no revisados
+        $devices = $reviewed_devices->merge($not_reviewed_devices);
 
         $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique())->get();
 
