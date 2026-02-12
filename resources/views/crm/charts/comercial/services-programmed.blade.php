@@ -5,7 +5,7 @@
 <div class="card shadow-sm">
     <div class="card-body">
         <h5 class="card-title fw-bold d-flex justify-content-between">
-            <span class="fs-5 fw-bold">Tipo de servicio por mes</span>
+            <span class="fs-5 fw-bold">Servicios más presentados</span>
             <div class="input-group w-50">
                 <div class="input-group w-100 mb-3">
                     <select class="form-select" id="yearServicesProgrammedSelector">
@@ -82,7 +82,7 @@
                     },
                     title: {
                         display: true,
-                        text: 'Tipo de servicio por mes'
+                        text: 'Servicios más presentados'
                     },
                     tooltip: {
                         callbacks: {

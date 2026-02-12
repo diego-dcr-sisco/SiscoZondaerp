@@ -329,8 +329,8 @@
                             },
                             {
                                 id: 'servicesProgrammedChart',
-                                title: 'Tipo de servicio por mes',
-                                description: 'Órdenes programadas por tipo',
+                                title: 'Servicios más presentados',
+                                description: 'Top 10 servicios más solicitados',
                                 period: getFilterText('yearServicesProgrammedSelector', 'monthServicesProgrammedSelector')
                             },
                             {
