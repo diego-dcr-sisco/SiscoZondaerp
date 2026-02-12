@@ -1275,10 +1275,10 @@ class GraphicController extends Controller
             $domestics[] = Customer::whereMonth('created_at', $month)
                 ->whereYear('created_at', $year)
                 ->where('service_type_id', 1)
-                ->where(function($query) {
+                /*->where(function($query) {
                     $query->whereNotNull('general_sedes')
                         ->where('general_sedes', '!=', 0);
-                })
+                })*/
                 ->count();
 
             $comercials[] = Customer::whereMonth('created_at', $month)
