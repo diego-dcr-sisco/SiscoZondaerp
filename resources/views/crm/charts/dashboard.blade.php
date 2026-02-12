@@ -169,27 +169,31 @@
 
             // Análisis para gráficas donut/pie
             if (chartInstance.config.type === 'doughnut' || chartInstance.config.type === 'pie') {
-                const data = datasets[0].data;
+                const data = datasets[0].data.map(v => Number(v) || 0); // Convertir a números
                 const total = data.reduce((a, b) => a + b, 0);
                 
                 if (total === 0) return 'No se registraron datos para el periodo seleccionado.';
 
                 const maxValue = Math.max(...data);
                 const maxIndex = data.indexOf(maxValue);
-                const maxLabel = labels[maxIndex];
+                const maxLabel = labels[maxIndex] || 'N/A';
                 const percentage = ((maxValue / total) * 100).toFixed(1);
 
-                // Encontrar segundo lugar
-                const sortedData = [...data].sort((a, b) => b - a);
-                const secondValue = sortedData[1] || 0;
-                const secondIndex = data.indexOf(secondValue);
-                const secondLabel = labels[secondIndex];
-                const secondPercentage = ((secondValue / total) * 100).toFixed(1);
+                // Encontrar segundo lugar usando un enfoque diferente
+                const dataWithIndices = data.map((value, index) => ({ value, index }))
+                    .sort((a, b) => b.value - a.value);
+                
+                const secondItem = dataWithIndices[1] || dataWithIndices[0];
+                const secondValue = secondItem.value;
+                const secondIndex = secondItem.index;
+                const secondLabel = labels[secondIndex] || 'N/A';
+                const secondPercentage = total > 0 ? ((secondValue / total) * 100).toFixed(1) : '0.0';
 
                 // Calcular distribución
                 let distribution = 'equilibrada';
-                if (percentage > 50) distribution = 'concentrada';
-                else if (percentage < 25) distribution = 'diversificada';
+                const maxPercent = parseFloat(percentage);
+                if (maxPercent > 50) distribution = 'concentrada';
+                else if (maxPercent < 25) distribution = 'diversificada';
 
                 return `La distribución de los datos muestra que ${maxLabel} representa el ${percentage}% del total con ${maxValue} registros, siendo la categoría predominante. Le sigue ${secondLabel} con ${secondPercentage}% (${secondValue} registros). La distribución general es ${distribution}.`;
             }
