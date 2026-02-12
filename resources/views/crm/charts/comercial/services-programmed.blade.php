@@ -59,25 +59,19 @@
             '#773774', // Velvet Purple
         ];
 
-        // Crear un dataset por cada tipo de servicio
-        const datasets = data.labels.map((label, index) => {
-            const baseColor = colors[index % colors.length];
-            return {
-                label: label,
-                data: [data.data[index]], // Solo el valor de este servicio
-                backgroundColor: baseColor + '40', // Color con transparencia (25%)
-                borderColor: baseColor,
-                borderWidth: 2,
-                categoryPercentage: 0.8,
-                barPercentage: 0.9
-            };
-        });
+        // Asignar colores a cada tipo de servicio
+        const backgroundColors = data.labels.map((label, index) => colors[index % colors.length]);
 
         servicesProgrammedChart = new Chart(ctx, {
-            type: 'bar',
+            type: 'doughnut',
             data: {
-                labels: ['Servicios'], // Una sola categoría
-                datasets: datasets
+                labels: data.labels,
+                datasets: [{
+                    data: data.data,
+                    backgroundColor: backgroundColors,
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
             },
             options: {
                 responsive: true,
@@ -89,13 +83,16 @@
                     title: {
                         display: true,
                         text: 'Tipo de servicio por mes'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
                         }
                     }
                 }

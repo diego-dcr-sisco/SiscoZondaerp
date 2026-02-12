@@ -49,7 +49,7 @@
                 {{-- Tipos de servicios realizados en el mes --}}
                 @include('crm.charts.comercial.services')
             </div>
-            <div class="col-lg-6 col-12 mb-3">
+            <div class="col-lg-4 col-12 mb-3">
                 {{-- Plagas más presentadas --}}
                 @include('crm.charts.comercial.pests-donut')
             </div>
