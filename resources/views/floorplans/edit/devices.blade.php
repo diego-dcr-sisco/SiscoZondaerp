@@ -1206,26 +1206,15 @@
 
             // FUNCIÓN PARA OBTENER DIMENSIONES ORIGINALES DEL CANVAS
             function getOriginalCanvasDimensions() {
-                // Esta función debe replicar la lógica de escalado inicial
-                const maxCanvasWidth = 1400;
-                const minCanvasWidth = 800;
+                // Esta función debe retornar las dimensiones ANTIGUAS del canvas
+                // (las que se usaban cuando se guardaron los puntos en la BD)
+                // La lógica antigua era: ancho > alto ? 1100x800 : 800x1100
                 
-                let originalWidth, originalHeight;
-                
-                if (img_sizes[0] > maxCanvasWidth) {
-                    const scale = maxCanvasWidth / img_sizes[0];
-                    originalWidth = maxCanvasWidth;
-                    originalHeight = Math.round(img_sizes[1] * scale);
-                } else if (img_sizes[0] < minCanvasWidth) {
-                    const scale = minCanvasWidth / img_sizes[0];
-                    originalWidth = minCanvasWidth;
-                    originalHeight = Math.round(img_sizes[1] * scale);
-                } else {
-                    originalWidth = img_sizes[0];
-                    originalHeight = img_sizes[1];
-                }
+                const isWide = img_sizes[0] > img_sizes[1];
+                const width = isWide ? 1100 : 800;
+                const height = isWide ? 800 : 1100;
 
-                return [originalWidth, originalHeight];
+                return [width, height];
             }
 
             // FUNCIÓN PARA REAJUSTAR PUNTOS A NUEVAS DIMENSIONES
