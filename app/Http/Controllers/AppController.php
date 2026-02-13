@@ -296,6 +296,7 @@ class AppController extends Controller
 				$order->completed_date = Carbon::parse($data['completed_date'])->format('Y-m-d') ?? null;
 				$order->notes = $data['notes'] ?? null;
 				$order->customer_signature = $data['customer_signature'] ?? null;
+				$order->signature_name = $data['signature_name'] ?? null;
 				$order->closed_by = $data['user_id'] ?? null;
 				$order->synchronized_by = $data['user_id'] ?? null;
 				$order->synchronized_at = now();
@@ -654,6 +655,60 @@ class AppController extends Controller
 		];
 
 		return $data;
+	}
+
+	/**
+	 * Actualizar las coordenadas GPS de un dispositivo escaneado
+	 */
+	public function updateDeviceLocation(Request $request): JsonResponse
+	{
+		try {
+			$request->validate([
+				'device_code' => 'required|string',
+				'latitude' => 'required|numeric',
+				'longitude' => 'required|numeric',
+			]);
+
+			$device = Device::where('code', $request->device_code)->first();
+
+			if (!$device) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Dispositivo no encontrado'
+				], 404);
+			}
+
+			$device->latitude = $request->latitude;
+			$device->longitude = $request->longitude;
+			$device->save();
+
+			Log::info('Coordenadas GPS actualizadas', [
+				'device_code' => $request->device_code,
+				'latitude' => $request->latitude,
+				'longitude' => $request->longitude,
+			]);
+
+			return response()->json([
+				'success' => true,
+				'message' => 'Coordenadas actualizadas correctamente',
+				'data' => [
+					'device_id' => $device->id,
+					'device_code' => $device->code,
+					'latitude' => $device->latitude,
+					'longitude' => $device->longitude,
+				]
+			], 200);
+		} catch (\Exception $e) {
+			Log::error('Error al actualizar coordenadas GPS', [
+				'error' => $e->getMessage(),
+				'trace' => $e->getTraceAsString()
+			]);
+
+			return response()->json([
+				'success' => false,
+				'message' => 'Error al actualizar coordenadas: ' . $e->getMessage()
+			], 500);
+		}
 	}
 
 }

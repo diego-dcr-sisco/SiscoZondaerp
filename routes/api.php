@@ -37,5 +37,6 @@ Route::get('/lots', [LotController::class, 'getLotsByProduct']);
 
 
 Route::post('/reports/handle', [AppController::class, 'handleReport']);
+Route::post('/device/update-location', [AppController::class, 'updateDeviceLocation']);
 
 
