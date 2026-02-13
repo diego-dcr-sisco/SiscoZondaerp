@@ -393,14 +393,34 @@
             const img = new Image();
             img.src = imgURL;
 
-            //const img_scale = ~~(window.innerWidth / img_sizes[0]);
-            const img_scale = Math.round(1080 / img_sizes[0]);
+            // Calcular el tamaño del canvas de forma dinámica
+            // Objetivo:Canvas visible y manejable sin importar el tamaño de la imagen original
+            const maxCanvasWidth = 1400; // Ancho máximo objetivo del canvas
+            const minCanvasWidth = 800;  // Ancho mínimo para asegurar visibilidad
+            
+            let targetWidth, targetHeight;
+            
+            // Si la imagen es muy grande, escalar al máximo
+            if (img_sizes[0] > maxCanvasWidth) {
+                const scale = maxCanvasWidth / img_sizes[0];
+                targetWidth = maxCanvasWidth;
+                targetHeight = Math.round(img_sizes[1] * scale);
+            } 
+            // Si la imagen es muy pequeña, asegurar tamaño mínimo
+            else if (img_sizes[0] < minCanvasWidth) {
+                const scale = minCanvasWidth / img_sizes[0];
+                targetWidth = minCanvasWidth;
+                targetHeight = Math.round(img_sizes[1] * scale);
+            }
+            // Si está en rango medio, usar tamaño original
+            else {
+                targetWidth = img_sizes[0];
+                targetHeight = img_sizes[1];
+            }
 
             var canvas = new fabric.Canvas('myCanvas', {
-                //width: img_sizes[0] > img_sizes[1] ? 1100 : 800,
-                //height: img_sizes[0] > img_sizes[1] ? 800 : 1100,
-                width: img_sizes[0] * img_scale,
-                height: img_sizes[1] * img_scale,
+                width: targetWidth,
+                height: targetHeight,
                 selection: false,
             });
 
@@ -1186,11 +1206,26 @@
 
             // FUNCIÓN PARA OBTENER DIMENSIONES ORIGINALES DEL CANVAS
             function getOriginalCanvasDimensions() {
-                const isWide = img_sizes[0] > img_sizes[1];
-                const width = isWide ? 1100 : 800;
-                const height = isWide ? 800 : 1100;
+                // Esta función debe replicar la lógica de escalado inicial
+                const maxCanvasWidth = 1400;
+                const minCanvasWidth = 800;
+                
+                let originalWidth, originalHeight;
+                
+                if (img_sizes[0] > maxCanvasWidth) {
+                    const scale = maxCanvasWidth / img_sizes[0];
+                    originalWidth = maxCanvasWidth;
+                    originalHeight = Math.round(img_sizes[1] * scale);
+                } else if (img_sizes[0] < minCanvasWidth) {
+                    const scale = minCanvasWidth / img_sizes[0];
+                    originalWidth = minCanvasWidth;
+                    originalHeight = Math.round(img_sizes[1] * scale);
+                } else {
+                    originalWidth = img_sizes[0];
+                    originalHeight = img_sizes[1];
+                }
 
-                return [width, height];
+                return [originalWidth, originalHeight];
             }
 
             // FUNCIÓN PARA REAJUSTAR PUNTOS A NUEVAS DIMENSIONES
