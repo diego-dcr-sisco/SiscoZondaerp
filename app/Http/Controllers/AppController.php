@@ -6,6 +6,7 @@ use App\Models\ApplicationArea;
 use App\Models\ApplicationMethod;
 use App\Models\ControlPointQuestion;
 use App\Models\ControlPoint;
+use App\Models\Customer;
 use App\Models\Device;
 use App\Models\DevicePest;
 use App\Models\DeviceProduct;
@@ -666,6 +667,79 @@ class AppController extends Controller
 	}
 
 	/**
+	 * Obtener clientes asociados a un técnico
+	 */
+	public function getTechnicianCustomers(Request $request): JsonResponse
+	{
+		try {
+			$request->validate([
+				'user_id' => 'required|integer',
+			]);
+
+			$user = User::find($request->user_id);
+
+			if (!$user) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Usuario no encontrado'
+				], 404);
+			}
+
+			// Obtener el técnico asociado al usuario
+			$technician = Technician::where('user_id', $user->id)->first();
+
+			if (!$technician) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Técnico no encontrado para este usuario'
+				], 404);
+			}
+
+			// Obtener las órdenes asociadas al técnico
+			$orderIds = OrderTechnician::where('technician_id', $technician->id)
+				->pluck('order_id')
+				->unique();
+
+			// Obtener los customer_id únicos de esas órdenes
+			$customerIds = Order::whereIn('id', $orderIds)
+				->pluck('customer_id')
+				->unique();
+
+			// Obtener los datos de los clientes
+			$customers = Customer::whereIn('id', $customerIds)
+				->orderBy('name', 'asc')
+				->get(['id', 'name'])
+				->map(function ($customer) {
+					return [
+						'customer_id' => $customer->id,
+						'customer_name' => $customer->name,
+					];
+				});
+
+			Log::info('Clientes obtenidos para técnico', [
+				'user_id' => $request->user_id,
+				'technician_id' => $technician->id,
+				'customers_count' => $customers->count(),
+			]);
+
+			return response()->json([
+				'success' => true,
+				'customers' => $customers,
+			], 200);
+		} catch (\Exception $e) {
+			Log::error('Error al obtener clientes del técnico', [
+				'error' => $e->getMessage(),
+				'trace' => $e->getTraceAsString()
+			]);
+
+			return response()->json([
+				'success' => false,
+				'message' => 'Error al obtener clientes: ' . $e->getMessage()
+			], 500);
+		}
+	}
+
+	/**
 	 * Actualizar las coordenadas GPS de un dispositivo escaneado
 	 */
 	public function updateDeviceLocation(Request $request): JsonResponse
@@ -673,37 +747,66 @@ class AppController extends Controller
 		try {
 			$request->validate([
 				'device_code' => 'required|string',
+				'customer_id' => 'required|integer',
 				'latitude' => 'required|numeric',
 				'longitude' => 'required|numeric',
 			]);
 
-			$device = Device::where('code', $request->device_code)->first();
+			// Obtener los floorplans del cliente
+			$floorplanIds = FloorPlans::where('customer_id', $request->customer_id)
+				->pluck('id');
 
-			if (!$device) {
+			if ($floorplanIds->isEmpty()) {
 				return response()->json([
 					'success' => false,
-					'message' => 'Dispositivo no encontrado'
+					'message' => 'No se encontraron planos para este cliente'
 				], 404);
 			}
 
-			$device->latitude = $request->latitude;
-			$device->longitude = $request->longitude;
-			$device->save();
+			// Buscar todos los dispositivos con el mismo código en los floorplans del cliente
+			// Independientemente de la versión
+			$devices = Device::where('code', $request->device_code)
+				->whereIn('floorplan_id', $floorplanIds)
+				->get();
 
-			Log::info('Coordenadas GPS actualizadas', [
+			if ($devices->isEmpty()) {
+				return response()->json([
+					'success' => false,
+					'message' => 'Dispositivo no encontrado en los planos de este cliente'
+				], 404);
+			}
+
+			// Actualizar todos los dispositivos encontrados
+			$updatedCount = 0;
+			$deviceIds = [];
+
+			foreach ($devices as $device) {
+				$device->latitude = $request->latitude;
+				$device->longitude = $request->longitude;
+				$device->save();
+				$updatedCount++;
+				$deviceIds[] = $device->id;
+			}
+
+			Log::info('Coordenadas GPS actualizadas para múltiples versiones', [
 				'device_code' => $request->device_code,
+				'customer_id' => $request->customer_id,
 				'latitude' => $request->latitude,
 				'longitude' => $request->longitude,
+				'devices_updated' => $updatedCount,
+				'device_ids' => $deviceIds,
 			]);
 
 			return response()->json([
 				'success' => true,
-				'message' => 'Coordenadas actualizadas correctamente',
+				'message' => "Coordenadas actualizadas correctamente en {$updatedCount} dispositivo(s)",
 				'data' => [
-					'device_id' => $device->id,
-					'device_code' => $device->code,
-					'latitude' => $device->latitude,
-					'longitude' => $device->longitude,
+					'device_code' => $request->device_code,
+					'customer_id' => $request->customer_id,
+					'latitude' => $request->latitude,
+					'longitude' => $request->longitude,
+					'devices_updated' => $updatedCount,
+					'device_ids' => $deviceIds,
 				]
 			], 200);
 		} catch (\Exception $e) {
