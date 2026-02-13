@@ -10,7 +10,7 @@
                 <div class="input-group w-100 mb-3">
                     <select class="form-select" id="yearServicesProgrammedSelector">
                         @for ($i = Carbon::now()->year; $i >= Carbon::now()->year - 5; $i--)
-                            <option value="{{ $i }}">{{ $i }}</option>
+                            <option value="{{ $i }}" {{ $i == Carbon::now()->year ? 'selected' : '' }}>{{ $i }}</option>
                         @endfor
                     </select>
                     <select class="form-select" id="monthServicesProgrammedSelector">

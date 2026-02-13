@@ -3,6 +3,7 @@
     @php
         use Carbon\Carbon;
     @endphp
+    
     @if (!auth()->check())
         <?php
         header('Location: /login');
@@ -26,13 +27,14 @@
             </div>
             <div class="pe-4">
                 <button class="btn btn-dark btn-sm" id="generatePdfBtn">
-                    <i class="bi bi-file-pdf-fill"></i> Generar Reporte
+                    <span id="btnContent">
+                        <i class="bi bi-file-pdf-fill"></i> Generar Reporte
+                    </span>
+                    <span id="btnLoading" style="display: none;">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Generando reporte...
+                    </span>
                 </button>
-
-                <span id="pdfLoading" class="ms-2 text-muted" style="display: none;">
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    Generando reporte...
-                </span>
             </div>
         </div>
 
@@ -210,12 +212,14 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const generatePdfBtn = document.getElementById('generatePdfBtn');
-            const pdfLoading = document.getElementById('pdfLoading');
+            const btnContent = document.getElementById('btnContent');
+            const btnLoading = document.getElementById('btnLoading');
 
             if (generatePdfBtn) {
                 generatePdfBtn.addEventListener('click', async function() {
                     generatePdfBtn.disabled = true;
-                    pdfLoading.style.display = 'inline-block';
+                    btnContent.style.display = 'none';
+                    btnLoading.style.display = 'inline-block';
 
                     try {
                         // Cargar el logo
@@ -461,7 +465,8 @@
                         alert('Error al generar el PDF. Por favor, intente nuevamente.');
                     } finally {
                         generatePdfBtn.disabled = false;
-                        pdfLoading.style.display = 'none';
+                        btnContent.style.display = 'inline-block';
+                        btnLoading.style.display = 'none';
                     }
                 });
             }

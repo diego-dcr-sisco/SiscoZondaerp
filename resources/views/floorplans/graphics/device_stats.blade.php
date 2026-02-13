@@ -11,8 +11,13 @@
             </div>
             <div class="pe-4">
                 <button class="btn btn-dark btn-sm" id="generateReportBtn" onclick="exportAllChartsToPDF()">
-                    <i class="bi bi-file-pdf-fill"></i> Generar Reporte
-                    <span id="reportLoading" class="spinner-border spinner-border-sm ms-2" role="status" aria-hidden="true" style="display: none;"></span>
+                    <span id="btnContent">
+                        <i class="bi bi-file-pdf-fill"></i> Generar Reporte
+                    </span>
+                    <span id="btnLoading" style="display: none;">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Generando reporte...
+                    </span>
                 </button>
             </div>
         </div>
@@ -474,10 +479,12 @@
 
         async function exportAllChartsToPDF() {
             const btn = document.getElementById('generateReportBtn');
-            const loading = document.getElementById('reportLoading');
+            const btnContent = document.getElementById('btnContent');
+            const btnLoading = document.getElementById('btnLoading');
             
             btn.disabled = true;
-            loading.style.display = 'inline-block';
+            btnContent.style.display = 'none';
+            btnLoading.style.display = 'inline-block';
 
             try {
                 // Cargar el logo
@@ -679,7 +686,8 @@
                 alert('Error al generar el PDF. Por favor, intente nuevamente.');
             } finally {
                 btn.disabled = false;
-                loading.style.display = 'none';
+                btnContent.style.display = 'inline-block';
+                btnLoading.style.display = 'none';
             }
         }
     </script>
