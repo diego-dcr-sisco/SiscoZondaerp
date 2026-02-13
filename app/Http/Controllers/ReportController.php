@@ -451,13 +451,28 @@ class ReportController extends Controller
         $all_devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
 
         // Separar dispositivos revisados y no revisados
+        // Un dispositivo está revisado si tiene:
+        // 1. Incidentes/respuestas registradas
+        // 2. Productos aplicados
+        // 3. Plagas registradas
         $devices_incidents_ids = $incidents->pluck('device_id')->unique()->toArray();
+        $devices_with_products = DeviceProduct::where('order_id', $order->id)
+            ->pluck('device_id')->unique()->toArray();
+        $devices_with_pests = DevicePest::where('order_id', $order->id)
+            ->pluck('device_id')->unique()->toArray();
         
-        // Dispositivos revisados (con incidentes registrados)
-        $reviewed_devices = $all_devices->whereIn('id', $devices_incidents_ids);
+        // Combinar todos los IDs de dispositivos que tienen algún tipo de registro
+        $reviewed_device_ids = array_unique(array_merge(
+            $devices_incidents_ids,
+            $devices_with_products,
+            $devices_with_pests
+        ));
         
-        // Dispositivos no revisados (sin incidentes registrados)
-        $not_reviewed_devices = $all_devices->whereNotIn('id', $devices_incidents_ids);
+        // Dispositivos revisados (con incidentes, productos o plagas)
+        $reviewed_devices = $all_devices->whereIn('id', $reviewed_device_ids);
+        
+        // Dispositivos no revisados (sin incidentes, productos ni plagas)
+        $not_reviewed_devices = $all_devices->whereNotIn('id', $reviewed_device_ids);
         
         // Combinar: primero revisados, luego no revisados
         $devices = $reviewed_devices->merge($not_reviewed_devices);
@@ -533,6 +548,24 @@ class ReportController extends Controller
 
             $device_states = $device?->states($order->id)->first() ?? null;
 
+            // Determinar si el dispositivo está revisado:
+            // 1. Si is_scanned es true (app actual)
+            // 2. Si device_states->is_checked es true (guardado previamente)
+            // 3. Si tiene incidencias/respuestas
+            // 4. Si tiene productos aplicados
+            // 5. Si tiene plagas registradas
+            $hasAnswers = collect($questions_data)->filter(function($q) {
+                return !empty($q['answer']);
+            })->count() > 0;
+            $hasProducts = $device->products($order->id)->count() > 0;
+            $hasPests = $device->pests($order->id)->count() > 0;
+            
+            $isChecked = ($device_states?->is_scanned ?? false) || 
+                        ($device_states?->is_checked ?? false) ||
+                        $hasAnswers ||
+                        $hasProducts ||
+                        $hasPests;
+
             $devices_data[] = [
                 'id' => $device->id,
                 'nplan' => $device->nplan,
@@ -582,8 +615,7 @@ class ReportController extends Controller
                     'order_id' => $order->id,
                     'device_id' => $device->id,
                     'is_scanned' => $device_states->is_scanned ?? false,
-                    //'is_checked' => (($device_states?->is_checked ?? false) || count($questions_data) > 0),
-                    'is_checked' => $device_states?->is_checked ?? false,
+                    'is_checked' => $isChecked,
                     'observations' => $device_states->observations ?? null,
                     'device_image' => $device_states->device_image ?? null
                 ]
@@ -1834,6 +1866,24 @@ class ReportController extends Controller
 
             $device_states = $device?->states($order->id)->first() ?? null;
 
+            // Determinar si el dispositivo está revisado:
+            // 1. Si is_scanned es true (app actual)
+            // 2. Si device_states->is_checked es true (guardado previamente)
+            // 3. Si tiene incidencias/respuestas
+            // 4. Si tiene productos aplicados
+            // 5. Si tiene plagas registradas
+            $hasAnswers = collect($questions_data)->filter(function($q) {
+                return !empty($q['answer']);
+            })->count() > 0;
+            $hasProducts = $device->products($order->id)->count() > 0;
+            $hasPests = $device->pests($order->id)->count() > 0;
+            
+            $isChecked = ($device_states?->is_scanned ?? false) || 
+                        ($device_states?->is_checked ?? false) ||
+                        $hasAnswers ||
+                        $hasProducts ||
+                        $hasPests;
+
             $devices_data[] = [
                 'id' => $device->id,
                 'nplan' => $device->nplan,
@@ -1881,7 +1931,7 @@ class ReportController extends Controller
                     'order_id' => $order->id,
                     'device_id' => $device->id,
                     'is_scanned' => $device_states->is_scanned ?? false,
-                    'is_checked' => $device_states->is_checked ?? false,
+                    'is_checked' => $isChecked,
                     'observations' => $device_states->observations ?? null,
                     'device_image' => $device_states->device_image ?? null
                 ]

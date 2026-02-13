@@ -572,6 +572,14 @@ class AppController extends Controller
 			$reviews = OrderIncidents::where('order_id', $order_id)->where('device_id', $device->id)->get();
 			$states = $device->states($order_id)->first();
 
+			// Determinar si el dispositivo está revisado:
+			// 1. Si is_scanned es true (app actual)
+			// 2. Si tiene incidencias/respuestas, productos o plagas (app anterior)
+			$isChecked = $states->is_scanned || 
+						 $reviews->count() > 0 || 
+						 $products->count() > 0 || 
+						 $pests->count() > 0;
+
 			$order_reviews[] = [
 				'device_id' => $device->id,
 				'pests' => $pests->map(function ($p) use ($service) {
@@ -605,7 +613,7 @@ class AppController extends Controller
 				'image' => $states->device_image,
 				'observations' => $states->observations,
 				'is_scanned' => $states->is_scanned,
-				'is_checked' => true,
+				'is_checked' => $isChecked,
 			];
 		}
 
