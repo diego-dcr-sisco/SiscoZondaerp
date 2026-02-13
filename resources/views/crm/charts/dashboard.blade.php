@@ -128,13 +128,19 @@
 
                 // Calcular tendencia
                 let trend = 'estable';
+                let trendText = 'estable';
                 let increases = 0, decreases = 0;
                 for (let i = 1; i < totals.length; i++) {
                     if (totals[i] > totals[i - 1]) increases++;
                     else if (totals[i] < totals[i - 1]) decreases++;
                 }
-                if (increases > decreases * 1.5) trend = 'creciente';
-                else if (decreases > increases * 1.5) trend = 'descendente';
+                if (increases > decreases * 1.5) {
+                    trend = 'creciente';
+                    trendText = 'al alza';
+                } else if (decreases > increases * 1.5) {
+                    trend = 'descendente';
+                    trendText = 'a la baja';
+                }
 
                 // Variación entre último y penúltimo periodo con datos
                 let variationText = '';
@@ -148,14 +154,14 @@
                     if (prevValue > 0) {
                         const variation = ((lastValue - prevValue) / prevValue * 100).toFixed(1);
                         const changeType = variation > 0 ? 'incremento' : 'disminución';
-                        variationText = `En comparación con ${labels[prevIndex]}, se registró un ${changeType} del ${Math.abs(variation)}%. `;
+                        variationText = `En comparación con ese mes, se observa una ${changeType} del ${Math.abs(variation)}%. `;
                     }
                 }
 
                 // Generar insight
                 let insight = '';
                 if (maxValue > avg * 1.5) {
-                    insight = `Se destaca un pico significativo en ${maxLabel} que supera el promedio en ${((maxValue / avg - 1) * 100).toFixed(0)}%.`;
+                    insight = `Asimismo, resalta un pico importante en ${maxLabel.toLowerCase()} que supera el promedio en un ${((maxValue / avg - 1) * 100).toFixed(0)}%.`;
                 } else if (trend === 'creciente') {
                     insight = 'La tendencia general muestra crecimiento sostenido.';
                 } else if (trend === 'descendente') {
@@ -164,7 +170,8 @@
                     insight = 'Los valores se mantienen relativamente estables.';
                 }
 
-                return `Durante el periodo analizado se observa una tendencia ${trend}, alcanzando su punto máximo en ${maxLabel} con ${maxValue} registros. ${variationText}El periodo con menor actividad fue ${minLabel} (${minValue} registros). ${insight}`;
+                const minText = minValue === 0 ? 'sin registros' : `${minValue} ${minValue === 1 ? 'registro' : 'registros'}`;
+                return `A lo largo del periodo evaluado se aprecia una tendencia ${trendText}, con el valor más alto en ${maxLabel.toLowerCase()}, donde se contabilizaron ${maxValue} ${maxValue === 1 ? 'registro' : 'registros'}. ${variationText}El mes con menor actividad fue ${minLabel.toLowerCase()}, ${minText}. ${insight}`;
             }
 
             // Análisis para gráficas donut/pie
