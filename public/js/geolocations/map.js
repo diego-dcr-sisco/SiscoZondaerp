@@ -444,21 +444,6 @@ function updatePolygons() {
             console.log(`🌍 Creando polígono global con TODOS los dispositivos (${allDevices.length} puntos)...`);
             const sortedPoints = sortPointsByAngle(allDevices);
             
-            // Imprimir puntos del polígono global
-            console.log(`📐 Polígono GLOBAL (${allDevices.length} puntos):`);
-            console.log('═══════════════════════════════════════');
-            sortedPoints.forEach((point, index) => {
-                if (index === 0) {
-                    console.log(`🟢 INICIO [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
-                } else if (index === sortedPoints.length - 1) {
-                    console.log(`🔴 FIN [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
-                } else {
-                    console.log(`⚪ Punto [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
-                }
-            });
-            console.log(`🔄 El polígono se cierra automáticamente conectando FIN con INICIO`);
-            console.log('═══════════════════════════════════════');
-            
             const globalPolygon = new google.maps.Polygon({
                 paths: sortedPoints,
                 strokeColor: '#0A2986', // Color azul para polígono global
