@@ -431,7 +431,77 @@ function updatePolygons() {
         }
     });
     
-    console.log(`🏁 Total de polígonos creados: ${Object.keys(polygons).length}`);
+    console.log(`🏁 Total de polígonos por tipo creados: ${Object.keys(polygons).length}`);
+    
+    // Si no se crearon polígonos por tipo, crear un polígono global con todos los dispositivos
+    if (Object.keys(polygons).length === 0) {
+        const allDevices = [];
+        Object.values(devicesByType).forEach(data => {
+            allDevices.push(...data.devices);
+        });
+        
+        if (allDevices.length >= 3) {
+            console.log(`🌍 Creando polígono global con TODOS los dispositivos (${allDevices.length} puntos)...`);
+            const sortedPoints = sortPointsByAngle(allDevices);
+            
+            // Imprimir puntos del polígono global
+            console.log(`📐 Polígono GLOBAL (${allDevices.length} puntos):`);
+            console.log('═══════════════════════════════════════');
+            sortedPoints.forEach((point, index) => {
+                if (index === 0) {
+                    console.log(`🟢 INICIO [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
+                } else if (index === sortedPoints.length - 1) {
+                    console.log(`🔴 FIN [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
+                } else {
+                    console.log(`⚪ Punto [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
+                }
+            });
+            console.log(`🔄 El polígono se cierra automáticamente conectando FIN con INICIO`);
+            console.log('═══════════════════════════════════════');
+            
+            const globalPolygon = new google.maps.Polygon({
+                paths: sortedPoints,
+                strokeColor: '#0A2986', // Color azul para polígono global
+                strokeOpacity: 0.8,
+                strokeWeight: 3,
+                fillColor: '#0A2986',
+                fillOpacity: 0.15,
+                map: map,
+                zIndex: 50,
+                clickable: true,
+                editable: false,
+                draggable: false
+            });
+            
+            console.log(`✅ Polígono GLOBAL creado con ${allDevices.length} puntos de ${Object.keys(devicesByType).length} tipo(s) diferentes`);
+            
+            // Info window para el polígono global
+            const infoWindow = new google.maps.InfoWindow();
+            
+            globalPolygon.addListener('click', function(event) {
+                const contentString = `
+                    <div style="padding: 10px;">
+                        <h6 style="color: #0A2986; margin-bottom: 5px;">
+                            <strong>Perímetro General</strong>
+                        </h6>
+                        <p class="mb-0 small">
+                            <i class="bi bi-geo-alt"></i> ${allDevices.length} dispositivo(s)<br>
+                            <i class="bi bi-pentagon"></i> Todos los tipos combinados
+                        </p>
+                    </div>
+                `;
+                
+                infoWindow.setContent(contentString);
+                infoWindow.setPosition(event.latLng);
+                infoWindow.open(map);
+            });
+            
+            polygons['global'] = globalPolygon;
+        } else {
+            console.log(`⚠️ Solo hay ${allDevices.length} dispositivo(s) en total, se necesitan al menos 3 para crear un polígono`);
+        }
+    }
+    
     console.log('📍 Polígonos en el mapa:', polygons);
 }
 
