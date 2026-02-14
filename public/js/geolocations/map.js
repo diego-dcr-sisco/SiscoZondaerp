@@ -356,7 +356,21 @@ function updatePolygons() {
         
         if (data.devices.length >= 3) {
             const sortedPoints = sortPointsByAngle(data.devices);
-            console.log(`📐 Puntos ordenados para polígono:`, sortedPoints);
+            
+            // Imprimir puntos con inicio y fin marcados
+            console.log(`📐 Polígono para "${data.name}" (${data.devices.length} puntos):`);
+            console.log('═══════════════════════════════════════');
+            sortedPoints.forEach((point, index) => {
+                if (index === 0) {
+                    console.log(`🟢 INICIO [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
+                } else if (index === sortedPoints.length - 1) {
+                    console.log(`🔴 FIN [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
+                } else {
+                    console.log(`⚪ Punto [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
+                }
+            });
+            console.log(`🔄 El polígono se cierra automáticamente conectando FIN con INICIO`);
+            console.log('═══════════════════════════════════════');
 
             const polygon = new google.maps.Polygon({
                 paths: sortedPoints,
