@@ -9,6 +9,9 @@ let selectedDeviceId = null;
 let devices = [];
 let modifiedDevices = new Set();
 let originalCoordinates = {};
+let updatePolygonsTimeout = null; // Para debounce de updatePolygons
+let updatePolygonsCalls = 0; // Contador de llamadas
+let updatePolygonsExecutions = 0; // Contador de ejecuciones reales
 
 const TOLERANCE = 0.00001; // Tolerancia para coordenadas duplicadas (~1 metro)
 
@@ -172,7 +175,7 @@ function createMarker(device, lat, lng, isNew = false, shouldUpdatePolygons = tr
 
         updateStatistics();
         renderDevicesList();
-        updatePolygons();
+        updatePolygonsDebounced(); // Usar versión debounced al arrastrar
     });
 
     markers[device.id] = marker;
@@ -183,7 +186,7 @@ function createMarker(device, lat, lng, isNew = false, shouldUpdatePolygons = tr
     }
 
     if (shouldUpdatePolygons) {
-        updatePolygons();
+        updatePolygonsDebounced(); // Usar versión debounced
     }
 }
 
@@ -312,8 +315,20 @@ function sortPointsByAngle(points) {
     });
 }
 
+// Función con debounce para actualizar polígonos (evita llamadas excesivas)
+function updatePolygonsDebounced() {
+    updatePolygonsCalls++;
+    if (updatePolygonsTimeout) {
+        clearTimeout(updatePolygonsTimeout);
+    }
+    updatePolygonsTimeout = setTimeout(() => {
+        updatePolygons();
+    }, 100); // Espera 100ms antes de actualizar
+}
+
 function updatePolygons() {
-    console.log('🔷 Actualizando polígonos...');
+    updatePolygonsExecutions++;
+    console.log(`🔷 Actualizando polígonos... (llamada #${updatePolygonsExecutions} de ${updatePolygonsCalls} solicitudes)`);
     
     if (!map) {
         console.error('❌ Error: El mapa no está inicializado');
