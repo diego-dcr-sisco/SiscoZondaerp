@@ -42,7 +42,6 @@ function initMap(devicesData, customerAddress, customerCity, customerState) {
         loadExistingDevices();
         renderDevicesList();
         updateStatistics();
-        updatePolygons();
     });
 }
 
@@ -83,18 +82,28 @@ function getMapCenter(address, city, state, callback) {
 }
 
 function loadExistingDevices() {
+    console.log('📍 Cargando dispositivos existentes...');
+    console.log('Total de dispositivos:', devices.length);
+    
+    let loadedCount = 0;
     devices.forEach(device => {
         if (device.latitude && device.longitude) {
-            createMarker(device, parseFloat(device.latitude), parseFloat(device.longitude), false);
+            createMarker(device, parseFloat(device.latitude), parseFloat(device.longitude), false, false);
             originalCoordinates[device.id] = {
                 lat: parseFloat(device.latitude),
                 lng: parseFloat(device.longitude)
             };
+            loadedCount++;
         }
     });
+    
+    console.log(`✅ ${loadedCount} dispositivos cargados con coordenadas`);
+    
+    // Actualizar polígonos una sola vez después de cargar todos los dispositivos
+    updatePolygons();
 }
 
-function createMarker(device, lat, lng, isNew = false) {
+function createMarker(device, lat, lng, isNew = false, shouldUpdatePolygons = true) {
     // Eliminar marcador existente si hay uno
     if (markers[device.id]) {
         markers[device.id].setMap(null);
@@ -159,6 +168,7 @@ function createMarker(device, lat, lng, isNew = false) {
 
         updateStatistics();
         renderDevicesList();
+        updatePolygons();
     });
 
     markers[device.id] = marker;
@@ -168,7 +178,9 @@ function createMarker(device, lat, lng, isNew = false) {
         map.panTo(marker.getPosition());
     }
 
-    updatePolygons();
+    if (shouldUpdatePolygons) {
+        updatePolygons();
+    }
 }
 
 function getInfoWindowContent(device, lat, lng) {
@@ -297,6 +309,8 @@ function sortPointsByAngle(points) {
 }
 
 function updatePolygons() {
+    console.log('🔷 Actualizando polígonos...');
+    
     // Limpiar polígonos existentes
     Object.values(polygons).forEach(polygon => {
         polygon.setMap(null);
@@ -325,8 +339,12 @@ function updatePolygons() {
         }
     });
 
+    console.log('📊 Dispositivos agrupados por tipo:', devicesByType);
+
     // Crear polígonos para cada tipo (si tiene al menos 3 puntos)
     Object.entries(devicesByType).forEach(([typeId, data]) => {
+        console.log(`🔍 Tipo ${typeId} (${data.name}): ${data.devices.length} dispositivos`);
+        
         if (data.devices.length >= 3) {
             const sortedPoints = sortPointsByAngle(data.devices);
 
@@ -340,6 +358,8 @@ function updatePolygons() {
                 map: map,
                 zIndex: 1
             });
+
+            console.log(`✅ Polígono creado para tipo ${typeId} (${data.name}) con ${data.devices.length} puntos`);
 
             // Info window para el polígono
             const infoWindow = new google.maps.InfoWindow();
@@ -363,6 +383,8 @@ function updatePolygons() {
             });
 
             polygons[typeId] = polygon;
+        } else {
+            console.log(`⚠️ Tipo ${typeId} (${data.name}): Solo ${data.devices.length} punto(s), se necesitan al menos 3 para crear polígono`);
         }
     });
 }
