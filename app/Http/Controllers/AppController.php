@@ -705,14 +705,30 @@ class AppController extends Controller
 				->pluck('customer_id')
 				->unique();
 
-			// Obtener los datos de los clientes
-			$customers = Customer::whereIn('id', $customerIds)
-				->orderBy('name', 'asc')
-				->get(['id', 'name'])
-				->map(function ($customer) {
-					return [
-						'customer_id' => $customer->id,
-						'customer_name' => $customer->name,
+// Obtener los datos de los clientes con sus planos
+		$customers = Customer::whereIn('id', $customerIds)
+			->orderBy('name', 'asc')
+			->get(['id', 'name'])
+			->map(function ($customer) {
+				// Obtener los planos del cliente
+				$floorplans = FloorPlans::where('customer_id', $customer->id)
+					->orderBy('filename', 'asc')
+					->get(['id', 'filename', 'customer_id'])
+					->map(function ($floorplan) {
+						// Extraer el nombre del plano del filename (sin extensión)
+						$floorplanName = pathinfo($floorplan->filename, PATHINFO_FILENAME);
+						
+						return [
+							'floorplan_id' => $floorplan->id,
+							'floorplan_name' => $floorplanName,
+							'customer_id' => $floorplan->customer_id,
+						];
+					});
+
+				return [
+					'customer_id' => $customer->id,
+					'customer_name' => $customer->name,
+					'blueprints' => $floorplans,
 					];
 				});
 
