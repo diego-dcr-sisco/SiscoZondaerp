@@ -38,10 +38,14 @@ function initMap(devicesData, customerAddress, customerCity, customerState) {
             }
         });
 
-        // Cargar dispositivos existentes
-        loadExistingDevices();
-        renderDevicesList();
-        updateStatistics();
+        // Esperar a que el mapa esté completamente cargado
+        google.maps.event.addListenerOnce(map, 'idle', function() {
+            console.log('🗺️ Mapa completamente cargado');
+            // Cargar dispositivos existentes
+            loadExistingDevices();
+            renderDevicesList();
+            updateStatistics();
+        });
     });
 }
 
@@ -128,7 +132,7 @@ function createMarker(device, lat, lng, isNew = false, shouldUpdatePolygons = tr
             fontSize: '12px',
             fontWeight: 'bold'
         },
-        zIndex: 100
+        zIndex: 200
     });
 
     // Info Window
@@ -311,6 +315,11 @@ function sortPointsByAngle(points) {
 function updatePolygons() {
     console.log('🔷 Actualizando polígonos...');
     
+    if (!map) {
+        console.error('❌ Error: El mapa no está inicializado');
+        return;
+    }
+    
     // Limpiar polígonos existentes
     Object.values(polygons).forEach(polygon => {
         polygon.setMap(null);
@@ -347,19 +356,24 @@ function updatePolygons() {
         
         if (data.devices.length >= 3) {
             const sortedPoints = sortPointsByAngle(data.devices);
+            console.log(`📐 Puntos ordenados para polígono:`, sortedPoints);
 
             const polygon = new google.maps.Polygon({
                 paths: sortedPoints,
                 strokeColor: data.color,
                 strokeOpacity: 0.8,
-                strokeWeight: 2,
+                strokeWeight: 3,
                 fillColor: data.color,
-                fillOpacity: 0.3,
+                fillOpacity: 0.2,
                 map: map,
-                zIndex: 1
+                zIndex: 50,
+                clickable: true,
+                editable: false,
+                draggable: false
             });
 
-            console.log(`✅ Polígono creado para tipo ${typeId} (${data.name}) con ${data.devices.length} puntos`);
+            console.log(`✅ Polígono creado y agregado al mapa para tipo ${typeId} (${data.name}) con ${data.devices.length} puntos`);
+            console.log(`🎨 Color del polígono:`, data.color);
 
             // Info window para el polígono
             const infoWindow = new google.maps.InfoWindow();
@@ -387,6 +401,9 @@ function updatePolygons() {
             console.log(`⚠️ Tipo ${typeId} (${data.name}): Solo ${data.devices.length} punto(s), se necesitan al menos 3 para crear polígono`);
         }
     });
+    
+    console.log(`🏁 Total de polígonos creados: ${Object.keys(polygons).length}`);
+    console.log('📍 Polígonos en el mapa:', polygons);
 }
 
 // ===========================
