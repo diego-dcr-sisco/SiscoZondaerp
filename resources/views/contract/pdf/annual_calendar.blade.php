@@ -308,8 +308,7 @@
             </div>
         </div>
         <div class="header-logo">
-            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/landscape_logo.png'))) }}"
-                alt="Logo">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/landscape_logo.png'))) }}" alt="Logo">
         </div>
     </div>
 
@@ -319,20 +318,20 @@
          ============================================ -->
     <div class="months-container">
         <!-- Itera sobre los meses del periodo del contrato -->
-        @foreach ($months as $index => $monthData)
+        @foreach($months as $index => $monthData)
             @php
                 $month = $monthData['month'];
                 $year = $monthData['year'];
                 $monthName = $monthData['name'];
                 $yearMonth = $year . '-' . $month;
             @endphp
-            @if (($index + 1) % 3 == 1 && $index > 0)
+            @if(($index + 1) % 3 == 1 && $index > 0)
                 <div class="clearfix"></div>
             @endif
             <div class="month-block {{ ($index + 1) % 3 == 0 ? 'last-in-row' : '' }}">
                 <!-- Título del mes -->
                 <div class="month-title">{{ $monthName }} {{ $year }}</div>
-
+                
                 <!-- Tabla del calendario mensual -->
                 <table class="calendar-table">
                     <thead>
@@ -351,85 +350,49 @@
                         @php
                             // Obtener el primer día del mes
                             $firstDay = \Carbon\Carbon::create($year, $month, 1);
-
-                            // Total de días en el mes (28-31)
                             $daysInMonth = $firstDay->daysInMonth;
-
-                            // Día de la semana del primer día (0=domingo, 1=lunes, ..., 6=sábado)
-                            // Convertir a formato lunes=0: si es domingo (0), convertir a 6, sino restar 1
                             $startDayOfWeek = $firstDay->dayOfWeek === 0 ? 6 : $firstDay->dayOfWeek - 1;
-
-                            // Contadores para el loop
-                            $day = 1; // Día actual del mes
-                            $cell = 0; // Celda actual en la tabla (0-41 máximo para 6 semanas)
+                            $day = 1;
+                            $cell = 0;
                         @endphp
-
-                        <!-- Loop para generar las semanas -->
-                        @while ($day <= $daysInMonth || $cell % 7 != 0)
-                            <!-- Iniciar nueva fila cada 7 celdas -->
-                            @if ($cell % 7 == 0)
+                        @while($day <= $daysInMonth || $cell % 7 != 0)
+                            @if($cell % 7 == 0)
                                 <tr>
                             @endif
-
-                            <!-- Celdas vacías antes del primer día del mes -->
-                            @if ($cell < $startDayOfWeek && $day == 1)
+                            @if($cell < $startDayOfWeek && $day == 1)
                                 <td class="empty"></td>
-
-                                <!-- Celdas con días del mes -->
                             @elseif($day <= $daysInMonth)
                                 @php
-                                    // Verificar si hay servicio programado este día
                                     $haService = isset($calendarData[$yearMonth][$day]);
-
-                                    // Obtener el día de la semana actual (0=domingo, 1=lunes, ..., 6=sábado)
                                     $currentDate = \Carbon\Carbon::create($year, $month, $day);
                                     $dayOfWeek = $currentDate->dayOfWeek;
-
-                                    // Colores por día de la semana (mismo array que en leyenda)
                                     $weekDayColors = [
-                                        1 => '#FFC107', // Lunes - Amarillo
-                                        2 => '#2196F3', // Martes - Azul
-                                        3 => '#4CAF50', // Miércoles - Verde
-                                        4 => '#FF5722', // Jueves - Naranja
-                                        5 => '#9C27B0', // Viernes - Morado
-                                        6 => '#FF9800', // Sábado - Naranja claro
-                                        0 => '#F44336', // Domingo - Rojo
+                                        1 => '#FFC107',  // Lunes - Amarillo
+                                        2 => '#2196F3',  // Martes - Azul
+                                        3 => '#4CAF50',  // Miércoles - Verde
+                                        4 => '#FF5722',  // Jueves - Naranja
+                                        5 => '#9C27B0',  // Viernes - Morado
+                                        6 => '#FF9800',  // Sábado - Naranja claro
+                                        0 => '#F44336'   // Domingo - Rojo
                                     ];
-
-                                    // Color según día de la semana si hay servicio
                                     $cellColor = $haService ? $weekDayColors[$dayOfWeek] : 'white';
-                                    
-                                    // Verificar si es un día con frecuencia especial
-                                    $isSpecialFrequency = isset($specialFrequencyDates['dates'][$yearMonth]) && in_array($day, $specialFrequencyDates['dates'][$yearMonth]);
-                                    $specialClass = $isSpecialFrequency ? 'special-frequency-border' : '';
                                 @endphp
-
-                                <!-- Celda coloreada según día de la semana -->
-                                <td class="{{ $specialClass }}"
-                                    style="background-color: {{ $cellColor }}; {{ $haService ? 'color: white;' : 'color: #000;' }}">
+                                <td style="background-color: {{ $cellColor }}; {{ $haService ? 'color: white;' : 'color: #000;' }}">
                                     <span class="day-number">{{ $day }}</span>
                                 </td>
-
                                 @php $day++ @endphp
-
-                                <!-- Celdas vacías después del último día del mes -->
                             @else
                                 <td class="empty"></td>
                             @endif
-
-                            <!-- Cerrar fila cada 7 celdas -->
-                            @if (($cell + 1) % 7 == 0)
+                            @if(($cell + 1) % 7 == 0)
                                 </tr>
                             @endif
-
                             @php $cell++ @endphp
                         @endwhile
                     </tbody>
                 </table>
             </div>
         @endforeach
-
-        <!-- Limpiar floats después de todos los meses -->
         <div class="clearfix"></div>
     </div>
 
@@ -440,47 +403,34 @@
     <div class="legend">
         <div class="legend-title">SIMBOLOGÍA</div>
         @php
-            // Colores por día de la semana (índice numérico según Carbon)
             $weekDayColorsArray = [
-                1 => '#FFC107', // Lunes - Amarillo
-                2 => '#2196F3', // Martes - Azul
-                3 => '#4CAF50', // Miércoles - Verde
-                4 => '#FF5722', // Jueves - Naranja
-                5 => '#9C27B0', // Viernes - Morado
-                6 => '#FF9800', // Sábado - Naranja claro
-                0 => '#F44336', // Domingo - Rojo
+                1 => '#FFC107',  // Lunes - Amarillo
+                2 => '#2196F3',  // Martes - Azul
+                3 => '#4CAF50',  // Miércoles - Verde
+                4 => '#FF5722',  // Jueves - Naranja
+                5 => '#9C27B0',  // Viernes - Morado
+                6 => '#FF9800',  // Sábado - Naranja claro
+                0 => '#F44336'   // Domingo - Rojo
             ];
-
-            // Analizar qué servicios se realizan en cada día de la semana
-            $colorServices = []; // [dayOfWeek => [array de service_ids]]
-
+            $colorServices = [];
             foreach ($calendarData as $yearMonth => $days) {
                 foreach ($days as $day => $serviceIds) {
-                    // Extraer año y mes de la clave compuesta
                     list($yearPart, $monthPart) = explode('-', $yearMonth);
-                    
-                    // Obtener día de la semana para esta fecha
                     $currentDate = \Carbon\Carbon::create($yearPart, $monthPart, $day);
                     $dayOfWeek = $currentDate->dayOfWeek;
-
                     if (!isset($colorServices[$dayOfWeek])) {
                         $colorServices[$dayOfWeek] = [];
                     }
-
                     foreach ($serviceIds as $serviceId) {
-                        // Agregar servicio si no está ya en este día
                         if (!in_array($serviceId, $colorServices[$dayOfWeek])) {
                             $colorServices[$dayOfWeek][] = $serviceId;
                         }
                     }
                 }
             }
-
-            // Ordenar por día de la semana (lunes primero)
             ksort($colorServices);
         @endphp
-
-        @foreach ($colorServices as $dayOfWeek => $serviceIds)
+        @foreach($colorServices as $dayOfWeek => $serviceIds)
             @php
                 $dayNames = [
                     1 => 'Lunes',
@@ -496,28 +446,13 @@
                 <span class="color-box" style="background-color: {{ $weekDayColorsArray[$dayOfWeek] }}"></span>
                 <span class="day-name">{{ $dayNames[$dayOfWeek] }}</span>
                 <ul class="services-list">
-                    @foreach ($serviceIds as $serviceId)
+                    @foreach($serviceIds as $serviceId)
                         <li>{{ $serviceColors[$serviceId]['name'] }}</li>
                     @endforeach
                 </ul>
             </div>
         @endforeach
     </div>
-
-    <!-- ============================================
-         SIMBOLOGÍA DE FRECUENCIA ESPECIAL
-         ============================================ -->
-    @if(!empty($specialFrequencyDates['dates']))
-    <div class="legend">
-        <div class="legend-title">SERVICIOS ESPECIALES</div>
-        @foreach($specialFrequencyDates['services'] as $serviceId => $serviceName)
-        <div class="legend-item">
-            <span class="color-box special-frequency-border" style="background-color: white;"></span>
-            <span class="day-name">{{ $serviceName }}</span>
-        </div>
-        @endforeach
-    </div>
-    @endif
 
     <!-- ============================================
          PIE DE PÁGINA
@@ -527,5 +462,4 @@
         <p>Documento generado automáticamente • {{ now()->format('d/m/Y H:i') }}</p>
     </footer>
 </body>
-
 </html>

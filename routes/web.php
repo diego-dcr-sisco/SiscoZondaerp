@@ -319,7 +319,9 @@ Route::prefix('crm/chart')
 
         // views
         Route::get('/dashboard', [GraphicController::class, 'index'])->name('dashboard');
-    }); // CRM CHARTS
+    }); 
+    
+    // CRM CHARTS
 Route::get('/crm/chart/customers-by-category', [GraphicController::class, 'customersByCategory'])
     ->name('crm.chart.customersByCategory');
 
@@ -737,7 +739,8 @@ Route::prefix('report')
         Route::post('/set/incident/{orderId}', [ReportController::class, 'setIncident'])->name('set.incident');
 
         Route::post('/device', [ReportController::class, 'getDevices'])->name('device');
-        Route::post('/device/bulk', [ReportController::class, 'bulkPrint'])->name('bulk');
+        
+        Route::post('/device/bulk', [ReportController::class, 'printBulk'])->name('bulk');
         Route::get('/device/bulk/download/{timer}', [ReportController::class, 'downloadBulk'])->name('bulk.download');
         Route::get('/device/bulk/delete/{timer}', [ReportController::class, 'deleteBulk'])->name('bulk.delete');
 
