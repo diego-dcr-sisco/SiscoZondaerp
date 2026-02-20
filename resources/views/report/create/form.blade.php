@@ -560,9 +560,12 @@
                 ['font', ['fontsize', 'fontname']],
                 ['para', ['ul', 'ol', 'paragraph']],
                 ['height', ['height']],
-                ['insert', ['table', 'link']],
+                ['insert', ['table', 'link', 'picture']],
             ],
-
+            
+            // Configuración para imágenes en base64
+            maximumImageFileSize: 2048000, // 2MB en bytes (será convertido a base64)
+            
             callbacks: {
                 onInit: function() {
                     forceFontSize($(this), 11);
