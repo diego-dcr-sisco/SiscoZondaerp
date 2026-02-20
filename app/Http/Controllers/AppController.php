@@ -233,7 +233,7 @@ class AppController extends Controller
 						'id' => $service->id,
 						'prefix' => $service->id == 51 && empty($serviceWithDevices) ? 4 : $service->prefix,
 						'name' => $service->name,
-						'description' => $service->description ?? $order->propagateByService($service->id)->text ?? null,
+						'description' => $order->propagateByService($service->id)->text ?? $service->description ?? null,
 						'pests' => $pests->toArray(),
 						'products' => $products->toArray(),
 						'application_methods' => $application_methods->toArray(),
