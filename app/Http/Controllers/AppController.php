@@ -44,6 +44,24 @@ class AppController extends Controller
 {
 	private $file_answers_path = 'datas/json/answers.json';
 
+	/**
+	 * Limpia el HTML de un texto, eliminando todas las etiquetas
+	 */
+	private function cleanHtml($text)
+	{
+		if (empty($text)) {
+			return null;
+		}
+		// Elimina todas las etiquetas HTML
+		$cleanText = strip_tags($text);
+		// Decodifica entidades HTML (&nbsp;, &quot;, etc.)
+		$cleanText = html_entity_decode($cleanText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		// Elimina espacios en blanco excesivos
+		$cleanText = trim(preg_replace('/\s+/', ' ', $cleanText));
+		
+		return $cleanText ?: null;
+	}
+
 	private function getOptions($id, $answers)
 	{
 		foreach ($answers as $answer) {
@@ -233,7 +251,7 @@ class AppController extends Controller
 						'id' => $service->id,
 						'prefix' => $service->id == 51 && empty($serviceWithDevices) ? 4 : $service->prefix,
 						'name' => $service->name,
-						'description' => $order->propagateByService($service->id)->text ?? $service->description ?? null,
+					'description' => $this->cleanHtml($order->propagateByService($service->id)->text ?? $service->description),
 						'pests' => $pests->toArray(),
 						'products' => $products->toArray(),
 						'application_methods' => $application_methods->toArray(),
