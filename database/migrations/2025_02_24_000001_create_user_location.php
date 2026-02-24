@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('user_location', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('user')->onDelete('cascade');
+            $table->unsignedBigInteger('user_id');
             $table->decimal('latitude', 10, 8); // Ejemplo: -17.78629188
             $table->decimal('longitude', 11, 8); // Ejemplo: -63.18116966
             $table->decimal('accuracy', 8, 2)->nullable(); // Precisión en metros
@@ -22,6 +22,9 @@ return new class extends Migration
             $table->string('source')->default('mobile_app'); // Origen: mobile_app, web, manual
             $table->timestamp('recorded_at'); // Momento exacto en que se capturó la ubicación
             $table->timestamps();
+
+            // Definir la clave foránea explícitamente
+            $table->foreign('user_id')->references('id')->on('user')->onDelete('cascade');
 
             // Índices para consultas más rápidas
             $table->index(['user_id', 'recorded_at']);
