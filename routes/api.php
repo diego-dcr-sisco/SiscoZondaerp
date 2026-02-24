@@ -40,4 +40,7 @@ Route::post('/reports/handle', [AppController::class, 'handleReport']);
 Route::post('/technician/customers', [AppController::class, 'getTechnicianCustomers']);
 Route::post('/device/update-location', [AppController::class, 'updateDeviceLocation']);
 
+// Incluir rutas de ubicación GPS
+require __DIR__.'/api_locations.php';
+
 
