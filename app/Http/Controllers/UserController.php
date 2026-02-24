@@ -29,6 +29,7 @@ use App\Models\Filenames;
 use App\Models\UserCustomer;
 use App\Models\DirectoryPermission;
 use App\Models\OrderTechnician;
+use App\Models\UserLocation;
 
 class UserController extends Controller
 {
@@ -804,5 +805,74 @@ class UserController extends Controller
 		$user->delete();*/
 		$user->update(['status_id' => 3]);
 		return redirect()->route('user.index');
+	}
+
+	/**
+	 * Mostrar dashboard de ubicaciones de usuarios
+	 */
+	public function locationsDashboard(Request $request): View
+	{
+		// Obtener usuarios con sus últimas ubicaciones
+		$users = User::whereNot('role_id', 4)
+			->whereNotNull('last_latitude')
+			->whereNotNull('last_longitude')
+			->orderBy('last_location_at', 'desc')
+			->get();
+
+		$navigation = [
+			'Usuarios' => route('user.index'),
+			'Dashboard de Ubicaciones' => route('user.locations.dashboard'),
+		];
+
+		return view('user.locations-dashboard', compact('users', 'navigation'));
+	}
+
+	/**
+	 * Obtener historial de ubicaciones de un usuario específico
+	 */
+	public function userLocations(Request $request, string $id)
+	{
+		$user = User::findOrFail($id);
+		
+		// Obtener fechas del request o valores por defecto
+		$startDate = $request->get('start_date', now()->subDays(7)->format('Y-m-d'));
+		$endDate = $request->get('end_date', now()->format('Y-m-d'));
+
+		// Obtener ubicaciones del usuario en el rango de fechas
+		$locations = UserLocation::where('user_id', $id)
+			->whereBetween('recorded_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
+			->orderBy('recorded_at', 'desc')
+			->get();
+
+		// Si es una petición AJAX, devolver JSON
+		if ($request->ajax()) {
+			return response()->json([
+				'user' => [
+					'id' => $user->id,
+					'name' => $user->name,
+					'email' => $user->email,
+				],
+				'locations' => $locations->map(function ($location) {
+					return [
+						'id' => $location->id,
+						'latitude' => (float) $location->latitude,
+						'longitude' => (float) $location->longitude,
+						'accuracy' => (float) $location->accuracy,
+						'altitude' => $location->altitude ? (float) $location->altitude : null,
+						'speed' => $location->speed ? (float) $location->speed : null,
+						'recorded_at' => $location->recorded_at->format('Y-m-d H:i:s'),
+						'recorded_at_human' => $location->recorded_at->diffForHumans(),
+					];
+				}),
+			]);
+		}
+
+		$navigation = [
+			'Usuarios' => route('user.index'),
+			'Dashboard de Ubicaciones' => route('user.locations.dashboard'),
+			$user->name => route('user.locations', ['id' => $id]),
+		];
+
+		return view('user.user-locations', compact('user', 'locations', 'startDate', 'endDate', 'navigation'));
 	}
 }

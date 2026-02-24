@@ -411,6 +411,10 @@ Route::prefix('users')
 
         Route::post('/directories', [UserController::class, 'directories'])->name('directories');
         Route::post('/search/sedes', [UserController::class, 'searchSedes'])->name('search.sedes');
+        
+        // Rutas para dashboard de ubicaciones GPS
+        Route::get('/locations/dashboard', [UserController::class, 'locationsDashboard'])->name('locations.dashboard');
+        Route::get('/locations/{id}', [UserController::class, 'userLocations'])->name('locations');
     });
 
 // CLIENTES
