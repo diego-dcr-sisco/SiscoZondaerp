@@ -13,7 +13,7 @@ return new class extends Migration
     {
         // Añadir campos de última ubicación a la tabla user
         Schema::table('user', function (Blueprint $table) {
-            $table->decimal('last_latitude', 10, 8)->nullable()->after('session_token');
+            $table->decimal('last_latitude', 10, 8)->nullable();
             $table->decimal('last_longitude', 11, 8)->nullable()->after('last_latitude');
             $table->decimal('last_location_accuracy', 8, 2)->nullable()->after('last_longitude');
             $table->timestamp('last_location_at')->nullable()->after('last_location_accuracy');
