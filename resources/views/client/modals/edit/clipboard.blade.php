@@ -84,7 +84,7 @@
                 },
                 error: function(xhr, status, error) {
                     // Handle errors here
-                    console.error(error);
+                    //console.error(error);
                 }
             });
         }
@@ -127,7 +127,7 @@
                 },
                 error: function(xhr, status, error) {
                     // Handle errors here
-                    console.error(error);
+                    //console.error(error);
                 }
             });
         }
@@ -159,7 +159,7 @@
                 },
                 error: function(xhr, status, error) {
                     // Handle errors here
-                    console.error(error);
+                    //console.error(error);
                 }
             });
         }

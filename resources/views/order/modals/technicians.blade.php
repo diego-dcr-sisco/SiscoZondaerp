@@ -87,7 +87,7 @@
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error al obtener técnicos:', error);
+                //console.error('Error al obtener técnicos:', error);
             }
         });
     }
@@ -127,7 +127,7 @@
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error al asignar técnicos:', error);
+                //console.error('Error al asignar técnicos:', error);
             },
             complete: function() {
                 hideSpinner();

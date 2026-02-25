@@ -41,7 +41,7 @@
                 renderServicesCompletedChart(data);
             })
             .catch(error => {
-                console.error('Error fetching services completed data:', error);
+                //console.error('Error fetching services completed data:', error);
                 if (spinner) spinner.classList.add('d-none');
             });
     }

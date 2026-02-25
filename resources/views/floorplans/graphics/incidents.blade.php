@@ -262,7 +262,7 @@
                 const data = await response.json();
                 return data;
             } catch (error) {
-                console.error('Error al cargar datos:', error);
+                //console.error('Error al cargar datos:', error);
                 alert('Error al cargar los datos del gráfico');
                 return null;
             }
@@ -287,7 +287,7 @@
                 const data = await response.json();
                 return data;
             } catch (error) {
-                console.error('Error al cargar datos:', error);
+                //console.error('Error al cargar datos:', error);
                 alert('Error al cargar los datos del gráfico');
                 return null;
             }
@@ -312,7 +312,7 @@
                 const data = await response.json();
                 return data;
             } catch (error) {
-                console.error('Error al cargar datos de tendencia:', error);
+                //console.error('Error al cargar datos de tendencia:', error);
                 alert('Error al cargar los datos de tendencia');
                 return null;
             }
@@ -723,7 +723,7 @@
                     try {
                         pdf.addImage(logoData, 'PNG', pageWidth - margin - 20, headerStartY + 3, 20, 15);
                     } catch (error) {
-                        console.error('Error agregando logo:', error);
+                        //console.error('Error agregando logo:', error);
                     }
                 }
                 
@@ -864,7 +864,7 @@
                         pdf.addImage(imgData, 'PNG', margin, currentY, finalWidth, finalHeight);
                         currentY += finalHeight + 15;
                     } catch (error) {
-                        console.error('Error adding chart:', chart.id, error);
+                        //console.error('Error adding chart:', chart.id, error);
                     }
                 }
 
@@ -887,7 +887,7 @@
                 pdf.save(fileName);
 
             } catch (error) {
-                console.error('Error generando PDF:', error);
+                //console.error('Error generando PDF:', error);
                 alert('Error al generar el PDF. Por favor, intente nuevamente.');
             } finally {
                 btn.disabled = false;

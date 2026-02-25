@@ -41,7 +41,7 @@
                 renderLeadsChart(data);
             })
             .catch(error => {
-                console.error('Error fetching leads data:', error);
+                //console.error('Error fetching leads data:', error);
                 if (spinner) spinner.classList.add('d-none');
             });
     }

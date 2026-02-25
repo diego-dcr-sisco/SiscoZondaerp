@@ -752,7 +752,7 @@
                             statsLink.style.display = 'none';
                         }
                     } catch (e) {
-                        console.error('Error setting stats link', e);
+                        //console.error('Error setting stats link', e);
                     }
 
                     if (confirm(`Estas seguro de editar el punto: ${points[i].code} (${points[i].index})`)) {
@@ -1134,7 +1134,7 @@
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error('Error in AJAX request:', status, error);
+                        //console.error('Error in AJAX request:', status, error);
                     }
                 });
             }
@@ -1310,7 +1310,7 @@
 
 
                 } catch (error) {
-                    console.error('Error al capturar el canvas:', error);
+                    //console.error('Error al capturar el canvas:', error);
                     alert('Error al generar la imagen: ' + error.message);
                 }
             }
@@ -1336,7 +1336,7 @@
                 navigator.clipboard.writeText(currentBase64).then(() => {
                     alert('Base64 copiado al portapapeles');
                 }).catch(err => {
-                    console.error('Error al copiar: ', err);
+                    //console.error('Error al copiar: ', err);
                     alert('Error al copiar al portapapeles');
                 });
             }
@@ -1386,7 +1386,7 @@
                     $('#pdfForm').submit();
 
                 } catch (error) {
-                    console.error('Error al preparar datos para PDF:', error);
+                    //console.error('Error al preparar datos para PDF:', error);
                     alert('Error al preparar datos para PDF: ' + error.message);
                 }
             }

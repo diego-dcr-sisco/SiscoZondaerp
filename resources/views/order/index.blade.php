@@ -445,7 +445,7 @@
                                     console.log(deleteResponse.message);
                                 },
                                 error: function(xhr, status, error) {
-                                    console.error('Error al eliminar los archivos temporales:', error);
+                                    //console.error('Error al eliminar los archivos temporales:', error);
                                 }
                             });
                         }, 5000); // Esperar 5 segundos antes de enviar la solicitud de eliminación
@@ -457,7 +457,7 @@
                     hideSpinner();
                 },
                 error: function(xhr, status, error) {
-                    console.error('Error al descargar los reportes:', error);
+                    //console.error('Error al descargar los reportes:', error);
                 }
             });
         }

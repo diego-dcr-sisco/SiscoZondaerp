@@ -331,7 +331,7 @@ function updatePolygons() {
     console.log(`🔷 Actualizando polígonos... (llamada #${updatePolygonsExecutions} de ${updatePolygonsCalls} solicitudes)`);
     
     if (!map) {
-        console.error('❌ Error: El mapa no está inicializado');
+        //console.error('❌ Error: El mapa no está inicializado');
         return;
     }
     
@@ -694,7 +694,7 @@ function saveCoordinates(updateUrl, csrfToken) {
         if (error.name === 'AbortError') {
             alert('La petición tardó demasiado tiempo. Por favor, verifica tu conexión e inténtalo de nuevo.');
         } else {
-            console.error('Error:', error);
+            //console.error('Error:', error);
             alert('Error al guardar las coordenadas. Por favor, inténtalo de nuevo.\n' + error.message);
         }
     });

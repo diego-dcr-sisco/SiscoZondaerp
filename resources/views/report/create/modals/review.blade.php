@@ -701,7 +701,7 @@
             error: function(xhr) {
                 markDeviceAsReviewed(currentDeviceId, false);
 
-                console.error('Error al guardar:', xhr.responseText);
+                //console.error('Error al guardar:', xhr.responseText);
                 showNotification('error',
                     'Error al guardar los cambios. Por favor, intente nuevamente.');
             },

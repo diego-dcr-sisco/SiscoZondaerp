@@ -48,7 +48,7 @@
             $('#edit-area-m2').val(data.m2);
             $('#edit-area-id').val(data.id);
         } catch (error) {
-            console.error('Error parsing JSON data:', error);
+            //console.error('Error parsing JSON data:', error);
         }
     }
 </script>

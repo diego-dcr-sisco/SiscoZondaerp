@@ -278,6 +278,11 @@
                     } else {
                         console.log(`Config ${config.config_id} no tiene órdenes o está vacío`);
                     }
+
+                    // Cargar la descripción en el editor Summernote si existe
+                    if (configDescriptions[config.config_id]) {
+                        $(`#config-summernote${config.config_id}`).summernote('code', configDescriptions[config.config_id]);
+                    }
                 }, 300); // Aumentar el timeout para asegurar que el DOM esté listo
 
                 // Cargar descripción después de inicializar Summernote

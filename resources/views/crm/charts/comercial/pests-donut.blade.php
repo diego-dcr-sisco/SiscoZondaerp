@@ -50,7 +50,7 @@
                 renderPestsChart(data);
             })
             .catch(error => {
-                console.error('Error fetching pests data:', error);
+                //console.error('Error fetching pests data:', error);
                 if (spinner) spinner.classList.add('d-none');
             });
     }

@@ -801,7 +801,7 @@ Técnicos: {{ implode(', ', collect($orderTechnicians)->pluck('name')->toArray()
                 this.classList.remove('drag-over');
 
                 if (!draggedOrder) {
-                    console.error('No hay orden arrastrada');
+                    //console.error('No hay orden arrastrada');
                     return;
                 }
 
@@ -813,7 +813,7 @@ Técnicos: {{ implode(', ', collect($orderTechnicians)->pluck('name')->toArray()
 
                 const orderElement = document.getElementById(elementId);
                 if (!orderElement) {
-                    console.error('No se pudo encontrar el elemento de la orden en el DOM');
+                    //console.error('No se pudo encontrar el elemento de la orden en el DOM');
                     return;
                 }
 
@@ -853,7 +853,7 @@ Técnicos: {{ implode(', ', collect($orderTechnicians)->pluck('name')->toArray()
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    //console.error('Error:', error);
                     showNotification('Error de conexión: ' + error.message, 'error');
                     restoreOrderPosition(orderElement, currentHour, currentTechnicianId);
                 })
@@ -875,7 +875,7 @@ Técnicos: {{ implode(', ', collect($orderTechnicians)->pluck('name')->toArray()
                         orderElement.parentNode.removeChild(orderElement);
                     }
                 } catch (error) {
-                    console.error('Error al remover el elemento:', error);
+                    //console.error('Error al remover el elemento:', error);
                     return;
                 }
 

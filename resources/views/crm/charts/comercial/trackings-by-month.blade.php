@@ -41,7 +41,7 @@
                 renderTrackingsChart(data);
             })
             .catch(error => {
-                console.error('Error fetching trackings data:', error);
+                //console.error('Error fetching trackings data:', error);
                 if (spinner) spinner.classList.add('d-none');
             });
     }

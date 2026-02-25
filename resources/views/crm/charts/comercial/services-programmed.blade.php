@@ -41,7 +41,7 @@
             .then(data => {
                 renderServicesProgrammedChart(data);
             })
-            .catch(error => console.error('Error fetching services programmed data:', error));
+            .catch(error => //console.error('Error fetching services programmed data:', error));
     }
 
     function renderServicesProgrammedChart(data) {

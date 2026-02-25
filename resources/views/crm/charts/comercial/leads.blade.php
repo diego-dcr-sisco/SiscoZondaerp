@@ -53,7 +53,7 @@
                     chart.setOption(data);
                 },
                 error: function(xhr, status, error) {
-                    console.error('Error al actualizar la gráfica:', error);
+                    //console.error('Error al actualizar la gráfica:', error);
                 }
             });
         });

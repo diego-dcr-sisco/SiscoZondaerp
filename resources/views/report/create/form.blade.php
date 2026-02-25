@@ -713,7 +713,7 @@
             return true;
 
         } catch (error) {
-            console.error('Error en setSummary:', error);
+            //console.error('Error en setSummary:', error);
             alert('Error al preparar los datos del reporte');
             return false;
         }

@@ -778,7 +778,7 @@
                 }
             },
             error: function(xhr) {
-                console.error('Error al enviar la autorevisión:', xhr);
+                //console.error('Error al enviar la autorevisión:', xhr);
             },
             complete: function() {
                 hideSpinner();
@@ -834,7 +834,7 @@
         try {
             // Verificar que los datos estén disponibles
             if (!autoreview_data || !Array.isArray(autoreview_data)) {
-                console.error("Datos de autorevisión no disponibles o formato incorrecto");
+                //console.error("Datos de autorevisión no disponibles o formato incorrecto");
                 return;
             }
 
@@ -890,7 +890,7 @@
             console.log("Respuestas inicializadas para todos los puntos de control:", window.autoreviewAnswers);
 
         } catch (error) {
-            console.error("Error crítico al inicializar respuestas:", error);
+            //console.error("Error crítico al inicializar respuestas:", error);
         }
     }
 

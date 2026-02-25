@@ -273,7 +273,7 @@
                     }, 100);
                 },
                 error: function(xhr, status, error) {
-                    console.error('Error:', error);
+                    //console.error('Error:', error);
                     alert('Error al generar el archivo Excel');
                 },
                 complete: function() {

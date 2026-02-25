@@ -146,7 +146,7 @@
                         });
                     },
                     error: function(xhr, status, error) {
-                        console.error('Error al cargar clientes:', error);
+                        //console.error('Error al cargar clientes:', error);
                         customerSelect.empty();
                         customerSelect.append('<option value="">Error al cargar clientes</option>');
                         alert('Error al cargar los clientes. Por favor, intente de nuevo.');

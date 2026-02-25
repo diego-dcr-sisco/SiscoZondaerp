@@ -582,7 +582,7 @@
                     })
                     .catch(error => {
                         alert('Error al guardar los cambios');
-                        console.error('Error:', error);
+                        //console.error('Error:', error);
                     })
                     .finally(() => {
                         this.innerHTML = originalText;

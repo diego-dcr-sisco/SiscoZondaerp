@@ -513,7 +513,7 @@
                     try {
                         pdf.addImage(logoData, 'PNG', pageWidth - margin - 20, headerStartY + 3, 20, 15);
                     } catch (error) {
-                        console.error('Error agregando logo:', error);
+                        //console.error('Error agregando logo:', error);
                     }
                 }
                 
@@ -657,7 +657,7 @@
                         pdf.addImage(imgData, 'PNG', margin, currentY, finalWidth, finalHeight);
                         currentY += finalHeight + 15;
                     } catch (error) {
-                        console.error('Error adding chart:', chart.id, error);
+                        //console.error('Error adding chart:', chart.id, error);
                     }
                 }
 
@@ -682,7 +682,7 @@
                 console.log('✅ PDF completo generado correctamente');
 
             } catch (error) {
-                console.error('❌ Error al generar PDF completo:', error);
+                //console.error('❌ Error al generar PDF completo:', error);
                 alert('Error al generar el PDF. Por favor, intente nuevamente.');
             } finally {
                 btn.disabled = false;

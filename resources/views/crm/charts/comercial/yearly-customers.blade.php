@@ -41,7 +41,7 @@
                 renderCustomersChart(data);
             })
             .catch(error => {
-                console.error('Error fetching customers data:', error);
+                //console.error('Error fetching customers data:', error);
                 if (spinner) spinner.classList.add('d-none');
             });
     }

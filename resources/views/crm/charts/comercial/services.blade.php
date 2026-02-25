@@ -55,7 +55,7 @@
                 renderMonthlyServicesChart(chartData);
             })
             .catch(error => {
-                console.error('Error fetching monthly services data:', error);
+                //console.error('Error fetching monthly services data:', error);
                 if (spinner) spinner.classList.add('d-none');
             });
     }
