@@ -488,6 +488,16 @@
 
         initializeSummernote(configId);
 
+        // Pre-llenar con la descripción del servicio si es una configuración nueva sin descripción
+        if (!configDescriptions[configId]) {
+            const service_id = $('#service-id').val();
+            const service = selected_services.find(s => s.id == service_id);
+            if (service && service.description) {
+                configDescriptions[configId] = service.description;
+                $(`#config-summernote${configId}`).summernote('code', service.description);
+            }
+        }
+
         // Configurar execution_frequency_ideventos con jQuery
         $(`#service-frequency-${configId}`).on("change", function() {
             handleFrequencyChange(configId);

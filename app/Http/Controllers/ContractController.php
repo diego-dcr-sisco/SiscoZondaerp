@@ -466,6 +466,7 @@ class ContractController extends Controller
             }
 
             $orders = Order::where('setting_id', $cs->id)->orderBy('programmed_date')->get();
+            $service = $services->firstWhere('id', $cs->service_id);
             $configurations[] = [
                 'config_id' => $count_indexs[$cs->service_id],
                 'setting_id' => $cs->id,
@@ -488,7 +489,7 @@ class ContractController extends Controller
                         'url' => route('order.edit', ['id' => $order->id])
                     ];
                 })->toArray(), // ← Convertir a array
-                'description' => $cs->service_description ?? null,
+                'description' => $cs->service_description ?? ($service ? $service->description : null),
             ];
         }
 
