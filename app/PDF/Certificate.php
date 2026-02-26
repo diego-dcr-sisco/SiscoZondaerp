@@ -159,6 +159,8 @@ class Certificate
             'end' => Carbon::parse($this->order->completed_date)->format('d-m-Y') . ' - ' . Carbon::parse($this->order->end_time)->format('H:i'),
             'notes' => $this->order->notes ?? $this->order->technical_observations . '<br>' . $this->order->comments,
         ];
+
+        dd($this->data['order']['notes']);
     }
 
     public function branch()
