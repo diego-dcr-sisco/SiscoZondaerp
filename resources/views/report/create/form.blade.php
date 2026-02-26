@@ -560,7 +560,7 @@
                 ['font', ['fontsize', 'fontname']],
                 ['para', ['ul', 'ol', 'paragraph']],
                 ['height', ['height']],
-                ['insert', ['table', 'link', 'picture']],
+                ['insert', ['table', 'link']],
             ],
             
             // Configuración para imágenes en base64
