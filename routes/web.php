@@ -724,6 +724,7 @@ Route::prefix('report')
         Route::post('/customer/update', [ReportController::class, 'updateCustomer'])->name('customer.update');
         Route::post('/description/update', [ReportController::class, 'updateDescription'])->name('description.update');
         Route::post('/notes/update', [ReportController::class, 'updateNotes'])->name('notes.update');
+        Route::post('/recommendations/update', [ReportController::class, 'updateRecommendations'])->name('recommendations.update');
     });
 
 Route::prefix('report')

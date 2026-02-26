@@ -975,7 +975,7 @@ class ReportController extends Controller
 
     public function generate(Request $request, string $orderId)
     {
-        $propagate = json_decode($request->input('summary_services'));
+        /*$propagate = json_decode($request->input('summary_services'));
 
         $order = Order::find($orderId);
         $notes = $request->notes;
@@ -1020,7 +1020,7 @@ class ReportController extends Controller
                             ->delete();
                     }
                 } else {
-                    */
+                    
                 OrderRecommendation::updateOrCreate([
                     'order_id' => $order->id,
                     'service_id' => $service->id
@@ -1737,6 +1737,52 @@ class ReportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error processing customer',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function updateRecommendations(Request $request)
+    {
+        $data = json_decode($request->input('recommendations'), true);
+
+        try {
+            $order = Order::findOrFail($data['order_id']);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found',
+                ], 404);
+            }
+
+            $recommendation = OrderRecommendation::where('order_id', $order->id)
+                ->where('service_id', $data['service_id'])
+                ->first();
+
+            if ($recommendation) {
+                $recommendation->update([
+                    'recommendation_text' => $data['text']
+                ]);
+                $message = 'Recommendations updated successfully';
+            } else {
+                OrderRecommendation::create([
+                    'order_id' => $data['order_id'],
+                    'service_id' => $data['service_id'],
+                    'recommendation_text' => $data['text']
+                ]);
+                $message = 'Recommendations created successfully';
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing recommendations',
                 'error' => $e->getMessage(),
             ], 500);
         }
