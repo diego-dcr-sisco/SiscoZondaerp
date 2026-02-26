@@ -160,7 +160,7 @@ class Certificate
             'notes' => $this->order->notes ?? $this->order->technical_observations . '<br>' . $this->order->comments,
         ];
 
-    }
+        }
 
     public function branch()
     {
@@ -483,8 +483,9 @@ class Certificate
     }
     public function notes()
     {
-        $this->data['notes'] = $this->normalizeHtmlForPdf(!empty($this->order->notes) && trim($this->order->notes) != '<br>'
-            ? $this->order->notes
+        $temp_notes = $this->order->notes ?? $this->order->technical_observations . '<br>' . $this->order->comments;
+        $this->data['notes'] = $this->normalizeHtmlForPdf(!empty($temp_notes) && trim($temp_notes) != '<br>'
+            ? $temp_notes
             : 'Sin notas');
     }
 
