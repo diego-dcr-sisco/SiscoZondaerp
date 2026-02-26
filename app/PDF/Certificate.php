@@ -157,7 +157,7 @@ class Certificate
             'programmed_date' => Carbon::parse($this->order->programmed_date)->format('d-m-Y'),
             'start' => Carbon::parse($this->order->programmed_date)->format('d-m-Y') . ' - ' . Carbon::parse($this->order->start_time)->format('H:i'),
             'end' => Carbon::parse($this->order->completed_date)->format('d-m-Y') . ' - ' . Carbon::parse($this->order->end_time)->format('H:i'),
-            'notes' => $this->order->notes,
+            'notes' => $this->order->notes . $this->order->comments . $this->order->recommendations,
         ];
     }
 
