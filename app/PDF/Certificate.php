@@ -160,7 +160,6 @@ class Certificate
             'notes' => $this->order->notes ?? $this->order->technical_observations . '<br>' . $this->order->comments,
         ];
 
-        dd($this->data['order']['notes']);
     }
 
     public function branch()
