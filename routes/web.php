@@ -367,6 +367,10 @@ Route::prefix('clients')
         Route::post('/directory/search', [ClientController::class, 'searchDirectories'])->name('directory.search');
         Route::post('/directory/copy', [ClientController::class, 'copyDirectories'])->name('directory.copy');
         Route::post('/directory/move', [ClientController::class, 'moveDirectories'])->name('directory.move');
+        Route::post('/file/copy', [ClientController::class, 'copyFiles'])->name('file.copy');
+        Route::post('/file/move', [ClientController::class, 'moveFiles'])->name('file.move');
+        Route::post('/directory/mass-delete', [ClientController::class, 'massDeleteDirectories'])->name('directory.mass-delete');
+        Route::post('/file/mass-delete', [ClientController::class, 'massDeleteFiles'])->name('file.mass-delete');
         //Ruta de prueba para manejar el arbol de directorios
         Route::get('/directory/list', [ClientController::class, 'listDirectories'])->name('directory.list');
 

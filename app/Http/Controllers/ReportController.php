@@ -1121,16 +1121,31 @@ class ReportController extends Controller
         // dd($data);
 
         if (!$op_id) {
-            $order_product = OrderProduct::create([
-                'order_id' => $order->id,
-                'product_id' => $data['product_id'],
-                'service_id' => $data['service_id'],
-                'metric_id' => $data['metric_id'] ?? null,
-                'application_method_id' => $data['application_method_id'] ?? null,
-                'lot_id' => $data['lot_id'],
-                'amount' => $data['amount'],
-                'dosage' => $data['dosage']
-            ]);
+            // Buscar si ya existe un OrderProduct con las mismas características
+            $existing_order_product = OrderProduct::where('order_id', $order->id)
+                ->where('product_id', $data['product_id'])
+                ->where('application_method_id', $data['application_method_id'] ?? null)
+                ->where('lot_id', $data['lot_id'])
+                ->first();
+
+            if ($existing_order_product) {
+                // Si existe, sumar la cantidad
+                $existing_order_product->amount += $data['amount'];
+                $existing_order_product->save();
+                $order_product = $existing_order_product;
+            } else {
+                // Si no existe, crear uno nuevo
+                $order_product = OrderProduct::create([
+                    'order_id' => $order->id,
+                    'product_id' => $data['product_id'],
+                    'service_id' => $data['service_id'],
+                    'metric_id' => $data['metric_id'] ?? null,
+                    'application_method_id' => $data['application_method_id'] ?? null,
+                    'lot_id' => $data['lot_id'],
+                    'amount' => $data['amount'],
+                    'dosage' => $data['dosage']
+                ]);
+            }
 
         } else {
             $order_product = OrderProduct::find($op_id);

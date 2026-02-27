@@ -6,7 +6,8 @@
 
 <div class="modal fade" id="fileModal" tabindex="-1" aria-labelledby="fileModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form class="modal-content" method="POST" id="fileUploadForm" action="{{ route('client.file.store') }}" enctype="multipart/form-data">
+        <form class="modal-content" method="POST" id="fileUploadForm" action="{{ route('client.file.store') }}"
+            enctype="multipart/form-data">
             @csrf
             <div class="modal-header">
                 <h1 class="modal-title fs-5" id="fileModalLabel">Subir archivo(s)</h1>
@@ -43,153 +44,154 @@
 
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary" id="btnUpload">{{ __('buttons.upload') }}</button>
                 <button type="button" class="btn btn-danger"
                     data-bs-dismiss="modal">{{ __('buttons.cancel') }}</button>
+                <button type="submit" class="btn btn-primary" id="btnUpload">{{ __('buttons.upload') }}</button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-$(document).ready(function() {
-    const dropArea = $('#dropArea');
-    const fileInput = $('#fileInput');
-    const fileList = $('#file-list');
-    let currentFiles = []; // Mantener un registro de los archivos actuales
-    let isSubmitting = false;
+    $(document).ready(function() {
+        const dropArea = $('#dropArea');
+        const fileInput = $('#fileInput');
+        const fileList = $('#file-list');
+        let currentFiles = []; // Mantener un registro de los archivos actuales
+        let isSubmitting = false;
 
-    // Protección contra doble submit
-    $('#fileUploadForm').on('submit', function(e) {
-        if (isSubmitting) {
-            e.preventDefault();
-            return false;
-        }
-
-        if (currentFiles.length === 0) {
-            e.preventDefault();
-            alert('Por favor, selecciona al menos un archivo');
-            return false;
-        }
-
-        isSubmitting = true;
-        $('#btnUpload').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Subiendo...');
-    });
-
-    // Resetear al cerrar modal
-    $('#fileModal').on('hidden.bs.modal', function() {
-        isSubmitting = false;
-        $('#btnUpload').prop('disabled', false).html('{{ __('buttons.upload') }}');
-        currentFiles = [];
-        updateFileInput();
-        updateFileList();
-    });
-
-    // Evitar el comportamiento por defecto en eventos de arrastre
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.on(eventName, function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        });
-    });
-
-    // Resaltar el área de drop cuando se arrastra sobre ella
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.on(eventName, function() {
-            dropArea.addClass('border-primary bg-primary bg-opacity-10');
-        });
-    });
-
-    // Quitar el resaltado cuando se sale o se suelta
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.on(eventName, function() {
-            dropArea.removeClass('border-primary bg-primary bg-opacity-10');
-        });
-    });
-
-    // Manejar el drop de archivos
-    dropArea.on('drop', function(e) {
-        const newFiles = e.originalEvent.dataTransfer.files;
-        addFiles(newFiles);
-    });
-
-    // Manejar la selección de archivos por click
-    fileInput.on('change', function() {
-        const newFiles = this.files;
-        addFiles(newFiles);
-        //$(this).val(''); // Limpiar el input para permitir seleccionar el mismo archivo otra vez
-    });
-
-    // Función para agregar archivos manteniendo los existentes
-    function addFiles(newFiles) {
-        const filesToAdd = Array.from(newFiles);
-        
-        filesToAdd.forEach(newFile => {
-            // Verificar si el archivo ya existe
-            const exists = currentFiles.some(existingFile => 
-                existingFile.name == newFile.name && 
-                existingFile.size == newFile.size &&
-                existingFile.type == newFile.type
-            );
-            
-            if (!exists) {
-                currentFiles.push(newFile);
+        // Protección contra doble submit
+        $('#fileUploadForm').on('submit', function(e) {
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
             }
+
+            if (currentFiles.length === 0) {
+                e.preventDefault();
+                alert('Por favor, selecciona al menos un archivo');
+                return false;
+            }
+
+            isSubmitting = true;
+            $('#btnUpload').prop('disabled', true).html(
+                '<span class="spinner-border spinner-border-sm me-2"></span>Subiendo...');
         });
-        
-        updateFileInput();
-        updateFileList();
-    }
 
-    // Actualizar el input file con los archivos actuales
-    function updateFileInput() {
-        const dataTransfer = new DataTransfer();
-        currentFiles.forEach(file => dataTransfer.items.add(file));
-        fileInput[0].files = dataTransfer.files;
-    }
+        // Resetear al cerrar modal
+        $('#fileModal').on('hidden.bs.modal', function() {
+            isSubmitting = false;
+            $('#btnUpload').prop('disabled', false).html('{{ __('buttons.upload') }}');
+            currentFiles = [];
+            updateFileInput();
+            updateFileList();
+        });
 
-    // Función para actualizar la lista visual de archivos
-    function updateFileList() {
-        fileList.empty();
+        // Evitar el comportamiento por defecto en eventos de arrastre
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.on(eventName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
 
-        if (currentFiles.length == 0) {
-            fileList.append(
-                '<li class="list-group-item"><span class="text-danger">No hay archivos agregados</span></li>'
-            );
-            return;
+        // Resaltar el área de drop cuando se arrastra sobre ella
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.on(eventName, function() {
+                dropArea.addClass('border-primary bg-primary bg-opacity-10');
+            });
+        });
+
+        // Quitar el resaltado cuando se sale o se suelta
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.on(eventName, function() {
+                dropArea.removeClass('border-primary bg-primary bg-opacity-10');
+            });
+        });
+
+        // Manejar el drop de archivos
+        dropArea.on('drop', function(e) {
+            const newFiles = e.originalEvent.dataTransfer.files;
+            addFiles(newFiles);
+        });
+
+        // Manejar la selección de archivos por click
+        fileInput.on('change', function() {
+            const newFiles = this.files;
+            addFiles(newFiles);
+            //$(this).val(''); // Limpiar el input para permitir seleccionar el mismo archivo otra vez
+        });
+
+        // Función para agregar archivos manteniendo los existentes
+        function addFiles(newFiles) {
+            const filesToAdd = Array.from(newFiles);
+
+            filesToAdd.forEach(newFile => {
+                // Verificar si el archivo ya existe
+                const exists = currentFiles.some(existingFile =>
+                    existingFile.name == newFile.name &&
+                    existingFile.size == newFile.size &&
+                    existingFile.type == newFile.type
+                );
+
+                if (!exists) {
+                    currentFiles.push(newFile);
+                }
+            });
+
+            updateFileInput();
+            updateFileList();
         }
 
-        currentFiles.forEach((file, index) => {
-            fileList.append(
-                `<li class="list-group-item d-flex justify-content-between align-items-center">
+        // Actualizar el input file con los archivos actuales
+        function updateFileInput() {
+            const dataTransfer = new DataTransfer();
+            currentFiles.forEach(file => dataTransfer.items.add(file));
+            fileInput[0].files = dataTransfer.files;
+        }
+
+        // Función para actualizar la lista visual de archivos
+        function updateFileList() {
+            fileList.empty();
+
+            if (currentFiles.length == 0) {
+                fileList.append(
+                    '<li class="list-group-item"><span class="text-danger">No hay archivos agregados</span></li>'
+                );
+                return;
+            }
+
+            currentFiles.forEach((file, index) => {
+                fileList.append(
+                    `<li class="list-group-item d-flex justify-content-between align-items-center">
                     <span style="width:70%;">${file.name}</span>
                     <span class="badge bg-secondary rounded-pill">${formatFileSize(file.size)}</span>
                     <button type="button" class="btn-close" aria-label="Close" data-index="${index}"></button>
                 </li>`
-            );
-        });
+                );
+            });
 
-        // Asignar evento de eliminación a los botones
-        fileList.find('.btn-close').on('click', function() {
-            const index = $(this).data('index');
-            removeFile(index);
-        });
-    }
+            // Asignar evento de eliminación a los botones
+            fileList.find('.btn-close').on('click', function() {
+                const index = $(this).data('index');
+                removeFile(index);
+            });
+        }
 
-    // Función para formatear el tamaño del archivo
-    function formatFileSize(bytes) {
-        if (bytes == 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
+        // Función para formatear el tamaño del archivo
+        function formatFileSize(bytes) {
+            if (bytes == 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
 
-    // Función para eliminar un archivo de la lista
-    function removeFile(index) {
-        currentFiles.splice(index, 1);
-        updateFileInput();
-        updateFileList();
-    }
-});
+        // Función para eliminar un archivo de la lista
+        function removeFile(index) {
+            currentFiles.splice(index, 1);
+            updateFileInput();
+            updateFileList();
+        }
+    });
 </script>

@@ -9,15 +9,15 @@
             </div>
             <div class="modal-body">
                 <label for="name" class="form-label is-required">Nombre: </label>
-                <input type="text" class="form-control" id="edit-name"
-                    name="name" value="" maxlength="1024" required>
+                <input type="text" class="form-control" id="edit-name" name="name" value="" maxlength="1024"
+                    required>
                 <input type="hidden" id="path" name="path" value="" />
-                <input type="hidden" id="root-path" name="root_path" value="{{ $data['root_path']}}" />
+                <input type="hidden" id="root-path" name="root_path" value="{{ $data['root_path'] }}" />
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">{{ __('buttons.update')}}</button>
                 <button type="button" class="btn btn-danger"
-                     data-bs-dismiss="modal">{{ __('buttons.cancel') }}</button>
+                    data-bs-dismiss="modal">{{ __('buttons.cancel') }}</button>
+                <button type="submit" class="btn btn-primary">{{ __('buttons.update') }}</button>
             </div>
         </form>
     </div>
@@ -29,4 +29,3 @@
         $('#path').val(path);
     }
 </script>
-

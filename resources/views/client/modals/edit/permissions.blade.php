@@ -13,7 +13,8 @@
                         <li class="list-group-item text-break">
                             <input class="user form-check-input border-secondary me-1" type="checkbox"
                                 value="{{ $user->id }}" id="firstCheckbox" onclick="setUsers()">
-                            <label class="form-check-label" for="firstCheckbox">{{ $user->name }}: [ {{$user->email}} ]</label>
+                            <label class="form-check-label" for="firstCheckbox">{{ $user->name }}: [
+                                {{ $user->email }} ]</label>
                         </li>
                     @endforeach
                 </ul>
@@ -22,9 +23,9 @@
                 <input type="hidden" id="selected-users" name="selected_users" />
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">{{ __('buttons.update') }}</button>
                 <button type="button" class="btn btn-danger"
                     data-bs-dismiss="modal">{{ __('buttons.cancel') }}</button>
+                <button type="submit" class="btn btn-primary">{{ __('buttons.update') }}</button>
             </div>
         </form>
     </div>
