@@ -3,7 +3,7 @@
     <div class="container-fluid">
         <div class="py-3 d-flex justify-content-between align-items-center">
             <h2 class="mb-0">
-                <i class="bi bi-geo-alt-fill"></i> Dashboard de Ubicaciones GPS
+                <i class="bi bi-geo-alt-fill"></i> Ubicaciones GPS
             </h2>
             <a href="{{ route('user.index') }}" class="btn btn-secondary btn-sm">
                 <i class="bi bi-arrow-left"></i> Volver a Usuarios
