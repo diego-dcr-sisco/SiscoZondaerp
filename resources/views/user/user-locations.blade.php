@@ -35,7 +35,7 @@
                     </div>
                 </div>
                 <div class="col-6">
-                    <table class="table table-bordered table-sm">
+                    <table class="table table-bordered table-sm shadow-sm p-3 mb-3">
                         <thead class="table-light">
                             <tr>
                                 <th>Estadisticas</th>
