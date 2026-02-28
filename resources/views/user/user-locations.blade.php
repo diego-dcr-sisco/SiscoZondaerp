@@ -92,7 +92,7 @@
 
                 <!-- Tabla -->
                 <div class="col-12 col-lg-6 mb-3">
-                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <div class="table-responsive">
                         <table class="table table-sm table-hover table-bordered mb-0">
                             <thead class="table-light">
                                 <tr>
