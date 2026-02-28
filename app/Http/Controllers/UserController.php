@@ -821,7 +821,6 @@ class UserController extends Controller
 
 		$navigation = [
 			'Usuarios' => route('user.index'),
-			'Dashboard de Ubicaciones' => route('user.locations.dashboard'),
 		];
 
 		return view('user.locations-dashboard', compact('users', 'navigation'));
@@ -869,7 +868,6 @@ class UserController extends Controller
 
 		$navigation = [
 			'Usuarios' => route('user.index'),
-			'Dashboard de Ubicaciones' => route('user.locations.dashboard'),
 			$user->name => route('user.locations', ['id' => $id]),
 		];
 

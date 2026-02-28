@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\QueryException;
 use Exception;
+use Illuminate\Support\Facades\Auth;
 use App\Models\OrderProduct;
 
 class LotController extends Controller
@@ -106,7 +107,7 @@ class LotController extends Controller
             'warehouse_id' => null,
             'destination_warehouse_id' => $request->input('warehouse_id'),
             'movement_id' => 2,
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'date' => now()->format('Y-m-d'),
             'time' => now()->format('H:i:s'),
             'observations' => null,

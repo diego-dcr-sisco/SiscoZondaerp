@@ -14,119 +14,87 @@
         <div class="p-3"> <!-- Filtros -->
             <div class="row">
                 <div class="col-6">
-                    <div class="border rounded p-3 mb-3">
-                        <form method="GET" action="{{ route('user.locations', ['id' => $user->id]) }}"
-                        class="row g-3">
-                        <div class="col-lg-8 col-12">
-                            <label for="start_date" class="form-label">Rango de Fechas</label>
-                            <input type="text" class="form-control form-control-sm date-range-picker" id="date-range"
-                                name="date_range" value="{{ request('date_range') }}" placeholder="Selecciona un rango"
-                                autocomplete="off">
-                        </div>
-                        <div class="col-lg-4 col-12 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary btn-sm me-2">
-                                <i class="bi bi-funnel-fill"></i> Filtrar
-                            </button>
-                        </div>
+                    <div class="border rounded shadow-sm p-3 mb-3">
+                        <form method="GET" action="{{ route('user.locations', ['id' => $user->id]) }}" class="row g-3"
+                            id="filterForm">
+                            <div class="col-lg-8 col-12">
+                                <label for="date-range" class="form-label">Rango de Fechas</label>
+                                <input type="text" class="form-control form-control-sm" id="date-range" name="date_range"
+                                    value="{{ request('date_range') }}" placeholder="Selecciona un rango"
+                                    autocomplete="off">
+                            </div>
+                            <div class="col-lg-4 col-12 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary btn-sm me-2">
+                                    <i class="bi bi-funnel-fill"></i> Filtrar
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearFilter()">
+                                    <i class="bi bi-x-circle"></i> Limpiar
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>
                 <div class="col-6">
-                    <table class="table table-bordered">
+                    <table class="table table-bordered table-sm">
                         <thead class="table-light">
                             <tr>
-                                <th>Ubicaciones</th>
+                                <th>Estadisticas</th>
                                 <th>Cantidad</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Hoy</td>
+                                <td>Total de ubicaciones</td>
+                                <td>
+                                    @if ($locations->count() > 0)
+                                        {{ $locations->first()->recorded_at->format('d/m/Y H:i') }}
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Ultima ubicación</td>
                                 <td></td>
                             </tr>
                             <tr>
-                                <td>Últimos 7 días</td>
-                                <td><button class="btn btn-sm btn-outline-primary" onclick="setQuickFilter('week')">Aplicar</button></td>
+                                <td>Precisión Promedio</td>
+                                <td>
+                                    @if ($locations->count() > 0)
+                                        ± {{ number_format($locations->avg('accuracy'), 0) }}m
+                                    @else
+                                        -
+                                    @endif
+                                </td>
                             </tr>
                             <tr>
-                                <td>Últimos 30 días</td>
-                                <td><button class="btn btn-sm btn-outline-primary" onclick="setQuickFilter('month')">Aplicar</button></td>
+                                <td>Rango de Fechas</td>
+                                <td></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Estadísticas -->
-            <div class="row mb-3">
-                <div class="col-md-3">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body">
-                            <h6 class="card-title">Total Ubicaciones</h6>
-                            <h3 class="mb-0">{{ $locations->count() }}</h3>
+            <!-- Mapa y Tabla en row -->
+            <div class="row">
+                <!-- Mapa -->
+                <div class="col-12 col-lg-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header bg-success text-white">
+                            <i class="bi bi-map-fill"></i> Mapa de Ubicaciones
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="map" style="height: 500px; width: 100%;"></div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card bg-success text-white">
-                        <div class="card-body">
-                            <h6 class="card-title">Última Ubicación</h6>
-                            <p class="mb-0">
-                                @if ($locations->count() > 0)
-                                    {{ $locations->first()->recorded_at->format('d/m/Y H:i') }}
-                                @else
-                                    -
-                                @endif
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-info text-white">
-                        <div class="card-body">
-                            <h6 class="card-title">Precisión Promedio</h6>
-                            <h3 class="mb-0">
-                                @if ($locations->count() > 0)
-                                    ± {{ number_format($locations->avg('accuracy'), 0) }}m
-                                @else
-                                    -
-                                @endif
-                            </h3>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card bg-warning text-dark">
-                        <div class="card-body">
-                            <h6 class="card-title">Rango de Fechas</h6>
-                            <p class="mb-0 small">
-                                {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} -
-                                {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Mapa con Ruta -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <i class="bi bi-map"></i> Mapa de Ubicaciones
-                </div>
-                <div class="card-body p-0">
-                    <div id="map" style="height: 500px; width: 100%;"></div>
-                </div>
-            </div>
-
-            <!-- Tabla de Ubicaciones -->
-            <div class="card">
-                <div class="card-header bg-light">
-                    <i class="bi bi-list-ul"></i> Detalle de Ubicaciones
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover table-bordered">
-                            <thead class="table-dark">
+                <!-- Tabla -->
+                <div class="col-12 col-lg-6 mb-3">
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-sm table-hover table-bordered mb-0">
+                            <thead class="table-light">
                                 <tr>
                                     <th>#</th>
                                     <th>Fecha/Hora</th>
@@ -135,7 +103,7 @@
                                     <th>Altitud</th>
                                     <th>Velocidad</th>
                                     <th>Origen</th>
-                                    <th>Acciones</th>
+                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -198,7 +166,14 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
+    <!-- Daterangepicker CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Moment.js y Daterangepicker -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
     <script>
         let map;
@@ -206,32 +181,76 @@
         let polyline = null;
 
         $(function() {
-            // Configuración común para ambos datepickers
-            const commonOptions = {
+            // Configuración de moment.js en español
+            moment.locale('es', {
+                months: 'Enero_Febrero_Marzo_Abril_Mayo_Junio_Julio_Agosto_Septiembre_Octubre_Noviembre_Diciembre'
+                    .split('_'),
+                monthsShort: 'Ene_Feb_Mar_Abr_May_Jun_Jul_Ago_Sep_Oct_Nov_Dic'.split('_'),
+                weekdays: 'Domingo_Lunes_Martes_Miércoles_Jueves_Viernes_Sábado'.split('_'),
+                weekdaysShort: 'Dom_Lun_Mar_Mié_Jue_Vie_Sáb'.split('_'),
+                weekdaysMin: 'Do_Lu_Ma_Mi_Ju_Vi_Sá'.split('_')
+            });
+
+            // Configuración del daterangepicker
+            const dateRangeConfig = {
                 opens: 'left',
+                drops: 'down',
+                autoUpdateInput: false,
                 locale: {
-                    format: 'DD/MM/YYYY'
+                    format: 'DD/MM/YYYY',
+                    separator: ' - ',
+                    applyLabel: 'Aplicar',
+                    cancelLabel: 'Cancelar',
+                    fromLabel: 'Desde',
+                    toLabel: 'Hasta',
+                    customRangeLabel: 'Rango personalizado',
+                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá'],
+                    monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto',
+                        'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ],
+                    firstDay: 1
                 },
                 ranges: {
                     'Hoy': [moment(), moment()],
-                    'Esta semana': [moment().startOf('week'), moment().endOf('week')],
+                    'Ayer': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
                     'Últimos 7 días': [moment().subtract(6, 'days'), moment()],
-                    'Este mes': [moment().startOf('month'), moment().endOf('month')],
                     'Últimos 30 días': [moment().subtract(29, 'days'), moment()],
-                    'Este año': [moment().startOf('year'), moment().endOf('year')],
+                    'Este mes': [moment().startOf('month'), moment().endOf('month')],
+                    'Mes pasado': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month')
+                        .endOf('month')
+                    ],
+                    'Este año': [moment().startOf('year'), moment().endOf('year')]
                 },
                 showDropdowns: true,
                 alwaysShowCalendars: true,
-                autoUpdateInput: false
+                maxDate: moment()
             };
 
-            $('#date-range').daterangepicker(commonOptions);
+            // Inicializar daterangepicker
+            const dateRangePicker = $('#date-range').daterangepicker(dateRangeConfig);
+
+            // Aplicar valor al input cuando se selecciona
+            $('#date-range').on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
+                    'DD/MM/YYYY'));
+            });
+
+            // Limpiar valor cuando se cancela
+            $('#date-range').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+            });
+
+            // Si hay un valor previo, establecerlo
+            @if (request('date_range'))
+                const dateRangeValue = '{{ request('date_range') }}';
+                $('#date-range').val(dateRangeValue);
+            @endif
         });
 
-        $('#date-range').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
-                'DD/MM/YYYY'));
-        });
+        function clearFilter() {
+            $('#date-range').val('');
+            $('#filterForm').submit();
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             // Inicializar mapa
@@ -331,27 +350,6 @@
             if (markerData) {
                 markerData.marker.openPopup();
             }
-        }
-
-        function setQuickFilter(period) {
-            const endDate = new Date();
-            let startDate = new Date();
-
-            switch (period) {
-                case 'today':
-                    startDate = new Date();
-                    break;
-                case 'week':
-                    startDate.setDate(endDate.getDate() - 7);
-                    break;
-                case 'month':
-                    startDate.setDate(endDate.getDate() - 30);
-                    break;
-            }
-
-            document.getElementById('start_date').value = startDate.toISOString().split('T')[0];
-            document.getElementById('end_date').value = endDate.toISOString().split('T')[0];
-            document.querySelector('form').submit();
         }
     </script>
 
