@@ -1,19 +1,12 @@
     @extends('layouts.app')
     @section('content')
         <div class="container-fluid">
-            <div class="py-3 d-flex justify-content-between align-items-center">
-                <div>
-                    @can('write_user')
-                        <a class="btn btn-primary btn-sm" href="{{ route('user.create') }}">
-                            <i class="bi bi-plus-lg fw-bold"></i> {{ __('user.title.create') }}
-                        </a>
-                    @endcan
-                </div>
-                <div>
-                    <a class="btn btn-info btn-sm" href="{{ route('user.locations.dashboard') }}">
-                        <i class="bi bi-geo-alt-fill"></i> Ver Ubicaciones GPS
+            <div class="py-3">
+                @can('write_user')
+                    <a class="btn btn-primary btn-sm" href="{{ route('user.create') }}">
+                        <i class="bi bi-plus-lg fw-bold"></i> {{ __('user.title.create') }}
                     </a>
-                </div>
+                @endcan
             </div>
 
 
@@ -131,8 +124,7 @@
                                         </a>
 
                                         <a href="{{ route('user.locations', ['id' => $user->id]) }}"
-                                            class="btn btn-primary btn-sm" data-bs-toggle="tooltip"
-                                            title="Ubicaciones GPS">
+                                            class="btn btn-primary btn-sm" data-bs-toggle="tooltip" title="Ubicaciones GPS">
                                             <i class="bi bi-geo-alt-fill"></i>
                                         </a>
 
