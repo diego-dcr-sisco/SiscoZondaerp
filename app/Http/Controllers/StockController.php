@@ -52,7 +52,7 @@ class StockController extends Controller
         'Movimientos' => '/stock/movements',
         // 'Zonas' => '/customer-zones',
         'Consumos en ordenes' => '/stock/movements/orders',
-        'Consumos' => '/consumptions/',
+        //'Consumos' => '/consumptions/',
         // 'Estadisticas' => '/stock/analytics',
         // 'Pedidos' => '/consumptions',
         // 'Productos en ordenes' => '/stock/orders-products',

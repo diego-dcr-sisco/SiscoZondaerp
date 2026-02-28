@@ -23,7 +23,7 @@ class LotController extends Controller
         'Productos' => '/products',
         'Movimientos' => '/stock/movements',
         'Consumos en ordenes' => '/stock/movements/orders',
-        'Consumos' => '/consumptions/',
+        //'Consumos' => '/consumptions/',
         // 'Zonas' => '/customer-zones',
         // 'Pedidos' => '/consumptions',
         // 'Productos en ordenes' => '/stock/orders-products',

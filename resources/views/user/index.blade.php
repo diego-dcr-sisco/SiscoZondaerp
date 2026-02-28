@@ -129,6 +129,13 @@
                                             title="Editar usuario">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
+
+                                        <a href="{{ route('user.locations', ['id' => $user->id]) }}"
+                                            class="btn btn-primary btn-sm" data-bs-toggle="tooltip"
+                                            title="Ubicaciones GPS">
+                                            <i class="bi bi-geo-alt-fill"></i>
+                                        </a>
+
                                         <a href="{{ route('user.destroy', ['id' => $user->id]) }}"
                                             onclick="return confirm('¿Estás seguro de eliminar este usuario?');"
                                             class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
