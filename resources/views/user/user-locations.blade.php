@@ -13,7 +13,7 @@
 
         <div class="p-3"> <!-- Filtros -->
             <div class="row">
-                <div class="col-6">
+                <div class="col-6 mb-3">
                     <div class="border rounded shadow-sm p-3 mb-3">
                         <form method="GET" action="{{ route('user.locations', ['id' => $user->id]) }}" class="row g-3"
                             id="filterForm">
@@ -34,7 +34,7 @@
                         </form>
                     </div>
                 </div>
-                <div class="col-6">
+                <div class="col-6 mb-3">
                     <table class="table table-bordered table-sm shadow-sm p-3 mb-3">
                         <thead class="table-light">
                             <tr>
