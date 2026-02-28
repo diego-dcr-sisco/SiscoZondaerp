@@ -109,7 +109,7 @@
                             <tbody>
                                 @forelse($locations as $index => $location)
                                     <tr>
-                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $locations->count() - $index }}</td>
                                         <td>
                                             {{ $location->recorded_at->format('d/m/Y H:i:s') }}
                                             <br>
