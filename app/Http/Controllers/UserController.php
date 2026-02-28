@@ -808,25 +808,6 @@ class UserController extends Controller
 	}
 
 	/**
-	 * Mostrar dashboard de ubicaciones de usuarios
-	 */
-	public function locationsDashboard(Request $request): View
-	{
-		// Obtener usuarios con sus últimas ubicaciones
-		$users = User::whereNot('role_id', 4)
-			->whereNotNull('last_latitude')
-			->whereNotNull('last_longitude')
-			->orderBy('last_location_at', 'desc')
-			->get();
-
-		$navigation = [
-			'Usuarios' => route('user.index'),
-		];
-
-		return view('user.locations-dashboard', compact('users', 'navigation'));
-	}
-
-	/**
 	 * Obtener historial de ubicaciones de un usuario específico
 	 */
 	public function userLocations(Request $request, string $id)
@@ -841,6 +822,7 @@ class UserController extends Controller
 		$locations = UserLocation::where('user_id', $id)
 			->whereBetween('recorded_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
 			->orderBy('recorded_at', 'desc')
+			->limit(10)
 			->get();
 
 		// Si es una petición AJAX, devolver JSON

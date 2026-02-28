@@ -113,7 +113,7 @@
                     <tbody>
                         @foreach ($users as $index => $user)
                             <tr>
-                                <th scope="row">{{ ++$index }}</th>
+                                <th scope="row">{{ $users->count() - $index }}</th>
                                 <td> {{ $user->name }} </td>
                                 <td class="fw-bold"> {{ $user->username ?? '-' }} </td>
                                 <td> {{ $user->email }} </td>
