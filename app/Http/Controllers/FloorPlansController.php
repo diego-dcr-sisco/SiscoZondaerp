@@ -230,6 +230,21 @@ class FloorPlansController extends Controller
     public function printVersion(Request $request)
     {
         try {
+            // Verificar autenticación (aunque ya está en middleware)
+            if (!auth()->check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No autenticado'
+                ], 401);
+            }
+
+            // Log para debugging
+            \Log::info('printVersion iniciado', [
+                'user_id' => auth()->id(),
+                'user_type' => auth()->user()->type_id,
+                'request_size' => strlen($request->input('pdf_json_data', ''))
+            ]);
+
             // Validar que llegue el JSON con los datos
             $request->validate([
                 'pdf_json_data' => 'required|string'
@@ -240,6 +255,7 @@ class FloorPlansController extends Controller
             
             // Validar que el JSON sea válido
             if (!$data) {
+                \Log::error('JSON inválido en printVersion');
                 return response()->json([
                     'success' => false,
                     'message' => 'Error: JSON inválido'

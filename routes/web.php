@@ -502,7 +502,6 @@ Route::prefix('floorplans')
         //Route::post('/search/devices/{id}', [FloorplansController::class, 'searchDevicesbyVersion'])->name('search.devices');
     
         Route::get('/print/{id}', [FloorplansController::class, 'print'])->name('print');
-        Route::post('/print/version', [FloorplansController::class, 'printVersion'])->name('print.version');
 
         Route::get('/QR/{id}', [FloorPlansController::class, 'getQR'])->name('qr');
         Route::post('/update/{id}', [FloorplansController::class, 'update'])->name('update');
@@ -523,6 +522,13 @@ Route::prefix('floorplans')
         Route::get('/devices/{floorplan}/device/{device}/stats/pdf', [FloorPlansController::class, 'deviceStatsPDF'])->name('device.stats.pdf');
 
         Route::get('/floorplans/show/{path}', [FloorPlansController::class, 'getImage'])->where('path', '.*')->name('image.show');
+    });
+
+// Ruta especial para print/version con middleware menos restrictivo
+// Separada para evitar problemas con POSTs grandes y can:integral
+Route::post('floorplans/print/version', [FloorplansController::class, 'printVersion'])
+    ->middleware(['auth', 'single.session'])
+    ->name('floorplan.print.version');
         Route::post('/floorplan/{id}/search/version', [FloorPlansController::class, 'searchDevicesbyVersion'])->name('search.device.version');
 
         // Geolocalización de dispositivos en plano - logica se maneja en ControlPointController

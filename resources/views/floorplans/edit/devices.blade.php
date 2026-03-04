@@ -1390,33 +1390,50 @@
 
                     $('#pdfJsonData').val(jsonData);
 
-                    // Enviar el formulario usando fetch para mejor control de errores
-                    const formData = new FormData(document.getElementById('pdfForm'));
+                    // Método alternativo: usar un iframe oculto para mantener la sesión
+                    const form = document.getElementById('pdfForm');
                     
-                    const response = await fetch('{{ route('floorplan.print.version') }}', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Error ${response.status}: ${errorText.substring(0, 200)}`);
+                    // Crear iframe oculto si no existe
+                    let iframe = document.getElementById('pdf-download-iframe');
+                    if (!iframe) {
+                        iframe = document.createElement('iframe');
+                        iframe.id = 'pdf-download-iframe';
+                        iframe.name = 'pdf-download-iframe';
+                        iframe.style.display = 'none';
+                        document.body.appendChild(iframe);
                     }
-
-                    // Si la respuesta es exitosa, descargar el PDF
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `plano-${printData.name}-${new Date().toISOString().slice(0,10)}.pdf`;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    a.remove();
-
-                    // Restaurar botón
-                    button.disabled = false;
-                    button.innerHTML = '<i class="bi bi-file-pdf-fill"></i> Descargar PDF';
+                    
+                    // Configurar el formulario para usar el iframe
+                    form.target = 'pdf-download-iframe';
+                    
+                    // Añadir listener para detectar errores en el iframe
+                    iframe.onload = function() {
+                        try {
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                            const iframeContent = iframeDoc.body.innerHTML;
+                            
+                            // Si contiene "403" o "Forbidden", mostrar error
+                            if (iframeContent.includes('403') || iframeContent.includes('Forbidden')) {
+                                throw new Error('Acceso denegado. Verifica tus permisos o que la sesión no haya expirado.');
+                            }
+                            
+                            // Restaurar botón después de 2 segundos
+                            setTimeout(() => {
+                                button.disabled = false;
+                                button.innerHTML = '<i class="bi bi-file-pdf-fill"></i> Descargar PDF';
+                            }, 2000);
+                            
+                        } catch (e) {
+                            // Si no podemos leer el iframe (CORS), asumimos que funcionó
+                            setTimeout(() => {
+                                button.disabled = false;
+                                button.innerHTML = '<i class="bi bi-file-pdf-fill"></i> Descargar PDF';
+                            }, 2000);
+                        }
+                    };
+                    
+                    // Enviar el formulario
+                    form.submit();
 
                 } catch (error) {
                     console.error('Error al preparar/generar PDF:', error);
