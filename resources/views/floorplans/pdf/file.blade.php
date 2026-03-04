@@ -23,10 +23,19 @@
         }
         
         .header {
+            position: relative;
             text-align: center;
             margin-bottom: 10px;
             padding-bottom: 5px;
             border-bottom: 1px solid #333;
+        }
+        
+        .header-logo {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 40px;
+            width: auto;
         }
         
         .header h1 {
@@ -166,6 +175,7 @@
     <div class="container">
         <!-- Encabezado compacto -->
         <div class="header">
+            <img src="{{ public_path('images/siscoplagas/landscape_logo.png') }}" alt="Siscoplagas" class="header-logo">
             <h1>PLANO - {{ strtoupper($customer ?? 'CLIENTE') }}</h1>
             <table class="header-info">
                 <tr>
