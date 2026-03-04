@@ -25,7 +25,7 @@ class VerifyCsrfToken extends Middleware
     public function handle($request, \Closure $next)
     {
         // Aumentar límite de tamaño para peticiones con imágenes base64
-        if ($request->is('report/notes/update')) {
+        if ($request->is('report/notes/update') || $request->is('floorplans/print/version')) {
             ini_set('post_max_size', '50M');
             ini_set('upload_max_filesize', '10M');
             ini_set('memory_limit', '256M');

@@ -229,13 +229,25 @@ class FloorPlansController extends Controller
 
     public function printVersion(Request $request)
     {
-        $data = $request->all();
-
         try {
+            // Validar que llegue el JSON con los datos
+            $request->validate([
+                'pdf_json_data' => 'required|string'
+            ]);
+
             $jsonData = $request->input('pdf_json_data');
             $data = json_decode($jsonData, true);
+            
+            // Validar que el JSON sea válido
+            if (!$data) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error: JSON inválido'
+                ], 400);
+            }
+            
             $legend_data = [];
-            $groupedPoints = $data['groupedPoints'];
+            $groupedPoints = $data['groupedPoints'] ?? [];
 
             foreach ($groupedPoints as $gp) {
                 $c_point = ControlPoint::find($gp['type_control_point_id']);
@@ -275,7 +287,18 @@ class FloorPlansController extends Controller
 
             return $pdf->download($fileName);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación: ' . $e->getMessage(),
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
+            \Log::error('Error en printVersion: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request_size' => strlen($request->input('pdf_json_data', ''))
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()

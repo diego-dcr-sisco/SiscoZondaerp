@@ -5,12 +5,12 @@
 
     RewriteEngine On
     
-    # Aumentar límites para POST con imágenes base64 en Summernote
-    php_value upload_max_filesize 10M
-    php_value post_max_size 50M
+    # Aumentar límites para POST con imágenes base64 (planos y notas)
+    php_value upload_max_filesize 20M
+    php_value post_max_size 100M
     php_value max_execution_time 300
     php_value max_input_time 300
-    php_value memory_limit 256M
+    php_value memory_limit 512M
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

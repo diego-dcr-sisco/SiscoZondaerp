@@ -17,7 +17,7 @@ class IncreasePostSizeLimit
     public function handle(Request $request, Closure $next)
     {
         // Aumentar límites para rutas que manejan imágenes base64
-        if ($request->is('report/notes/update')) {
+        if ($request->is('report/notes/update') || $request->is('floorplans/print/version')) {
             // Intentar aumentar límites antes de ValidatePostSize
             @ini_set('post_max_size', '50M');
             @ini_set('upload_max_filesize', '10M');

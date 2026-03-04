@@ -1362,10 +1362,11 @@
                 const floorplan = '{{ $floorplan }}';
 
                 try {
-                    const groupedPoints = groupByColorAndCode(points);
+                    // Mostrar loading
+                    button.disabled = true;
+                    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando PDF...';
 
-                    // Obtener la imagen en base64
-                    //const imageBase64 = await generateImageBase64();
+                    const groupedPoints = groupByColorAndCode(points);
 
                     // Extraer solo la parte de datos base64 (sin el prefix)
                     const base64Data = currentBase64.replace(/^data:image\/\w+;base64,/, '');
@@ -1379,20 +1380,51 @@
                         version: printData.floorplan_version,
                         date_version: printData.date_version,
                         device_count: printData.count,
-                        font_family: 'Helvetica', //font_family ?? null,
-                        font_color: '#000000', //font_color ?? null,
+                        font_family: 'Helvetica',
+                        font_color: '#000000',
                         groupedPoints: legendPDF
                     };
 
-                    $('#pdfJsonData').val(JSON.stringify(pdfData));
+                    const jsonData = JSON.stringify(pdfData);
+                    console.log('Tamaño del JSON:', (jsonData.length / 1024).toFixed(2), 'KB');
 
-                    // Aquí puedes proceder con el envío del formulario
-                    // Por ejemplo:
-                    $('#pdfForm').submit();
+                    $('#pdfJsonData').val(jsonData);
+
+                    // Enviar el formulario usando fetch para mejor control de errores
+                    const formData = new FormData(document.getElementById('pdfForm'));
+                    
+                    const response = await fetch('{{ route('floorplan.print.version') }}', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`Error ${response.status}: ${errorText.substring(0, 200)}`);
+                    }
+
+                    // Si la respuesta es exitosa, descargar el PDF
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `plano-${printData.name}-${new Date().toISOString().slice(0,10)}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+
+                    // Restaurar botón
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-file-pdf-fill"></i> Descargar PDF';
 
                 } catch (error) {
-                    //console.error('Error al preparar datos para PDF:', error);
-                    alert('Error al preparar datos para PDF: ' + error.message);
+                    console.error('Error al preparar/generar PDF:', error);
+                    alert('Error al generar PDF: ' + error.message);
+                    
+                    // Restaurar botón
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-file-pdf-fill"></i> Descargar PDF';
                 }
             }
 
