@@ -1281,6 +1281,11 @@
                         // Guardar en variable global para uso posterior
                         currentBase64 = dataURL;
 
+                        // Obtener el token CSRF de la meta tag o del formulario principal
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                                        document.querySelector('input[name="_token"]')?.value || 
+                                        '{{ csrf_token() }}';
+
                         // Mostrar previsualización
                         const preview = document.getElementById('image-preview');
                         preview.innerHTML = `
@@ -1297,7 +1302,7 @@
                                         <i class="bi bi-clipboard"></i> Copiar base64
                                     </button>
                                     <form id="pdfForm" method="POST" action="{{ route('floorplan.print.version') }}" style="display: inline;">
-                                        @csrf
+                                        <input type="hidden" name="_token" value="${csrfToken}">
                                         <input type="hidden" id="pdfJsonData" name="pdf_json_data">
                                         <button type="button" class="btn btn-success btn-sm" onclick="generatePDF()">
                                             <i class="bi bi-file-pdf-fill"></i> Descargar PDF

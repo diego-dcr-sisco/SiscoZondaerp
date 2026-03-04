@@ -53,8 +53,9 @@ class LocationController extends Controller
                 ], 401);
             }
 
-            // Convertir timestamp de milisegundos a DateTime
-            $recordedAt = \Carbon\Carbon::createFromTimestampMs($request->timestamp);
+            // Convertir timestamp de milisegundos a DateTime con zona horaria de la app
+            $recordedAt = \Carbon\Carbon::createFromTimestampMs($request->timestamp)
+                ->setTimezone(config('app.timezone'));
 
             // Guardar en la tabla de historial
             $location = UserLocation::create([
