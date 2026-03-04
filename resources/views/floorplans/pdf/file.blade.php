@@ -161,8 +161,8 @@
             max-width: 100%;
             max-height: 16cm;
             height: auto;
-            border: 1px solid #ccc;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 2px solid #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
         .footer {
