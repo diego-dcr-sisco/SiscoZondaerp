@@ -5,6 +5,26 @@
 
     RewriteEngine On
     
+    # ============================================
+    # DESACTIVAR MOD_SECURITY PARA LARAVEL
+    # ============================================
+    # ModSecurity de cPanel puede bloquear peticiones legítimas de Laravel
+    # Desactivar para rutas específicas que manejan datos complejos
+    
+    <IfModule mod_security.c>
+        # Desactivar ModSecurity completamente para esta aplicación
+        SecFilterEngine Off
+        SecFilterScanPOST Off
+    </IfModule>
+    
+    # Si el servidor usa ModSecurity 2.x
+    <IfModule mod_security2.c>
+        SecRuleEngine Off
+    </IfModule>
+    
+    # ============================================
+    # LÍMITES PHP PARA POST GRANDES
+    # ============================================
     # Aumentar límites para POST con imágenes base64 (planos y notas)
     php_value upload_max_filesize 20M
     php_value post_max_size 100M
