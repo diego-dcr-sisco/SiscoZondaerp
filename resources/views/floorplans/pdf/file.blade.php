@@ -161,7 +161,7 @@
             max-width: 100%;
             max-height: 16cm;
             height: auto;
-            border: 2px solid #333;
+            border: 1px solid #333;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
