@@ -23,37 +23,52 @@
         }
         
         .header {
-            position: relative;
-            text-align: center;
+            width: 100%;
             margin-bottom: 10px;
             padding-bottom: 5px;
             border-bottom: 1px solid #333;
         }
         
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .header-left {
+            width: 20%;
+            vertical-align: middle;
+            text-align: left;
+        }
+        
+        .header-center {
+            width: 50%;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .header-right {
+            width: 30%;
+            vertical-align: middle;
+            text-align: right;
+            font-size: 9px;
+        }
+        
         .header-logo {
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 40px;
+            height: 45px;
             width: auto;
         }
         
         .header h1 {
-            margin: 0 0 3px 0;
+            margin: 0;
             font-size: 16px;
             color: #2c3e50;
-            line-height: 1.1;
+            line-height: 1.2;
         }
         
-        .header-info {
-            width: 100%;
-            margin-top: 5px;
-            font-size: 9px;
-        }
-        
-        .header-info td {
-            text-align: center;
-            padding: 0 5px;
+        .info-item {
+            display: block;
+            margin-bottom: 3px;
+            line-height: 1.3;
         }
         
         .info-label {
@@ -175,18 +190,24 @@
     <div class="container">
         <!-- Encabezado compacto -->
         <div class="header">
-            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/landscape_logo.png'))) }}" alt="Siscoplagas" class="header-logo">
-            <h1>PLANO - {{ strtoupper($customer ?? 'CLIENTE') }}</h1>
-            <table class="header-info">
+            <table class="header-table">
                 <tr>
-                    <td>
-                        <span class="info-label">Nombre del plano:</span> {{ $filename ?? 'N/A' }}
+                    <td class="header-left">
+                        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/landscape_logo.png'))) }}" alt="Siscoplagas" class="header-logo">
                     </td>
-                    <td>
-                        <span class="info-label">Versión:</span> {{ $date_version ?? date('d/m/Y') }}
+                    <td class="header-center">
+                        <h1>PLANO<br>{{ strtoupper($customer ?? 'CLIENTE') }}</h1>
                     </td>
-                    <td>
-                        <span class="info-label">Total:</span> {{ $device_count ?? 0 }} disp.
+                    <td class="header-right">
+                        <span class="info-item">
+                            <span class="info-label">Plano:</span> {{ $filename ?? 'N/A' }}
+                        </span>
+                        <span class="info-item">
+                            <span class="info-label">Versión:</span> {{ $date_version ?? date('d/m/Y') }}
+                        </span>
+                        <span class="info-item">
+                            <span class="info-label">Total:</span> {{ $device_count ?? 0 }} dispositivos
+                        </span>
                     </td>
                 </tr>
             </table>
