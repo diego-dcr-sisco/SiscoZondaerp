@@ -11,6 +11,7 @@
     php_value max_execution_time 300
     php_value max_input_time 300
     php_value memory_limit 512M
+    php_value max_input_vars 10000
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
