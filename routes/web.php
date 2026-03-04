@@ -522,6 +522,12 @@ Route::prefix('floorplans')
         Route::get('/devices/{floorplan}/device/{device}/stats/pdf', [FloorPlansController::class, 'deviceStatsPDF'])->name('device.stats.pdf');
 
         Route::get('/floorplans/show/{path}', [FloorPlansController::class, 'getImage'])->where('path', '.*')->name('image.show');
+        
+        Route::post('/floorplan/{id}/search/version', [FloorPlansController::class, 'searchDevicesbyVersion'])->name('search.device.version');
+
+        // Geolocalización de dispositivos en plano - logica se maneja en ControlPointController
+        Route::get('/geolocation/{id}', [ControlPointController::class, 'geolocateDevices'])->name('geolocation');
+        Route::post('/geolocation/update', [ControlPointController::class, 'updateDeviceCoordinates'])->name('geolocation.update');
     });
 
 // Ruta especial para print/version con middleware menos restrictivo
@@ -529,12 +535,6 @@ Route::prefix('floorplans')
 Route::post('floorplans/print/version', [FloorplansController::class, 'printVersion'])
     ->middleware(['auth', 'single.session'])
     ->name('floorplan.print.version');
-        Route::post('/floorplan/{id}/search/version', [FloorPlansController::class, 'searchDevicesbyVersion'])->name('search.device.version');
-
-        // Geolocalización de dispositivos en plano - logica se maneja en ControlPointController
-        Route::get('/geolocation/{id}', [ControlPointController::class, 'geolocateDevices'])->name('geolocation');
-        Route::post('/geolocation/update', [ControlPointController::class, 'updateDeviceCoordinates'])->name('geolocation.update');
-    });
 
 // SERVICIOS
 Route::prefix('services')
