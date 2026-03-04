@@ -175,7 +175,7 @@
     <div class="container">
         <!-- Encabezado compacto -->
         <div class="header">
-            <img src="{{ public_path('images/siscoplagas/landscape_logo.png') }}" alt="Siscoplagas" class="header-logo">
+            <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/landscape_logo.png'))) }}" alt="Siscoplagas" class="header-logo">
             <h1>PLANO - {{ strtoupper($customer ?? 'CLIENTE') }}</h1>
             <table class="header-info">
                 <tr>
@@ -217,8 +217,6 @@
                                             $ranges = trim(str_replace('Rango(s):', '', $part));
                                         }
                                     }
-                                    
-                                    
                                 @endphp
                                 
                                 <div class="legend-item clearfix">
