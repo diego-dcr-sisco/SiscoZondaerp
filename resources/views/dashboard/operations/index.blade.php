@@ -87,6 +87,14 @@
             font-size: 0.75rem;
         }
 
+        .folio-link {
+            transition: all 0.2s ease;
+        }
+
+        .folio-link:hover {
+            opacity: 0.7;
+        }
+
         .table-scroll-container {
             max-height: 600px;
             overflow-y: auto;
@@ -408,8 +416,11 @@
                     @forelse ($orders as $index => $order)
                         <tr>
                             <!-- # (Folio) -->
-                            <td class="text-decoration-underline">
-                                <span class="fw-bold text-primary">({{ $order->folio }})</span>
+                            <td>
+                                <a href="{{ route('order.edit', $order->id) }}" 
+                                   class="text-decoration-none fw-bold text-primary folio-link">
+                                    <span class="text-decoration-underline">({{ $order->folio }})</span>
+                                </a>
                             </td>
 
                             <!-- Cliente -->
