@@ -7,6 +7,7 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\FloorPlansController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\PestController;
 use App\Http\Controllers\ProductController;
@@ -57,6 +58,14 @@ Route::middleware(['auth', 'single.session'])->group(function () {
     Route::get('/dashboard/stock', [PagesController::class, 'stock'])->name('dashboard.stock.');
 });
 // DASHBOARD
+
+// CONTROL DE OPERACIONES
+Route::prefix('operations')
+    ->name('operations.')
+    ->middleware(['auth', 'single.session', 'can:integral'])
+    ->group(function () {
+        Route::get('/', [OperationsController::class, 'index'])->name('index');
+    });
 
 // CRM
 /*Route::prefix('crm')->middleware(['auth', 'single.session', 'can:integral'])->group(function () {

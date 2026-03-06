@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\OrderTechnician;
 use App\Models\Technician;
+use App\Models\User;
 use App\Traits\Loggable;
 
 class Order extends Model
@@ -93,8 +94,22 @@ class Order extends Model
 
     public function getNameTechnicians()
     {
-        $user_ids = $this->technicians()->pluck('user_id')->toArray();
-        $technicians = User::whereIn('id', $user_ids)->get();
+        // Obtener los IDs de técnicos desde OrderTechnician
+        $technicianIds = OrderTechnician::where('order_id', $this->id)
+            ->pluck('technician_id')
+            ->toArray();
+        
+        if (empty($technicianIds)) {
+            return collect([]);
+        }
+        
+        // Obtener los user_ids desde la tabla technician
+        $userIds = Technician::whereIn('id', $technicianIds)
+            ->pluck('user_id')
+            ->toArray();
+        
+        // Obtener los usuarios
+        $technicians = User::whereIn('id', $userIds)->get();
         return $technicians;
     }
 

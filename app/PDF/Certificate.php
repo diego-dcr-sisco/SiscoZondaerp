@@ -47,16 +47,27 @@ class Certificate
     function addBase64Prefix($base64String)
     {
         $prefix = 'data:image/png;base64,';
+        
+        // Si es null o vacío, retornar null
         if ($base64String === null || trim($base64String) === '') {
             return null;
         }
-        if (trim($base64String) === $prefix) {
+        
+        // Limpiar espacios en blanco
+        $base64String = trim($base64String);
+        
+        // Si solo contiene el prefijo sin datos, retornar null
+        if ($base64String === $prefix || $base64String === 'data:image/png;base64,' || $base64String === 'data:image/jpeg;base64,') {
             return null;
         }
-        if (preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $base64String)) {
-            return $prefix . $base64String;
+        
+        // Si ya tiene el prefijo data:image, retornarlo tal cual
+        if (strpos($base64String, 'data:image') === 0) {
+            return $base64String;
         }
-        return $base64String;
+        
+        // Si no tiene prefijo, agregarlo
+        return $prefix . $base64String;
     }
 
     private function ensureTempSignatureDir()

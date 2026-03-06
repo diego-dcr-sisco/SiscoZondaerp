@@ -93,6 +93,15 @@
             transform: translateY(-5px);
         }
 
+        .bg-orange {
+            background-color: #D97706;
+        }
+
+        .bg-orange:hover {
+            box-shadow: 0 10px 20px rgba(217, 119, 6, 0.3);
+            transform: translateY(-5px);
+        }
+
         /* Animaciones personalizadas */
         .card-animate {
             opacity: 0;
@@ -340,6 +349,19 @@
                         <i class="bi bi-person-workspace d-block fs-4 mb-2"></i>
                         <h3 class="h6 fw-bold mb-1">Clientes</h3>
                         <p class="small opacity-75 mb-0">Gestión</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Control de Operaciones -->
+            <a href="{{ route('operations.index') }}"
+                class="card text-white text-decoration-none hover-scale position-relative bg-orange card-animate"
+                style="width: 150px; height: 130px;">
+                <div class="position-absolute top-50 start-50 translate-middle w-100 px-2" style="margin-top: -5px;">
+                    <div class="text-center">
+                        <i class="bi bi-clipboard-check-fill d-block fs-4 mb-2"></i>
+                        <h3 class="h6 fw-bold mb-1">Control de Operaciones</h3>
+                        <p class="small opacity-75 mb-0">Reportes</p>
                     </div>
                 </div>
             </a>
