@@ -117,17 +117,13 @@
             <h2 class="fw-bold mb-0">
                 Control de Operaciones
             </h2>
-           
+
             <div class="text-end d-flex align-items-center gap-2">
-                 <span class="badge fs-5" style="background-color: #43A047; color: white;">
-                    <i class="bi bi-calendar-fill"></i> {{ \Carbon\Carbon::now()->locale('es')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}
+                <span class="badge fs-5" style="background-color: #43A047; color: white;">
+                    <i class="bi bi-calendar-fill"></i>
+                    {{ \Carbon\Carbon::now()->locale('es')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}
                 </span>
                 <span class="badge bg-danger fs-5">{{ $orders->total() }} Reportes Pendientes</span>
-                @if($orders->count() > 0)
-                    <a href="{{ route('operations.export.pdf', request()->query()) }}" class="btn btn-danger btn-sm" target="_blank">
-                        <i class="bi bi-file-pdf-fill"></i> Exportar PDF
-                    </a>
-                @endif
             </div>
         </div>
 
@@ -253,17 +249,28 @@
         <div class="table-responsive table-scroll-container">
             <table class="table table-bordered table-striped table-sm">
                 <caption class="caption-top bg-light border px-2">
-                    <div class="d-flex align-items-center gap-3 flex-wrap">
-                        <strong class="me-2 text-dark">Estado de fechas:</strong>
-                        <span class="badge" style="background-color: #C7170A;">
-                            <i class="bi bi-exclamation-triangle-fill"></i> Vencido
-                        </span>
-                        <span class="badge" style="background-color: #761D86;">
-                            <i class="bi bi-clock-fill"></i> Hoy
-                        </span>
-                        <span class="badge" style="background-color: #F57C00;">
-                            <i class="bi bi-calendar-check"></i> Próximo
-                        </span>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <strong class="me-2 text-dark">Estado de fechas:</strong>
+                            <span class="badge" style="background-color: #C7170A;">
+                                <i class="bi bi-exclamation-triangle-fill"></i> Vencido
+                            </span>
+                            <span class="badge" style="background-color: #761D86;">
+                                <i class="bi bi-clock-fill"></i> Hoy
+                            </span>
+                            <span class="badge" style="background-color: #F57C00;">
+                                <i class="bi bi-calendar-check"></i> Próximo
+                            </span>
+                        </div>
+
+                        @if ($orders->count() > 0)
+                            <div class="text-end">
+                                <a href="{{ route('operations.export.pdf', request()->query()) }}"
+                                    class="btn btn-dark btn-sm" target="_blank">
+                                    <i class="bi bi-file-pdf-fill"></i> Exportar PDF
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </caption>
                 <thead>
@@ -316,8 +323,7 @@
 
                             <!-- Fecha -->
                             <td
-                                @if ($order->programmed_date)
-                                    @php
+                                @if ($order->programmed_date) @php
                                         $programmedDate = \Carbon\Carbon::parse($order->programmed_date);
                                         $today = \Carbon\Carbon::today();
                                         
@@ -330,9 +336,7 @@
                                             $bgColor = '#C7170A'; // Rojo para vencido
                                         }
                                     @endphp
-                                    style="background-color: {{ $bgColor }}; color: white; font-weight: 600;"
-                                @endif
-                            >
+                                    style="background-color: {{ $bgColor }}; color: white; font-weight: 600;" @endif>
                                 @if ($order->programmed_date)
                                     {{ \Carbon\Carbon::parse($order->programmed_date)->format('d/m/Y') }}
                                 @else
@@ -506,16 +510,18 @@
                     'Últimos 7 días': [moment().subtract(6, 'days'), moment()],
                     'Últimos 30 días': [moment().subtract(29, 'days'), moment()],
                     'Este mes': [moment().startOf('month'), moment().endOf('month')],
-                    'Mes pasado': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                    'Mes pasado': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1,
+                        'month').endOf('month')]
                 },
-                @if(request('start_date') && request('end_date'))
-                startDate: "{{ request('start_date') }}",
-                endDate: "{{ request('end_date') }}"
+                @if (request('start_date') && request('end_date'))
+                    startDate: "{{ request('start_date') }}",
+                    endDate: "{{ request('end_date') }}"
                 @endif
             });
 
             $('#date_range').on('apply.daterangepicker', function(ev, picker) {
-                $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+                $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format(
+                    'YYYY-MM-DD'));
                 $('#start_date').val(picker.startDate.format('YYYY-MM-DD'));
                 $('#end_date').val(picker.endDate.format('YYYY-MM-DD'));
             });
