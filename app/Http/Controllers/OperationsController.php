@@ -108,7 +108,48 @@ class OperationsController extends Controller
             })
             ->sortDesc();
 
-        return view('dashboard.operations.index', compact('orders', 'technicians', 'ordersByBranch'));
+        // Obtener distribución por cliente (según filtros, no por paginación)
+        $queryForCustomers = Order::with(['customer'])
+            ->where('status_id', 1);
+
+        // Aplicar los mismos filtros
+        if ($request->filled('start_date')) {
+            $queryForCustomers->where('programmed_date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $queryForCustomers->where('programmed_date', '<=', $request->end_date);
+        }
+
+        if ($request->filled('technician_ids')) {
+            $technicianIds = is_array($request->technician_ids) 
+                ? $request->technician_ids 
+                : [$request->technician_ids];
+            
+            $technicianModels = Technician::whereIn('user_id', $technicianIds)
+                ->pluck('id')
+                ->toArray();
+            
+            if (!empty($technicianModels)) {
+                $queryForCustomers->whereHas('techniciansScope', function ($q) use ($technicianModels) {
+                    $q->whereIn('technician_id', $technicianModels);
+                });
+            }
+        }
+
+        // Obtener las órdenes completas y agrupar por cliente
+        $ordersByCustomer = $queryForCustomers->get()
+            ->groupBy(function ($order) {
+                return $order->customer 
+                    ? $order->customer->name 
+                    : 'Sin Cliente';
+            })
+            ->map(function ($orders) {
+                return $orders->count();
+            })
+            ->sortDesc();
+
+        return view('dashboard.operations.index', compact('orders', 'technicians', 'ordersByBranch', 'ordersByCustomer'));
     }
 
     /**
