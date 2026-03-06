@@ -205,22 +205,16 @@
                         </div>
                     </div>
 
-                    <!-- Fecha Inicio -->
-                    <div class="col-lg-2">
-                        <label for="start_date" class="form-label">
-                            Fecha Inicio
+                    <!-- Rango de Fechas -->
+                    <div class="col-lg-4">
+                        <label for="date_range" class="form-label">
+                            Rango de Fechas
                         </label>
-                        <input type="date" class="form-control form-control-sm" id="start_date" name="start_date"
-                            value="{{ request('start_date') }}">
-                    </div>
-
-                    <!-- Fecha Fin -->
-                    <div class="col-lg-2">
-                        <label for="end_date" class="form-label">
-                            Fecha Fin
-                        </label>
-                        <input type="date" class="form-control form-control-sm" id="end_date" name="end_date"
-                            value="{{ request('end_date') }}">
+                        <input type="text" class="form-control form-control-sm" id="date_range" name="date_range"
+                            value="{{ request('start_date') && request('end_date') ? request('start_date') . ' - ' . request('end_date') : '' }}"
+                            placeholder="Seleccionar fechas" autocomplete="off">
+                        <input type="hidden" name="start_date" id="start_date" value="{{ request('start_date') }}">
+                        <input type="hidden" name="end_date" id="end_date" value="{{ request('end_date') }}">
                     </div>
 
                     <!-- Total por página -->
@@ -480,5 +474,52 @@
 
             updateSelectedCount();
         }
+
+        // Inicializar daterangepicker
+        $(function() {
+            $('#date_range').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    format: 'YYYY-MM-DD',
+                    separator: ' - ',
+                    applyLabel: 'Aplicar',
+                    cancelLabel: 'Cancelar',
+                    fromLabel: 'Desde',
+                    toLabel: 'Hasta',
+                    customRangeLabel: 'Personalizado',
+                    weekLabel: 'S',
+                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    monthNames: [
+                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ],
+                    firstDay: 1
+                },
+                ranges: {
+                    'Hoy': [moment(), moment()],
+                    'Ayer': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                    'Últimos 7 días': [moment().subtract(6, 'days'), moment()],
+                    'Últimos 30 días': [moment().subtract(29, 'days'), moment()],
+                    'Este mes': [moment().startOf('month'), moment().endOf('month')],
+                    'Mes pasado': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+                },
+                @if(request('start_date') && request('end_date'))
+                startDate: "{{ request('start_date') }}",
+                endDate: "{{ request('end_date') }}"
+                @endif
+            });
+
+            $('#date_range').on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+                $('#start_date').val(picker.startDate.format('YYYY-MM-DD'));
+                $('#end_date').val(picker.endDate.format('YYYY-MM-DD'));
+            });
+
+            $('#date_range').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+                $('#start_date').val('');
+                $('#end_date').val('');
+            });
+        });
     </script>
 @endsection
