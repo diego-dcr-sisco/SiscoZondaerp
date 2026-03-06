@@ -58,6 +58,7 @@ class OperationsController extends Controller
         }
 
         // Obtener las órdenes con paginación
+        // Ordenar por fecha programada ascendente (los más antiguos primero)
         $orders = $query->orderBy('programmed_date', 'asc')
             ->orderBy('start_time', 'asc')
             ->paginate($size);
