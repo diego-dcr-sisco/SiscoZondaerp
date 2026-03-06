@@ -67,7 +67,48 @@ class OperationsController extends Controller
         // Mantener parámetros de búsqueda en paginación
         $orders->appends($request->except('page'));
 
-        return view('dashboard.operations.index', compact('orders', 'technicians'));
+        // Obtener distribución por planta (según filtros, no por paginación)
+        $queryForBranches = Order::with(['customer.branch'])
+            ->where('status_id', 1);
+
+        // Aplicar los mismos filtros
+        if ($request->filled('start_date')) {
+            $queryForBranches->where('programmed_date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $queryForBranches->where('programmed_date', '<=', $request->end_date);
+        }
+
+        if ($request->filled('technician_ids')) {
+            $technicianIds = is_array($request->technician_ids) 
+                ? $request->technician_ids 
+                : [$request->technician_ids];
+            
+            $technicianModels = Technician::whereIn('user_id', $technicianIds)
+                ->pluck('id')
+                ->toArray();
+            
+            if (!empty($technicianModels)) {
+                $queryForBranches->whereHas('techniciansScope', function ($q) use ($technicianModels) {
+                    $q->whereIn('technician_id', $technicianModels);
+                });
+            }
+        }
+
+        // Obtener las órdenes completas y agrupar por planta
+        $ordersByBranch = $queryForBranches->get()
+            ->groupBy(function ($order) {
+                return $order->customer && $order->customer->branch 
+                    ? $order->customer->branch->name 
+                    : 'Sin Planta';
+            })
+            ->map(function ($orders) {
+                return $orders->count();
+            })
+            ->sortDesc();
+
+        return view('dashboard.operations.index', compact('orders', 'technicians', 'ordersByBranch'));
     }
 
     /**

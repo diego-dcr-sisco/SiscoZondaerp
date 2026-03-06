@@ -109,6 +109,35 @@
             z-index: 10;
             box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
         }
+
+        #accordionBranches .accordion-button {
+            font-size: 0.9rem;
+        }
+
+        #accordionBranches .accordion-button:not(.collapsed) {
+            background-color: var(--bs-primary);
+            color: white;
+        }
+
+        #accordionBranches .accordion-body {
+            background-color: var(--bs-white);
+        }
+
+        #accordionBranches table {
+            font-size: 0.875rem;
+        }
+
+        #accordionBranches table th {
+            background-color: var(--bs-light);
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        #accordionBranches table tbody tr:hover {
+            background-color: var(--bs-light);
+        }
     </style>
 
     <div class="container-fluid p-3">
@@ -245,11 +274,52 @@
             </form>
         </div>
 
+        <!-- Accordion de plantas -->
+        <div class="mb-3">
+            <div class="accordion" id="accordionBranches">
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed bg-primary text-white py-2 px-3"
+                            type="button" data-bs-toggle="collapse" data-bs-target="#collapseBranches">
+                            <i class="bi bi-building-fill me-2"></i>
+                            <strong>Distribución por Plantas ({{ $ordersByBranch->sum() }} reportes)</strong>
+                        </button>
+                    </h2>
+                    <div id="collapseBranches" class="accordion-collapse collapse"
+                        data-bs-parent="#accordionBranches">
+                        <div class="accordion-body p-2" style="max-height: 300px; overflow-y: auto;">
+                            @if ($ordersByBranch->isEmpty())
+                                <p class="text-muted mb-0">No se encontraron reportes para las plantas.</p>
+                            @else
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-start">Planta</th>
+                                            <th class="text-end">Reportes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($ordersByBranch as $branchName => $count)
+                                            <tr>
+                                                <td>{{ $branchName }}</td>
+                                                <td class="text-danger fw-bold text-end">{{ $count }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Tabla de Resultados -->
         <div class="table-responsive table-scroll-container">
             <table class="table table-bordered table-striped table-sm">
                 <caption class="caption-top bg-light border px-2">
                     <div class="d-flex justify-content-between align-items-center">
+                        <!-- Simbología de colores -->
                         <div class="d-flex align-items-center gap-3 flex-wrap">
                             <strong class="me-2 text-dark">Estado de fechas:</strong>
                             <span class="badge" style="background-color: #C7170A;">
@@ -263,6 +333,7 @@
                             </span>
                         </div>
 
+                        <!-- Botón exportar PDF -->
                         @if ($orders->count() > 0)
                             <div class="text-end">
                                 <a href="{{ route('operations.export.pdf', request()->query()) }}"
