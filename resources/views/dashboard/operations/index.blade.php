@@ -118,11 +118,16 @@
                 Control de Operaciones
             </h2>
            
-            <div class="text-end">
-                 <span class="badge fs-5 ms-3" style="background-color: #43A047; color: white;">
+            <div class="text-end d-flex align-items-center gap-2">
+                 <span class="badge fs-5" style="background-color: #43A047; color: white;">
                     <i class="bi bi-calendar-fill"></i> {{ \Carbon\Carbon::now()->locale('es')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}
                 </span>
                 <span class="badge bg-danger fs-5">{{ $orders->total() }} Reportes Pendientes</span>
+                @if($orders->count() > 0)
+                    <a href="{{ route('operations.export.pdf', request()->query()) }}" class="btn btn-danger btn-sm" target="_blank">
+                        <i class="bi bi-file-pdf-fill"></i> Exportar PDF
+                    </a>
+                @endif
             </div>
         </div>
 

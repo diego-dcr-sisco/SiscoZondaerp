@@ -9,6 +9,7 @@ use App\Models\OrderTechnician;
 use App\Models\Technician;
 use App\Models\User;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class OperationsController extends Controller
 {
@@ -67,5 +68,59 @@ class OperationsController extends Controller
         $orders->appends($request->except('page'));
 
         return view('dashboard.operations.index', compact('orders', 'technicians'));
+    }
+
+    /**
+     * Exportar reporte de operaciones a PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        // Inicializar query de órdenes pendientes (sin paginación para el PDF)
+        $query = Order::with(['customer', 'customer.matrix', 'status', 'technicians.user', 'services', 'closeUser'])
+            ->where('status_id', 1); // 1 = Pendiente
+
+        // Filtrar por fechas si se proporcionan
+        if ($request->filled('start_date')) {
+            $query->where('programmed_date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->where('programmed_date', '<=', $request->end_date);
+        }
+
+        // Filtrar por técnicos si se proporcionan
+        if ($request->filled('technician_ids')) {
+            $technicianIds = is_array($request->technician_ids) 
+                ? $request->technician_ids 
+                : [$request->technician_ids];
+            
+            $technicianModels = Technician::whereIn('user_id', $technicianIds)
+                ->pluck('id')
+                ->toArray();
+            
+            if (!empty($technicianModels)) {
+                $query->whereHas('techniciansScope', function ($q) use ($technicianModels) {
+                    $q->whereIn('technician_id', $technicianModels);
+                });
+            }
+        }
+
+        // Obtener todas las órdenes (limitado a 500 para no sobrecargar)
+        $orders = $query->orderBy('programmed_date', 'asc')
+            ->orderBy('start_time', 'asc')
+            ->limit(500)
+            ->get();
+
+        // Generar el PDF
+        $pdf = Pdf::loadView('dashboard.operations.pdf', compact('orders'))
+            ->setPaper('a4', 'landscape')
+            ->setOption('margin-top', 10)
+            ->setOption('margin-bottom', 10)
+            ->setOption('margin-left', 10)
+            ->setOption('margin-right', 10);
+
+        $filename = 'Reporte_Operaciones_' . Carbon::now()->format('Y-m-d_H-i-s') . '.pdf';
+        
+        return $pdf->stream($filename);
     }
 }

@@ -65,6 +65,7 @@ Route::prefix('operations')
     ->middleware(['auth', 'single.session', 'can:integral'])
     ->group(function () {
         Route::get('/', [OperationsController::class, 'index'])->name('index');
+        Route::get('/export-pdf', [OperationsController::class, 'exportPdf'])->name('export.pdf');
     });
 
 // CRM
