@@ -241,15 +241,12 @@
                     <tr>
                         <th scope="col" style="width: 3%;"># (Folio)</th>
                         <th scope="col" style="width: 15%;">Cliente</th>
-                        <th scope="col" style="width: 4%;">ID</th>
-                        <th scope="col" style="width: 7%;">Hora</th>
-                        <th scope="col" style="width: 7%;">Fecha</th>
+                        <th scope="col" style="width: 3%;">ID</th>
+                        <th scope="col" style="width: 5%;">Hora</th>
+                        <th scope="col" style="width: 5%;">Fecha</th>
                         <th scope="col" style="width: 6%;">Tipo</th>
                         <th scope="col" style="width: 12%;">Servicio(s)</th>
-                        <th scope="col" style="width: 12%;">Técnico(s)</th>
-                        <th scope="col" style="width: 8%;">Cerrado por</th>
-                        <th scope="col" style="width: 8%;">Firmado por</th>
-                        <th scope="col" style="width: 6%;">Firma</th>
+                        <th scope="col" style="width: 15%;">Técnico(s)</th>
                         <th scope="col" style="width: 6%;">Estado</th>
                     </tr>
                 </thead>
@@ -258,15 +255,6 @@
                         $offset = ($orders->currentPage() - 1) * $orders->perPage();
                     @endphp
                     @forelse ($orders as $index => $order)
-                        @php
-                            // Preparar firma para mostrar
-                            $signature = '';
-                            if($order->customer_signature) {
-                                $signature = strpos($order->customer_signature, 'data:image') === 0
-                                    ? $order->customer_signature
-                                    : 'data:image/png;base64,' . $order->customer_signature;
-                            }
-                        @endphp
                         <tr>
                             <!-- # (Folio) -->
                             <td class="text-decoration-underline">
@@ -326,26 +314,13 @@
                                     $orderTechnicians = $order->getNameTechnicians();
                                 @endphp
                                 @if($orderTechnicians->count() > 0)
+                                    <ul class="mb-0 ps-3">
                                     @foreach($orderTechnicians as $tech)
-                                        {{ $tech->name }}<br>
+                                        <li>{{ $tech->name }}</li>
                                     @endforeach
+                                    </ul>
                                 @else
                                     <small class="text-muted">Sin técnico asignado</small>
-                                @endif
-                            </td>
-
-                            <!-- Cerrado por -->
-                            <td>{{ $order->closeUser->name ?? '-' }}</td>
-
-                            <!-- Firmado por -->
-                            <td>{{ $order->signature_name ?? 'Sin firma' }}</td>
-
-                            <!-- Firma -->
-                            <td>
-                                @if($signature)
-                                    <img class="border" style="width: 60px; height: auto;" src="{{ $signature }}" alt="Firma">
-                                @else
-                                    <small class="text-muted">-</small>
                                 @endif
                             </td>
 
@@ -356,7 +331,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="12" class="text-center py-4">
+                            <td colspan="9" class="text-center py-4">
                                 <div class="text-muted">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
                                     <p class="mb-0">No se encontraron reportes pendientes</p>

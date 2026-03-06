@@ -46,27 +46,19 @@ class Certificate
 
     function addBase64Prefix($base64String)
     {
-        $prefix = 'data:image/png;base64,';
-        
-        // Si es null o vacío, retornar null
+        $prefix = 'data:image/png;base64,';        
         if ($base64String === null || trim($base64String) === '') {
             return null;
         }
         
-        // Limpiar espacios en blanco
         $base64String = trim($base64String);
-        
-        // Si solo contiene el prefijo sin datos, retornar null
         if ($base64String === $prefix || $base64String === 'data:image/png;base64,' || $base64String === 'data:image/jpeg;base64,') {
             return null;
-        }
-        
-        // Si ya tiene el prefijo data:image, retornarlo tal cual
+        }    
+            
         if (strpos($base64String, 'data:image') === 0) {
             return $base64String;
-        }
-        
-        // Si no tiene prefijo, agregarlo
+        }        
         return $prefix . $base64String;
     }
 
