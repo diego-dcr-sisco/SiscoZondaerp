@@ -385,18 +385,11 @@ class Certificate
             ->get();
 
         // Filtrar solo dispositivos revisados
-        // Si el reporte está aprobado (status_id = 5), solo incluir dispositivos con is_checked o is_scanned
-        // Si el reporte NO está aprobado, también incluir dispositivos con productos, plagas o respuestas
+        // Incluir dispositivos que tengan is_checked, productos, plagas o respuestas
+        // (estos son los dispositivos que estaban revisados al momento de aprobar o en proceso)
         $devices = $devices->filter(function ($device) {
             $device_state = $device->deviceStates->first();
             $is_checked = $device_state ? ($device_state->is_checked || $device_state->is_scanned) : false;
-            
-            // Si el reporte está aprobado, solo considerar is_checked/is_scanned
-            if ($this->order->status_id == 5) {
-                return $is_checked;
-            }
-            
-            // Si no está aprobado, también considerar productos, plagas y respuestas
             $has_products = $device->deviceProducts->count() > 0;
             $has_pests = $device->devicePests->count() > 0;
             $has_answers = $device->incidents->filter(function($incident) {
