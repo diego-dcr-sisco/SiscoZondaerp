@@ -634,11 +634,20 @@ class MyPDF extends TCPDF
 
                 $devices = $floorplan->devices($version)->orderBy('itemnumber', 'asc')->get();
                 
-                // Filtrar solo dispositivos revisados (con is_checked = true o is_scanned = true 
-                // o que tengan productos, plagas o respuestas)
-                $devices = $devices->filter(function ($device) {
+                // Filtrar solo dispositivos revisados
+                // Si el reporte está aprobado (status_id = 5), solo incluir dispositivos con is_checked o is_scanned
+                // Si el reporte NO está aprobado, también incluir dispositivos con productos, plagas o respuestas
+                $order = Order::find($this->orderId);
+                $devices = $devices->filter(function ($device) use ($order) {
                     $device_state = $device->states($this->orderId)->first();
                     $is_checked = $device_state ? ($device_state->is_checked || $device_state->is_scanned) : false;
+                    
+                    // Si el reporte está aprobado, solo considerar is_checked/is_scanned
+                    if ($order && $order->status_id == 5) {
+                        return $is_checked;
+                    }
+                    
+                    // Si no está aprobado, también considerar productos, plagas y respuestas
                     $has_products = DeviceProduct::where('device_id', $device->id)
                         ->where('order_id', $this->orderId)
                         ->exists();
@@ -681,6 +690,21 @@ class MyPDF extends TCPDF
                     }
 
                     $questions = $point->questions()->get();
+                    
+                    // Si el reporte está aprobado, filtrar solo preguntas con al menos una respuesta
+                    if ($order && $order->status_id == 5) {
+                        $device_ids = $devices->where('type_control_point_id', $point->id)->pluck('id')->toArray();
+                        $answered_question_ids = OrderIncidents::where('order_id', $this->orderId)
+                            ->whereIn('device_id', $device_ids)
+                            ->whereNotNull('answer')
+                            ->where('answer', '!=', '')
+                            ->pluck('question_id')
+                            ->unique()
+                            ->toArray();
+                        
+                        $questions = $questions->whereIn('id', $answered_question_ids);
+                    }
+                    
                     $new_headers = array_merge($update_headers, $questions->pluck('question')->toArray());
                     if (isset($point)) {
                         $selected_devices = $devices->filter(fn($device) => $device->type_control_point_id == $point->id);
@@ -812,9 +836,12 @@ class MyPDF extends TCPDF
                                     ->answer ?? null;
                             }
 
+                            $answer = $incident ? $incident->answer : null;
+                            $answer = ($answer !== null && trim($answer) !== '') ? $answer : '-';
+
                             $this->setFontSize(8);
                             $this->SetXY($x, $y);
-                            $this->MultiCell($width_td, $step, $incident->answer ?? '-', 0, 'C', true);
+                            $this->MultiCell($width_td, $step, $answer, 0, 'C', true);
                             $x += $width_td;
                         }
                         

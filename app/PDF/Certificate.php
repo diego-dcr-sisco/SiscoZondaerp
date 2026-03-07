@@ -384,11 +384,19 @@ class Certificate
             ->orderBy('nplan', 'ASC')
             ->get();
 
-        // Filtrar solo dispositivos revisados (con is_checked = true o is_scanned = true 
-        // o que tengan productos, plagas o respuestas)
+        // Filtrar solo dispositivos revisados
+        // Si el reporte está aprobado (status_id = 5), solo incluir dispositivos con is_checked o is_scanned
+        // Si el reporte NO está aprobado, también incluir dispositivos con productos, plagas o respuestas
         $devices = $devices->filter(function ($device) {
             $device_state = $device->deviceStates->first();
             $is_checked = $device_state ? ($device_state->is_checked || $device_state->is_scanned) : false;
+            
+            // Si el reporte está aprobado, solo considerar is_checked/is_scanned
+            if ($this->order->status_id == 5) {
+                return $is_checked;
+            }
+            
+            // Si no está aprobado, también considerar productos, plagas y respuestas
             $has_products = $device->deviceProducts->count() > 0;
             $has_pests = $device->devicePests->count() > 0;
             $has_answers = $device->incidents->filter(function($incident) {
@@ -420,6 +428,20 @@ class Certificate
                         ->unique()
                 )->get();
 
+                // Si el reporte está aprobado, filtrar solo preguntas con al menos una respuesta
+                if ($this->order->status_id == 5) {
+                    $device_ids = $controlPointDevices->pluck('id')->toArray();
+                    $answered_question_ids = OrderIncidents::where('order_id', $this->order->id)
+                        ->whereIn('device_id', $device_ids)
+                        ->whereNotNull('answer')
+                        ->where('answer', '!=', '')
+                        ->pluck('question_id')
+                        ->unique()
+                        ->toArray();
+                    
+                    $questions = $questions->whereIn('id', $answered_question_ids);
+                }
+
                 $question_headers = $questions->pluck('question')->toArray();
                 $headers = array_merge(['Zona', 'Código', 'Producto y consumo', 'Valor revisión'], $question_headers);
 
@@ -438,9 +460,12 @@ class Certificate
                             ->where('question_id', $question->id)
                             ->first();
 
+                        $answer = $incident ? $incident->answer : null;
+                        $answer = ($answer !== null && trim($answer) !== '') ? $answer : '-';
+
                         $question_data[] = [
                             'question' => $question->question,
-                            'answer' => $incident->answer ?? '',
+                            'answer' => $answer,
                         ];
                     }
 

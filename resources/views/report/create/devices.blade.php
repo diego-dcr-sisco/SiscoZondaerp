@@ -8,7 +8,7 @@
 @endphp
 
 @foreach ($order->services as $service)
-    <div class="mb-3">
+    <div class="mb-3" id="device-action-buttons" style="{{ $order->status_id == 5 ? 'display: none;' : '' }}">
         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newDeviceModal">
             <i class="bi bi-plus-lg"></i> Agregar revision especial
         </button>
@@ -30,6 +30,7 @@
                 <th scope="col">Zona</th>
                 <th scope="col">Plaga(s)</th>
                 <th scope="col">Producto(s)</th>
+                <th scope="col">Preguntas</th>
                 <th scope="col"></th>
                 <th scope="col"></th>
             </tr>
@@ -48,12 +49,19 @@
                 {{-- Dispositivos Revisados --}}
                 @if ($reviewedDevices->count() > 0)
                     <tr class="table-success" id="reviewed-devices-header">
-                        <td colspan="9" class="fw-bold text-center">
+                        <td colspan="10" class="fw-bold text-center">
                             <i class="bi bi-check-circle-fill me-2"></i>
                             DISPOSITIVOS REVISADOS (<span id="reviewed-count">{{ $reviewedDevices->count() }}</span>)
                         </td>
                     </tr>
                     @foreach ($reviewedDevices as $device)
+                        @php
+                            $totalQuestions = count($device['questions']);
+                            $answeredQuestions = collect($device['questions'])->filter(function($q) {
+                                return !empty($q['answer']) && trim($q['answer']) !== '';
+                            })->count();
+                            $missingQuestions = $totalQuestions - $answeredQuestions;
+                        @endphp
                         <tr id="device-row-{{ $device['id'] }}" data-device-id="{{ $device['id'] }}" class="device-row-reviewed">
                             <th scope="row">{{ $device['nplan'] }}</th>
                             <td class="fw-bold text-primary">{{ $device['code'] }}</td>
@@ -82,6 +90,19 @@
                                         </li>
                                     @endforeach
                                 </ul>
+                            </td>
+                            <td class="text-center">
+                                @if ($missingQuestions > 0)
+                                    <span class="badge bg-warning text-dark" data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" data-bs-title="Faltan {{ $missingQuestions }} pregunta(s) por responder">
+                                        <i class="bi bi-exclamation-triangle-fill"></i> {{ $answeredQuestions }}/{{ $totalQuestions }}
+                                    </span>
+                                @else
+                                    <span class="badge bg-success" data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" data-bs-title="Todas las preguntas están respondidas">
+                                        <i class="bi bi-check-circle-fill"></i> {{ $totalQuestions }}/{{ $totalQuestions }}
+                                    </span>
+                                @endif
                             </td>
                             <td>
                                 <span id="device{{ $device['id'] }}-is_checked"
@@ -112,12 +133,19 @@
                 {{-- Dispositivos NO Revisados --}}
                 @if ($notReviewedDevices->count() > 0)
                     <tr class="table-warning" id="pending-devices-header">
-                        <td colspan="9" class="fw-bold text-center">
+                        <td colspan="10" class="fw-bold text-center">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
                             DISPOSITIVOS PENDIENTES DE REVISIÓN (<span id="pending-count">{{ $notReviewedDevices->count() }}</span>)
                         </td>
                     </tr>
                     @foreach ($notReviewedDevices as $device)
+                        @php
+                            $totalQuestions = count($device['questions']);
+                            $answeredQuestions = collect($device['questions'])->filter(function($q) {
+                                return !empty($q['answer']) && trim($q['answer']) !== '';
+                            })->count();
+                            $missingQuestions = $totalQuestions - $answeredQuestions;
+                        @endphp
                         <tr id="device-row-{{ $device['id'] }}" data-device-id="{{ $device['id'] }}" class="device-row-pending">
                             <th scope="row">{{ $device['nplan'] }}</th>
                             <td class="fw-bold text-primary">{{ $device['code'] }}</td>
@@ -147,6 +175,19 @@
                                     @endforeach
                                 </ul>
                             </td>
+                            <td class="text-center">
+                                @if ($missingQuestions > 0)
+                                    <span class="badge bg-warning text-dark" data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" data-bs-title="Faltan {{ $missingQuestions }} pregunta(s) por responder">
+                                        <i class="bi bi-exclamation-triangle-fill"></i> {{ $answeredQuestions }}/{{ $totalQuestions }}
+                                    </span>
+                                @else
+                                    <span class="badge bg-success" data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" data-bs-title="Todas las preguntas están respondidas">
+                                        <i class="bi bi-check-circle-fill"></i> {{ $totalQuestions }}/{{ $totalQuestions }}
+                                    </span>
+                                @endif
+                            </td>
                             <td>
                                 <span id="device{{ $device['id'] }}-is_checked"
                                     class="{{ $device['states']['is_checked'] ? 'text-success' : 'text-danger' }} m-1"
@@ -174,7 +215,7 @@
                 @endif
             @else
                 <tr id="table-row-empty">
-                    <td class="text-danger" colspan="9">
+                    <td class="text-danger" colspan="10">
                         No se encuentran dispositivos asociados a este servicio.
                     </td>
                 </tr>

@@ -731,4 +731,21 @@
         }));
         $('.handleP').prop('disabled', true);
     }
+
+    // Actualizar badge de aprobado cuando cambia el estado
+    $(document).ready(function() {
+        $('#order-status').on('change', function() {
+            const statusId = parseInt($(this).val());
+            const approvedBadge = $('#approved-badge');
+            const deviceButtons = $('#device-action-buttons');
+            
+            if (statusId === 5) {
+                approvedBadge.fadeIn();
+                deviceButtons.fadeOut();
+            } else {
+                approvedBadge.fadeOut();
+                deviceButtons.fadeIn();
+            }
+        });
+    });
 </script>
