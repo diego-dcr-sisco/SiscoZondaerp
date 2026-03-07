@@ -612,6 +612,13 @@ class MyPDF extends TCPDF
         $this->SetFillColor(130, 178, 221);
         $this->Cell($width, 5, 'REVISION DE DISPOSITIVOS DE CONTROL', 0, 0, 'L', true);
         $this->Ln();
+        $this->setFontSize(7);
+        $this->SetTextColor(85, 85, 85);
+        $this->setFont('helvetica', 'I');
+        $this->Cell($width, 4, '* Se muestran unicamente los dispositivos que fueron revisados durante el servicio.', 0, 0, 'L');
+        $this->Ln();
+        $this->SetTextColor(0, 0, 0);
+        $this->setFont('helvetica', '');
         $this->setFontSize(8);
 
         if ($floorplans->isNotEmpty()) {
@@ -626,6 +633,27 @@ class MyPDF extends TCPDF
                     continue;
 
                 $devices = $floorplan->devices($version)->orderBy('itemnumber', 'asc')->get();
+                
+                // Filtrar solo dispositivos revisados (con is_checked = true o is_scanned = true 
+                // o que tengan productos, plagas o respuestas)
+                $devices = $devices->filter(function ($device) {
+                    $device_state = $device->states($this->orderId)->first();
+                    $is_checked = $device_state ? ($device_state->is_checked || $device_state->is_scanned) : false;
+                    $has_products = DeviceProduct::where('device_id', $device->id)
+                        ->where('order_id', $this->orderId)
+                        ->exists();
+                    $has_pests = DevicePest::where('device_id', $device->id)
+                        ->where('order_id', $this->orderId)
+                        ->exists();
+                    $has_answers = OrderIncidents::where('device_id', $device->id)
+                        ->where('order_id', $this->orderId)
+                        ->whereNotNull('answer')
+                        ->where('answer', '!=', '')
+                        ->exists();
+                    
+                    return $is_checked || $has_products || $has_pests || $has_answers;
+                });
+                
                 if ($devices->isEmpty())
                     continue;
 

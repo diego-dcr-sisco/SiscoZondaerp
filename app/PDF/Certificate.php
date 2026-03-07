@@ -384,6 +384,20 @@ class Certificate
             ->orderBy('nplan', 'ASC')
             ->get();
 
+        // Filtrar solo dispositivos revisados (con is_checked = true o is_scanned = true 
+        // o que tengan productos, plagas o respuestas)
+        $devices = $devices->filter(function ($device) {
+            $device_state = $device->deviceStates->first();
+            $is_checked = $device_state ? ($device_state->is_checked || $device_state->is_scanned) : false;
+            $has_products = $device->deviceProducts->count() > 0;
+            $has_pests = $device->devicePests->count() > 0;
+            $has_answers = $device->incidents->filter(function($incident) {
+                return !empty($incident->answer);
+            })->count() > 0;
+            
+            return $is_checked || $has_products || $has_pests || $has_answers;
+        });
+
         // Agrupar dispositivos por floorplan_id
         $devicesByFloorplan = $devices->groupBy('floorplan_id');
 

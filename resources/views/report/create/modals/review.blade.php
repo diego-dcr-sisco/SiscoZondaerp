@@ -806,6 +806,95 @@
                 ".tooltip-inner": title
             });
         }
+
+        // Mover el dispositivo entre secciones si es necesario
+        moveDeviceBetweenSections(deviceId, isChecked);
+    }
+
+    function moveDeviceBetweenSections(deviceId, isChecked) {
+        const $deviceRow = $(`#device-row-${deviceId}`);
+        
+        if (!$deviceRow.length) {
+            console.warn(`Fila del dispositivo ${deviceId} no encontrada`);
+            return;
+        }
+
+        // Si debe estar en la sección de revisados
+        if (isChecked && $deviceRow.hasClass('device-row-pending')) {
+            // Verificar si existe el encabezado de revisados
+            let $reviewedHeader = $('#reviewed-devices-header');
+            
+            if (!$reviewedHeader.length) {
+                // Crear el encabezado de revisados si no existe
+                const $pendingHeader = $('#pending-devices-header');
+                const $newHeader = $(`
+                    <tr class="table-success" id="reviewed-devices-header">
+                        <td colspan="9" class="fw-bold text-center">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            DISPOSITIVOS REVISADOS (<span id="reviewed-count">0</span>)
+                        </td>
+                    </tr>
+                `);
+                $pendingHeader.before($newHeader);
+                $reviewedHeader = $('#reviewed-devices-header');
+            }
+
+            // Mover la fila después del encabezado de revisados
+            $deviceRow.removeClass('device-row-pending').addClass('device-row-reviewed');
+            $reviewedHeader.after($deviceRow.detach());
+
+            // Actualizar contadores
+            const reviewedCount = $('.device-row-reviewed').length;
+            const pendingCount = $('.device-row-pending').length;
+            $('#reviewed-count').text(reviewedCount);
+            $('#pending-count').text(pendingCount);
+
+            // Si no quedan dispositivos pendientes, ocultar ese encabezado
+            if (pendingCount === 0) {
+                $('#pending-devices-header').hide();
+            }
+
+            console.log(`✅ Dispositivo ${deviceId} movido a REVISADOS`);
+        }
+        // Si debe estar en la sección de pendientes
+        else if (!isChecked && $deviceRow.hasClass('device-row-reviewed')) {
+            // Verificar si existe el encabezado de pendientes
+            let $pendingHeader = $('#pending-devices-header');
+            
+            if (!$pendingHeader.length) {
+                // Crear el encabezado de pendientes si no existe
+                const $reviewedHeader = $('#reviewed-devices-header');
+                const $newHeader = $(`
+                    <tr class="table-warning" id="pending-devices-header">
+                        <td colspan="9" class="fw-bold text-center">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            DISPOSITIVOS PENDIENTES DE REVISIÓN (<span id="pending-count">0</span>)
+                        </td>
+                    </tr>
+                `);
+                $reviewedHeader.after($newHeader);
+                $pendingHeader = $('#pending-devices-header');
+            } else {
+                $pendingHeader.show();
+            }
+
+            // Mover la fila después del encabezado de pendientes
+            $deviceRow.removeClass('device-row-reviewed').addClass('device-row-pending');
+            $pendingHeader.after($deviceRow.detach());
+
+            // Actualizar contadores
+            const reviewedCount = $('.device-row-reviewed').length;
+            const pendingCount = $('.device-row-pending').length;
+            $('#reviewed-count').text(reviewedCount);
+            $('#pending-count').text(pendingCount);
+
+            // Si no quedan dispositivos revisados, ocultar ese encabezado
+            if (reviewedCount === 0) {
+                $('#reviewed-devices-header').hide();
+            }
+
+            console.log(`⚠️ Dispositivo ${deviceId} movido a PENDIENTES`);
+        }
     }
 
 

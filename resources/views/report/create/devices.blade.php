@@ -47,14 +47,14 @@
 
                 {{-- Dispositivos Revisados --}}
                 @if ($reviewedDevices->count() > 0)
-                    <tr class="table-success">
+                    <tr class="table-success" id="reviewed-devices-header">
                         <td colspan="9" class="fw-bold text-center">
                             <i class="bi bi-check-circle-fill me-2"></i>
-                            DISPOSITIVOS REVISADOS ({{ $reviewedDevices->count() }})
+                            DISPOSITIVOS REVISADOS (<span id="reviewed-count">{{ $reviewedDevices->count() }}</span>)
                         </td>
                     </tr>
                     @foreach ($reviewedDevices as $device)
-                        <tr>
+                        <tr id="device-row-{{ $device['id'] }}" data-device-id="{{ $device['id'] }}" class="device-row-reviewed">
                             <th scope="row">{{ $device['nplan'] }}</th>
                             <td class="fw-bold text-primary">{{ $device['code'] }}</td>
                             <td>
@@ -111,14 +111,14 @@
 
                 {{-- Dispositivos NO Revisados --}}
                 @if ($notReviewedDevices->count() > 0)
-                    <tr class="table-warning">
+                    <tr class="table-warning" id="pending-devices-header">
                         <td colspan="9" class="fw-bold text-center">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            DISPOSITIVOS PENDIENTES DE REVISIÓN ({{ $notReviewedDevices->count() }})
+                            DISPOSITIVOS PENDIENTES DE REVISIÓN (<span id="pending-count">{{ $notReviewedDevices->count() }}</span>)
                         </td>
                     </tr>
                     @foreach ($notReviewedDevices as $device)
-                        <tr>
+                        <tr id="device-row-{{ $device['id'] }}" data-device-id="{{ $device['id'] }}" class="device-row-pending">
                             <th scope="row">{{ $device['nplan'] }}</th>
                             <td class="fw-bold text-primary">{{ $device['code'] }}</td>
                             <td>
