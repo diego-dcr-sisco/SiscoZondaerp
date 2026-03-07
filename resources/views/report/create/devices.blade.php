@@ -8,7 +8,7 @@
 @endphp
 
 @foreach ($order->services as $service)
-    <div class="mb-3" id="device-action-buttons" style="{{ $order->status_id == 5 ? 'display: none;' : '' }}">
+    <div class="mb-3">
         <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#newDeviceModal">
             <i class="bi bi-plus-lg"></i> Agregar revision especial
         </button>

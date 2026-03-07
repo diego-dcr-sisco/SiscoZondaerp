@@ -737,14 +737,11 @@
         $('#order-status').on('change', function() {
             const statusId = parseInt($(this).val());
             const approvedBadge = $('#approved-badge');
-            const deviceButtons = $('#device-action-buttons');
             
             if (statusId === 5) {
                 approvedBadge.fadeIn();
-                deviceButtons.fadeOut();
             } else {
                 approvedBadge.fadeOut();
-                deviceButtons.fadeIn();
             }
         });
     });
