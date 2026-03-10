@@ -136,5 +136,6 @@
         const new_client_account = true;
         const paths = [];
         const clients = [];
+        var selected_sedes = [];
     </script>
 @endsection

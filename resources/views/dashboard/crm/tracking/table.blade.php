@@ -101,7 +101,7 @@
                     $('#trackingModal').modal('show');
                 },
                 error: function(xhr, status, error) {
-                    console.error('Error fetching tracking data:', error);
+                    //console.error('Error fetching tracking data:', error);
                 }
             });
         }

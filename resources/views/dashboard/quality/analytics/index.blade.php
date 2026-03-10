@@ -412,7 +412,7 @@
             try {
                 window.globalChartReferences[chartName].destroy();
             } catch (error) {
-                console.error(`Error destruyendo ${chartName}:`, error);
+                //console.error(`Error destruyendo ${chartName}:`, error);
             } finally {
                 window.globalChartReferences[chartName] = null;
             }
@@ -423,7 +423,7 @@
     window.createConsumptionChart = function(data, canvasId = 'consumptionChart') {
     const ctx = document.getElementById(canvasId);
     if (!ctx) {
-        console.error(`Canvas ${canvasId} no encontrado`);
+        //console.error(`Canvas ${canvasId} no encontrado`);
         return null;
     }
 
@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Verificar que los elementos existen
     if (!dateRangeInput || !filterForm) {
-        console.error('Elementos del formulario no encontrados');
+        //console.error('Elementos del formulario no encontrados');
         return;
     }
 
@@ -652,7 +652,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.globalChartReferences.consumptionChart = window.createConsumptionChart(chartData);
         
     } catch (error) {
-        console.error('Error al inicializar gráfica:', error);
+        //console.error('Error al inicializar gráfica:', error);
     }
 });
 </script>

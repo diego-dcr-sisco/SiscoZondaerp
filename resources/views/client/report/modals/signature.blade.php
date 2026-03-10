@@ -108,7 +108,7 @@
                     base64Image = await convertImageToBase64(imageFile);
                 } catch (error) {
                     alert("Error al procesar la imagen");
-                    console.error(error);
+                    //console.error(error);
                     return;
                 }
             }
@@ -146,7 +146,7 @@
                 error: function(xhr) {
                     const errorMessage = xhr.responseJSON?.message || "Error en el servidor";
                     alert(errorMessage);
-                    console.error(xhr);
+                    //console.error(xhr);
                 },
             });
         } else {

@@ -46,17 +46,20 @@ class Certificate
 
     function addBase64Prefix($base64String)
     {
-        $prefix = 'data:image/png;base64,';
+        $prefix = 'data:image/png;base64,';        
         if ($base64String === null || trim($base64String) === '') {
             return null;
         }
-        if (trim($base64String) === $prefix) {
+        
+        $base64String = trim($base64String);
+        if ($base64String === $prefix || $base64String === 'data:image/png;base64,' || $base64String === 'data:image/jpeg;base64,') {
             return null;
-        }
-        if (preg_match('/^[a-zA-Z0-9\/\r\n+]*={0,2}$/', $base64String)) {
-            return $prefix . $base64String;
-        }
-        return $base64String;
+        }    
+            
+        if (strpos($base64String, 'data:image') === 0) {
+            return $base64String;
+        }        
+        return $prefix . $base64String;
     }
 
     private function ensureTempSignatureDir()
@@ -157,9 +160,10 @@ class Certificate
             'programmed_date' => Carbon::parse($this->order->programmed_date)->format('d-m-Y'),
             'start' => Carbon::parse($this->order->programmed_date)->format('d-m-Y') . ' - ' . Carbon::parse($this->order->start_time)->format('H:i'),
             'end' => Carbon::parse($this->order->completed_date)->format('d-m-Y') . ' - ' . Carbon::parse($this->order->end_time)->format('H:i'),
-            'notes' => $this->order->notes,
+            'notes' => $this->order->notes ?? $this->order->technical_observations . '<br>' . $this->order->comments,
         ];
-    }
+
+        }
 
     public function branch()
     {
@@ -380,6 +384,21 @@ class Certificate
             ->orderBy('nplan', 'ASC')
             ->get();
 
+        // Filtrar solo dispositivos revisados
+        // Incluir dispositivos que tengan is_checked, productos, plagas o respuestas
+        // (estos son los dispositivos que estaban revisados al momento de aprobar o en proceso)
+        $devices = $devices->filter(function ($device) {
+            $device_state = $device->deviceStates->first();
+            $is_checked = $device_state ? ($device_state->is_checked || $device_state->is_scanned) : false;
+            $has_products = $device->deviceProducts->count() > 0;
+            $has_pests = $device->devicePests->count() > 0;
+            $has_answers = $device->incidents->filter(function($incident) {
+                return !empty($incident->answer);
+            })->count() > 0;
+            
+            return $is_checked || $has_products || $has_pests || $has_answers;
+        });
+
         // Agrupar dispositivos por floorplan_id
         $devicesByFloorplan = $devices->groupBy('floorplan_id');
 
@@ -402,6 +421,20 @@ class Certificate
                         ->unique()
                 )->get();
 
+                // Si el reporte está aprobado, filtrar solo preguntas con al menos una respuesta
+                if ($this->order->status_id == 5) {
+                    $device_ids = $controlPointDevices->pluck('id')->toArray();
+                    $answered_question_ids = OrderIncidents::where('order_id', $this->order->id)
+                        ->whereIn('device_id', $device_ids)
+                        ->whereNotNull('answer')
+                        ->where('answer', '!=', '')
+                        ->pluck('question_id')
+                        ->unique()
+                        ->toArray();
+                    
+                    $questions = $questions->whereIn('id', $answered_question_ids);
+                }
+
                 $question_headers = $questions->pluck('question')->toArray();
                 $headers = array_merge(['Zona', 'Código', 'Producto y consumo', 'Valor revisión'], $question_headers);
 
@@ -420,9 +453,12 @@ class Certificate
                             ->where('question_id', $question->id)
                             ->first();
 
+                        $answer = $incident ? $incident->answer : null;
+                        $answer = ($answer !== null && trim($answer) !== '') ? $answer : '-';
+
                         $question_data[] = [
                             'question' => $question->question,
-                            'answer' => $incident->answer ?? '',
+                            'answer' => $answer,
                         ];
                     }
 
@@ -482,8 +518,9 @@ class Certificate
     }
     public function notes()
     {
-        $this->data['notes'] = $this->normalizeHtmlForPdf(!empty($this->order->notes) && trim($this->order->notes) != '<br>'
-            ? $this->order->notes
+        $temp_notes = $this->order->notes ?? $this->order->technical_observations . '<br>' . $this->order->comments;
+        $this->data['notes'] = $this->normalizeHtmlForPdf(!empty($temp_notes) && trim($temp_notes) != '<br>'
+            ? $temp_notes
             : 'Sin notas');
     }
 

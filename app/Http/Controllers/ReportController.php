@@ -72,7 +72,8 @@ class ReportController extends Controller
 {
 
     private $file_answers_path = 'datas/json/answers.json';
-    private $temp_bulk = 'temp/bulk_certificates/';
+    private $bulkPrint_path = 'bulk_print/';
+
 
     private $recommendations = [
         'Mantener puertas, accesos cerrados, cuando la operación no lo requiera, para evitar el ingreso de organismos al interior.',
@@ -446,23 +447,36 @@ class ReportController extends Controller
 
         $incidents = OrderIncidents::where('order_id', $order->id)->get();
 
-        if ($order->status_id == 5 && $incidents->isNotEmpty()) {
-            $devices_incidents = $incidents->pluck('device_id')->toArray();
-            $devices = Device::whereIn('id', $devices_incidents)->orderBy('nplan', 'ASC')->get();
+        // Obtener todos los dispositivos asociados a la orden según versión del floorplan
+        $found_devices = $this->getDevicesByVersion($id);
+        $all_devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
 
-            /*$count = array_count_values($devices_1->pluck('version')->toArray());
-            $maxsum = max($count);
-            $version = array_search($maxsum, $count);
-
-            $found_devices = $this->getDevicesByVersion($id);
-            //dd($found_devices);
-            //$found_devices = array_merge($devices_1->pluck('id')->toArray(), array_diff($found_devices, $devices_1->pluck('id')->toArray()));
-            $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();*/
-
-        } else {
-            $found_devices = $this->getDevicesByVersion($id);
-            $devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
-        }
+        // Separar dispositivos revisados y no revisados
+        // Un dispositivo está revisado si tiene:
+        // 1. Incidentes/respuestas registradas
+        // 2. Productos aplicados
+        // 3. Plagas registradas
+        $devices_incidents_ids = $incidents->pluck('device_id')->unique()->toArray();
+        $devices_with_products = DeviceProduct::where('order_id', $order->id)
+            ->pluck('device_id')->unique()->toArray();
+        $devices_with_pests = DevicePest::where('order_id', $order->id)
+            ->pluck('device_id')->unique()->toArray();
+        
+        // Combinar todos los IDs de dispositivos que tienen algún tipo de registro
+        $reviewed_device_ids = array_unique(array_merge(
+            $devices_incidents_ids,
+            $devices_with_products,
+            $devices_with_pests
+        ));
+        
+        // Dispositivos revisados (con incidentes, productos o plagas)
+        $reviewed_devices = $all_devices->whereIn('id', $reviewed_device_ids);
+        
+        // Dispositivos no revisados (sin incidentes, productos ni plagas)
+        $not_reviewed_devices = $all_devices->whereNotIn('id', $reviewed_device_ids);
+        
+        // Combinar: primero revisados, luego no revisados
+        $devices = $reviewed_devices->merge($not_reviewed_devices);
 
         $control_points = ControlPoint::whereIn('id', $devices->pluck('type_control_point_id')->unique())->get();
 
@@ -535,6 +549,24 @@ class ReportController extends Controller
 
             $device_states = $device?->states($order->id)->first() ?? null;
 
+            // Determinar si el dispositivo está revisado:
+            // 1. Si is_scanned es true (app actual)
+            // 2. Si device_states->is_checked es true (guardado previamente)
+            // 3. Si tiene incidencias/respuestas
+            // 4. Si tiene productos aplicados
+            // 5. Si tiene plagas registradas
+            $hasAnswers = collect($questions_data)->filter(function($q) {
+                return !empty($q['answer']);
+            })->count() > 0;
+            $hasProducts = $device->products($order->id)->count() > 0;
+            $hasPests = $device->pests($order->id)->count() > 0;
+            
+            $isChecked = ($device_states?->is_scanned ?? false) || 
+                        ($device_states?->is_checked ?? false) ||
+                        $hasAnswers ||
+                        $hasProducts ||
+                        $hasPests;
+
             $devices_data[] = [
                 'id' => $device->id,
                 'nplan' => $device->nplan,
@@ -584,8 +616,7 @@ class ReportController extends Controller
                     'order_id' => $order->id,
                     'device_id' => $device->id,
                     'is_scanned' => $device_states->is_scanned ?? false,
-                    //'is_checked' => (($device_states?->is_checked ?? false) || count($questions_data) > 0),
-                    'is_checked' => $device_states?->is_checked ?? false,
+                    'is_checked' => $isChecked,
                     'observations' => $device_states->observations ?? null,
                     'device_image' => $device_states->device_image ?? null
                 ]
@@ -944,7 +975,7 @@ class ReportController extends Controller
 
     public function generate(Request $request, string $orderId)
     {
-        $propagate = json_decode($request->input('summary_services'));
+        /*$propagate = json_decode($request->input('summary_services'));
 
         $order = Order::find($orderId);
         $notes = $request->notes;
@@ -989,7 +1020,7 @@ class ReportController extends Controller
                             ->delete();
                     }
                 } else {
-                    */
+                    
                 OrderRecommendation::updateOrCreate([
                     'order_id' => $order->id,
                     'service_id' => $service->id
@@ -1090,16 +1121,31 @@ class ReportController extends Controller
         // dd($data);
 
         if (!$op_id) {
-            $order_product = OrderProduct::create([
-                'order_id' => $order->id,
-                'product_id' => $data['product_id'],
-                'service_id' => $data['service_id'],
-                'metric_id' => $data['metric_id'] ?? null,
-                'application_method_id' => $data['application_method_id'] ?? null,
-                'lot_id' => $data['lot_id'],
-                'amount' => $data['amount'],
-                'dosage' => $data['dosage']
-            ]);
+            // Buscar si ya existe un OrderProduct con las mismas características
+            $existing_order_product = OrderProduct::where('order_id', $order->id)
+                ->where('product_id', $data['product_id'])
+                ->where('application_method_id', $data['application_method_id'] ?? null)
+                ->where('lot_id', $data['lot_id'])
+                ->first();
+
+            if ($existing_order_product) {
+                // Si existe, sumar la cantidad
+                $existing_order_product->amount += $data['amount'];
+                $existing_order_product->save();
+                $order_product = $existing_order_product;
+            } else {
+                // Si no existe, crear uno nuevo
+                $order_product = OrderProduct::create([
+                    'order_id' => $order->id,
+                    'product_id' => $data['product_id'],
+                    'service_id' => $data['service_id'],
+                    'metric_id' => $data['metric_id'] ?? null,
+                    'application_method_id' => $data['application_method_id'] ?? null,
+                    'lot_id' => $data['lot_id'],
+                    'amount' => $data['amount'],
+                    'dosage' => $data['dosage']
+                ]);
+            }
 
         } else {
             $order_product = OrderProduct::find($op_id);
@@ -1298,17 +1344,21 @@ class ReportController extends Controller
         return $pdf->stream($data['filename']);
     }
 
-    public function bulkPrint(Request $request)
+    public function printBulk(Request $request)
     {
         $zip = null;
 
         try {
             // Configuración inicial
-            $timer = date('Y-m-d H:i:s');
+            // Use a filesystem-safe timer (no spaces or colons)
+            $disk = Storage::disk('temp');
+            $timer = date('Ymd_His');
 
-            if (!Storage::exists($this->temp_bulk)) {
-                Storage::makeDirectory($this->temp_bulk);
+            if (!$disk->exists($this->bulkPrint_path)) {
+                $disk->makeDirectory($this->bulkPrint_path);
             }
+
+            Log::info('bulkPrint started', ['timer' => $timer, 'bulkPrint_path' => $this->bulkPrint_path]);
 
             $selected_orders = json_decode($request->input('selectedOrders', '[]'));
             if (empty($selected_orders)) {
@@ -1330,10 +1380,13 @@ class ReportController extends Controller
                     $certificate->devices();
                     $certificate->notes();
                     $certificate->recommendations();
-
+                    $certificate->photoEvidences();
                     $data = $certificate->getData();
-                    $filename = $data['filename'] ?? 'certificado_' . $order_id . '.pdf';
-                    $tempPath = $this->temp_bulk . $timer . '/' . $filename;
+
+                    $filename = "certificado_orden_{$order_id}.pdf";
+                    $filepath = $timer . '/' . $filename;
+
+                    $tempPath = $this->bulkPrint_path . $filepath;
 
                     // Generar PDF
                     $pdf = Pdf::loadView('report.pdf.certificate', $data)
@@ -1343,7 +1396,16 @@ class ReportController extends Controller
                             //'dpi' => 150,
                             'defaultFont' => $data['font_family'] ?? 'Arial'
                         ]);
-                    Storage::put($tempPath, $pdf->output());
+
+                    $disk->put($tempPath, $pdf->output());
+
+                    try {
+                        $fullPath = $disk->path($tempPath);
+                        $size = @filesize($fullPath);
+                        Log::info('PDF stored for bulkPrint', ['order_id' => $order_id, 'tempPath' => $tempPath, 'fullPath' => $fullPath, 'size' => $size]);
+                    } catch (\Exception $e) {
+                        Log::warning('Could not get PDF file info', ['order_id' => $order_id, 'tempPath' => $tempPath, 'error' => $e->getMessage()]);
+                    }
 
                 } catch (\Exception $e) {
                     Log::error("Error generando certificado para orden $order_id: " . $e->getMessage());
@@ -1351,114 +1413,79 @@ class ReportController extends Controller
                 }
             }
 
-            $zip_name = 'certificados.zip';
-            $folder_relative = $this->temp_bulk . $timer . '/';
-            $zip_path = Storage::path($folder_relative . $zip_name);
-            $folder_path = Storage::path($folder_relative);
-
-            // Asegurar que el directorio existe
-            if (!File::isDirectory($folder_path)) {
-                File::makeDirectory($folder_path, 0755, true, true);
-            }
-
-            $zip = new ZipArchive;
-            $zip_status = $zip->open($zip_path, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-
-            if ($zip_status === TRUE) {
-                $files = File::allFiles($folder_path);
-
-                // Solo añadir archivos PDF, excluir el ZIP si ya existe
-                foreach ($files as $file) {
-                    if ($file->getExtension() === 'pdf') {
-                        $relativePath = $file->getFilename();
-                        $zip->addFile($file->getPathname(), $relativePath);
-                    }
-                }
-
-                $zip->close();
-
-                // Verificar que el ZIP se creó
-                if (!file_exists($zip_path)) {
-                    Log::error("ZIP no se creó en: " . $zip_path);
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'No se pudo crear el archivo ZIP'
-                    ], 500);
-                }
-            } else {
-                Log::error("Error al abrir ZIP: " . $zip_status . " - Ruta: " . $zip_path);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se pudo crear el archivo ZIP (código: ' . $zip_status . ')'
-                ], 500);
-            }
-
             return response()->json([
                 'success' => true,
+                'message' => 'Certificados generados exitosamente',
                 'download_url' => route('report.bulk.download', ['timer' => $timer]),
-                'delete_url' => route('report.bulk.delete', ['timer' => $timer])
-            ], 200);
+                'delete_url' => route('report.bulk.delete', ['timer' => $timer]),
+                'timer' => $timer
+            ]);
 
         } catch (\Exception $e) {
             Log::error("Error en bulkPrint: " . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Error al procesar la solicitud: ' . $e->getMessage()
+                'message' => 'Error al generar certificados: ' . $e->getMessage(),
+                'timer' => $timer
             ], 500);
         }
     }
 
-    public function downloadBulk($timer)
+    public function downloadBulk(string $timer)
     {
-        $zip_name = 'certificados.zip';
-        $storage_relative_path = $this->temp_bulk . $timer;
-        $zip_relative_path = $storage_relative_path . '/' . $zip_name;
+        $disk = Storage::disk('temp');
+        $folderPath = $this->bulkPrint_path . $timer;
 
-        // Verificar que el archivo ZIP existe
-        if (!Storage::exists($zip_relative_path)) {
-            return back()->with('error', 'El archivo ZIP no existe o fue eliminado');
-        }
-
-        // Obtener rutas completas
-        $file_path = Storage::path($zip_relative_path);
-
-        // Configurar headers
-        $headers = [
-            'Content-Type' => 'application/zip',
-            'Content-Disposition' => 'attachment; filename="' . $zip_name . '"',
-            'Content-Length' => Storage::size($zip_relative_path),
-        ];
-
-        $response = Response::download($file_path, $zip_name, $headers)
-            ->deleteFileAfterSend(true);
-
-        register_shutdown_function(function () use ($storage_relative_path) {
-            try {
-                if (Storage::exists($storage_relative_path)) {
-                    Storage::deleteDirectory($storage_relative_path);
-                }
-            } catch (\Exception $e) {
-                Log::error("Cleanup failed: " . $e->getMessage());
-            }
-        });
-
-        return $response;
-    }
-
-    public function deleteBulk($timer)
-    {
-        try {
-            $path = $this->temp_bulk . $timer;
-            if (Storage::exists($path)) {
-                Storage::deleteDirectory($path);
-            }
-            return back();
-        } catch (\Exception $e) {
-            Log::error("Error en deleteBulk: " . $e->getMessage());
+        if (!$disk->exists($folderPath)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar el contenido temporal: ' . $e->getMessage()
+                'message' => 'No se encontraron certificados para descargar'
+            ], 404);
+        }
+
+        $files = $disk->files($folderPath);
+        if (empty($files)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontraron certificados para descargar'
+            ], 404);
+        }
+
+        $zipFileName = "certificados_{$timer}.zip";
+        $zipFilePath = $this->bulkPrint_path . $zipFileName;
+
+        try {
+            $zip = new ZipArchive();
+            if ($zip->open($disk->path($zipFilePath), ZipArchive::CREATE) === true) {
+                foreach ($files as $file) {
+                    $relativeName = basename($file);
+                    $zip->addFile($disk->path($file), $relativeName);
+                }
+                $zip->close();
+
+                return response()->download($disk->path($zipFilePath))->deleteFileAfterSend(true);
+            } else {
+                throw new \Exception('No se pudo crear el archivo ZIP');
+            }
+        } catch (\Exception $e) {
+            Log::error("Error creando ZIP para bulkPrint: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el archivo ZIP: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function deleteBulk(string $timer)
+    {
+        $disk = Storage::disk('temp');
+        $folderPath = $this->bulkPrint_path . $timer;
+
+        if ($disk->exists($folderPath)) {
+            $disk->deleteDirectory($folderPath);
+            Log::info("Bulk print folder deleted", ['timer' => $timer, 'folderPath' => $folderPath]);
+        } else {
+            Log::warning("Bulk print folder not found for deletion", ['timer' => $timer, 'folderPath' => $folderPath]);
         }
     }
 
@@ -1517,8 +1544,10 @@ class ReportController extends Controller
                 ], 422);
             }
 
-            // Validar firma solo si no es null y no está vacía
-            if (!empty($data['signature_base64']) && !preg_match('/^data:image\/(jpeg|png);base64,/', $data['signature_base64'])) {
+            // Validar firma solo si fue actualizada y no está vacía
+            $signatureUpdated = isset($data['signature_updated']) && $data['signature_updated'] == 1;
+            
+            if ($signatureUpdated && !empty($data['signature_base64']) && !preg_match('/^data:image\/(jpeg|png);base64,/', $data['signature_base64'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Formato de firma no válido'
@@ -1534,8 +1563,23 @@ class ReportController extends Controller
                 'end_time' => !empty($data['end_time']) ? $data['end_time'] : null,
                 'status_id' => $data['status'] ?? $order->status_id,
                 'signature_name' => !empty($data['signed_by']) ? $data['signed_by'] : null,
-                'customer_signature' => $data['signature_base64'] ?? null,
             ];
+
+            // Solo actualizar la firma si fue modificada Y tiene un valor válido
+            if ($signatureUpdated) {
+                $signatureValue = $data['signature_base64'] ?? null;
+                
+                // Solo actualizar si hay un valor real (no vacío)
+                // Si viene vacío o null, NO modificar el campo (mantener el valor existente)
+                if (!empty($signatureValue) && $signatureValue !== '' && $signatureValue !== 'null') {
+                    $updated_order['customer_signature'] = $signatureValue;
+                }
+                // Si específicamente se quiere borrar la firma, debe venir un flag adicional
+                elseif (isset($data['clear_signature']) && $data['clear_signature'] === true) {
+                    $updated_order['customer_signature'] = null;
+                }
+                // Si no, no incluir el campo en el update (mantener valor existente)
+            }
 
             // Manejar closed_by de manera segura
             if (isset($data['status']) && $data['status'] == 1) {
@@ -1713,6 +1757,52 @@ class ReportController extends Controller
         }
     }
 
+    public function updateRecommendations(Request $request)
+    {
+        $data = json_decode($request->input('recommendations'), true);
+
+        try {
+            $order = Order::findOrFail($data['order_id']);
+
+            if (!$order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found',
+                ], 404);
+            }
+
+            $recommendation = OrderRecommendation::where('order_id', $order->id)
+                ->where('service_id', $data['service_id'])
+                ->first();
+
+            if ($recommendation) {
+                $recommendation->update([
+                    'recommendation_text' => $data['text']
+                ]);
+                $message = 'Recommendations updated successfully';
+            } else {
+                OrderRecommendation::create([
+                    'order_id' => $data['order_id'],
+                    'service_id' => $data['service_id'],
+                    'recommendation_text' => $data['text']
+                ]);
+                $message = 'Recommendations created successfully';
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error processing recommendations',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function isPlainText($text)
     {
         if (empty(trim($text))) {
@@ -1819,6 +1909,24 @@ class ReportController extends Controller
 
             $device_states = $device?->states($order->id)->first() ?? null;
 
+            // Determinar si el dispositivo está revisado:
+            // 1. Si is_scanned es true (app actual)
+            // 2. Si device_states->is_checked es true (guardado previamente)
+            // 3. Si tiene incidencias/respuestas
+            // 4. Si tiene productos aplicados
+            // 5. Si tiene plagas registradas
+            $hasAnswers = collect($questions_data)->filter(function($q) {
+                return !empty($q['answer']);
+            })->count() > 0;
+            $hasProducts = $device->products($order->id)->count() > 0;
+            $hasPests = $device->pests($order->id)->count() > 0;
+            
+            $isChecked = ($device_states?->is_scanned ?? false) || 
+                        ($device_states?->is_checked ?? false) ||
+                        $hasAnswers ||
+                        $hasProducts ||
+                        $hasPests;
+
             $devices_data[] = [
                 'id' => $device->id,
                 'nplan' => $device->nplan,
@@ -1866,7 +1974,7 @@ class ReportController extends Controller
                     'order_id' => $order->id,
                     'device_id' => $device->id,
                     'is_scanned' => $device_states->is_scanned ?? false,
-                    'is_checked' => $device_states->is_checked ?? false,
+                    'is_checked' => $isChecked,
                     'observations' => $device_states->observations ?? null,
                     'device_image' => $device_states->device_image ?? null
                 ]

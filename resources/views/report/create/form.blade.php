@@ -217,6 +217,8 @@
                             <img id="signature-preview" class="border" style="width: 125px;" src="{{ $signature }}"
                                 alt="img_firma">
                             <input type="hidden" id="signature-base64" value="{{ $signature }}">
+                            <input type="hidden" id="signature-changed" value="0">
+                            <input type="hidden" id="signature-original" value="{{ $signature }}">
                         </div>
                     </div>
                     <button type="button" class="btn btn-primary btn-sm mt-2" onclick="updateOrder()">
@@ -560,7 +562,10 @@
                 ['height', ['height']],
                 ['insert', ['table', 'link']],
             ],
-
+            
+            // Configuración para imágenes en base64
+            maximumImageFileSize: 2048000, // 2MB en bytes (será convertido a base64)
+            
             callbacks: {
                 onInit: function() {
                     forceFontSize($(this), 11);
@@ -708,7 +713,7 @@
             return true;
 
         } catch (error) {
-            console.error('Error en setSummary:', error);
+            //console.error('Error en setSummary:', error);
             alert('Error al preparar los datos del reporte');
             return false;
         }
@@ -726,4 +731,18 @@
         }));
         $('.handleP').prop('disabled', true);
     }
+
+    // Actualizar badge de aprobado cuando cambia el estado
+    $(document).ready(function() {
+        $('#order-status').on('change', function() {
+            const statusId = parseInt($(this).val());
+            const approvedBadge = $('#approved-badge');
+            
+            if (statusId === 5) {
+                approvedBadge.fadeIn();
+            } else {
+                approvedBadge.fadeOut();
+            }
+        });
+    });
 </script>

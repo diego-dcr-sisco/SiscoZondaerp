@@ -55,12 +55,17 @@
                                     data-bs-placement="top" data-bs-title="Editar plano">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
+                                <a class="btn btn-sm btn-primary"
+                                    href="{{ route('floorplan.graphic.incidents', ['id' => $floorplan->id]) }}" data-bs-toggle="tooltip"
+                                    data-bs-placement="top" data-bs-title="Ver gráficas">
+                                    <i class="bi bi-bar-chart-fill"></i>
+                                </a>
                                 {{--<a class="btn btn-sm btn-warning"
                                     href="{{ route('floorplan.print', ['id' => $floorplan->id, 'type' => 1]) }}"
                                     data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Imprimir plano">
                                     <i class="bi bi-printer-fill"></i>
                                 </a>--}}
-                                <a class="btn btn-sm btn-primary"
+                                <a class="btn btn-sm btn-dark"
                                     href="{{ route('floorplan.qr', ['id' => $floorplan->id]) }}" data-bs-toggle="tooltip"
                                     data-bs-placement="top" data-bs-title="QRs">
                                     <i class="bi bi-qr-code"></i>

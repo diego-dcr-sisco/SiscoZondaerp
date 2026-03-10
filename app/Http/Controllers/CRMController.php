@@ -38,27 +38,27 @@ class CRMController extends Controller
         $colors = [];
         $baseColors = [
             'blue' => [
-                'base' => [21, 67, 96],
+                'base' => [10, 41, 134], // True Cobalt #0A2986
                 'variations' => 5,
             ],
             'red' => [
-                'base' => [148, 49, 38],
+                'base' => [222, 82, 59], // Fiery Terracotta #DE523B
                 'variations' => 5,
             ],
             'yellow' => [
-                'base' => [255, 206, 86],
+                'base' => [183, 68, 83], // Dusty Mauve #B74453
                 'variations' => 5,
             ],
             'green' => [
-                'base' => [75, 192, 192],
+                'base' => [2, 38, 90], // Deep Navy #02265A
                 'variations' => 5,
             ],
             'purple' => [
-                'base' => [153, 102, 255],
+                'base' => [81, 42, 135], // Indigo Velvet #512A87
                 'variations' => 5,
             ],
             'orange' => [
-                'base' => [255, 159, 64],
+                'base' => [119, 55, 116], // Velvet Purple #773774
                 'variations' => 5,
             ],
             'random' => [

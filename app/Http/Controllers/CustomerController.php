@@ -918,7 +918,7 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
-            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
+            'Estadisticas' => route('customer.graphics', ['id' => $customer->id]),
         ];
         return view('customer.show.files', compact('customer', 'filenames', 'navigation', 'service_types'));
     }
@@ -936,7 +936,7 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
-            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
+            'Estadisticas' => route('customer.graphics', ['id' => $customer->id]),
         ];
         return view('customer.show.floorplans', compact('customer', 'navigation', 'service_types', 'services'));
     }
@@ -958,7 +958,7 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
-            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
+            'Estadisticas' => route('customer.graphics', ['id' => $customer->id]),
         ];
         return view('customer.show.portal', compact('customer', 'navigation', 'service_types', 'services', 'access'));
     }
@@ -975,7 +975,7 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
-            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
+            'Estadisticas' => route('customer.graphics', ['id' => $customer->id]),
         ];
 
         return view('customer.show.areas', compact('customer', 'zone_types', 'navigation', 'service_types'));
@@ -1046,7 +1046,7 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
-            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
+            'Estadisticas' => route('customer.graphics', ['id' => $customer->id]),
         ];
 
         return view(
@@ -1553,7 +1553,7 @@ class CustomerController extends Controller
             'Áreas de aplicación' => route('customer.show.sede.areas', ['id' => $customer->id]),
             //'Seguimientos' => route('customer.tracking', ['id' => $customer->id]),
             'Cotizaciones' => route('customer.quote', ['id' => $customer->id, 'class' => 'customer']),
-            'Graficas' => route('customer.graphics', ['id' => $customer->id]),
+            'Estadisticas' => route('customer.graphics', ['id' => $customer->id]),
         ];
 
         // Obtener áreas de aplicación sin consulta adicional

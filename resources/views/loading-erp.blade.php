@@ -16,6 +16,7 @@
             --color5: #1D2D83;      /* Azul púrpura */
             --color-accent: #5eead4; /* Verde turquesa para acentos */
             --bg-dark: #0b1320;
+            --white: #ffffff;
         }
 
         * {
@@ -199,45 +200,42 @@
             line-height: 1.5;
         }
 
-        /* BARRA DE PROGRESO CON GRADIENTE DEL LOGIN */
+        /* BARRA DE PROGRESO EN BLANCO */
         .progress-container {
             width: 100%;
             height: 8px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15); /* Fondo más claro para contraste */
             border-radius: 4px;
             overflow: hidden;
             position: relative;
             margin-top: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1); /* Borde sutil */
         }
 
         .progress-bar {
             height: 100%;
             width: 0%;
             background: linear-gradient(90deg, 
-                var(--color1) 0%, 
-                var(--color2) 25%, 
-                var(--color3) 50%, 
-                var(--color4) 75%, 
-                var(--color5) 100%);
-            background-size: 200% 100%;
-            animation: 
-                load 3s ease forwards,
-                gradientShift 2s ease infinite alternate;
+                rgba(255, 255, 255, 0.9) 0%, 
+                rgba(255, 255, 255, 1) 50%, 
+                rgba(255, 255, 255, 0.9) 100%);
             border-radius: 4px;
             position: relative;
             overflow: hidden;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); /* Brillo suave */
         }
 
+        /* Efecto de brillo animado en la barra blanca */
         .progress-bar::after {
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
+            left: -100%;
             width: 100%;
             height: 100%;
             background: linear-gradient(90deg, 
                 transparent, 
-                rgba(255, 255, 255, 0.4), 
+                rgba(255, 255, 255, 0.8), 
                 transparent);
             animation: shine 1.5s ease-in-out infinite;
         }
@@ -248,10 +246,11 @@
             right: 0;
             top: -25px;
             font-size: 0.9rem;
-            color: var(--color-accent);
+            color: var(--white);
             font-weight: bold;
             opacity: 0;
             animation: fadeIn 0.5s 0.5s forwards;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
         }
 
         /* ANIMACIONES */
@@ -295,14 +294,9 @@
             to { width: 100%; }
         }
 
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 100% 50%; }
-        }
-
         @keyframes shine {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
+            0% { transform: translateX(0); }
+            100% { transform: translateX(200%); }
         }
 
         @keyframes particleFloat {
@@ -335,13 +329,15 @@
         .status-text {
             margin-top: 25px;
             font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.85); /* Texto más claro */
             height: 20px;
+            font-weight: 500;
         }
 
         .dot-animation {
             display: inline-block;
             animation: dots 1.5s infinite;
+            color: var(--white);
         }
 
         @keyframes dots {
@@ -456,14 +452,25 @@
             let progress = 0;
             
             const interval = setInterval(() => {
-                progress += Math.random() * 10 + 5; // Incremento variable
+                progress += Math.random() * 10 + 10; // Incremento variable
                 if (progress > 100) progress = 100;
                 
                 progressBar.style.width = `${progress}%`;
                 percentage.textContent = `${Math.round(progress)}%`;
                 
+                // Añadir un poco de brillo extra cuando avanza
+                if (progress % 20 < 5) {
+                    progressBar.style.boxShadow = '0 0 20px rgba(255, 255, 255, 0.4)';
+                    setTimeout(() => {
+                        progressBar.style.boxShadow = '0 0 15px rgba(255, 255, 255, 0.3)';
+                    }, 200);
+                }
+                
                 if (progress >= 100) {
                     clearInterval(interval);
+                    
+                    // Efecto final de completado
+                    progressBar.style.boxShadow = '0 0 25px rgba(255, 255, 255, 0.6)';
                     
                     // Pequeña pausa antes de redirigir
                     setTimeout(() => {

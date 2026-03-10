@@ -9,6 +9,9 @@ let selectedDeviceId = null;
 let devices = [];
 let modifiedDevices = new Set();
 let originalCoordinates = {};
+let updatePolygonsTimeout = null; // Para debounce de updatePolygons
+let updatePolygonsCalls = 0; // Contador de llamadas
+let updatePolygonsExecutions = 0; // Contador de ejecuciones reales
 
 const TOLERANCE = 0.00001; // Tolerancia para coordenadas duplicadas (~1 metro)
 
@@ -38,11 +41,14 @@ function initMap(devicesData, customerAddress, customerCity, customerState) {
             }
         });
 
-        // Cargar dispositivos existentes
-        loadExistingDevices();
-        renderDevicesList();
-        updateStatistics();
-        updatePolygons();
+        // Esperar a que el mapa esté completamente cargado
+        google.maps.event.addListenerOnce(map, 'idle', function() {
+            console.log('🗺️ Mapa completamente cargado');
+            // Cargar dispositivos existentes
+            loadExistingDevices();
+            renderDevicesList();
+            updateStatistics();
+        });
     });
 }
 
@@ -83,18 +89,28 @@ function getMapCenter(address, city, state, callback) {
 }
 
 function loadExistingDevices() {
+    console.log('📍 Cargando dispositivos existentes...');
+    console.log('Total de dispositivos:', devices.length);
+    
+    let loadedCount = 0;
     devices.forEach(device => {
         if (device.latitude && device.longitude) {
-            createMarker(device, parseFloat(device.latitude), parseFloat(device.longitude), false);
+            createMarker(device, parseFloat(device.latitude), parseFloat(device.longitude), false, false);
             originalCoordinates[device.id] = {
                 lat: parseFloat(device.latitude),
                 lng: parseFloat(device.longitude)
             };
+            loadedCount++;
         }
     });
+    
+    console.log(`✅ ${loadedCount} dispositivos cargados con coordenadas`);
+    
+    // Actualizar polígonos una sola vez después de cargar todos los dispositivos
+    updatePolygons();
 }
 
-function createMarker(device, lat, lng, isNew = false) {
+function createMarker(device, lat, lng, isNew = false, shouldUpdatePolygons = true) {
     // Eliminar marcador existente si hay uno
     if (markers[device.id]) {
         markers[device.id].setMap(null);
@@ -119,7 +135,7 @@ function createMarker(device, lat, lng, isNew = false) {
             fontSize: '12px',
             fontWeight: 'bold'
         },
-        zIndex: 100
+        zIndex: 200
     });
 
     // Info Window
@@ -159,6 +175,7 @@ function createMarker(device, lat, lng, isNew = false) {
 
         updateStatistics();
         renderDevicesList();
+        updatePolygonsDebounced(); // Usar versión debounced al arrastrar
     });
 
     markers[device.id] = marker;
@@ -168,7 +185,9 @@ function createMarker(device, lat, lng, isNew = false) {
         map.panTo(marker.getPosition());
     }
 
-    updatePolygons();
+    if (shouldUpdatePolygons) {
+        updatePolygonsDebounced(); // Usar versión debounced
+    }
 }
 
 function getInfoWindowContent(device, lat, lng) {
@@ -296,7 +315,26 @@ function sortPointsByAngle(points) {
     });
 }
 
+// Función con debounce para actualizar polígonos (evita llamadas excesivas)
+function updatePolygonsDebounced() {
+    updatePolygonsCalls++;
+    if (updatePolygonsTimeout) {
+        clearTimeout(updatePolygonsTimeout);
+    }
+    updatePolygonsTimeout = setTimeout(() => {
+        updatePolygons();
+    }, 100); // Espera 100ms antes de actualizar
+}
+
 function updatePolygons() {
+    updatePolygonsExecutions++;
+    console.log(`🔷 Actualizando polígonos... (llamada #${updatePolygonsExecutions} de ${updatePolygonsCalls} solicitudes)`);
+    
+    if (!map) {
+        //console.error('❌ Error: El mapa no está inicializado');
+        return;
+    }
+    
     // Limpiar polígonos existentes
     Object.values(polygons).forEach(polygon => {
         polygon.setMap(null);
@@ -325,21 +363,46 @@ function updatePolygons() {
         }
     });
 
+    console.log('📊 Dispositivos agrupados por tipo:', devicesByType);
+
     // Crear polígonos para cada tipo (si tiene al menos 3 puntos)
     Object.entries(devicesByType).forEach(([typeId, data]) => {
+        console.log(`🔍 Tipo ${typeId} (${data.name}): ${data.devices.length} dispositivos`);
+        
         if (data.devices.length >= 3) {
             const sortedPoints = sortPointsByAngle(data.devices);
+            
+            // Imprimir puntos con inicio y fin marcados
+            console.log(`📐 Polígono para "${data.name}" (${data.devices.length} puntos):`);
+            console.log('═══════════════════════════════════════');
+            sortedPoints.forEach((point, index) => {
+                if (index === 0) {
+                    console.log(`🟢 INICIO [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
+                } else if (index === sortedPoints.length - 1) {
+                    console.log(`🔴 FIN [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
+                } else {
+                    console.log(`⚪ Punto [${index}]:`, `Lat: ${point.lat.toFixed(6)}, Lng: ${point.lng.toFixed(6)}`);
+                }
+            });
+            console.log(`🔄 El polígono se cierra automáticamente conectando FIN con INICIO`);
+            console.log('═══════════════════════════════════════');
 
             const polygon = new google.maps.Polygon({
                 paths: sortedPoints,
                 strokeColor: data.color,
                 strokeOpacity: 0.8,
-                strokeWeight: 2,
+                strokeWeight: 3,
                 fillColor: data.color,
-                fillOpacity: 0.3,
+                fillOpacity: 0.2,
                 map: map,
-                zIndex: 1
+                zIndex: 50,
+                clickable: true,
+                editable: false,
+                draggable: false
             });
+
+            console.log(`✅ Polígono creado y agregado al mapa para tipo ${typeId} (${data.name}) con ${data.devices.length} puntos`);
+            console.log(`🎨 Color del polígono:`, data.color);
 
             // Info window para el polígono
             const infoWindow = new google.maps.InfoWindow();
@@ -363,8 +426,68 @@ function updatePolygons() {
             });
 
             polygons[typeId] = polygon;
+        } else {
+            console.log(`⚠️ Tipo ${typeId} (${data.name}): Solo ${data.devices.length} punto(s), se necesitan al menos 3 para crear polígono`);
         }
     });
+    
+    console.log(`🏁 Total de polígonos por tipo creados: ${Object.keys(polygons).length}`);
+    
+    // Si no se crearon polígonos por tipo, crear un polígono global con todos los dispositivos
+    if (Object.keys(polygons).length === 0) {
+        const allDevices = [];
+        Object.values(devicesByType).forEach(data => {
+            allDevices.push(...data.devices);
+        });
+        
+        if (allDevices.length >= 3) {
+            console.log(`🌍 Creando polígono global con TODOS los dispositivos (${allDevices.length} puntos)...`);
+            const sortedPoints = sortPointsByAngle(allDevices);
+            
+            const globalPolygon = new google.maps.Polygon({
+                paths: sortedPoints,
+                strokeColor: '#0A2986', // Color azul para polígono global
+                strokeOpacity: 0.8,
+                strokeWeight: 3,
+                fillColor: '#0A2986',
+                fillOpacity: 0.15,
+                map: map,
+                zIndex: 50,
+                clickable: true,
+                editable: false,
+                draggable: false
+            });
+            
+            console.log(`✅ Polígono GLOBAL creado con ${allDevices.length} puntos de ${Object.keys(devicesByType).length} tipo(s) diferentes`);
+            
+            // Info window para el polígono global
+            const infoWindow = new google.maps.InfoWindow();
+            
+            globalPolygon.addListener('click', function(event) {
+                const contentString = `
+                    <div style="padding: 10px;">
+                        <h6 style="color: #0A2986; margin-bottom: 5px;">
+                            <strong>Perímetro General</strong>
+                        </h6>
+                        <p class="mb-0 small">
+                            <i class="bi bi-geo-alt"></i> ${allDevices.length} dispositivo(s)<br>
+                            <i class="bi bi-pentagon"></i> Todos los tipos combinados
+                        </p>
+                    </div>
+                `;
+                
+                infoWindow.setContent(contentString);
+                infoWindow.setPosition(event.latLng);
+                infoWindow.open(map);
+            });
+            
+            polygons['global'] = globalPolygon;
+        } else {
+            console.log(`⚠️ Solo hay ${allDevices.length} dispositivo(s) en total, se necesitan al menos 3 para crear un polígono`);
+        }
+    }
+    
+    console.log('📍 Polígonos en el mapa:', polygons);
 }
 
 // ===========================
@@ -571,7 +694,7 @@ function saveCoordinates(updateUrl, csrfToken) {
         if (error.name === 'AbortError') {
             alert('La petición tardó demasiado tiempo. Por favor, verifica tu conexión e inténtalo de nuevo.');
         } else {
-            console.error('Error:', error);
+            //console.error('Error:', error);
             alert('Error al guardar las coordenadas. Por favor, inténtalo de nuevo.\n' + error.message);
         }
     });

@@ -1,0 +1,208 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+use App\Models\Order;
+use App\Models\OrderTechnician;
+use App\Models\Technician;
+use App\Models\User;
+use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+class OperationsController extends Controller
+{
+    /**
+     * Mostrar el dashboard de control de operaciones
+     */
+    public function index(Request $request): View
+    {
+        // Obtener todos los técnicos activos
+        $technicians = User::where('role_id', 3)
+            ->where('status_id', 2) // Activos
+            ->orderBy('name')
+            ->get();
+
+        // Tamaño de paginación (por defecto 50)
+        $size = $request->input('size', 50);
+
+        // Inicializar query de órdenes pendientes
+        $query = Order::with(['customer', 'customer.matrix', 'status', 'technicians.user', 'services', 'closeUser'])
+            ->where('status_id', 1); // 1 = Pendiente
+
+        // Filtrar por fechas si se proporcionan
+        if ($request->filled('start_date')) {
+            $query->where('programmed_date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->where('programmed_date', '<=', $request->end_date);
+        }
+
+        // Filtrar por técnicos si se proporcionan (uno o varios)
+        if ($request->filled('technician_ids')) {
+            $technicianIds = is_array($request->technician_ids) 
+                ? $request->technician_ids 
+                : [$request->technician_ids];
+            
+            // Obtener los IDs de técnicos de la tabla technician
+            $technicianModels = Technician::whereIn('user_id', $technicianIds)
+                ->pluck('id')
+                ->toArray();
+            
+            if (!empty($technicianModels)) {
+                $query->whereHas('techniciansScope', function ($q) use ($technicianModels) {
+                    $q->whereIn('technician_id', $technicianModels);
+                });
+            }
+        }
+
+        // Obtener las órdenes con paginación
+        // Ordenar por fecha programada ascendente (los más antiguos primero)
+        $orders = $query->orderBy('programmed_date', 'asc')
+            ->orderBy('start_time', 'asc')
+            ->paginate($size);
+
+        // Mantener parámetros de búsqueda en paginación
+        $orders->appends($request->except('page'));
+
+        // Obtener distribución por planta (según filtros, no por paginación)
+        $queryForBranches = Order::with(['customer.branch'])
+            ->where('status_id', 1);
+
+        // Aplicar los mismos filtros
+        if ($request->filled('start_date')) {
+            $queryForBranches->where('programmed_date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $queryForBranches->where('programmed_date', '<=', $request->end_date);
+        }
+
+        if ($request->filled('technician_ids')) {
+            $technicianIds = is_array($request->technician_ids) 
+                ? $request->technician_ids 
+                : [$request->technician_ids];
+            
+            $technicianModels = Technician::whereIn('user_id', $technicianIds)
+                ->pluck('id')
+                ->toArray();
+            
+            if (!empty($technicianModels)) {
+                $queryForBranches->whereHas('techniciansScope', function ($q) use ($technicianModels) {
+                    $q->whereIn('technician_id', $technicianModels);
+                });
+            }
+        }
+
+        // Obtener las órdenes completas y agrupar por planta
+        $ordersByBranch = $queryForBranches->get()
+            ->groupBy(function ($order) {
+                return $order->customer && $order->customer->branch 
+                    ? $order->customer->branch->name 
+                    : 'Sin Planta';
+            })
+            ->map(function ($orders) {
+                return $orders->count();
+            })
+            ->sortDesc();
+
+        // Obtener distribución por cliente (según filtros, no por paginación)
+        $queryForCustomers = Order::with(['customer'])
+            ->where('status_id', 1);
+
+        // Aplicar los mismos filtros
+        if ($request->filled('start_date')) {
+            $queryForCustomers->where('programmed_date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $queryForCustomers->where('programmed_date', '<=', $request->end_date);
+        }
+
+        if ($request->filled('technician_ids')) {
+            $technicianIds = is_array($request->technician_ids) 
+                ? $request->technician_ids 
+                : [$request->technician_ids];
+            
+            $technicianModels = Technician::whereIn('user_id', $technicianIds)
+                ->pluck('id')
+                ->toArray();
+            
+            if (!empty($technicianModels)) {
+                $queryForCustomers->whereHas('techniciansScope', function ($q) use ($technicianModels) {
+                    $q->whereIn('technician_id', $technicianModels);
+                });
+            }
+        }
+
+        // Obtener las órdenes completas y agrupar por cliente
+        $ordersByCustomer = $queryForCustomers->get()
+            ->groupBy(function ($order) {
+                return $order->customer 
+                    ? $order->customer->name 
+                    : 'Sin Cliente';
+            })
+            ->map(function ($orders) {
+                return $orders->count();
+            })
+            ->sortDesc();
+
+        return view('dashboard.operations.index', compact('orders', 'technicians', 'ordersByBranch', 'ordersByCustomer'));
+    }
+
+    /**
+     * Exportar reporte de operaciones a PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        // Inicializar query de órdenes pendientes (sin paginación para el PDF)
+        $query = Order::with(['customer', 'customer.matrix', 'status', 'technicians.user', 'services', 'closeUser'])
+            ->where('status_id', 1); // 1 = Pendiente
+
+        // Filtrar por fechas si se proporcionan
+        if ($request->filled('start_date')) {
+            $query->where('programmed_date', '>=', $request->start_date);
+        }
+
+        if ($request->filled('end_date')) {
+            $query->where('programmed_date', '<=', $request->end_date);
+        }
+
+        // Filtrar por técnicos si se proporcionan
+        if ($request->filled('technician_ids')) {
+            $technicianIds = is_array($request->technician_ids) 
+                ? $request->technician_ids 
+                : [$request->technician_ids];
+            
+            $technicianModels = Technician::whereIn('user_id', $technicianIds)
+                ->pluck('id')
+                ->toArray();
+            
+            if (!empty($technicianModels)) {
+                $query->whereHas('techniciansScope', function ($q) use ($technicianModels) {
+                    $q->whereIn('technician_id', $technicianModels);
+                });
+            }
+        }
+
+        // Obtener todas las órdenes (limitado a 500 para no sobrecargar)
+        $orders = $query->orderBy('programmed_date', 'asc')
+            ->orderBy('start_time', 'asc')
+            ->limit(500)
+            ->get();
+
+        // Generar el PDF
+        $pdf = Pdf::loadView('dashboard.operations.pdf', compact('orders'))
+            ->setPaper('a4', 'landscape')
+            ->setOption('margin-top', 10)
+            ->setOption('margin-bottom', 10)
+            ->setOption('margin-left', 10)
+            ->setOption('margin-right', 10);
+
+        $filename = 'Reporte_Operaciones_' . Carbon::now()->format('Y-m-d_H-i-s') . '.pdf';
+        
+        return $pdf->stream($filename);
+    }
+}

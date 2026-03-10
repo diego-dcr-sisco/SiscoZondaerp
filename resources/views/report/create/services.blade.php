@@ -24,12 +24,12 @@
         <div class="col-12 mb-3">
             <div class="p-2 border border-top-0 rounded-bottom-1">
                 <div id="service{{ $service->id }}-text" class="smnote" style="height: 300px">
-                    @if ($order->propagateByService($service->id))
+                    @if ($order->propagateByService($service->id) && $order->propagateByService($service->id)->text)
                         {!! cleanHtmlSimple($order->propagateByService($service->id)->text) !!}
-                    @else
-                        @if ($order->setting && $order->setting->service_description)
-                            {!! cleanHtmlSimple($order->setting->service_description) !!}
-                        @endif
+                    @elseif ($order->setting && $order->setting->service_description)
+                        {!! cleanHtmlSimple($order->setting->service_description) !!}
+                    @elseif ($service->description)
+                        {!! cleanHtmlSimple($service->description) !!}
                     @endif
                 </div>
             </div>

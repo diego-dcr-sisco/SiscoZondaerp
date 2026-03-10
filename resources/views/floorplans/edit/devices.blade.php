@@ -347,10 +347,11 @@
                     <input type="hidden" id="point-index" value="" />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary"
-                        onclick="setDevice()">{{ __('buttons.store') }}</button>
+                    <a id="device-stats-link" href="#" target="_blank" class="btn btn-success"><i class="bi bi-bar-chart-fill"></i> Ver estadisticas</a>
                     <button type="button" class="btn btn-danger"
-                        onclick="deleteDevice()">{{ __('buttons.delete') }}</button>
+                        onclick="deleteDevice()"><i class="bi bi-trash-fill"></i> {{ __('buttons.delete') }}</button>
+                    <button type="button" class="btn btn-primary"
+                        onclick="setDevice()"><i class="bi bi-floppy-fill"></i> {{ __('buttons.store') }}</button>
                 </div>
             </div>
         </div>
@@ -382,6 +383,7 @@
             var img_sizes = @json($img_sizes);
             var legendPDF = @json($legend);
             var printData = @json($print_data);
+            var deviceStatsUrlTemplate = "{{ url('floorplans/devices/'.$floorplan->id.'/device/DEVICE_ID/stats') }}";
 
             let currentPointSize = 10;
             let currentBase64 = '';
@@ -391,18 +393,34 @@
             const img = new Image();
             img.src = imgURL;
 
-            const canvasContainer = document.getElementById('canvas-container');
-            const containerWidth = canvasContainer ? canvasContainer.clientWidth : 1080;
-            const img_scale = Math.min(1, containerWidth / img_sizes[0]);
-
-            const baseCanvasWidth = img_sizes[0] * img_scale;
-            const baseCanvasHeight = img_sizes[1] * img_scale;
+            // Calcular el tamaño del canvas de forma dinámica
+            // Objetivo:Canvas visible y manejable sin importar el tamaño de la imagen original
+            const maxCanvasWidth = 1400; // Ancho máximo objetivo del canvas
+            const minCanvasWidth = 800;  // Ancho mínimo para asegurar visibilidad
+            
+            let targetWidth, targetHeight;
+            
+            // Si la imagen es muy grande, escalar al máximo
+            if (img_sizes[0] > maxCanvasWidth) {
+                const scale = maxCanvasWidth / img_sizes[0];
+                targetWidth = maxCanvasWidth;
+                targetHeight = Math.round(img_sizes[1] * scale);
+            } 
+            // Si la imagen es muy pequeña, asegurar tamaño mínimo
+            else if (img_sizes[0] < minCanvasWidth) {
+                const scale = minCanvasWidth / img_sizes[0];
+                targetWidth = minCanvasWidth;
+                targetHeight = Math.round(img_sizes[1] * scale);
+            }
+            // Si está en rango medio, usar tamaño original
+            else {
+                targetWidth = img_sizes[0];
+                targetHeight = img_sizes[1];
+            }
 
             var canvas = new fabric.Canvas('myCanvas', {
-                //width: img_sizes[0] > img_sizes[1] ? 1100 : 800,
-                //height: img_sizes[0] > img_sizes[1] ? 800 : 1100,
-                width: baseCanvasWidth,
-                height: baseCanvasHeight,
+                width: targetWidth,
+                height: targetHeight,
                 selection: false,
             });
 
@@ -498,15 +516,27 @@
                 const point_index = points.findIndex(item => item.index == i);
                 const reviewList = points[i] && reviews[point_index] ? reviews[point_index][points[i].point_id] : [];
                 var aux = count;
-                var message = reviewList && reviewList.length > 0 ?
-                    'La existencia de revisiones en el dispositivo exige la creación obligatoria de una nueva versión, ' : '';
+                const hasReviews = reviewList && reviewList.length > 0;
+                
+                var message = '';
+                
+                if (hasReviews) {
+                    message = '⚠️ IMPORTANTE: Este dispositivo tiene revisiones registradas.\n\n';
+                    message += 'Se creará automáticamente una nueva versión del plano para preservar el historial.\n\n';
+                    message += '¿Deseas eliminar el dispositivo?';
+                } else {
+                    message = 'Este dispositivo no tiene revisiones.\n\n';
+                    message += 'Se eliminará sin necesidad de crear una nueva versión.\n\n';
+                    message += '¿Deseas eliminar el dispositivo?';
+                }
 
                 if (i != -1) {
-                    message += '¿Deseas eliminar el dispositivo?';
-                    if (reviewList && reviewList.length > 0) {
+                    // Solo forzar nueva versión si hay revisiones
+                    if (hasReviews) {
                         $('#create-version').val(1);
                         $('#create-version').prop('checked', true).prop('disabled', true);
                     }
+                    
                     if (confirm(message)) {
                         points = points.filter(item => item.index != i);
                         nplans = points.map(item => item.count);
@@ -523,9 +553,7 @@
                         canvas.renderAll();
                         createLegend();
 
-                        //countPoints++;
-                        //count = --aux;
-                        //$('#count-points').text(`Puntos generados: ${countPoints}`);
+                        console.log(`✅ Dispositivo eliminado (índice: ${i}, tiene revisiones: ${hasReviews})`);
                     }
                 }
                 $('#pointModal').modal('hide');
@@ -727,6 +755,21 @@
 
 
                     $('#reviews').html(html);
+
+                    // Configurar enlace de estadísticas del dispositivo (si existe en la lista de devices)
+                    try {
+                        const statsLink = document.getElementById('device-stats-link');
+                        const deviceObj = devices.find(d => parseInt(d.nplan) == parseInt(points[i].count) && parseInt(d.type_control_point_id) == parseInt(points[i].point_id));
+                        if (deviceObj && statsLink) {
+                            statsLink.href = deviceStatsUrlTemplate.replace('DEVICE_ID', deviceObj.id);
+                            statsLink.style.display = '';
+                        } else if (statsLink) {
+                            statsLink.href = '#';
+                            statsLink.style.display = 'none';
+                        }
+                    } catch (e) {
+                        //console.error('Error setting stats link', e);
+                    }
 
                     if (confirm(`Estas seguro de editar el punto: ${points[i].code} (${points[i].index})`)) {
                         $('#pointModal').modal('show');
@@ -1168,7 +1211,7 @@
                         }
                     },
                     error: function(xhr, status, error) {
-                        console.error('Error in AJAX request:', status, error);
+                        //console.error('Error in AJAX request:', status, error);
                     }
                 });
             }
@@ -1240,9 +1283,13 @@
 
             // FUNCIÓN PARA OBTENER DIMENSIONES ORIGINALES DEL CANVAS
             function getOriginalCanvasDimensions() {
-                if (Array.isArray(img_sizes) && img_sizes.length >= 2) {
-                    return [img_sizes[0], img_sizes[1]];
-                }
+                // Esta función debe retornar las dimensiones ANTIGUAS del canvas
+                // (las que se usaban cuando se guardaron los puntos en la BD)
+                // La lógica antigua era: ancho > alto ? 1100x800 : 800x1100
+                
+                const isWide = img_sizes[0] > img_sizes[1];
+                const width = isWide ? 1100 : 800;
+                const height = isWide ? 800 : 1100;
 
                 return [baseCanvasWidth, baseCanvasHeight];
             }
@@ -1315,6 +1362,11 @@
                         // Guardar en variable global para uso posterior
                         currentBase64 = dataURL;
 
+                        // Obtener el token CSRF de la meta tag o del formulario principal
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || 
+                                        document.querySelector('input[name="_token"]')?.value || 
+                                        '{{ csrf_token() }}';
+
                         // Mostrar previsualización
                         const preview = document.getElementById('image-preview');
                         preview.innerHTML = `
@@ -1331,7 +1383,7 @@
                                         <i class="bi bi-clipboard"></i> Copiar base64
                                     </button>
                                     <form id="pdfForm" method="POST" action="{{ route('floorplan.print.version') }}" style="display: inline;">
-                                        @csrf
+                                        <input type="hidden" name="_token" value="${csrfToken}">
                                         <input type="hidden" id="pdfJsonData" name="pdf_json_data">
                                         <button type="button" class="btn btn-success btn-sm" onclick="generatePDF()">
                                             <i class="bi bi-file-pdf-fill"></i> Descargar PDF
@@ -1344,7 +1396,7 @@
 
 
                 } catch (error) {
-                    console.error('Error al capturar el canvas:', error);
+                    //console.error('Error al capturar el canvas:', error);
                     alert('Error al generar la imagen: ' + error.message);
                 }
             }
@@ -1370,7 +1422,7 @@
                 navigator.clipboard.writeText(currentBase64).then(() => {
                     alert('Base64 copiado al portapapeles');
                 }).catch(err => {
-                    console.error('Error al copiar: ', err);
+                    //console.error('Error al copiar: ', err);
                     alert('Error al copiar al portapapeles');
                 });
             }
@@ -1391,10 +1443,11 @@
                 const floorplan = '{{ $floorplan }}';
 
                 try {
-                    const groupedPoints = groupByColorAndCode(points);
+                    // Mostrar loading
+                    button.disabled = true;
+                    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando PDF...';
 
-                    // Obtener la imagen en base64
-                    //const imageBase64 = await generateImageBase64();
+                    const groupedPoints = groupByColorAndCode(points);
 
                     // Extraer solo la parte de datos base64 (sin el prefix)
                     const base64Data = currentBase64.replace(/^data:image\/\w+;base64,/, '');
@@ -1408,20 +1461,68 @@
                         version: printData.floorplan_version,
                         date_version: printData.date_version,
                         device_count: printData.count,
-                        font_family: 'Helvetica', //font_family ?? null,
-                        font_color: '#000000', //font_color ?? null,
+                        font_family: 'Helvetica',
+                        font_color: '#000000',
                         groupedPoints: legendPDF
                     };
 
-                    $('#pdfJsonData').val(JSON.stringify(pdfData));
+                    const jsonData = JSON.stringify(pdfData);
+                    console.log('Tamaño del JSON:', (jsonData.length / 1024).toFixed(2), 'KB');
 
-                    // Aquí puedes proceder con el envío del formulario
-                    // Por ejemplo:
-                    $('#pdfForm').submit();
+                    $('#pdfJsonData').val(jsonData);
+
+                    // Método alternativo: usar un iframe oculto para mantener la sesión
+                    const form = document.getElementById('pdfForm');
+                    
+                    // Crear iframe oculto si no existe
+                    let iframe = document.getElementById('pdf-download-iframe');
+                    if (!iframe) {
+                        iframe = document.createElement('iframe');
+                        iframe.id = 'pdf-download-iframe';
+                        iframe.name = 'pdf-download-iframe';
+                        iframe.style.display = 'none';
+                        document.body.appendChild(iframe);
+                    }
+                    
+                    // Configurar el formulario para usar el iframe
+                    form.target = 'pdf-download-iframe';
+                    
+                    // Añadir listener para detectar errores en el iframe
+                    iframe.onload = function() {
+                        try {
+                            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                            const iframeContent = iframeDoc.body.innerHTML;
+                            
+                            // Si contiene "403" o "Forbidden", mostrar error
+                            if (iframeContent.includes('403') || iframeContent.includes('Forbidden')) {
+                                throw new Error('Acceso denegado. Verifica tus permisos o que la sesión no haya expirado.');
+                            }
+                            
+                            // Restaurar botón después de 2 segundos
+                            setTimeout(() => {
+                                button.disabled = false;
+                                button.innerHTML = '<i class="bi bi-file-pdf-fill"></i> Descargar PDF';
+                            }, 2000);
+                            
+                        } catch (e) {
+                            // Si no podemos leer el iframe (CORS), asumimos que funcionó
+                            setTimeout(() => {
+                                button.disabled = false;
+                                button.innerHTML = '<i class="bi bi-file-pdf-fill"></i> Descargar PDF';
+                            }, 2000);
+                        }
+                    };
+                    
+                    // Enviar el formulario
+                    form.submit();
 
                 } catch (error) {
-                    console.error('Error al preparar datos para PDF:', error);
-                    alert('Error al preparar datos para PDF: ' + error.message);
+                    console.error('Error al preparar/generar PDF:', error);
+                    alert('Error al generar PDF: ' + error.message);
+                    
+                    // Restaurar botón
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-file-pdf-fill"></i> Descargar PDF';
                 }
             }
 

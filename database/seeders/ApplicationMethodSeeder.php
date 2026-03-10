@@ -17,6 +17,7 @@ class ApplicationMethodSeeder extends Seeder
         $application_methods = [
             'Adhesivo',
             'Aerosol',
+            'Al boleo',
             'Aplicación rodenticida',
             'Aspersión manual',
             'Aspersión manual ambiental localizada',

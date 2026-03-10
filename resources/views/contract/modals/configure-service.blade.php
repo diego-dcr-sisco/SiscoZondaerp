@@ -278,6 +278,11 @@
                     } else {
                         console.log(`Config ${config.config_id} no tiene órdenes o está vacío`);
                     }
+
+                    // Cargar la descripción en el editor Summernote si existe
+                    if (configDescriptions[config.config_id]) {
+                        $(`#config-summernote${config.config_id}`).summernote('code', configDescriptions[config.config_id]);
+                    }
                 }, 300); // Aumentar el timeout para asegurar que el DOM esté listo
 
                 // Cargar descripción después de inicializar Summernote
@@ -482,6 +487,16 @@
         $("#configurations-list").append(configHTML);
 
         initializeSummernote(configId);
+
+        // Pre-llenar con la descripción del servicio si es una configuración nueva sin descripción
+        if (!configDescriptions[configId]) {
+            const service_id = $('#service-id').val();
+            const service = selected_services.find(s => s.id == service_id);
+            if (service && service.description) {
+                configDescriptions[configId] = service.description;
+                $(`#config-summernote${configId}`).summernote('code', service.description);
+            }
+        }
 
         // Configurar execution_frequency_ideventos con jQuery
         $(`#service-frequency-${configId}`).on("change", function() {

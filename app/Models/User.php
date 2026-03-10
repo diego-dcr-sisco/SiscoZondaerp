@@ -13,6 +13,7 @@ use Spatie\Permission\Traits\HasRoles;
 use App\Models\Administrative;
 use App\Models\Technician;
 use App\Models\UserFile;
+use App\Models\UserLocation;
 
 
 
@@ -41,6 +42,10 @@ class User extends Authenticatable
         'user_file_id',
         'session_token',
         'remember_token',
+        'last_latitude',
+        'last_longitude',
+        'last_location_accuracy',
+        'last_location_at',
     ];
 
     protected $hidden = [
@@ -51,6 +56,10 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'last_latitude' => 'decimal:8',
+        'last_longitude' => 'decimal:8',
+        'last_location_accuracy' => 'decimal:2',
+        'last_location_at' => 'datetime',
     ];
 
     public function status()
@@ -82,6 +91,17 @@ class User extends Authenticatable
     public function files()
     {
         return $this->hasMany(UserFile::class, 'user_id', 'id');
+    }
+
+    public function locations()
+    {
+        return $this->hasMany(UserLocation::class, 'user_id', 'id');
+    }
+
+    public function lastLocation()
+    {
+        return $this->hasOne(UserLocation::class, 'user_id', 'id')
+            ->orderBy('recorded_at', 'desc');
     }
 
     public function directories()

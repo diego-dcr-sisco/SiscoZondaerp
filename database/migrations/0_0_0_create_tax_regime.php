@@ -11,6 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('tax_regime');
+        
         Schema::create('tax_regime', function (Blueprint $table) {
             $table->id();
             $table->string('name');

@@ -196,7 +196,7 @@
                     hideSpinner();
                 },
                 error: function(xhr, status, error) {
-                    console.error('Error al descargar los reportes:', error);
+                    //console.error('Error al descargar los reportes:', error);
                 }
             });
         }

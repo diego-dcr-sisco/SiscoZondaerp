@@ -7,6 +7,7 @@ use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\TrackingController;
 use App\Http\Controllers\FloorPlansController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\OperationsController;
 use App\Http\Controllers\PagesController;
 use App\Http\Controllers\PestController;
 use App\Http\Controllers\ProductController;
@@ -57,6 +58,15 @@ Route::middleware(['auth', 'single.session'])->group(function () {
     Route::get('/dashboard/stock', [PagesController::class, 'stock'])->name('dashboard.stock.');
 });
 // DASHBOARD
+
+// CONTROL DE OPERACIONES
+Route::prefix('operations')
+    ->name('operations.')
+    ->middleware(['auth', 'single.session', 'can:integral'])
+    ->group(function () {
+        Route::get('/', [OperationsController::class, 'index'])->name('index');
+        Route::get('/export-pdf', [OperationsController::class, 'exportPdf'])->name('export.pdf');
+    });
 
 // CRM
 /*Route::prefix('crm')->middleware(['auth', 'single.session', 'can:integral'])->group(function () {
@@ -113,7 +123,7 @@ Route::prefix('quality')
         Route::get('/customer/{id}', [QualityController::class, 'customer'])->name('customer');
         Route::delete('/customer/{customerId}/{matrixId}/destroy', [QualityController::class, 'destroyRelation'])->name('customer.destroyRelation');
 
-        // rutas de graficas de calidad
+        // rutas de Estadisticas de calidad
         Route::get('/customer/{id}/analytics', [QualityController::class, 'analytics'])->name('analytics');
         Route::get('/customer/{customer}/analytics/device-consumption', [QualityController::class, 'deviceConsumptionTable'])->name('deviceConsumptionTable');
 
@@ -225,7 +235,7 @@ Route::prefix('stock')
         Route::put('/indirect/update/{id}', [StockController::class, 'updateIndirectProduct'])->name('indirect.update');
         Route::delete('/indirect/destroy/{id}', [StockController::class, 'destroyIndirectProduct'])->name('indirect.destroy');
 
-        // Graficas y estadistica
+        // Estadisticas y estadistica
         Route::get('/analytics', [StockController::class, 'analytics'])->name('analytics');
 
         // Exportar stock a excel 
@@ -278,7 +288,7 @@ Route::prefix('lot')
         Route::get('/traceability/{id}', [LotController::class, 'getTraceability'])->name('traceability');
     });
 
-Route::prefix('CRM/chart')
+Route::prefix('crm/chart')
     ->middleware(['auth', 'single.session', 'can:integral'])
     ->name('crm.chart.')
     ->group(function () {
@@ -293,6 +303,8 @@ Route::prefix('CRM/chart')
         Route::get('/monthlyServices/update', [GraphicController::class, 'refreshMonthlyServices'])->name('monthlyServices.refresh');
         Route::get('/serviceOrders', [GraphicController::class, 'serviceOrdersDataset'])->name('serviceOrders');
         Route::get('/serviceOrders/update', [GraphicController::class, 'refreshServiceOrders'])->name('serviceOrders.refresh');
+        Route::get('/pestsDonut', [GraphicController::class, 'pestsDonutDataset'])->name('pestsDonut');
+        Route::get('/pestsDonut/update', [GraphicController::class, 'refreshPestsDonut'])->name('pestsDonut.refresh');
 
         Route::get('/crm/chart/leads', [GraphicController::class, 'leadsByServiceType'])->name('chartLeads');
 
@@ -306,10 +318,21 @@ Route::prefix('CRM/chart')
         Route::get('/ordertypes/{service_type}', [GraphicController::class, 'orderTypesDataset'])->name('ordertypes');
         Route::get('/ordertypes/{service_type}/update', [GraphicController::class, 'refreshOrderTypes'])->name('ordertypes.refresh');
 
+        // JSON endpoints for AJAX charts
+        Route::get('/customers-by-month', [GraphicController::class, 'customersByMonthJson'])->name('customersByMonthJson');
+        Route::get('/leads-by-month', [GraphicController::class, 'leadsByMonthJson'])->name('leadsByMonthJson');
+        Route::get('/services-by-type', [GraphicController::class, 'servicesByTypeJson'])->name('servicesByTypeJson');
+        Route::get('/services-programmed', [GraphicController::class, 'servicesProgrammedJson'])->name('servicesProgrammedJson');
+        Route::get('/trackings-by-month', [GraphicController::class, 'trackingsByMonthJson'])->name('trackingsByMonthJson');
+        Route::get('/pests-by-customer', [GraphicController::class, 'pestsByCustomerJson'])->name('pestsByCustomerJson');
+        Route::get('/services-completed-by-month', [GraphicController::class, 'servicesCompletedByMonth'])->name('servicesCompletedByMonth');
+
         // views
         Route::get('/dashboard', [GraphicController::class, 'index'])->name('dashboard');
-    }); // CRM CHARTS
-Route::get('/CRM/chart/customers-by-category', [GraphicController::class, 'customersByCategory'])
+    }); 
+    
+    // CRM CHARTS
+Route::get('/crm/chart/customers-by-category', [GraphicController::class, 'customersByCategory'])
     ->name('crm.chart.customersByCategory');
 
 
@@ -354,6 +377,10 @@ Route::prefix('clients')
         Route::post('/directory/search', [ClientController::class, 'searchDirectories'])->name('directory.search');
         Route::post('/directory/copy', [ClientController::class, 'copyDirectories'])->name('directory.copy');
         Route::post('/directory/move', [ClientController::class, 'moveDirectories'])->name('directory.move');
+        Route::post('/file/copy', [ClientController::class, 'copyFiles'])->name('file.copy');
+        Route::post('/file/move', [ClientController::class, 'moveFiles'])->name('file.move');
+        Route::post('/directory/mass-delete', [ClientController::class, 'massDeleteDirectories'])->name('directory.mass-delete');
+        Route::post('/file/mass-delete', [ClientController::class, 'massDeleteFiles'])->name('file.mass-delete');
         //Ruta de prueba para manejar el arbol de directorios
         Route::get('/directory/list', [ClientController::class, 'listDirectories'])->name('directory.list');
 
@@ -398,6 +425,10 @@ Route::prefix('users')
 
         Route::post('/directories', [UserController::class, 'directories'])->name('directories');
         Route::post('/search/sedes', [UserController::class, 'searchSedes'])->name('search.sedes');
+        
+        // Rutas para dashboard de ubicaciones GPS
+        Route::get('/locations/dashboard', [UserController::class, 'locationsDashboard'])->name('locations.dashboard');
+        Route::get('/locations/{id}', [UserController::class, 'userLocations'])->name('locations');
     });
 
 // CLIENTES
@@ -481,7 +512,6 @@ Route::prefix('floorplans')
         //Route::post('/search/devices/{id}', [FloorplansController::class, 'searchDevicesbyVersion'])->name('search.devices');
     
         Route::get('/print/{id}', [FloorplansController::class, 'print'])->name('print');
-        Route::post('/print/version', [FloorplansController::class, 'printVersion'])->name('print.version');
 
         Route::get('/QR/{id}', [FloorPlansController::class, 'getQR'])->name('qr');
         Route::post('/update/{id}', [FloorplansController::class, 'update'])->name('update');
@@ -494,13 +524,27 @@ Route::prefix('floorplans')
 
         Route::get('/delete/{id}', [FloorplansController::class, 'delete'])->name('delete');
 
+        // Gráficas de incidentes del plano
+        Route::get('/graphic/incidents/{id}', [FloorPlansController::class, 'graphicIncidents'])->name('graphic.incidents');
+        
+        // Estadísticas por dispositivo (vista individual)
+        Route::get('/devices/{floorplan}/device/{device}/stats', [FloorPlansController::class, 'deviceStats'])->name('device.stats');
+        Route::get('/devices/{floorplan}/device/{device}/stats/pdf', [FloorPlansController::class, 'deviceStatsPDF'])->name('device.stats.pdf');
+
         Route::get('/floorplans/show/{path}', [FloorPlansController::class, 'getImage'])->where('path', '.*')->name('image.show');
+        
         Route::post('/floorplan/{id}/search/version', [FloorPlansController::class, 'searchDevicesbyVersion'])->name('search.device.version');
 
         // Geolocalización de dispositivos en plano - logica se maneja en ControlPointController
         Route::get('/geolocation/{id}', [ControlPointController::class, 'geolocateDevices'])->name('geolocation');
         Route::post('/geolocation/update', [ControlPointController::class, 'updateDeviceCoordinates'])->name('geolocation.update');
     });
+
+// Ruta especial para print/version con middleware menos restrictivo
+// Separada para evitar problemas con POSTs grandes y can:integral
+Route::post('floorplans/print/version', [FloorplansController::class, 'printVersion'])
+    ->middleware(['auth', 'single.session'])
+    ->name('floorplan.print.version');
 
 // SERVICIOS
 Route::prefix('services')
@@ -700,6 +744,7 @@ Route::prefix('report')
         Route::post('/customer/update', [ReportController::class, 'updateCustomer'])->name('customer.update');
         Route::post('/description/update', [ReportController::class, 'updateDescription'])->name('description.update');
         Route::post('/notes/update', [ReportController::class, 'updateNotes'])->name('notes.update');
+        Route::post('/recommendations/update', [ReportController::class, 'updateRecommendations'])->name('recommendations.update');
     });
 
 Route::prefix('report')
@@ -719,7 +764,8 @@ Route::prefix('report')
         Route::post('/set/incident/{orderId}', [ReportController::class, 'setIncident'])->name('set.incident');
 
         Route::post('/device', [ReportController::class, 'getDevices'])->name('device');
-        Route::post('/device/bulk', [ReportController::class, 'bulkPrint'])->name('bulk');
+        
+        Route::post('/device/bulk', [ReportController::class, 'printBulk'])->name('bulk');
         Route::get('/device/bulk/download/{timer}', [ReportController::class, 'downloadBulk'])->name('bulk.download');
         Route::get('/device/bulk/delete/{timer}', [ReportController::class, 'deleteBulk'])->name('bulk.delete');
 
@@ -792,6 +838,7 @@ Route::prefix('contracts')
         Route::get('/file/download/{id}', [ContractController::class, 'contract_downolad'])->name('file.download');
 
         Route::get('/renew/{id}', [ContractController::class, 'renew'])->name('renew');
+        Route::get('/calendar/pdf/{id}', [ContractController::class, 'annualCalendarPDF'])->name('calendar.pdf');
     });
 
 Route::prefix('opportunity-areas')

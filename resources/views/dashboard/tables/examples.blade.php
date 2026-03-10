@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="card mb-3" style="max-width: 800px;margin: 20px auto 0;"> 
-<a href="{{ route('crm', ['status'=> 1,'page' => 1]) }}" class="col-auto btn-primary p-0 fs-3"><i class="bi bi-arrow-left m-3"></i></a><h1>Graficas</h1>
+<a href="{{ route('crm', ['status'=> 1,'page' => 1]) }}" class="col-auto btn-primary p-0 fs-3"><i class="bi bi-arrow-left m-3"></i></a><h1>Estadisticas</h1>
     
     <br>
     <h2>Ordenes registradas por usuario</h2>

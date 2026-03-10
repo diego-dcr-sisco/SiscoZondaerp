@@ -35,7 +35,7 @@
                         console.log(response);
                     },
                     error: function(xhr, status, error) {
-                        console.error("Error al enviar la solicitud AJAX:", error);
+                        //console.error("Error al enviar la solicitud AJAX:", error);
                     }
                 });
             }

@@ -322,7 +322,7 @@
             // Mostrar notificación de éxito
             showToast('UUID copiado al portapapeles', 'success');
         }, function(err) {
-            console.error('Error al copiar: ', err);
+            //console.error('Error al copiar: ', err);
             showToast('Error al copiar el UUID', 'error');
         });
     }

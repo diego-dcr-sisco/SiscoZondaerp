@@ -157,7 +157,7 @@
                 $('#resultsCount').text(response.data.length);
             },
             error: function(xhr) {
-                console.error('Error searching products:', xhr.responseText);
+                //console.error('Error searching products:', xhr.responseText);
                 $('#product').html(`
                 <option value="" selected disabled>Error en la búsqueda</option>
                 <option value="" disabled>${xhr.responseJSON?.message || 'Intente nuevamente'}</option>

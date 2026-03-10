@@ -616,15 +616,35 @@ class OrderController extends Controller
 
     public function update(Request $request, string $id): RedirectResponse
     {
-        //dd($request->all());
-        $updated_services = [];
-        $updated_techncians = [];
-        $updated_propagations = [];
+        // DEBUG: Log inicio del update
+        Log::info("OrderController@update - Iniciando actualización", [
+            'order_id' => $id,
+            'user_id' => auth()->id(),
+            'user_type_id' => auth()->user()->type_id,
+            'request_size' => strlen(json_encode($request->all()))
+        ]);
 
-        $selected_services = json_decode($request->input('services'));
-        $selected_technicians = json_decode($request->input('technicians'));
+        try {
+            //dd($request->all());
+            $updated_services = [];
+            $updated_techncians = [];
+            $updated_propagations = [];
 
-        $order = Order::find($id);
+            $selected_services = json_decode($request->input('services'));
+            $selected_technicians = json_decode($request->input('technicians'));
+
+            $order = Order::find($id);
+
+            if (!$order) {
+                Log::error("OrderController@update - Orden no encontrada", ['order_id' => $id]);
+                return back()->withErrors(['error' => 'Orden no encontrada']);
+            }
+
+            Log::info("OrderController@update - Orden encontrada", [
+                'order_id' => $id,
+                'services_count' => count($selected_services ?? []),
+                'technicians_count' => count($selected_technicians ?? [])
+            ]);
 
         if ($request->missing('technicians')) {
             $error = 'No se ha seleccionado un técnico.';
@@ -755,7 +775,21 @@ class OrderController extends Controller
             $order->update(['closed_by' => $order->technicians()->first()->user_id]);
         }*/
 
-        return back();
+            Log::info("OrderController@update - Actualización completada exitosamente", ['order_id' => $id]);
+            
+            return back()->with('success', 'Orden actualizada correctamente');
+            
+        } catch (\Exception $e) {
+            Log::error("OrderController@update - Error durante actualización", [
+                'order_id' => $id,
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()->withErrors(['error' => 'Error al actualizar la orden: ' . $e->getMessage()]);
+        }
     }
 
     public function cancel(string $id): RedirectResponse

@@ -27,6 +27,7 @@ use App\Models\Service;
 use App\Models\ServicePrefix;
 
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ContractController extends Controller
 {
@@ -465,6 +466,7 @@ class ContractController extends Controller
             }
 
             $orders = Order::where('setting_id', $cs->id)->orderBy('programmed_date')->get();
+            $service = $services->firstWhere('id', $cs->service_id);
             $configurations[] = [
                 'config_id' => $count_indexs[$cs->service_id],
                 'setting_id' => $cs->id,
@@ -487,7 +489,7 @@ class ContractController extends Controller
                         'url' => route('order.edit', ['id' => $order->id])
                     ];
                 })->toArray(), // ← Convertir a array
-                'description' => $cs->service_description ?? null,
+                'description' => $cs->service_description ?? ($service ? $service->description : null),
             ];
         }
 
@@ -1081,5 +1083,190 @@ class ContractController extends Controller
                 'view'
             )
         );
+    }
+
+    /**
+     * Genera un calendario anual en PDF mostrando los servicios por mes
+     */
+    public function annualCalendarPDF(string $id)
+    {
+        $contract = Contract::with('services.service', 'orders.services', 'orders.setting')
+            ->find($id);
+        
+        if (!$contract) {
+            return abort(404);
+        }
+        
+        $startDate = Carbon::parse($contract->startdate);
+        $endDate = Carbon::parse($contract->enddate);
+        
+        // Generar array de meses del periodo del contrato (hasta 12 meses)
+        $months = [];
+        $currentMonth = $startDate->copy()->startOfMonth();
+        $maxMonths = 12;
+        $monthCount = 0;
+        
+        while ($currentMonth <= $endDate && $monthCount < $maxMonths) {
+            $months[] = [
+                'month' => $currentMonth->month,
+                'year' => $currentMonth->year,
+                'name' => $this->getMonthName($currentMonth->month)
+            ];
+            $currentMonth->addMonth();
+            $monthCount++;
+        }
+        
+        // Preparar datos
+        $calendarData = $this->getCalendarData($contract, $startDate, $endDate);
+        $serviceColors = $this->assignServiceColors($contract->services);
+        $specialFrequencyDates = $this->getSpecialFrequencyDates($contract, $startDate, $endDate);
+        
+        $data = compact('contract', 'calendarData', 'serviceColors', 'specialFrequencyDates', 'months', 'startDate', 'endDate');
+        
+        $pdf = Pdf::loadView('contract.pdf.annual_calendar', $data)->setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'defaultFont' => 'Arial'
+        ]);
+        
+        return $pdf->download(
+            'calendario_' . $contract->customer->code . '_' . $startDate->format('Y') . '.pdf'
+        );
+    }
+    
+    /**
+     * Obtiene el nombre del mes en español
+     */
+    private function getMonthName(int $month): string
+    {
+        $monthNames = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+        
+        return $monthNames[$month];
+    }
+
+    /**
+     * Obtiene los datos del calendario agrupados por año-mes y día
+     */
+    private function getCalendarData(Contract $contract, Carbon $startDate, Carbon $endDate): array
+    {
+        // Array con estructura por año-mes-día
+        $calendarData = [];
+        
+        // Obtener todas las órdenes del contrato en el rango de fechas
+        $orders = $contract->orders()
+            ->whereBetween('programmed_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->with('services')
+            ->get();
+        
+        // Agrupar órdenes por fecha y servicio
+        foreach ($orders as $order) {
+            $orderDate = Carbon::parse($order->programmed_date);
+            $year = $orderDate->year;
+            $month = $orderDate->month;
+            $day = $orderDate->day;
+            
+            // Clave compuesta año-mes para manejar contratos que cruzan años
+            $yearMonth = $year . '-' . $month;
+            
+            foreach ($order->services as $service) {
+                if (!isset($calendarData[$yearMonth])) {
+                    $calendarData[$yearMonth] = [];
+                }
+                if (!isset($calendarData[$yearMonth][$day])) {
+                    $calendarData[$yearMonth][$day] = [];
+                }
+                
+                // Evitar duplicados
+                if (!in_array($service->id, $calendarData[$yearMonth][$day])) {
+                    $calendarData[$yearMonth][$day][] = $service->id;
+                }
+            }
+        }
+        
+        return $calendarData;
+    }
+
+    /**
+     * Asigna colores únicos a cada servicio del contrato
+     */
+    private function assignServiceColors($services): array
+    {
+        $colorPalette = [
+            '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
+            '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2',
+            '#F8B195', '#C7CEEA', '#B4E7FF', '#FFE66D',
+            '#FF9999', '#66B2FF', '#99FF99', '#FFCC99',
+            '#FF99CC', '#99CCFF', '#CCFF99', '#FFFF99'
+        ];
+        
+        $serviceColors = [];
+        $colorIndex = 0;
+        
+        foreach ($services as $service) {
+            $serviceColors[$service->service_id] = [
+                'name' => $service->service->name ?? 'Sin nombre',
+                'color' => $colorPalette[$colorIndex % count($colorPalette)],
+                'hex' => $colorPalette[$colorIndex % count($colorPalette)]
+            ];
+            $colorIndex++;
+        }
+        
+        return $serviceColors;
+    }
+
+    /**
+     * Identifica fechas con servicios de frecuencia especial (execution_frequency_id = 3 y menos de 12 órdenes)
+     */
+    private function getSpecialFrequencyDates(Contract $contract, Carbon $startDate, Carbon $endDate): array
+    {
+        $specialDates = [];
+        $specialServices = []; // Array para almacenar los service_ids únicos
+        
+        // Obtener todas las órdenes con setting cargado
+        $orders = $contract->orders()
+            ->whereBetween('programmed_date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->with('setting.service')
+            ->get();
+        
+        foreach ($orders as $order) {
+            // Verificar si tiene setting_id y si cumple las condiciones
+            if ($order->setting_id && $order->setting) {
+                $contractService = $order->setting;
+                
+                // Verificar si execution_frequency_id = 3 y total < 12
+                if ($contractService->execution_frequency_id == 3 && $contractService->total < 12) {
+                    $orderDate = Carbon::parse($order->programmed_date);
+                    $year = $orderDate->year;
+                    $month = $orderDate->month;
+                    $day = $orderDate->day;
+                    $yearMonth = $year . '-' . $month;
+                    
+                    if (!isset($specialDates[$yearMonth])) {
+                        $specialDates[$yearMonth] = [];
+                    }
+                    
+                    // Marcar este día como especial
+                    if (!in_array($day, $specialDates[$yearMonth])) {
+                        $specialDates[$yearMonth][] = $day;
+                    }
+                    
+                    // Guardar el service_id si no está ya registrado
+                    $serviceId = $contractService->service_id;
+                    $serviceName = $contractService->service->name ?? 'Servicio sin nombre';
+                    if (!isset($specialServices[$serviceId])) {
+                        $specialServices[$serviceId] = $serviceName;
+                    }
+                }
+            }
+        }
+        
+        return [
+            'dates' => $specialDates,
+            'services' => $specialServices
+        ];
     }
 }

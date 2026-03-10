@@ -1,7 +1,6 @@
 <div class="modal fade" id="editFileModal" tabindex="-1" aria-labelledby="editFileModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form class="modal-content" method="POST"
-            action="{{ route('client.file.update') }}"enctype="multipart/form-data">
+        <form class="modal-content" method="POST" action="{{ route('client.file.update') }}"enctype="multipart/form-data">
             @csrf
             <div class="modal-header">
                 <h1 class="modal-title fs-5" id="directoryModalLabel">Editar archivo</h1>
@@ -16,9 +15,9 @@
                 <input type="hidden" id="root-path" name="root_path" value="{{ $data['root_path'] }}" />
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-primary">{{ __('buttons.update') }}</button>
                 <button type="button" class="btn btn-danger"
                     data-bs-dismiss="modal">{{ __('buttons.cancel') }}</button>
+                <button type="submit" class="btn btn-primary">{{ __('buttons.update') }}</button>
             </div>
         </form>
     </div>

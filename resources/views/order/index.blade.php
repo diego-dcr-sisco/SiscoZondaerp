@@ -344,7 +344,6 @@
                 </tbody>
             </table>
         </div>
-        {{-- @include('layouts.pagination.orders') --}}
         {{ $orders->links('pagination::bootstrap-5') }}
     </div>
 
@@ -432,20 +431,33 @@
                     "X-CSRF-TOKEN": csrfToken,
                 },
                 success: function(response) {
-                    console.log(response);
                     if (response.success) {
-                        if (confirm('ZIP listo, ¿Deseas descargar los reportes?')) {
-                            window.location.href = response.download_url;
-                        } else {
-                            window.location.href = response.delete_url;
-                        }
+                        alert(response.message);
+                        // Redirigir a la URL de descarga
+                        window.location.href = response.download_url;
+                        
+                        // Eliminar los archivos temporales después de la descarga
+                        setTimeout(function() {
+                            $.ajax({
+                                url: response.delete_url,
+                                type: 'GET',
+                                success: function(deleteResponse) {
+                                    console.log(deleteResponse.message);
+                                },
+                                error: function(xhr, status, error) {
+                                    //console.error('Error al eliminar los archivos temporales:', error);
+                                }
+                            });
+                        }, 5000); // Esperar 5 segundos antes de enviar la solicitud de eliminación
+                    } else {
+                        alert('Ocurrió un error al generar los reportes. Por favor, intenta nuevamente.');
                     }
                 },
                 complete: function() {
                     hideSpinner();
                 },
                 error: function(xhr, status, error) {
-                    console.error('Error al descargar los reportes:', error);
+                    //console.error('Error al descargar los reportes:', error);
                 }
             });
         }

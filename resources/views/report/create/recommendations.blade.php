@@ -100,6 +100,11 @@
                     @endif
                 </div>
             </div>
+
+            <button type="button" class="btn btn-primary btn-sm mb-2 update-recommendations-btn"
+                data-service-id="{{ $service->id }}">
+                <i class="bi bi-save"></i> Actualizar Recomendaciones
+            </button>
         </div>
     </div>
 @endforeach
@@ -193,9 +198,15 @@
             const serviceId = $(this).data('service-id');
             if (confirm(
                     '¿Estás seguro de que quieres limpiar todas las recomendaciones adicionales de este servicio?'
-                    )) {
+                )) {
                 clearServiceRecommendations(serviceId);
             }
+        });
+
+        // Actualizar recomendaciones de un servicio específico
+        $('.update-recommendations-btn').click(function() {
+            const serviceId = $(this).data('service-id');
+            updateRecommendations(serviceId);
         });
 
         // Función para agregar recomendaciones al Summernote
@@ -253,7 +264,7 @@
 
             // Remover la sección de recomendaciones adicionales
             tempDiv.find('#custom-recommendations').closest('p').prev('p')
-        .remove(); // Remover <p><br></p> anterior
+                .remove(); // Remover <p><br></p> anterior
             tempDiv.find('#custom-recommendations').closest('p').remove(); // Remover el párrafo del título
             tempDiv.find('#custom-recommendations').remove(); // Remover la lista
 
@@ -330,5 +341,73 @@
         $('.smnote').on('summernote.change', function() {
             updateHiddenField();
         });
+
+        // Función para actualizar recomendaciones en el servidor
+        function updateRecommendations(serviceId) {
+            const summernoteElement = $(`#summary-recs${serviceId}`);
+            const recommendationsHtml = summernoteElement.summernote('code');
+
+            const recommendations = {
+                service_id: parseInt(serviceId),
+                text: recommendationsHtml,
+                order_id: parseInt($('#order-id').val()),
+            };
+
+            const csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+            if (!csrfToken) {
+                alert('Error: No se encontró el token CSRF. Por favor, recarga la página.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('recommendations', JSON.stringify(recommendations));
+            formData.append('_token', csrfToken);
+
+            // Mostrar spinner si existe la función
+            if (typeof showSpinner === 'function') {
+                showSpinner();
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '/report/recommendations/update',
+                data: formData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        alert('Recomendaciones actualizadas correctamente!');
+                    } else {
+                        alert('Error al actualizar las recomendaciones: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    let errorMsg = 'Error al actualizar las recomendaciones';
+
+                    if (xhr.status === 403) {
+                        errorMsg =
+                            'Error 403: Acceso denegado. Tu sesión puede haber expirado. Por favor, recarga la página.';
+                    } else if (xhr.status === 419) {
+                        errorMsg = 'Error 419: Token CSRF expirado. Por favor, recarga la página.';
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg = xhr.responseJSON.message;
+                    } else {
+                        errorMsg += ': ' + error;
+                    }
+
+                    alert(errorMsg);
+                },
+                complete: function() {
+                    // Ocultar spinner si existe la función
+                    if (typeof hideSpinner === 'function') {
+                        hideSpinner();
+                    }
+                }
+            });
+        }
     });
 </script>

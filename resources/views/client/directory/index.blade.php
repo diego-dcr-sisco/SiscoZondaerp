@@ -48,17 +48,18 @@
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#directoryModal">
                         <i class="bi bi-folder-fill"></i> Crear carpeta
                     </button>
-
                     <a href="{{ route('client.directory.mip', ['path' => $data['root_path']]) }}" class="btn btn-dark btn-sm"
                         onclick="return confirm('{{ __('messages.do_you_want_create_mip') }}')">
                         <i class="bi bi-bar-chart-steps"></i> {{ __('buttons.mip_structure') }}
                     </a>
-
                     <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#fileModal">
                         <i class="bi bi-file-earmark-arrow-up-fill"></i> {{ __('buttons.upload_files') }}
                     </button>
                     <button type="button" class="btn btn-warning btn-sm" onclick="clipboardMode()">
                         <i class="bi bi-clipboard-fill"></i> {{ __('buttons.clipboard') }}
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="massDeleteMode()">
+                        <i class="bi bi-trash-fill"></i> Eliminar seleccionados
                     </button>
                 @endcan
             </div>
@@ -174,11 +175,19 @@
                         @foreach ($data['mip_files'] as $file)
                             <tr>
                                 <td class="w-75">
-                                    <a href="{{ route('client.file.download', ['path' => $file['path']]) }}"
-                                        class="text-decoration-none d-flex align-items-center gap-2" target="_blank">
-                                        <i class="bi bi-file-pdf-fill text-danger"></i>
-                                        <span>{{ $file['name'] }}</span>
-                                    </a>
+                                    <div class="d-flex align-items-center gap-2 w-100">
+                                        @can('write_system_client')
+                                            <div class="form-check">
+                                                <input class="form-check-input file-checkbox" type="checkbox"
+                                                    value="{{ $file['path'] }}">
+                                            </div>
+                                        @endcan
+                                        <a href="{{ route('client.file.download', ['path' => $file['path']]) }}"
+                                            class="text-decoration-none d-flex align-items-center gap-2" target="_blank">
+                                            <i class="bi bi-file-pdf-fill text-danger"></i>
+                                            <span>{{ $file['name'] }}</span>
+                                        </a>
+                                    </div>
                                 </td>
                                 <td class="text-end">
                                     <!-- Espacio para acciones si es necesario -->
@@ -189,11 +198,19 @@
                         @foreach ($data['files'] as $file)
                             <tr>
                                 <td class="w-75">
-                                    <a href="{{ route('client.file.download', ['path' => $file['path']]) }}"
-                                        class="text-decoration-none d-flex align-items-center gap-2" target="_blank">
-                                        <i class="bi bi-file-pdf-fill text-danger"></i>
-                                        <span>{{ $file['name'] }}</span>
-                                    </a>
+                                    <div class="d-flex align-items-center gap-2 w-100">
+                                        @can('write_system_client')
+                                            <div class="form-check">
+                                                <input class="form-check-input file-checkbox" type="checkbox"
+                                                    value="{{ $file['path'] }}">
+                                            </div>
+                                        @endcan
+                                        <a href="{{ route('client.file.download', ['path' => $file['path']]) }}"
+                                            class="text-decoration-none d-flex align-items-center gap-2" target="_blank">
+                                            <i class="bi bi-file-pdf-fill text-danger"></i>
+                                            <span>{{ $file['name'] }}</span>
+                                        </a>
+                                    </div>
                                 </td>
                                 <td class="text-end">
                                     @can('write_system_client')
@@ -292,5 +309,120 @@
             // Realizar la petición
             window.location.href = '{{ route('client.file.destroy', ['path' => '__PATH__']) }}'.replace('__PATH__', encodeURIComponent(path));
         });
+
+        /**
+         * Función para eliminación masiva de carpetas y archivos
+         */
+        window.massDeleteMode = function() {
+            const selectedDirs = [];
+            const selectedFiles = [];
+            
+            // Obtener carpetas seleccionadas
+            $('.dir-checkbox:checked').each(function() {
+                selectedDirs.push($(this).val());
+            });
+            
+            // Obtener archivos seleccionados
+            $('.file-checkbox:checked').each(function() {
+                selectedFiles.push($(this).val());
+            });
+            
+            const totalItems = selectedDirs.length + selectedFiles.length;
+            
+            if (totalItems === 0) {
+                alert('No hay elementos seleccionados para eliminar');
+                return;
+            }
+            
+            // Crear mensaje de confirmación detallado
+            let confirmMessage = `¿Está seguro de eliminar ${totalItems} elemento(s)?\n\n`;
+            
+            if (selectedDirs.length > 0) {
+                confirmMessage += `Carpetas (${selectedDirs.length}):\n`;
+                selectedDirs.slice(0, 5).forEach(path => {
+                    const name = path.split('/').pop() || path;
+                    confirmMessage += `  - ${name}\n`;
+                });
+                if (selectedDirs.length > 5) {
+                    confirmMessage += `  ... y ${selectedDirs.length - 5} más\n`;
+                }
+                confirmMessage += '\n';
+            }
+            
+            if (selectedFiles.length > 0) {
+                confirmMessage += `Archivos (${selectedFiles.length}):\n`;
+                selectedFiles.slice(0, 5).forEach(path => {
+                    const name = path.split('/').pop() || path;
+                    confirmMessage += `  - ${name}\n`;
+                });
+                if (selectedFiles.length > 5) {
+                    confirmMessage += `  ... y ${selectedFiles.length - 5} más\n`;
+                }
+            }
+            
+            confirmMessage += '\n⚠️ Esta acción no se puede deshacer.';
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Mostrar indicador de carga
+            const loadingHtml = '<div class="alert alert-info position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 9999;">'
+                + '<span class="spinner-border spinner-border-sm me-2"></span>'
+                + `Eliminando ${totalItems} elemento(s)...`
+                + '</div>';
+            $('body').append(loadingHtml);
+            
+            const requests = [];
+            const csrfToken = $('meta[name="csrf-token"]').attr("content");
+            
+            // Petición para eliminar carpetas
+            if (selectedDirs.length > 0) {
+                const formDataDirs = new FormData();
+                formDataDirs.append('directories', JSON.stringify(selectedDirs));
+                
+                requests.push(
+                    $.ajax({
+                        url: "{{ route('client.directory.mass-delete') }}",
+                        type: 'POST',
+                        data: formDataDirs,
+                        processData: false,
+                        contentType: false,
+                        headers: {"X-CSRF-TOKEN": csrfToken}
+                    })
+                );
+            }
+            
+            // Petición para eliminar archivos
+            if (selectedFiles.length > 0) {
+                const formDataFiles = new FormData();
+                formDataFiles.append('files', JSON.stringify(selectedFiles));
+                
+                requests.push(
+                    $.ajax({
+                        url: "{{ route('client.file.mass-delete') }}",
+                        type: 'POST',
+                        data: formDataFiles,
+                        processData: false,
+                        contentType: false,
+                        headers: {"X-CSRF-TOKEN": csrfToken}
+                    })
+                );
+            }
+            
+            // Ejecutar todas las peticiones
+            $.when.apply($, requests)
+                .done(function() {
+                    $('.alert-info').remove();
+                    alert(`✓ ${totalItems} elemento(s) eliminado(s) correctamente`);
+                    location.reload();
+                })
+                .fail(function(xhr) {
+                    $('.alert-info').remove();
+                    const message = xhr.responseJSON?.message || 'Error al eliminar los elementos';
+                    alert('Error: ' + message);
+                    location.reload();
+                });
+        }
     </script>
 @endsection

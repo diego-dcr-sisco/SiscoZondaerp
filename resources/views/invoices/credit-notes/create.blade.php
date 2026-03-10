@@ -361,7 +361,7 @@
                         modal.show();
                     },
                     error: function(xhr, status, error) {
-                        console.error('Error:', error);
+                        //console.error('Error:', error);
                         loading.hide();
                         noResults.show();
                         noResults.html('<p class="text-danger">Error al cargar los resultados</p>');
@@ -433,7 +433,7 @@
                             };
                             console.log('Factura seleccionada:', selectedInvoice);
                         } catch (error) {
-                            console.error('Error al parsear items:', error);
+                            //console.error('Error al parsear items:', error);
                             selectedInvoice = {
                                 id: $(this).val(),
                                 folio: $(this).data('folio'),

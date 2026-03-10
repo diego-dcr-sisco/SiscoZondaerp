@@ -612,6 +612,13 @@ class MyPDF extends TCPDF
         $this->SetFillColor(130, 178, 221);
         $this->Cell($width, 5, 'REVISION DE DISPOSITIVOS DE CONTROL', 0, 0, 'L', true);
         $this->Ln();
+        $this->setFontSize(7);
+        $this->SetTextColor(85, 85, 85);
+        $this->setFont('helvetica', 'I');
+        $this->Cell($width, 4, '* Se muestran unicamente los dispositivos que fueron revisados durante el servicio.', 0, 0, 'L');
+        $this->Ln();
+        $this->SetTextColor(0, 0, 0);
+        $this->setFont('helvetica', '');
         $this->setFontSize(8);
 
         if ($floorplans->isNotEmpty()) {
@@ -626,6 +633,29 @@ class MyPDF extends TCPDF
                     continue;
 
                 $devices = $floorplan->devices($version)->orderBy('itemnumber', 'asc')->get();
+                
+                // Filtrar solo dispositivos revisados
+                // Incluir dispositivos que tengan is_checked, productos, plagas o respuestas
+                // (estos son los dispositivos que estaban revisados al momento de aprobar o en proceso)
+                $order = Order::find($this->orderId);
+                $devices = $devices->filter(function ($device) use ($order) {
+                    $device_state = $device->states($this->orderId)->first();
+                    $is_checked = $device_state ? ($device_state->is_checked || $device_state->is_scanned) : false;
+                    $has_products = DeviceProduct::where('device_id', $device->id)
+                        ->where('order_id', $this->orderId)
+                        ->exists();
+                    $has_pests = DevicePest::where('device_id', $device->id)
+                        ->where('order_id', $this->orderId)
+                        ->exists();
+                    $has_answers = OrderIncidents::where('device_id', $device->id)
+                        ->where('order_id', $this->orderId)
+                        ->whereNotNull('answer')
+                        ->where('answer', '!=', '')
+                        ->exists();
+                    
+                    return $is_checked || $has_products || $has_pests || $has_answers;
+                });
+                
                 if ($devices->isEmpty())
                     continue;
 
@@ -653,6 +683,21 @@ class MyPDF extends TCPDF
                     }
 
                     $questions = $point->questions()->get();
+                    
+                    // Si el reporte está aprobado, filtrar solo preguntas con al menos una respuesta
+                    if ($order && $order->status_id == 5) {
+                        $device_ids = $devices->where('type_control_point_id', $point->id)->pluck('id')->toArray();
+                        $answered_question_ids = OrderIncidents::where('order_id', $this->orderId)
+                            ->whereIn('device_id', $device_ids)
+                            ->whereNotNull('answer')
+                            ->where('answer', '!=', '')
+                            ->pluck('question_id')
+                            ->unique()
+                            ->toArray();
+                        
+                        $questions = $questions->whereIn('id', $answered_question_ids);
+                    }
+                    
                     $new_headers = array_merge($update_headers, $questions->pluck('question')->toArray());
                     if (isset($point)) {
                         $selected_devices = $devices->filter(fn($device) => $device->type_control_point_id == $point->id);
@@ -784,9 +829,12 @@ class MyPDF extends TCPDF
                                     ->answer ?? null;
                             }
 
+                            $answer = $incident ? $incident->answer : null;
+                            $answer = ($answer !== null && trim($answer) !== '') ? $answer : '-';
+
                             $this->setFontSize(8);
                             $this->SetXY($x, $y);
-                            $this->MultiCell($width_td, $step, $incident->answer ?? '-', 0, 'C', true);
+                            $this->MultiCell($width_td, $step, $answer, 0, 'C', true);
                             $x += $width_td;
                         }
                         

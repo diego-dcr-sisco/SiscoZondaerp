@@ -68,7 +68,7 @@
         }, {
             crossOrigin: 'anonymous',
             error: function (err) {
-                console.error('Error loading image:', err);
+                //console.error('Error loading image:', err);
                 showErrorOnCanvas('Error al cargar la imagen');
             }
         });
@@ -326,7 +326,7 @@
                 });
             },
             error: function (xhr, status, error) {
-                console.error('Error in AJAX request:', status, error);
+                //console.error('Error in AJAX request:', status, error);
             }
         });
     }

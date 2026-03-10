@@ -1,22 +1,21 @@
 @php
-    use Carbon\Carbon;    
+    use Carbon\Carbon;
     $date = Carbon::now();
 @endphp
 
-<div class="col mb-3">
-    <div class="card shadow-sm border-dark">
-        <div class="card-body">
-            <h5 class="card-title fw-bold d-flex justify-content-between">
-                <span> Comerciales agendados </span>
-                <select class="form-select  w-25" onchange="updateChart(this.value)">
-                    @foreach ($months as $i => $month)
-                        <option value="{{ $i+1 }}" {{ $date->month == $i+1 ? 'selected' : ''}}> {{$month}} </option>
-                    @endforeach
-                </select>
-            </h5>
-            <div id="chart">
-                {!! $charts['comercial']->container() !!}
-            </div>
+<div class="card shadow-sm border-dark">
+    <div class="card-body">
+        <h5 class="card-title fw-bold d-flex justify-content-between">
+            <span> Comerciales agendados </span>
+            <select class="form-select  w-25" onchange="updateChart(this.value)">
+                @foreach ($months as $i => $month)
+                    <option value="{{ $i + 1 }}" {{ $date->month == $i + 1 ? 'selected' : '' }}> {{ $month }}
+                    </option>
+                @endforeach
+            </select>
+        </h5>
+        <div id="chart">
+            {!! $charts['comercial']->container() !!}
         </div>
     </div>
 </div>

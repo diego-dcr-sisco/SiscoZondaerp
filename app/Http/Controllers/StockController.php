@@ -52,7 +52,7 @@ class StockController extends Controller
         'Movimientos' => '/stock/movements',
         // 'Zonas' => '/customer-zones',
         'Consumos en ordenes' => '/stock/movements/orders',
-        'Consumos' => '/consumptions/',
+        //'Consumos' => '/consumptions/',
         // 'Estadisticas' => '/stock/analytics',
         // 'Pedidos' => '/consumptions',
         // 'Productos en ordenes' => '/stock/orders-products',
@@ -754,7 +754,8 @@ class StockController extends Controller
         $navigation = $this->navigation;
         $warehouse = Warehouse::find($id);
         $all_warehouses = Warehouse::where('id', '!=', $id)->get();
-        $products = $warehouse->products();//ProductCatalog::all();
+        $products = $warehouse->products()->get();//ProductCatalog::all();
+
         $input_movements = MovementType::whereBetween('id', [1, 4])->get();
 
         foreach ($products as $product) {
@@ -787,7 +788,7 @@ class StockController extends Controller
         $navigation = $this->navigation;
         $warehouse = Warehouse::find($id);
         $all_warehouses = Warehouse::where('id', '!=', $id)->get();
-        $products = $warehouse->products();
+        $products = $warehouse->products()->get();
         $output_movements = MovementType::whereBetween('id', [5, 10])->get();
 
         foreach ($products as $product) {

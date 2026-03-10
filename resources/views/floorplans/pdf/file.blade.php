@@ -23,28 +23,52 @@
         }
         
         .header {
-            text-align: center;
+            width: 100%;
             margin-bottom: 10px;
             padding-bottom: 5px;
             border-bottom: 1px solid #333;
         }
         
-        .header h1 {
-            margin: 0 0 3px 0;
-            font-size: 16px;
-            color: #2c3e50;
-            line-height: 1.1;
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
         }
         
-        .header-info {
-            width: 100%;
-            margin-top: 5px;
+        .header-left {
+            width: 20%;
+            vertical-align: middle;
+            text-align: left;
+        }
+        
+        .header-center {
+            width: 50%;
+            vertical-align: middle;
+            text-align: center;
+        }
+        
+        .header-right {
+            width: 30%;
+            vertical-align: middle;
+            text-align: right;
             font-size: 9px;
         }
         
-        .header-info td {
-            text-align: center;
-            padding: 0 5px;
+        .header-logo {
+            height: 45px;
+            width: auto;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 16px;
+            color: #2c3e50;
+            line-height: 1.2;
+        }
+        
+        .info-item {
+            display: block;
+            margin-bottom: 3px;
+            line-height: 1.3;
         }
         
         .info-label {
@@ -137,8 +161,8 @@
             max-width: 100%;
             max-height: 16cm;
             height: auto;
-            border: 1px solid #ccc;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
         
         .footer {
@@ -166,17 +190,24 @@
     <div class="container">
         <!-- Encabezado compacto -->
         <div class="header">
-            <h1>PLANO - {{ strtoupper($customer ?? 'CLIENTE') }}</h1>
-            <table class="header-info">
+            <table class="header-table">
                 <tr>
-                    <td>
-                        <span class="info-label">Nombre del plano:</span> {{ $filename ?? 'N/A' }}
+                    <td class="header-left">
+                        <img src="data:image/png;base64,{{ base64_encode(file_get_contents(public_path('images/siscoplagas/landscape_logo.png'))) }}" alt="Siscoplagas" class="header-logo">
                     </td>
-                    <td>
-                        <span class="info-label">Versión:</span> {{ $date_version ?? date('d/m/Y') }}
+                    <td class="header-center">
+                        <h1>PLANO<br>{{ strtoupper($customer ?? 'CLIENTE') }}</h1>
                     </td>
-                    <td>
-                        <span class="info-label">Total:</span> {{ $device_count ?? 0 }} disp.
+                    <td class="header-right">
+                        <span class="info-item">
+                            <span class="info-label">Plano:</span> {{ $filename ?? 'N/A' }}
+                        </span>
+                        <span class="info-item">
+                            <span class="info-label">Versión:</span> {{ $date_version ?? date('d/m/Y') }}
+                        </span>
+                        <span class="info-item">
+                            <span class="info-label">Total:</span> {{ $device_count ?? 0 }} dispositivos
+                        </span>
                     </td>
                 </tr>
             </table>
@@ -207,8 +238,6 @@
                                             $ranges = trim(str_replace('Rango(s):', '', $part));
                                         }
                                     }
-                                    
-                                    
                                 @endphp
                                 
                                 <div class="legend-item clearfix">

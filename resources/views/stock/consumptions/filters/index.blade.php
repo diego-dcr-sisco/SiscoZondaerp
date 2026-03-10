@@ -123,7 +123,7 @@
                         });
                     },
                     error: function(xhr, status, error) {
-                        console.error('Error al cargar clientes:', error);
+                        //console.error('Error al cargar clientes:', error);
                         alert('Error al cargar los clientes. Por favor, intente de nuevo.');
                     }
                 });
