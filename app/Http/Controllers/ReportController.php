@@ -1593,6 +1593,29 @@ class ReportController extends Controller
 
             $order->update($updated_order);
 
+            if ((int) $order->status_id === 5 && !empty($order->closed_by)) {
+                $technician = Technician::where('user_id', $order->closed_by)->first();
+
+                if ($technician) {
+                    OrderTechnician::updateOrCreate(
+                        [
+                            'order_id' => $order->id,
+                            'technician_id' => $technician->id,
+                        ],
+                        []
+                    );
+
+                    OrderTechnician::where('order_id', $order->id)
+                        ->where('technician_id', '!=', $technician->id)
+                        ->delete();
+                } else {
+                    Log::warning('No se encontró técnico para sincronizar OrderTechnician', [
+                        'order_id' => $order->id,
+                        'closed_by' => $order->closed_by,
+                    ]);
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Orden actualizada correctamente',

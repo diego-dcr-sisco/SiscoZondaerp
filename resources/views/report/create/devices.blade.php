@@ -20,8 +20,8 @@
         @endif
     </div>
 
-    <table class="table table-sm table-striped">
-        <thead>
+    <table class="table table-sm table-striped table-hover">
+        <thead class="table-secondary border">
             <tr>
                 <th scope="col"># (Número)</th>
                 <th scope="col">Código</th>
