@@ -1457,7 +1457,7 @@ class CustomerController extends Controller
     /**
      * Helper method to return graphics view with consistent structure
      */
-    private function returnGraphicsView($customer, $app_areas, $request_data, $messageType = null, $message = null, $navigation, $availableServices = null)
+    private function returnGraphicsView($customer, $app_areas, $request_data, $messageType = null, $message = null, $navigation, $availableServices = null, $availableVersions = null)
     {
         session()->flash($messageType, $message);
 
@@ -1469,6 +1469,7 @@ class CustomerController extends Controller
             'weeks' => [],
             'app_areas' => $app_areas,
             'availableServices' => $availableServices ?? collect(),
+            'availableVersions' => $availableVersions ?? collect(),
             'graphs_types' => $this->graphs_types,
             'request_data' => $request_data,
             'navigation' => $navigation,
@@ -1491,6 +1492,7 @@ class CustomerController extends Controller
             'pest' => 'nullable|string|max:255',
             'service_id' => 'nullable|integer|exists:service,id',
             'control_point' => 'nullable|integer|exists:control_point,id',
+            'version' => 'nullable|string|max:50',
         ], [
             'date_range.string' => 'El rango de fechas debe ser texto',
             'graph_type.in' => 'Tipo de gráfico no válido',
@@ -1542,7 +1544,7 @@ class CustomerController extends Controller
         ])->find($id);
 
         if (!$customer) {
-            return $this->returnGraphicsView(null, [], $request->all(), 'error', 'Cliente no encontrado', $navigation, collect());
+            return $this->returnGraphicsView(null, [], $request->all(), 'error', 'Cliente no encontrado', $navigation, collect(), collect());
         }
 
         $navigation = [
@@ -1558,6 +1560,16 @@ class CustomerController extends Controller
 
         // Obtener áreas de aplicación sin consulta adicional
         $app_areas = $customer->applicationAreas;
+
+        $availableVersions = $app_areas
+            ->flatMap(fn($area) => $area->devices->pluck('version'))
+            ->filter(fn($version) => !is_null($version) && $version !== '')
+            ->map(fn($version) => (string) $version)
+            ->unique()
+            ->sort(function ($a, $b) {
+                return strnatcmp($a, $b);
+            })
+            ->values();
 
         // Obtener servicios disponibles en las órdenes del cliente (sin restricción de fecha para el select)
         // MOVER AQUÍ ANTES DE CUALQUIER VALIDACIÓN PARA ASEGURAR QUE SIEMPRE ESTÉ DISPONIBLE
@@ -1583,6 +1595,7 @@ class CustomerController extends Controller
                 'control_points' => [],
                 'app_areas' => $app_areas,
                 'availableServices' => $availableServices,
+                'availableVersions' => $availableVersions,
                 'graphs_types' => $this->graphs_types,
                 'request_data' => $request->all(),
                 'navigation' => $navigation,
@@ -1621,7 +1634,7 @@ class CustomerController extends Controller
                     $endDate->format('Y-m-d'),
                 ]);
             } catch (\Exception $e) {
-                return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Formato de fecha inválido', $navigation, $availableServices);
+                return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Formato de fecha inválido', $navigation, $availableServices, $availableVersions);
             }
         }
 
@@ -1648,7 +1661,7 @@ class CustomerController extends Controller
             ->get();*/
 
         if ($orders->isEmpty()) {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'info', 'No se encontraron órdenes aprobadas con los filtros aplicados', $navigation, $availableServices);
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'info', 'No se encontraron órdenes aprobadas con los filtros aplicados', $navigation, $availableServices, $availableVersions);
         }
 
 
@@ -1665,6 +1678,10 @@ class CustomerController extends Controller
             $devices = $devices->where('type_control_point_id', $request->input('control_point'));
         }
 
+        if ($request->filled('version')) {
+            $devices = $devices->where('version', $request->input('version'));
+        }
+
         $devices = $devices->get();
         $fetched_devices = [];
         $devicesByArea = $devices->groupBy('application_area_id'); // Agregar esta línea
@@ -1674,25 +1691,30 @@ class CustomerController extends Controller
             $area_id = $device->applicationArea->id ?? null;
             $nplan = $device->nplan ?? null;
             $service_id = $device->floorplan->service_id ?? null;
+            $versions = $this->parseDeviceVersions($device->version);
 
             if ($area_id && $nplan && $service_id) {
-                $key = 'A' . $area_id . '_N' . $nplan . '_S' . $service_id;
+                foreach ($versions as $version) {
+                    $key = 'A' . $area_id . '_N' . $nplan . '_S' . $service_id . '_V' . ($version !== '' ? $version : 'NA');
 
-                // Verificar si la clave existe usando isset()
-                if (!isset($fetched_devices[$key])) {
-                    $fetched_devices[$key] = [
-                        'area_id' => $area_id,
-                        'area_name' => $device->applicationArea->name ?? 'N/A',
-                        'service_id' => $device->floorplan->service_id,
-                        'service_name' => $device->floorplan->service->name ?? 'N/A',
-                        'versions' => [$device->version],
-                        'nplan' => $nplan,
-                        'code' => $device->code,
-                        'device_ids' => [$device->id]
-                    ];
-                } else {
-                    $fetched_devices[$key]['versions'][] = $device->version;
-                    $fetched_devices[$key]['device_ids'][] = $device->id;
+                    // Verificar si la clave existe usando isset()
+                    if (!isset($fetched_devices[$key])) {
+                        $fetched_devices[$key] = [
+                            'area_id' => $area_id,
+                            'area_name' => $device->applicationArea->name ?? 'N/A',
+                            'service_id' => $device->floorplan->service_id,
+                            'service_name' => $device->floorplan->service->name ?? 'N/A',
+                            'versions' => [$version],
+                            'nplan' => $nplan,
+                            'code' => $device->code,
+                            'device_ids' => [$device->id]
+                        ];
+                    } else {
+                        if (!in_array($version, $fetched_devices[$key]['versions'])) {
+                            $fetched_devices[$key]['versions'][] = $version;
+                        }
+                        $fetched_devices[$key]['device_ids'][] = $device->id;
+                    }
                 }
             }
         }
@@ -1704,7 +1726,7 @@ class CustomerController extends Controller
         } else if ($graph_type == 'cptr') {
             $data = $this->getGraphicDataWithDevicesByPests($customer, $orderIds, $fetched_devices, $req_pests);
         } else {
-            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido', $navigation, $availableServices);
+            return $this->returnGraphicsView($customer, $app_areas, $request->all(), 'error', 'Tipo de gráfico no válido', $navigation, $availableServices, $availableVersions);
         }
 
         return view('customer.show.graphics', [
@@ -1714,10 +1736,60 @@ class CustomerController extends Controller
             'control_points' => $control_points,
             'app_areas' => $app_areas,
             'availableServices' => $availableServices,
+            'availableVersions' => $availableVersions,
             'graphs_types' => $this->graphs_types,
             'request_data' => $request->all(),
             'navigation' => $navigation,
         ])->with('success', 'Resultados encontrados');
+    }
+
+    private function getFirstVersionValue(array $versions): string
+    {
+        $normalizedVersions = array_values(array_unique(array_filter(array_map(fn($version) => (string) $version, $versions), fn($version) => $version !== '')));
+
+        usort($normalizedVersions, function ($a, $b) {
+            return strnatcmp($a, $b);
+        });
+
+        return $normalizedVersions[0] ?? '';
+    }
+
+    private function sortRowsByVersionAndDevice(array &$rows): void
+    {
+        usort($rows, function ($a, $b) {
+            $versionA = $this->getFirstVersionValue($a['versions'] ?? []);
+            $versionB = $this->getFirstVersionValue($b['versions'] ?? []);
+
+            $versionCompare = strnatcmp($versionA, $versionB);
+            if ($versionCompare !== 0) {
+                return $versionCompare;
+            }
+
+            return strnatcasecmp($a['device_name'] ?? '', $b['device_name'] ?? '');
+        });
+    }
+
+    private function parseDeviceVersions($rawVersion): array
+    {
+        $versionText = (string) ($rawVersion ?? '');
+
+        if ($versionText === '') {
+            return [''];
+        }
+
+        $versions = array_map('trim', explode(',', $versionText));
+        $versions = array_filter($versions, fn($value) => $value !== '');
+
+        if (empty($versions)) {
+            return [''];
+        }
+
+        $versions = array_values(array_unique($versions));
+        usort($versions, function ($a, $b) {
+            return strnatcmp((string) $a, (string) $b);
+        });
+
+        return $versions;
     }
 
     private function getGraphicDataWithDevicesByPests($customer, $orderIds, $groupedDevices, $pests)
@@ -1771,15 +1843,14 @@ class CustomerController extends Controller
                 'service' => $group['service_name'],
                 'nplan' => $group['nplan'],
                 'device_name' => $group['code'],
-                'versions' => $group['versions'],
+                'versions' => collect($group['versions'])->map(fn($version) => (string) $version)->unique()->sort(function ($a, $b) {
+                    return strnatcmp($a, $b);
+                })->values()->toArray(),
                 'pests' => $complete_pests, // Usar el array completo
             ];
         }
 
-        // Ordenar por device_name (número de dispositivo)
-        usort($data, function ($a, $b) {
-            return strnatcasecmp($a['device_name'], $b['device_name']);
-        });
+        $this->sortRowsByVersionAndDevice($data);
 
         return [
             'detections' => $data,
@@ -1881,33 +1952,35 @@ class CustomerController extends Controller
                     }
                 }
 
-                $key = $area->id . '_' . $device->nplan . '_' . $device->code . '_' . ($device->floorplan?->service_id ?? 'NA');
+                foreach ($this->parseDeviceVersions($device->version) as $deviceVersion) {
+                    $key = $area->id . '_' . $device->nplan . '_' . $device->code . '_' . ($device->floorplan?->service_id ?? 'NA') . '_' . ($deviceVersion !== '' ? $deviceVersion : 'NA');
 
-                if (!isset($groupedData[$key])) {
-                    $groupedData[$key] = [
-                        'area_id' => $area->id,
-                        'area_name' => $area->name,
-                        'device_name' => $device->code,
-                        'service' => $device->floorplan?->service?->name ?? 'N/A',
-                        'nplan' => $device->nplan,
-                        'device_count' => 1,
-                        '_total_consumption' => $deviceTotalConsumption,
-                        '_total_incidents' => $deviceIncidentCount,
-                        '_weekly_consumption' => $weeklyConsumption,
-                        'versions' => [$device->version],
-                    ];
-                } else {
-                    $groupedData[$key]['device_count']++;
-                    $groupedData[$key]['_total_consumption'] += $deviceTotalConsumption;
-                    $groupedData[$key]['_total_incidents'] += $deviceIncidentCount;
+                    if (!isset($groupedData[$key])) {
+                        $groupedData[$key] = [
+                            'area_id' => $area->id,
+                            'area_name' => $area->name,
+                            'device_name' => $device->code,
+                            'service' => $device->floorplan?->service?->name ?? 'N/A',
+                            'nplan' => $device->nplan,
+                            'device_count' => 1,
+                            '_total_consumption' => $deviceTotalConsumption,
+                            '_total_incidents' => $deviceIncidentCount,
+                            '_weekly_consumption' => $weeklyConsumption,
+                            'versions' => [$deviceVersion],
+                        ];
+                    } else {
+                        $groupedData[$key]['device_count']++;
+                        $groupedData[$key]['_total_consumption'] += $deviceTotalConsumption;
+                        $groupedData[$key]['_total_incidents'] += $deviceIncidentCount;
 
-                    // Sumar consumos semanales
-                    foreach ($weeklyConsumption as $weekLabel => $value) {
-                        $groupedData[$key]['_weekly_consumption'][$weekLabel] += $value;
-                    }
+                        // Sumar consumos semanales
+                        foreach ($weeklyConsumption as $weekLabel => $value) {
+                            $groupedData[$key]['_weekly_consumption'][$weekLabel] += $value;
+                        }
 
-                    if (!in_array($device->version, $groupedData[$key]['versions'])) {
-                        $groupedData[$key]['versions'][] = $device->version;
+                        if (!in_array($deviceVersion, $groupedData[$key]['versions'])) {
+                            $groupedData[$key]['versions'][] = $deviceVersion;
+                        }
                     }
                 }
             }
@@ -1929,7 +2002,9 @@ class CustomerController extends Controller
                 'service' => $group['service'] ?? 'N/A',
                 'nplan' => $group['nplan'],
                 'device_count' => $group['device_count'],
-                'versions' => $group['versions'],
+                'versions' => collect($group['versions'])->map(fn($version) => (string) $version)->unique()->sort(function ($a, $b) {
+                    return strnatcmp($a, $b);
+                })->values()->toArray(),
                 'consumption_value' => $consumptionValue,
                 'weekly_consumption' => $group['_weekly_consumption'] ?? [],
             ];
@@ -1958,10 +2033,7 @@ class CustomerController extends Controller
             }
         }
 
-        // Ordenar por device_name (número de dispositivo)
-        usort($data, function ($a, $b) {
-            return strnatcasecmp($a['device_name'], $b['device_name']);
-        });
+        $this->sortRowsByVersionAndDevice($data);
 
         return [
             'detections' => $data,

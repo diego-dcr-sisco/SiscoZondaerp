@@ -87,6 +87,18 @@
                             </div>
 
                             <div class="col-lg-2">
+                                <label for="version" class="form-label">Version</label>
+                                <select class="form-select form-select-sm" id="version" name="version">
+                                    <option value="" {{ request('version') == null ? 'selected' : '' }}>Todas</option>
+                                    @foreach ($availableVersions as $version)
+                                        <option value="{{ $version }}" {{ request('version') == $version ? 'selected' : '' }}>
+                                            {{ $version }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-lg-2">
                                 <label for="graph_type" class="form-label is-required">Tipo de grafica</label>
                                 <select class="form-select form-select-sm" id="graph_type" name="graph_type" required>
                                     <option value="" {{ request('graph_type') == null ? 'selected' : '' }}> Ninguno
