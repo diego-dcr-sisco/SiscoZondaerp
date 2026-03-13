@@ -185,8 +185,8 @@
 
     </div>
 
-    <input type="hidden" id="customer-id" name="customer_id" value="">
-    <input type="hidden" id="services" name="services" value="">
+    <input type="hidden" id="customer-id" name="customer_id" value="" required>
+    <input type="hidden" id="services" name="services" value="" required>
     <input type="hidden" name="technicians" id="technicians" value="">
 
     <button type="button" class="btn btn-primary my-3" onclick="generateOrder()">{{ __('buttons.store') }}
