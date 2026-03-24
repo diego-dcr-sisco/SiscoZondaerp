@@ -241,26 +241,26 @@
                 </div>
                 <div class="card-body">
                     @can('write_customer')
-                        <a href="{{ route('customer.edit', ['id' => $order->customer->id, 'type' => 1, 'section' => 1]) }}"
+                        <a href="{{ route('customer.edit', ['id' => $order->customer->id ?? '-', 'type' => 1, 'section' => 1]) }}"
                             class="btn btn-link p-0">
                             {{ __('buttons.edit') }} cliente
                         </a>
                     @endcan
                     <input type="hidden" class="form-control form-control-sm" id="customer-id"
-                        value="{{ $order->customer_id }}">
+                        value="{{ $order->customer_id ?? '-' }}"> }}">
 
                     <div class="row">
                         <label for="customer-name" class="col-sm-4 col-form-label">Nombre:</label>
                         <div class="col-sm-4 col-lg-8">
                             <input type="text" class="form-control form-control-sm" id="customer-name"
-                                value="{{ $order->customer->name }}">
+                                value="{{ $order->customer->name ?? '-' }}">
                         </div>
                     </div>
                     <div class="row">
                         <label for="customer-address" class="col-sm-4 col-form-label">Dirección:</label>
                         <div class="col-sm-4 col-lg-8">
                             <input type="text" class="form-control form-control-sm" id="customer-address"
-                                value="{{ $order->customer->address }}">
+                                value="{{ $order->customer->address ?? '-' }}">
                         </div>
                     </div>
 
@@ -268,7 +268,7 @@
                         <label for="customer-email" class="col-sm-4 col-form-label">Correo:</label>
                         <div class="col-sm-4 col-lg-8">
                             <input type="text" class="form-control form-control-sm" id="customer-email"
-                                value="{{ $order->customer->email }}">
+                                value="{{ $order->customer->email ?? '-' }}">
                         </div>
                     </div>
 
@@ -276,7 +276,7 @@
                         <label for="customer-rfc" class="col-sm-4 col-form-label">RFC:</label>
                         <div class="col-sm-4 col-lg-8">
                             <input type="text" class="form-control form-control-sm" id="customer-rfc"
-                                value="{{ $order->customer->rfc }}">
+                                value="{{ $order->customer->rfc ?? '-' }}">
                         </div>
                     </div>
                     <div class="row">
