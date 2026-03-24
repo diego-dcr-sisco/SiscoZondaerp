@@ -19,11 +19,13 @@
                     <label class="form-label">Selecciona un floorplan</label>
                     <select class="form-select" id="floorplanSelect" aria-label="Seleccionar floorplan">
                         <option value="">-- Seleccione un floorplan --</option>
-                        @foreach ($order->customer->floorplans as $floorplan)
-                            <option value="{{ $floorplan->id }}" data-service="{{ $floorplan->service_id }}">
-                                {{ $floorplan->filename }}
-                            </option>
-                        @endforeach
+                        @if(isset($order->customer) && isset($order->customer->floorplans))
+                            @foreach ($order->customer->floorplans as $floorplan)
+                                <option value="{{ $floorplan->id }}" data-service="{{ $floorplan->service_id }}">
+                                    {{ $floorplan->filename }}
+                                </option>
+                            @endforeach
+                        @endif
                     </select>
                 </div>
 

@@ -157,7 +157,7 @@
                         value="{{ $order->id }}" id="checkbox-order-{{ $order->id }}" />
                 </td>
                 <th class="text-decoration-underline" scope="row">{{ $offset + $index + 1 }}</th>
-                <td><span class="fw-bold text-decoration-underline">{{ $order->customer->name }}</span>
+                <td><span class="fw-bold text-decoration-underline">{{ isset($order->customer) ? ($order->customer->name ?? '-') : '-' }}</span>
                     ({{ $order->folio }})</td>
                 <td>{{ \Carbon\Carbon::parse($order->start_time)->format('H:i') }} -
                     {{ $order->end_time ? \Carbon\Carbon::parse($order->end_time)->format('H:i') : '' }}</td>

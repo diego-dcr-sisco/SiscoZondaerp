@@ -55,7 +55,7 @@
                     </div>
                     <div class="row">
                         <span class="col fw-bold">{{ __('order.data.customer') }}:</span>
-                        <span class="col"> {{ $order->customer->name }}</span>
+                        <span class="col"> {{ isset($order->customer) ? ($order->customer->name ?? '-') : '-' }}</span>
                     </div>
                     <div class="row">
                         <span class="col fw-bold">{{ __('order.data.start_time') }}:</span>

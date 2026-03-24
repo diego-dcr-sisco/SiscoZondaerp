@@ -360,13 +360,13 @@
         <div class="middle-row left">
             <div class="bg-blue">DATOS DEL CLIENTE Y SU SEDE</div>
             <div><span style="font-weight: bold;">Razón social</span>:
-                {{ $customer['social_reason'] }}</div>
-            <div><span style="font-weight: bold;">Sede</span>: {{ $customer['name'] }}</div>
-            <div><span style="font-weight: bold;">Dirección</span>: {{ $customer['address'] }}</div>
-            <div><span style="font-weight: bold;">Municipio</span>: {{ $customer['city'] }}</div>
-            <div><span style="font-weight: bold;">Estado/Entidad</span>: {{ $customer['state'] }}
+                {{ $customer['social_reason'] ?? '-' }}</div>
+            <div><span style="font-weight: bold;">Sede</span>: {{ $customer['name'] ?? '-' }}</div>
+            <div><span style="font-weight: bold;">Dirección</span>: {{ $customer['address'] ?? '-' }}</div>
+            <div><span style="font-weight: bold;">Municipio</span>: {{ $customer['city'] ?? '-' }}</div>
+            <div><span style="font-weight: bold;">Estado/Entidad</span>: {{ $customer['state'] ?? '-' }}
             </div>
-            <div><span style="font-weight: bold;">Teléfono</span>: {{ $customer['phone'] }}</div>
+            <div><span style="font-weight: bold;">Teléfono</span>: {{ $customer['phone'] ?? '-' }}</div>
         </div>
 
         <div class="middle-row right">
@@ -574,13 +574,13 @@
                 <!-- Firma Cliente -->
                 <td class="signature-cell">
                     <div class="signature-container">
-                        @if ($customer['signature_base64'])
+                        @if (!empty($customer['signature_base64']))
                             <img src="{{ $customer['signature_base64'] }}" class="signature-image">
                         @endif
                         <div class="signature-title">Nombre y firma del cliente</div>
-                        <div class="signature-name">{{ $customer['signed_by'] }}</div>
-                        <div class="signature-name">{{ $customer['name'] }}</div>
-                        <div class="signature-rfc">RFC: {{ $customer['rfc'] }}</div>
+                        <div class="signature-name">{{ $customer['signed_by'] ?? '-' }}</div>
+                        <div class="signature-name">{{ $customer['name'] ?? '-' }}</div>
+                        <div class="signature-rfc">RFC: {{ $customer['rfc'] ?? '-' }}</div>
                     </div>
                 </td>
 

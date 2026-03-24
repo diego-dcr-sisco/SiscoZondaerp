@@ -11,9 +11,11 @@
                     <div class="input-group mb-3">
                         <select class="form-select" id="floorplan" name="floorplan">
                             <option value="" selected>Seleccionar plano</option>
-                            @foreach ($order->customer->floorplans as $floorplan)
-                                <option value="{{ $floorplan->id }}">{{ $floorplan->filename }}</option>
-                            @endforeach
+                            @if(isset($order->customer) && isset($order->customer->floorplans))
+                                @foreach ($order->customer->floorplans as $floorplan)
+                                    <option value="{{ $floorplan->id }}">{{ $floorplan->filename }}</option>
+                                @endforeach
+                            @endif
                         </select>
                         <input type="number" class="form-control" id="version" name="version" value="1"
                             min="1">
