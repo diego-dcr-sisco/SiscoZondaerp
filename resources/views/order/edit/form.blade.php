@@ -87,27 +87,27 @@
                     <tbody>
                         <tr>
                             <td class="fw-bold" style="width: 30%;">Nombre:</td>
-                            <td class="text-primary fw-bold">{{ $order->customer->name }}</td>
+                            <td class="text-primary fw-bold">{{ $order->customer->name ?? '-' }}</td>
                         </tr>
                         <tr>
                             <td class="fw-bold">Código:</td>
                             <td>
-                                {{ $order->customer->code }}
+                                {{ $order->customer->code ?? '-' }}
                             </td>
                         </tr>
                         <tr>
                             <td class="fw-bold">ID:</td>
                             <td>
-                                {{ $order->customer->id }}
+                                {{ $order->customer->id ?? '-' }}
                             </td>
                         </tr>
                         <tr>
                             <td class="fw-bold">Dirección:</td>
-                            <td class="text-muted">{{ $order->customer->address }}</td>
+                            <td class="text-muted">{{ $order->customer->address ?? '-' }}</td>
                         </tr>
                         <tr>
                             <td class="fw-bold">Tipo:</td>
-                            <td>{{ $order->customer->serviceType->name }}</td>
+                            <td>{{ $order->customer->serviceType->name ?? '-' }}</td>
                         </tr>
                     </tbody>
                     <tfoot>
@@ -225,7 +225,7 @@
                     </div>
                 </div>
                 <textarea class="form-control border-top-0 rounded-0" id="areas" name="areas"
-                    placeholder="Indica las áreas o zonas donde se realizó el trabajo." style="height: 250px;">{{ $order->areas ?? implode(', ', $order->customer->applicationAreas->pluck('name')->toArray()) }}</textarea>
+                    placeholder="Indica las áreas o zonas donde se realizó el trabajo." style="height: 250px;">{{ $order->areas ?? implode(', ', $order->customer->applicationAreas->pluck('name')->toArray() ?? []) }}</textarea>
             </div>
             <div class="col-4">
                 <label class="mb-2">{{ __('order.data.comments') }} </label>
