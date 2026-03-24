@@ -285,7 +285,7 @@
                             <select class="form-select form-select-sm" id="customer-type" disabled>
                                 @foreach ($service_types as $status)
                                     <option value="{{ $status->id }}"
-                                        {{ $status->id == $order->customer->service_type_id ? 'selected' : '' }}>
+                                        {{ $status->id == ($order->customer->service_type_id ?? 0) ? 'selected' : '' }}>
                                         {{ $status->name }}
                                     </option>
                                 @endforeach
