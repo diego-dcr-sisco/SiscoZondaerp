@@ -241,7 +241,7 @@
                 </div>
                 <div class="card-body">
                     @can('write_customer')
-                        <a href="{{ route('customer.edit', ['id' => $order->customer->id ?? '-', 'type' => 1, 'section' => 1]) }}"
+                        <a href="{{ route('customer.edit', ['id' => $order->customer->id ?? 0, 'type' => 1, 'section' => 1]) }}"
                             class="btn btn-link p-0">
                             {{ __('buttons.edit') }} cliente
                         </a>
