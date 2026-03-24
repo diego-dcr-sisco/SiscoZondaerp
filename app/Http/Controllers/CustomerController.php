@@ -1225,6 +1225,12 @@ class CustomerController extends Controller
     public function destroy(string $id)
     {
         $customer = Customer::find($id);
+        
+        if ($customer->orders()->count() > 0) {
+            session()->flash('error', 'No se puede eliminar el cliente porque tiene ordenes de servicio asociadas.');
+            return back();
+        }
+
         if ($customer->general_sedes == 0) {
             Customer::where('general_sedes', $customer->id)->delete();
         }
@@ -1583,8 +1589,8 @@ class CustomerController extends Controller
                         ->where('status_id', self::STATUS_APPROVED);
                 });
         })
-        ->orderBy('name')
-        ->get(['id', 'name']);
+            ->orderBy('name')
+            ->get(['id', 'name']);
 
         // Si no hay filtros aplicados o no está seleccionado el servicio, mostrar vista sin datos
         if (!$this->hasRequiredFields($request->all()) || !$request->filled('service_id')) {
