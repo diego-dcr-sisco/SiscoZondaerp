@@ -1801,9 +1801,9 @@ class CustomerController extends Controller
     private function getGraphicDataWithDevicesByPests($customer, $orderIds, $groupedDevices, $pests)
     {
         $data = [];
-        $allPestNames = []; // Array para recolectar todos los nombres de plagas
+        $allPestNames = [];
 
-        // PRIMERO: Recolectar todos los device_ids de todos los grupos
+        // Recolectar todos los device_ids de todos los grupos
         $allDeviceIds = [];
         foreach ($groupedDevices as $group) {
             $allDeviceIds = array_merge($allDeviceIds, $group['device_ids']);
@@ -1812,7 +1812,7 @@ class CustomerController extends Controller
         // Obtener todas las plagas de todos los dispositivos
         $allDevicePests = DevicePest::whereIn('device_id', $allDeviceIds)
             ->whereIn('order_id', $orderIds)
-            ->with('pest:id,name') // Cargar relación con pest
+            ->with('pest:id,name')
             ->get();
 
         // Obtener todos los nombres únicos de plagas
@@ -1823,44 +1823,66 @@ class CustomerController extends Controller
             ->values()
             ->toArray();
 
-
         $grand_totals_pests = array_fill_keys($allPestNames, 0);
 
-        // SEGUNDO: Procesar cada grupo
-        foreach ($groupedDevices as $key => $group) {
-            $device_pests = DevicePest::whereIn('device_id', $group['device_ids'])
-                ->whereIn('order_id', $orderIds)
-                ->with('pest:id,name')
-                ->get();
-
-            // Agrupar por plaga y sumar totales
-            $pest_totals = $device_pests->groupBy('pest.name')->map->sum('total');
-            $fetched_pests = $pest_totals->toArray();
-
-            // Asegurarse de que todas las plagas estén en el array (incluso con 0)
-            $complete_pests = array_fill_keys($allPestNames, 0);
-            foreach ($fetched_pests as $pest_name => $total) {
-                $complete_pests[$pest_name] = $total;
-                $grand_totals_pests[$pest_name] += $total;
+        // Agrupar dispositivos por versión
+        $devicesByVersion = [];
+        foreach ($groupedDevices as $group) {
+            foreach ($group['versions'] as $version) {
+                $versionKey = (string)$version;
+                if (!isset($devicesByVersion[$versionKey])) {
+                    $devicesByVersion[$versionKey] = [];
+                }
+                $devicesByVersion[$versionKey][] = $group;
             }
-
-            $data[] = [
-                'area_name' => $group['area_name'],
-                'service' => $group['service_name'],
-                'nplan' => $group['nplan'],
-                'device_name' => $group['code'],
-                'versions' => collect($group['versions'])->map(fn($version) => (string) $version)->unique()->sort(function ($a, $b) {
-                    return strnatcmp($a, $b);
-                })->values()->toArray(),
-                'pests' => $complete_pests, // Usar el array completo
-            ];
         }
 
-        $this->sortRowsByVersionAndDevice($data);
+        // Ordenar las versiones naturalmente
+        uksort($devicesByVersion, function ($a, $b) {
+            return strnatcmp($a, $b);
+        });
+
+        // Para cada versión, ordenar los dispositivos por nplan ascendente
+        foreach ($devicesByVersion as $version => &$groups) {
+            usort($groups, function ($a, $b) {
+                return strnatcmp((string)($a['nplan'] ?? ''), (string)($b['nplan'] ?? ''));
+            });
+        }
+        unset($groups);
+
+        // Construir el arreglo final de datos agrupado por versión
+        foreach ($devicesByVersion as $version => $groups) {
+            foreach ($groups as $group) {
+                $device_pests = DevicePest::whereIn('device_id', $group['device_ids'])
+                    ->whereIn('order_id', $orderIds)
+                    ->with('pest:id,name')
+                    ->get();
+
+                $pest_totals = $device_pests->groupBy('pest.name')->map->sum('total');
+                $fetched_pests = $pest_totals->toArray();
+
+                $complete_pests = array_fill_keys($allPestNames, 0);
+                foreach ($fetched_pests as $pest_name => $total) {
+                    $complete_pests[$pest_name] = $total;
+                    $grand_totals_pests[$pest_name] += $total;
+                }
+
+                $data[] = [
+                    'area_name' => $group['area_name'],
+                    'service' => $group['service_name'],
+                    'nplan' => $group['nplan'],
+                    'device_name' => $group['code'],
+                    'versions' => [(string)$version],
+                    'pests' => $complete_pests,
+                ];
+            }
+        }
+
+        // No es necesario sortRowsByVersionAndDevice porque ya está agrupado y ordenado
 
         return [
             'detections' => $data,
-            'headers' => $allPestNames, // Los headers ya están aquí
+            'headers' => $allPestNames,
             'grand_totals' => $grand_totals_pests,
         ];
     }
