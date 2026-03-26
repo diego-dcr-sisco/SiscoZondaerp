@@ -2014,8 +2014,8 @@ class CustomerController extends Controller
             }
         }
 
-        // Calcular el valor final de consumo para cada grupo
-        $data = [];
+        // Agrupar datos por versión
+        $dataByVersion = [];
         foreach ($groupedData as $key => $group) {
             if ($group['_total_incidents'] > 0) {
                 $consumptionValue = $group['_total_consumption'];
@@ -2023,45 +2023,63 @@ class CustomerController extends Controller
                 $consumptionValue = 0;
             }
 
-            $data[] = [
-                'area_id' => $group['area_id'],
-                'area_name' => $group['area_name'],
-                'device_name' => $group['device_name'],
-                'service' => $group['service'] ?? 'N/A',
-                'nplan' => $group['nplan'],
-                'device_count' => $group['device_count'],
-                'versions' => collect($group['versions'])->map(fn($version) => (string) $version)->unique()->sort(function ($a, $b) {
-                    return strnatcmp($a, $b);
-                })->values()->toArray(),
-                'consumption_value' => $consumptionValue,
-                'weekly_consumption' => $group['_weekly_consumption'] ?? [],
-            ];
+            // Puede haber varias versiones por grupo
+            foreach ($group['versions'] as $version) {
+                $versionKey = (string)$version;
+                if (!isset($dataByVersion[$versionKey])) {
+                    $dataByVersion[$versionKey] = [];
+                }
+                $dataByVersion[$versionKey][] = [
+                    'area_id' => $group['area_id'],
+                    'area_name' => $group['area_name'],
+                    'device_name' => $group['device_name'],
+                    'service' => $group['service'] ?? 'N/A',
+                    'nplan' => $group['nplan'],
+                    'device_count' => $group['device_count'],
+                    'versions' => [(string)$version],
+                    'consumption_value' => $consumptionValue,
+                    'weekly_consumption' => $group['_weekly_consumption'] ?? [],
+                ];
+            }
         }
+
+        // Ordenar las versiones naturalmente
+        uksort($dataByVersion, function ($a, $b) {
+            return strnatcmp($a, $b);
+        });
+
+        // Para cada versión, ordenar los dispositivos por nplan ascendente
+        $data = [];
+        foreach ($dataByVersion as $version => &$rows) {
+            usort($rows, function ($a, $b) {
+                return strnatcmp((string)($a['nplan'] ?? ''), (string)($b['nplan'] ?? ''));
+            });
+            foreach ($rows as $row) {
+                $data[] = $row;
+            }
+        }
+        unset($rows);
 
         // Calcular totales generales
         $grand_total_consumption = 0;
         $grand_totals_weekly = [];
 
         if (!empty($weekHeaders)) {
-            // Inicializar totales semanales
             foreach ($weekHeaders as $weekLabel) {
                 $grand_totals_weekly[$weekLabel] = 0;
             }
-
-            // Sumar consumos de todos los dispositivos
             foreach ($data as $row) {
                 foreach ($row['weekly_consumption'] as $weekLabel => $value) {
                     $grand_totals_weekly[$weekLabel] += $value;
                 }
             }
         } else {
-            // Sumar consumo total
             foreach ($data as $row) {
                 $grand_total_consumption += $row['consumption_value'];
             }
         }
 
-        $this->sortRowsByVersionAndDevice($data);
+        // Ya no es necesario sortRowsByVersionAndDevice
 
         return [
             'detections' => $data,
