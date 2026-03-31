@@ -32,9 +32,10 @@ class SearchQuerySeeder extends Seeder
 
             $fetch_orders = Order::whereIn('id', $fetch_order_ids)->get();
             echo "------------------- Orders for Service ID: {$service_id} --------------------- \n";
-            foreach ($fetch_orders as $order) {
+            foreach ($fetch_orders as $index => $order) {
                 $status_name = isset($order->status->name) ? $order->status->name : '-';
-                echo "> Order ID: {$order->id}, Service ID: {$service_id}, Status: {$status_name}\n";
+                $pos = $index + 1;
+                echo " {$pos}) Order ID: {$order->id}, Service ID: {$service_id}, Status: {$status_name}\n";
             }
         }
     }
