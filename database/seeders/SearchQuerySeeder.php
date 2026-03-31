@@ -26,7 +26,7 @@ class SearchQuerySeeder extends Seeder
             ->where('contract_id', $contract_id)
             ->get();
 
-        echo "------------------- Orders for Customer ID: {$customer->id} and Contract ID: {$contract_id} --------------------- \n";
+        echo "------------------- Orders for Customer ID ({$customer->id}): {$customer->name} and Contract ID: {$contract_id} --------------------- \n";
         foreach ($services_ids as $service_id) {
             $fetch_order_ids = OrderService::where('service_id', $service_id)
                 ->whereIn('order_id', $orders->pluck('id')->toArray())
