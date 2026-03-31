@@ -20,10 +20,13 @@ class SearchQuerySeeder extends Seeder
         $contract_id = 250;
         $services_ids = [144, 58];
 
+        $customer = \App\Models\Customer::find($customer_id);
+
         $orders = Order::where('customer_id', $customer_id)
             ->where('contract_id', $contract_id)
             ->get();
 
+        echo "------------------- Orders for Customer ID: {$customer->id} and Contract ID: {$contract_id} --------------------- \n";
         foreach ($services_ids as $service_id) {
             $fetch_order_ids = OrderService::where('service_id', $service_id)
                 ->whereIn('order_id', $orders->pluck('id')->toArray())
@@ -32,10 +35,11 @@ class SearchQuerySeeder extends Seeder
 
             $fetch_orders = Order::whereIn('id', $fetch_order_ids)->get();
             echo "------------------- Orders for Service ID: {$service_id} --------------------- \n";
+            
             foreach ($fetch_orders as $index => $order) {
                 $status_name = isset($order->status->name) ? $order->status->name : '-';
                 $pos = $index + 1;
-                echo " {$pos}) Order ID: {$order->id}, Service ID: {$service_id}, Status: {$status_name}\n";
+                echo " {$pos}) Order ID: {$order->id}, Service ID: {$service_id}, Customer ID: {$order->customer_id}, Status: {$status_name}\n";
             }
         }
     }
