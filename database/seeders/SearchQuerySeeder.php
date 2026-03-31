@@ -34,7 +34,7 @@ class SearchQuerySeeder extends Seeder
             echo "------------------- Orders for Service ID: {$service_id} --------------------- \n";
             foreach ($fetch_orders as $order) {
                 $status_name = isset($order->status->name) ? $order->status->name : '-';
-                echo "> Order ID: {$order->id}, Status: {$status_name}\n";
+                echo "> Order ID: {$order->id}, Service ID: {$service_id}, Status: {$status_name}\n";
             }
         }
     }
