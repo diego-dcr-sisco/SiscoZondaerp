@@ -20,17 +20,19 @@ class SearchQuerySeeder extends Seeder
         $contract_id = 250;
         $services_ids = [144, 58];
 
+        $orders = Order::where('customer_id', $customer_id)
+            ->where('contract_id', $contract_id)
+            ->get();
+
         foreach ($services_ids as $service_id) {
-            $fetch_order_ids = OrderService::where('customer_id', $customer_id)
-                ->where('contract_id', $contract_id)
-                ->where('service_id', $service_id)
+            $fetch_order_ids = OrderService::where('service_id', $service_id)
+                ->whereIn('order_id', $orders->pluck('id')->toArray())
                 ->pluck('order_id')
                 ->toArray();
 
-            $orders = Order::whereIn('id', $fetch_order_ids)->get();
+            $fetch_orders = Order::whereIn('id', $fetch_order_ids)->get();
             echo "------------------- Orders for Service ID: {$service_id} --------------------- \n";
-            foreach ($orders as $order) {
-                $search_query = $order->search_query;
+            foreach ($fetch_orders as $order) {
                 $status_name = isset($order->status->name) ? $order->status->name : '-';
                 echo "> Order ID: {$order->id}, Status: {$status_name}\n";
             }
