@@ -18,7 +18,7 @@ class SearchQuerySeeder extends Seeder
     {
         $customer_id = 330;
         $contract_id = 250;
-        $services_ids = [144, 58];
+        $services_ids = [54];
         //$service_id = 58;
 
         $customer = \App\Models\Customer::find($customer_id);
