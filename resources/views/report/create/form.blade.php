@@ -560,7 +560,7 @@
                 ['font', ['fontsize', 'fontname']],
                 ['para', ['ul', 'ol', 'paragraph']],
                 ['height', ['height']],
-                ['insert', ['table', 'link']],
+                ['insert', ['table', 'link', 'picture']],
             ],
             buttons: {
                 imageSizeCustom: function(context) {

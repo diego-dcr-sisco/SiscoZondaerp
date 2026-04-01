@@ -93,6 +93,56 @@
                     ['height', ['height']],
                     ['fontsize', ['fontsize']],
                 ],
+                buttons: {
+                    imageSizeCustom: function(context) {
+                        const ui = $.summernote.ui;
+
+                        return ui.button({
+                            contents: '<span class="note-icon-magic"></span>',
+                            tooltip: 'Tamaño personalizado',
+                            click: function() {
+                                const editable = context.layoutInfo.editable;
+                                const target = editable.data('target');
+
+                                if (!target || target[0].tagName !== 'IMG') {
+                                    return;
+                                }
+
+                                const currentWidth = parseInt(target.css('width'), 10) ||
+                                    parseInt(target.attr('width'), 10) || 100;
+
+                                const input = prompt(
+                                    'Ingresa el ancho de la imagen (en px). Ejemplo: 320',
+                                    currentWidth
+                                );
+
+                                if (input === null) {
+                                    return;
+                                }
+
+                                const width = parseInt(input, 10);
+                                if (Number.isNaN(width) || width <= 0) {
+                                    alert('Ingresa un valor valido mayor a 0.');
+                                    return;
+                                }
+
+                                target.css({
+                                    width: width + 'px',
+                                    height: 'auto',
+                                    maxWidth: '100%'
+                                });
+                                target.attr('width', width);
+                            }
+                        }).render();
+                    }
+                },
+                popover: {
+                    image: [
+                        ['imagesize', ['resizeFull', 'resizeHalf', 'resizeQuarter', 'imageSizeCustom']],
+                        ['float', ['floatLeft', 'floatRight', 'floatNone']],
+                        ['remove', ['removeMedia']]
+                    ]
+                },
                 fontSize: ['8', '10', '12', '14', '16'],
                 lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
                 callbacks: {
