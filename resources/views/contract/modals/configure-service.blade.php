@@ -1414,29 +1414,73 @@
     }
 
     function generateOrdersFromDates(dates, configId, existingOrders = []) {
-        return dates.map((date, index) => {
-            // Buscar si ya existe una orden para esta fecha
-            const existingOrder = existingOrders.find(order =>
-                new Date(order.programmed_date).toISOString() === new Date(date).toISOString()
-            );
+        const normalizeDateKey = (value) => {
+            const parsedDate = new Date(value);
+            return isNaN(parsedDate.getTime()) ? null : parsedDate.toISOString().split('T')[0];
+        };
 
+        // Eliminar duplicados por fecha para evitar órdenes repetidas al recalcular.
+        const uniqueDates = [];
+        const seenDateKeys = new Set();
+
+        (dates || []).forEach((date) => {
+            const key = normalizeDateKey(date);
+            if (key && !seenDateKeys.has(key)) {
+                seenDateKeys.add(key);
+                uniqueDates.push(date);
+            }
+        });
+
+        const generatedOrders = uniqueDates.map((date, index) => {
+            const dateKey = normalizeDateKey(date);
+
+            // Buscar si ya existe una orden para esta fecha
+            const existingOrder = (existingOrders || []).find(order =>
+                normalizeDateKey(order.programmed_date) === dateKey
+            );
 
             // Si existe, mantener el ID original, sino crear temporal
             return existingOrder ? {
-                id: existingOrder.id, // ← MANTENER ID EXISTENTE
+                id: existingOrder.id,
                 folio: existingOrder.folio,
                 programmed_date: date,
                 status_id: existingOrder.status_id,
                 status_name: existingOrder.status_name,
                 url: existingOrder.url
             } : {
-                id: `temp_${configId}_${index}`, // ← SOLO TEMP PARA NUEVAS
+                id: `temp_${configId}_${index}`,
                 folio: null,
                 programmed_date: date,
                 status_id: 1,
                 status_name: 'Pendiente',
                 url: null
             };
+        });
+
+        // Conservar órdenes no pendientes aunque sus fechas no estén en la nueva generación.
+        const generatedKeys = new Set(
+            generatedOrders
+            .map(order => normalizeDateKey(order.programmed_date))
+            .filter(Boolean)
+        );
+
+        const lockedOrders = (existingOrders || [])
+            .filter(order => parseInt(order.status_id) !== 1)
+            .filter(order => {
+                const key = normalizeDateKey(order.programmed_date);
+                return key && !generatedKeys.has(key);
+            })
+            .map(order => ({
+                id: order.id,
+                folio: order.folio,
+                programmed_date: order.programmed_date,
+                status_id: order.status_id,
+                status_name: order.status_name,
+                url: order.url
+            }));
+
+        return [...generatedOrders, ...lockedOrders].sort((a, b) => {
+            return new Date(a.programmed_date) - new Date(b.programmed_date);
         });
     }
 
