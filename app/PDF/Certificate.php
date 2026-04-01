@@ -151,6 +151,37 @@ class Certificate
             $html
         );
 
+        // DOMPDF renderiza mejor el ancho de imagen cuando existe atributo width en px.
+        $html = preg_replace_callback('/<img\b[^>]*>/i', function ($matches) {
+            $imgTag = $matches[0];
+
+            if (!preg_match('/style\s*=\s*(["\'])(.*?)\1/i', $imgTag, $styleMatch)) {
+                return $imgTag;
+            }
+
+            $styleValue = $styleMatch[2] ?? '';
+            if (!preg_match('/width\s*:\s*([0-9]+(?:\.[0-9]+)?)\s*(px|%)/i', $styleValue, $widthMatch)) {
+                return $imgTag;
+            }
+
+            $widthValue = (int) round((float) $widthMatch[1]);
+            $unit = strtolower($widthMatch[2]);
+
+            if ($unit !== 'px' || $widthValue <= 0) {
+                return $imgTag;
+            }
+
+            if (preg_match('/\swidth\s*=\s*["\'][^"\']*["\']/i', $imgTag)) {
+                return preg_replace(
+                    '/(\swidth\s*=\s*["\'])[^"\']*(["\'])/i',
+                    '$1' . $widthValue . '$2',
+                    $imgTag
+                );
+            }
+
+            return preg_replace('/<img/i', '<img width="' . $widthValue . '"', $imgTag, 1);
+        }, $html);
+
         return trim($html);
     }
 
