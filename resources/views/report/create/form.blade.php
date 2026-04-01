@@ -23,7 +23,7 @@
         $defaultConfig = [
             'keepHtml' => true,
             'keepOnlyTags' =>
-                '<p><br><ul><ol><li><a><b><strong><table><thead><tbody><tfoot><tr><th><td><col><colgroup><caption><div>',
+                '<p><br><ul><ol><li><a><b><strong><table><thead><tbody><tfoot><tr><th><td><col><colgroup><caption><div><img>',
             'badTags' => ['style', 'script', 'applet', 'embed', 'noframes', 'noscript'],
             'badAttributes' => ['style', 'start', 'dir', 'class'],
             'newline' => '<br>',
