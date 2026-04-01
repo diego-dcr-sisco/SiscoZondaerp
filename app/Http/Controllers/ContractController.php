@@ -570,6 +570,39 @@ class ContractController extends Controller
                     ]);
                 }
 
+                // Proteger órdenes no pendientes aunque no lleguen en el payload del frontend.
+                // Esto evita perder referencia del setting o historial al reconfigurar días/números.
+                $existingNonPendingOrders = Order::where('contract_id', $contract->id)
+                    ->where('setting_id', $contract_service->id)
+                    ->where('status_id', '!=', 1)
+                    ->whereHas('orderServices', function ($query) use ($data) {
+                        $query->where('service_id', $data->service_id);
+                    })
+                    ->get();
+
+                if (!isset($data->orders) || !is_array($data->orders)) {
+                    $data->orders = [];
+                }
+
+                $incomingOrderIds = collect($data->orders)
+                    ->filter(function ($order) {
+                        return isset($order->id) && !str_starts_with($order->id, 'temp_');
+                    })
+                    ->map(function ($order) {
+                        return (int) $order->id;
+                    })
+                    ->toArray();
+
+                foreach ($existingNonPendingOrders as $nonPendingOrder) {
+                    if (!in_array((int) $nonPendingOrder->id, $incomingOrderIds, true)) {
+                        $data->orders[] = (object) [
+                            'id' => (string) $nonPendingOrder->id,
+                            'programmed_date' => $nonPendingOrder->programmed_date,
+                            'status_id' => $nonPendingOrder->status_id,
+                        ];
+                    }
+                }
+
                 $updated_settings[] = $contract_service->id;
 
                 foreach ($data->orders as $order) {
@@ -653,16 +686,26 @@ class ContractController extends Controller
             }
         }
 
+        $protected_settings = Order::where('contract_id', $contract->id)
+            ->where('status_id', '!=', 1)
+            ->whereNotNull('setting_id')
+            ->pluck('setting_id')
+            ->unique()
+            ->toArray();
+
         $delete_settings = ContractService::where('contract_id', $contract->id)
             ->whereNotIn('id', $updated_settings)
             ->whereNotIn('id', $keep_settings)
+            ->whereNotIn('id', $protected_settings)
             ->whereIn('service_id', $updated_services)
             ->get();
 
         $delete_orders = Order::where('contract_id', $contract->id)
             ->whereNotIn('id', $updated_orders)
-            ->whereIn('setting_id', $updated_settings)
-            ->orWhereIn('setting_id', $delete_settings->pluck('id'))
+            ->where(function ($query) use ($updated_settings, $delete_settings) {
+                $query->whereIn('setting_id', $updated_settings)
+                    ->orWhereIn('setting_id', $delete_settings->pluck('id'));
+            })
             ->where('status_id', 1)
             ->get();
 
@@ -670,15 +713,11 @@ class ContractController extends Controller
         $inactive_techs = Technician::whereIn('user_id', $inactive_users->pluck('id'))->get();
 
         if ($delete_settings->isNotEmpty()) {
-            $delete_settings->each(function ($setting) {
-                $setting->delete();
-            });
+            ContractService::whereIn('id', $delete_settings->pluck('id'))->delete();
         }
 
         if ($delete_orders->isNotEmpty()) {
-            $delete_orders->each(function ($order) {
-                $order->delete();
-            });
+            Order::whereIn('id', $delete_orders->pluck('id'))->delete();
 
             OrderService::whereIn('order_id', $delete_orders->pluck('id'))->delete();
             OrderTechnician::whereIn('order_id', $delete_orders->pluck('id'))->delete();
@@ -885,7 +924,7 @@ class ContractController extends Controller
 
         foreach ($orders as $order) {
             $folio = $base_folio . '-' . $current_index;
-            $order->update(['folio' => $folio]);
+            Order::where('id', $order->id)->update(['folio' => $folio]);
             $current_index++;
         }
 

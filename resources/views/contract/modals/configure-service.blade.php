@@ -151,6 +151,12 @@
                 </div>
 
                 <input type="hidden" id="service-id" value="" />
+
+                <div class="alert alert-info mt-3 mb-0" role="alert">
+                    <i class="bi bi-shield-check me-1"></i>
+                    Al guardar, solo se actualizan las órdenes en estado <strong>Pendiente</strong>. Las órdenes con
+                    otro estado se conservan sin cambios.
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
