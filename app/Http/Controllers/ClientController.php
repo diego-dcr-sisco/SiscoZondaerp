@@ -18,7 +18,9 @@ use App\Models\OrderService;
 use App\Models\Service;
 use App\Models\UserCustomer;
 use App\Models\User;
+use App\Models\DatabaseLog;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 class ClientController extends Controller
@@ -30,6 +32,24 @@ class ClientController extends Controller
     private $disk_type = 'google'; // Cambiar a 'google' o 'public' según necesites
 
     private $size = 50;
+
+    private function logClientFolderChange(string $event, array $payload = []): void
+    {
+        try {
+            DatabaseLog::create([
+                'user_id' => Auth::id(),
+                'model_type' => 'client_system_folder',
+                'model_id' => null,
+                'sql_query' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'event' => $event,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error logging client folder change: ' . $e->getMessage(), [
+                'event' => $event,
+                'payload' => $payload,
+            ]);
+        }
+    }
 
     private $mip_directories = [
         'MIP',
@@ -663,6 +683,12 @@ class ClientController extends Controller
 
         if ($disk->directoryExists($path)) {
             $disk->move($path, $new_path);
+
+            $this->logClientFolderChange('client_folder_renamed', [
+                'old_path' => $path,
+                'new_path' => $new_path,
+                'disk' => $this->disk_type,
+            ]);
         }
 
         return back();
@@ -715,6 +741,11 @@ class ClientController extends Controller
                 // Para almacenamiento local
                 $this->deleteLocalDirectory($disk, $path);
             }
+
+            $this->logClientFolderChange('client_folder_deleted', [
+                'path' => $path,
+                'disk' => $this->disk_type,
+            ]);
 
             return back()->with('success', 'Directorio eliminado exitosamente');
 
@@ -857,6 +888,12 @@ class ClientController extends Controller
                     ];
                     $deletedCount++;
                     \Log::info("Directorio eliminado: {$dirPath}");
+
+                    $this->logClientFolderChange('client_folder_deleted_mass', [
+                        'path' => $dirPath,
+                        'original_input' => $directory,
+                        'disk' => $this->disk_type,
+                    ]);
                 } else {
                     throw new \Exception("Error al eliminar el directorio");
                 }
@@ -1069,6 +1106,12 @@ class ClientController extends Controller
                     'new_path' => $target
                 ];
 
+                $this->logClientFolderChange('client_folder_copied', [
+                    'source_path' => $source,
+                    'target_path' => $target,
+                    'disk' => $this->disk_type,
+                ]);
+
             } catch (\Exception $e) {
                 // Limpieza en caso de error
                 if ($disk->exists($target)) {
@@ -1166,6 +1209,12 @@ class ClientController extends Controller
                         'old_path' => $source,
                         'new_path' => $target
                     ];
+
+                    $this->logClientFolderChange('client_folder_moved', [
+                        'old_path' => $source,
+                        'new_path' => $target,
+                        'disk' => $this->disk_type,
+                    ]);
                     
                     \Log::info("Directorio movido: {$source} -> {$target}");
                 } else {
@@ -1572,6 +1621,12 @@ class ClientController extends Controller
                     $this->createMipStructure($fullPath);
                 }
 
+                $this->logClientFolderChange('client_folder_created', [
+                    'path' => $fullPath,
+                    'is_mip' => (bool) $isMip,
+                    'disk' => $this->disk_type,
+                ]);
+
                 return back()->with('success', 'Carpeta "' . $folderName . '" creada exitosamente');
 
             } catch (\Exception $e) {
@@ -1650,6 +1705,12 @@ class ClientController extends Controller
                 if (!$disk->directoryExists($currentPath)) {
                     if ($disk->makeDirectory($currentPath)) {
                         $createdFolders[] = $currentPath;
+
+                        $this->logClientFolderChange('client_folder_created_recursive', [
+                            'path' => $currentPath,
+                            'is_mip' => (bool) $isMip,
+                            'disk' => $this->disk_type,
+                        ]);
                     } else {
                         throw new \Exception("Error al crear la carpeta: {$currentPath}");
                     }
@@ -1769,6 +1830,13 @@ class ClientController extends Controller
                 $this->updateDirectoryPermissions($currentPath, $newPath);
 
                 Log::info("Carpeta renombrada: {$currentPath} -> {$newPath}");
+
+                $this->logClientFolderChange('client_folder_renamed', [
+                    'old_path' => $currentPath,
+                    'new_path' => $newPath,
+                    'is_mip' => (bool) $isMip,
+                    'disk' => $this->disk_type,
+                ]);
 
                 return response()->json([
                     'success' => true,
