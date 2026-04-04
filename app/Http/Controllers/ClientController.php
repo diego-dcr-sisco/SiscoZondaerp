@@ -20,8 +20,10 @@ use App\Models\UserCustomer;
 use App\Models\User;
 use App\Models\DatabaseLog;
 use Carbon\Carbon;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use League\Flysystem\FilesystemOperator;
 
 class ClientController extends Controller
 {
@@ -72,16 +74,61 @@ class ClientController extends Controller
     ];
 
     // Método helper para obtener el disco configurado
+    /**
+     * @return FilesystemAdapter
+     */
     private function getDisk()
     {
-        return Storage::disk($this->disk_type);
+        /** @var FilesystemAdapter $disk */
+        $disk = Storage::disk($this->disk_type);
+
+        return $disk;
+    }
+
+    private function getDiskDriver(): FilesystemOperator
+    {
+        return $this->getDisk()->getDriver();
+    }
+
+    private function diskDirectoryExists(string $path): bool
+    {
+        return $this->getDiskDriver()->directoryExists($path);
+    }
+
+    private function diskFileExists(string $path): bool
+    {
+        return $this->getDiskDriver()->fileExists($path);
+    }
+
+    private function diskCreateDirectory(string $path): void
+    {
+        $this->getDiskDriver()->createDirectory($path);
+    }
+
+    private function diskListContents(string $path, bool $recursive = false)
+    {
+        return $this->getDiskDriver()->listContents($path, $recursive);
+    }
+
+    private function diskWrite(string $path, string $contents): void
+    {
+        $this->getDiskDriver()->write($path, $contents);
+    }
+
+    private function diskRead(string $path): string
+    {
+        return $this->getDiskDriver()->read($path);
+    }
+
+    private function diskMimeType(string $path): string
+    {
+        return $this->getDiskDriver()->mimeType($path);
     }
 
     // Método para listar directorios (compatible con Flysystem v3)
     private function getDirectoriesInPath($path)
     {
-        $disk = $this->getDisk();
-        $contents = $disk->listContents($path, false);
+        $contents = $this->diskListContents($path, false);
 
         return $contents->filter(fn($item) => $item->isDir())
             ->map(fn($item) => $item->path())
@@ -91,8 +138,7 @@ class ClientController extends Controller
     // Método para listar archivos (compatible con Flysystem v3)
     private function listFiles($path)
     {
-        $disk = $this->getDisk();
-        $contents = $disk->listContents($path, false);
+        $contents = $this->diskListContents($path, false);
 
         return $contents->filter(fn($item) => $item->isFile())
             ->map(fn($item) => $item->path())
@@ -102,8 +148,7 @@ class ClientController extends Controller
     // Método para listar recursivamente
     private function listAll($path, $recursive = false)
     {
-        $disk = $this->getDisk();
-        return $disk->listContents($path, $recursive)->toArray();
+        return $this->diskListContents($path, $recursive)->toArray();
     }
 
     public function localClientSystemFormat($local_data)
@@ -199,8 +244,8 @@ class ClientController extends Controller
     {
         foreach ($this->mip_directories as $name) {
             $folder_name = $path . '/' . $name;
-            if (!$this->getDisk()->directoryExists($folder_name)) {
-                $this->getDisk()->createDirectory($folder_name);
+            if (!$this->diskDirectoryExists($folder_name)) {
+                $this->diskCreateDirectory($folder_name);
             }
         }
         return back();
@@ -232,9 +277,9 @@ class ClientController extends Controller
         sort($local_files);
 
         $links = $this->getBreadcrumb($path);
-        $user = User::find(auth()->user()->id);
+        $user = User::find(Auth::id());
 
-        if ($disk->directoryExists($dir_name)) {
+        if ($this->diskDirectoryExists($dir_name)) {
             $mip_dirs = $this->getDirectoriesInPath($dir_name);
             $mip_files = $this->listFiles($dir_name);
         }
@@ -295,7 +340,7 @@ class ClientController extends Controller
 
             try {
                 // Verificar si el archivo ya existe
-                if ($disk->fileExists($fullPath)) {
+                if ($this->diskFileExists($fullPath)) {
                     // Obtener timestamp para nombre único
                     $timestamp = time();
                     $pathInfo = pathinfo($filename);
@@ -307,14 +352,14 @@ class ClientController extends Controller
                     $fullPath = $file_path . '/' . $filename;
 
                     // Verificar nuevamente (por si acaso)
-                    if ($disk->fileExists($fullPath)) {
+                    if ($this->diskFileExists($fullPath)) {
                         $skippedFiles[] = $originalFilename . ' (ya existe)';
                         continue;
                     }
                 }
 
                 // Subir el archivo
-                $disk->write($fullPath, file_get_contents($file->getRealPath()));
+                $this->diskWrite($fullPath, file_get_contents($file->getRealPath()));
                 $uploadedFiles[] = $filename;
 
             } catch (\Exception $e) {
@@ -499,7 +544,7 @@ class ClientController extends Controller
 
     public function searchReport(Request $request)
     {
-        $user = User::find(auth()->user()->id);
+        $user = User::find(Auth::id());
         $sedes = Customer::where('general_sedes', '!=', 0)->get();
         $business_lines = LineBusiness::all();
         $section = 1;
@@ -554,7 +599,7 @@ class ClientController extends Controller
 
             $disk = $this->getDisk();
 
-            if (!$disk->directoryExists($search_path)) {
+            if (!$this->diskDirectoryExists($search_path)) {
                 return [];
             }
 
@@ -594,7 +639,7 @@ class ClientController extends Controller
     {
         $files = [];
         $business_lines = LineBusiness::all();
-        $user = User::find(auth()->user()->id);
+        $user = User::find(Auth::id());
         $disk = $this->getDisk();
         $section = 2;
 
@@ -605,7 +650,7 @@ class ClientController extends Controller
         $folder_name = Customer::find($customer_id)->name;
 
         // Obtener todos los directorios recursivamente
-        $allContents = $disk->listContents($this->reports_path, true);
+        $allContents = $this->diskListContents($this->reports_path, true);
         $directories = $allContents->filter(fn($item) => $item->isDir())
             ->map(fn($item) => $item->path())
             ->toArray();
@@ -615,7 +660,7 @@ class ClientController extends Controller
         });
 
         foreach ($matchingDirectories as $directory) {
-            $dirFiles = $disk->listContents($directory, false)
+            $dirFiles = $this->diskListContents($directory, false)
                 ->filter(fn($item) => $item->isFile())
                 ->map(fn($item) => ['name' => basename($item->path()), 'path' => $item->path()])
                 ->toArray();
@@ -630,12 +675,11 @@ class ClientController extends Controller
     public function downloadFile($path)
     {
         try {
-            $disk = $this->getDisk();
             $decodedPath = urldecode($path);
 
-            if ($disk->fileExists($decodedPath)) {
-                $mimeType = $disk->mimeType($decodedPath);
-                $fileContents = $disk->read($decodedPath);
+            if ($this->diskFileExists($decodedPath)) {
+                $mimeType = $this->diskMimeType($decodedPath);
+                $fileContents = $this->diskRead($decodedPath);
 
                 return response($fileContents)
                     ->header('Content-Type', $mimeType)
@@ -681,7 +725,7 @@ class ClientController extends Controller
         $new_path = $root_path . '/' . $request->input('name');
 
 
-        if ($disk->directoryExists($path)) {
+        if ($this->diskDirectoryExists($path)) {
             $disk->move($path, $new_path);
 
             $this->logClientFolderChange('client_folder_renamed', [
@@ -710,7 +754,7 @@ class ClientController extends Controller
         $newPath = $validated['root_path'] . '/' . $newFilename;
 
         try {
-            if (!$disk->fileExists($oldPath)) {
+            if (!$this->diskFileExists($oldPath)) {
                 return response()->json(['error' => 'El archivo no existe'], 404);
             }
 
@@ -730,7 +774,7 @@ class ClientController extends Controller
         try {
             $disk = $this->getDisk();
 
-            if (!$disk->directoryExists($path)) {
+            if (!$this->diskDirectoryExists($path)) {
                 return response()->json(['error' => 'Directory not found.'], 404);
             }
 
@@ -764,7 +808,7 @@ class ClientController extends Controller
     private function deleteGoogleDriveDirectory($disk, string $path)
     {
         // Listar contenido recursivamente
-        $contents = $disk->listContents($path, true)->toArray();
+        $contents = $this->diskListContents($path, true)->toArray();
 
         // Separar archivos y directorios
         $files = [];
@@ -810,7 +854,7 @@ class ClientController extends Controller
      */
     private function deleteLocalDirectory($disk, string $path)
     {
-        $contents = $disk->listContents($path, true)->toArray();
+        $contents = $this->diskListContents($path, true)->toArray();
 
         // Ordenar por profundidad en orden descendente
         usort($contents, function ($a, $b) {
@@ -834,7 +878,7 @@ class ClientController extends Controller
     {
         try {
             $disk = $this->getDisk();
-            if ($disk->fileExists($path)) {
+            if ($this->diskFileExists($path)) {
                 $disk->delete($path);
                 return back();
             }
@@ -887,7 +931,7 @@ class ClientController extends Controller
                         'message' => 'Directorio eliminado correctamente'
                     ];
                     $deletedCount++;
-                    \Log::info("Directorio eliminado: {$dirPath}");
+                    Log::info("Directorio eliminado: {$dirPath}");
 
                     $this->logClientFolderChange('client_folder_deleted_mass', [
                         'path' => $dirPath,
@@ -904,7 +948,7 @@ class ClientController extends Controller
                     'message' => $e->getMessage()
                 ];
                 $allSuccess = false;
-                \Log::error("Error deleting directory {$directory}: " . $e->getMessage());
+                Log::error("Error deleting directory {$directory}: " . $e->getMessage());
             }
         }
 
@@ -961,7 +1005,7 @@ class ClientController extends Controller
                         'message' => 'Archivo eliminado correctamente'
                     ];
                     $deletedCount++;
-                    \Log::info("Archivo eliminado: {$filePath}");
+                    Log::info("Archivo eliminado: {$filePath}");
                 } else {
                     throw new \Exception("Error al eliminar el archivo");
                 }
@@ -972,7 +1016,7 @@ class ClientController extends Controller
                     'message' => $e->getMessage()
                 ];
                 $allSuccess = false;
-                \Log::error("Error deleting file {$file}: " . $e->getMessage());
+                Log::error("Error deleting file {$file}: " . $e->getMessage());
             }
         }
 
@@ -1064,7 +1108,7 @@ class ClientController extends Controller
                 $allFiles = [];
                 
                 try {
-                    $contents = $disk->listContents($source, true);
+                    $contents = $this->diskListContents($source, true);
                     foreach ($contents as $item) {
                         if ($item->isDir()) {
                             $allDirs[] = $item->path();
@@ -1073,7 +1117,7 @@ class ClientController extends Controller
                         }
                     }
                 } catch (\Exception $e) {
-                    \Log::warning("Error listing contents of {$source}: " . $e->getMessage());
+                    Log::warning("Error listing contents of {$source}: " . $e->getMessage());
                 }
 
                 // Crear subdirectorios primero
@@ -1081,7 +1125,7 @@ class ClientController extends Controller
                     $relativePath = Str::after($dir, $source);
                     $newDirPath = rtrim($target, '/') . '/' . ltrim($relativePath, '/');
                     
-                    if (!$disk->directoryExists($newDirPath)) {
+                    if (!$this->diskDirectoryExists($newDirPath)) {
                         $disk->makeDirectory($newDirPath);
                     }
                 }
@@ -1118,7 +1162,7 @@ class ClientController extends Controller
                     try {
                         $disk->deleteDirectory($target);
                     } catch (\Exception $cleanupError) {
-                        \Log::error("Error cleaning up {$target}: " . $cleanupError->getMessage());
+                        Log::error("Error cleaning up {$target}: " . $cleanupError->getMessage());
                     }
                 }
 
@@ -1127,7 +1171,7 @@ class ClientController extends Controller
                     'message' => $e->getMessage()
                 ];
                 $allSuccess = false;
-                \Log::error("Error copiando {$directory}: " . $e->getMessage());
+                Log::error("Error copiando {$directory}: " . $e->getMessage());
             }
         }
 
@@ -1216,7 +1260,7 @@ class ClientController extends Controller
                         'disk' => $this->disk_type,
                     ]);
                     
-                    \Log::info("Directorio movido: {$source} -> {$target}");
+                    Log::info("Directorio movido: {$source} -> {$target}");
                 } else {
                     throw new \Exception("Error al mover el directorio");
                 }
@@ -1227,7 +1271,7 @@ class ClientController extends Controller
                     'message' => $e->getMessage()
                 ];
                 $allSuccess = false;
-                \Log::error("Error moving directory {$directory}: " . $e->getMessage());
+                Log::error("Error moving directory {$directory}: " . $e->getMessage());
             }
         }
 
@@ -1303,7 +1347,7 @@ class ClientController extends Controller
                     'message' => $e->getMessage()
                 ];
                 $allSuccess = false;
-                \Log::error("Error copiando archivo {$file}: " . $e->getMessage());
+                Log::error("Error copiando archivo {$file}: " . $e->getMessage());
             }
         }
 
@@ -1385,7 +1429,7 @@ class ClientController extends Controller
                         'new_path' => $target
                     ];
                     
-                    \Log::info("Archivo movido: {$source} -> {$target}");
+                    Log::info("Archivo movido: {$source} -> {$target}");
                 } else {
                     throw new \Exception("Error al mover el archivo");
                 }
@@ -1396,7 +1440,7 @@ class ClientController extends Controller
                     'message' => $e->getMessage()
                 ];
                 $allSuccess = false;
-                \Log::error("Error moving file {$file}: " . $e->getMessage());
+                Log::error("Error moving file {$file}: " . $e->getMessage());
             }
         }
 
@@ -1415,7 +1459,7 @@ class ClientController extends Controller
             'Reportes' => route('client.reports')
         ];
 
-        $user = User::find(auth()->user()->id);
+        $user = User::find(Auth::id());
         $business_lines = LineBusiness::all();
         $sedes = $user->role_id == 5
             ? $user->customers
@@ -1491,12 +1535,12 @@ class ClientController extends Controller
         $basePath = $subpath !== '' ? "client_system/{$subpath}" : 'client_system';
 
         $list = function (string $path) use (&$list, $disk) {
-            if (!$disk->directoryExists($path)) {
+            if (!$this->diskDirectoryExists($path)) {
                 return [];
             }
 
             $dirs = [];
-            $contents = $disk->listContents($path, false);
+            $contents = $this->diskListContents($path, false);
 
             foreach ($contents as $item) {
                 if ($item->isDir()) {
@@ -1535,12 +1579,12 @@ class ClientController extends Controller
             $basePath = $subpath !== '' ? "client_system/{$subpath}" : 'client_system';
 
             // Verificar si el directorio existe
-            if (!$disk->directoryExists($basePath)) {
+            if (!$this->diskDirectoryExists($basePath)) {
                 return response()->json([]);
             }
 
             $dirs = [];
-            $contents = $disk->listContents($basePath, false);
+            $contents = $this->diskListContents($basePath, false);
 
             foreach ($contents as $item) {
                 if ($item->isDir()) {
@@ -1558,7 +1602,7 @@ class ClientController extends Controller
             return response()->json($dirs);
 
         } catch (\Exception $e) {
-            \Log::error("Error listing directories: " . $e->getMessage());
+            Log::error("Error listing directories: " . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -1599,7 +1643,7 @@ class ClientController extends Controller
             $disk = $this->getDisk();
 
             // Verificar si la carpeta ya existe (doble verificación por seguridad)
-            if ($disk->directoryExists($fullPath)) {
+            if ($this->diskDirectoryExists($fullPath)) {
                 return back()->withErrors(['folder_name' => 'La carpeta "' . $folderName . '" ya existe en esta ubicación']);
             }
 
@@ -1612,7 +1656,7 @@ class ClientController extends Controller
                 }
 
                 // Verificar que se creó correctamente
-                if (!$disk->directoryExists($fullPath)) {
+                if (!$this->diskDirectoryExists($fullPath)) {
                     throw new \Exception('La carpeta no existe después de crearla');
                 }
 
@@ -1631,7 +1675,7 @@ class ClientController extends Controller
 
             } catch (\Exception $e) {
                 // Si falla, verificar si se creó parcialmente y limpiar
-                if ($disk->directoryExists($fullPath)) {
+                if ($this->diskDirectoryExists($fullPath)) {
                     try {
                         $disk->deleteDirectory($fullPath);
                     } catch (\Exception $cleanupError) {
@@ -1662,7 +1706,7 @@ class ClientController extends Controller
 
         foreach ($this->mip_directories as $directory) {
             $folderPath = $basePath . '/' . $directory;
-            if (!$disk->directoryExists($folderPath)) {
+            if (!$this->diskDirectoryExists($folderPath)) {
                 $disk->makeDirectory($folderPath);
             }
         }
@@ -1702,7 +1746,7 @@ class ClientController extends Controller
                 $currentPath .= '/' . $folder;
                 $disk = $this->getDisk();
 
-                if (!$disk->directoryExists($currentPath)) {
+                if (!$this->diskDirectoryExists($currentPath)) {
                     if ($disk->makeDirectory($currentPath)) {
                         $createdFolders[] = $currentPath;
 
@@ -1754,7 +1798,7 @@ class ClientController extends Controller
             $folderPath = $request->input('folder_path');
             $disk = $this->getDisk();
 
-            $exists = $disk->directoryExists($folderPath);
+            $exists = $this->diskDirectoryExists($folderPath);
 
             return response()->json([
                 'success' => true,
@@ -1789,7 +1833,7 @@ class ClientController extends Controller
             $disk = $this->getDisk();
 
             // Verificar que la carpeta original existe
-            if (!$disk->directoryExists($currentPath)) {
+            if (!$this->diskDirectoryExists($currentPath)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'La carpeta no existe o no se puede acceder a ella'
@@ -1810,7 +1854,7 @@ class ClientController extends Controller
             $newPath = $parentPath . '/' . $newName;
 
             // Verificar si ya existe una carpeta con el nuevo nombre
-            if ($disk->directoryExists($newPath)) {
+            if ($this->diskDirectoryExists($newPath)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Ya existe una carpeta con ese nombre en esta ubicación'
