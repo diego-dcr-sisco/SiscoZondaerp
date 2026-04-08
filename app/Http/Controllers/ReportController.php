@@ -1711,13 +1711,9 @@ class ReportController extends Controller
             }
 
             if ($can_propagate) {
-                $settings = ContractService::where('contract_id', $order->contract_id)
-                    ->where('service_id', $order->setting->service_id)
-                    ->get();
-
                 $orders = Order::where('contract_id', $order->contract_id)
                     //->where('setting_id', $order->setting_id)
-                    ->whereIn('setting_id', $settings->pluck('id'))
+                    ->where('setting_id', $order->setting_id ?? null)
                     ->where('status_id', 1)
                     ->get();
 
