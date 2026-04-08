@@ -171,6 +171,41 @@
 </div>
 
 <script>
+    function toDateKey(value) {
+        if (!value) {
+            return null;
+        }
+
+        if (typeof value === 'string') {
+            const datePart = value.slice(0, 10);
+            if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+                return datePart;
+            }
+        }
+
+        const date = value instanceof Date ? value : new Date(value);
+        if (isNaN(date.getTime())) {
+            return null;
+        }
+
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function parseLocalDate(value) {
+        const dateKey = toDateKey(value);
+        if (!dateKey) {
+            return new Date(NaN);
+        }
+        return new Date(`${dateKey}T00:00:00`);
+    }
+
+    function getTodayDateKey() {
+        return toDateKey(new Date());
+    }
+
     $('#configureServiceModal').on('show.bs.modal', function(event) {
         configDates = {};
         configDescriptions = {};
@@ -222,7 +257,7 @@
                     // Verificar que las fechas existan
                     if (startDate && endDate) {
                         const dates = createDates(service, startDate, endDate, config.config_id);
-                        configDates[config.config_id] = dates.map(d => new Date(d).toISOString());
+                        configDates[config.config_id] = dates.map(d => toDateKey(d)).filter(Boolean);
                     }
                 }
 
@@ -559,7 +594,7 @@
             if (confirm(
                     'Esta configuración es quincenal. ¿Desea agregar una fecha adicional además de las fechas generadas automáticamente?'
                 )) {
-                const today = new Date().toISOString().split('T')[0];
+                const today = getTodayDateKey();
                 const newDate = prompt('Ingrese la fecha adicional (YYYY-MM-DD):', today);
 
                 if (newDate) {
@@ -570,7 +605,7 @@
         }
 
         // Código normal para otras frecuencias
-        const today = new Date().toISOString().split('T')[0];
+        const today = getTodayDateKey();
         const newDate = prompt('Ingrese la fecha (YYYY-MM-DD):', today);
 
         if (newDate) {
@@ -579,7 +614,7 @@
     }
 
     function handleManualDateInput(configId, newDate) {
-        const dateObj = new Date(newDate + 'T00:00:00');
+        const dateObj = parseLocalDate(newDate);
         if (!isNaN(dateObj.getTime())) {
             // Inicializar configDates[configId] si no existe
             if (!configDates[configId]) {
@@ -588,14 +623,14 @@
 
             // Verificar si la fecha ya existe
             const dateExists = configDates[configId].some(existingDate => {
-                const existingDateStr = new Date(existingDate).toISOString().split('T')[0];
+                const existingDateStr = toDateKey(existingDate);
                 return existingDateStr === newDate;
             });
 
             if (!dateExists) {
-                // Agregar la fecha en formato ISO
-                const isoDate = dateObj.toISOString();
-                configDates[configId].push(isoDate);
+                // Guardar fecha en formato YYYY-MM-DD para evitar desfases por zona horaria
+                const dateKey = toDateKey(dateObj);
+                configDates[configId].push(dateKey);
 
                 // Buscar configuración existente
                 let config = configurations.find(c => c.config_id === configId);
@@ -616,7 +651,7 @@
                 const newOrder = {
                     id: `temp_manual_${configId}_${Date.now()}`,
                     folio: null,
-                    programmed_date: isoDate,
+                    programmed_date: dateKey,
                     status_id: 1,
                     status_name: 'Pendiente',
                     url: null
@@ -764,26 +799,25 @@
 
     // Función para editar orden
     function editOrder(orderId, currentDate, configId) {
-        const currentDateObj = new Date(currentDate);
-        const formattedDate = currentDateObj.toISOString().split('T')[0];
+        const formattedDate = toDateKey(currentDate);
         const newDate = prompt('Editar fecha programada:', formattedDate);
 
         if (newDate) {
-            const newDateObj = new Date(newDate + 'T00:00:00');
+            const newDateObj = parseLocalDate(newDate);
             if (!isNaN(newDateObj.getTime())) {
                 // Buscar y actualizar la orden en las configuraciones
                 const config = configurations.find(c => c.config_id === configId);
                 if (config && config.orders) {
                     const order = config.orders.find(o => o.id == orderId);
                     if (order && order.status_id == 1) {
-                        order.programmed_date = newDateObj.toISOString();
+                        order.programmed_date = toDateKey(newDateObj);
 
                         // Actualizar también la fecha correspondiente en configDates
                         const dateIndex = configDates[configId].findIndex(date =>
-                            new Date(date).toISOString().split('T')[0] === formattedDate
+                            toDateKey(date) === formattedDate
                         );
                         if (dateIndex !== -1) {
-                            configDates[configId][dateIndex] = newDateObj.toISOString();
+                            configDates[configId][dateIndex] = toDateKey(newDateObj);
                         }
 
                         updateOrdersTable(configId, config.orders);
@@ -812,8 +846,7 @@
                     if (order.status_id == 1) {
                         // Eliminar también la fecha correspondiente en configDates
                         const dateIndex = configDates[configId].findIndex(date =>
-                            new Date(date).toISOString().split('T')[0] ===
-                            new Date(order.programmed_date).toISOString().split('T')[0]
+                            toDateKey(date) === toDateKey(order.programmed_date)
                         );
 
                         if (dateIndex !== -1) {
@@ -939,18 +972,16 @@
     }
 
     function formatDate(date) {
-        const dateObj = new Date(date);
+        const dateObj = parseLocalDate(date);
         if (isNaN(dateObj.getTime())) {
             return 'Fecha inválida';
         }
 
-        // Forzar zona horaria UTC en la conversión
         return dateObj.toLocaleDateString('es-ES', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
-            day: 'numeric',
-            timeZone: 'UTC' // ¡Clave aquí!
+            day: 'numeric'
         });
     }
 
@@ -1414,10 +1445,7 @@
     }
 
     function generateOrdersFromDates(dates, configId, existingOrders = []) {
-        const normalizeDateKey = (value) => {
-            const parsedDate = new Date(value);
-            return isNaN(parsedDate.getTime()) ? null : parsedDate.toISOString().split('T')[0];
-        };
+        const normalizeDateKey = (value) => toDateKey(value);
 
         // Eliminar duplicados por fecha para evitar órdenes repetidas al recalcular.
         const uniqueDates = [];
@@ -1502,28 +1530,28 @@
 
     // Función para editar una fecha
     function editDate(configId, dateIndex) {
-        const currentDate = new Date(configDates[configId][dateIndex]);
+        const currentDate = parseLocalDate(configDates[configId][dateIndex]);
         // Formatear la fecha para el input type="date" (YYYY-MM-DD)
-        const formattedDate = currentDate.toISOString().split('T')[0];
+        const formattedDate = toDateKey(currentDate);
         const newDate = prompt('Editar fecha:', formattedDate);
 
         if (newDate) {
             // Convertir la nueva fecha a objeto Date y almacenarla
-            const newDateObj = new Date(newDate + "T00:00:00");
+            const newDateObj = parseLocalDate(newDate);
             if (!isNaN(newDateObj.getTime())) {
-                configDates[configId][dateIndex] = newDateObj.toISOString();
+                configDates[configId][dateIndex] = toDateKey(newDateObj);
 
                 // Actualizar también la orden correspondiente si existe
                 const config = configurations.find(c => c.config_id === configId);
                 if (config && config.orders && config.orders[dateIndex]) {
-                    config.orders[dateIndex].programmed_date = newDateObj.toISOString();
+                    config.orders[dateIndex].programmed_date = toDateKey(newDateObj);
                     updateOrdersTable(configId, config.orders);
                 } else if (config && !config.orders) {
                     // Si no existe la orden, crear una nueva
                     config.orders = [{
                         id: `temp_edit_${configId}_${Date.now()}`,
                         folio: null,
-                        programmed_date: newDateObj.toISOString(),
+                        programmed_date: toDateKey(newDateObj),
                         status_id: 1,
                         status_name: 'Pendiente',
                         url: null
@@ -1555,8 +1583,7 @@
 
                 // Buscar la orden por fecha programada, comparando en formato ISO
                 const orderIndex = config.orders.findIndex(order =>
-                    new Date(order.programmed_date).toISOString().split('T')[0] ===
-                    new Date(dateToDelete).toISOString().split('T')[0]
+                    toDateKey(order.programmed_date) === toDateKey(dateToDelete)
                 );
 
                 if (orderIndex !== -1) {
@@ -1703,8 +1730,7 @@
         var new_dates = [];
         switch (service.frequency) {
             case 1:
-                var new_date = $(`#service-date-${configId}`).val() ? new Date($(`#service-date-${configId}`)
-                    .val() + "T00:00:00") : null;
+                var new_date = $(`#service-date-${configId}`).val() || null;
                 new_date ? new_dates.push(new_date) : new_dates = [];
                 break;
             case 2:
@@ -1770,8 +1796,8 @@
         const dates = [];
 
         // Convertir fechas a objetos Date
-        const start = new Date(startDate + 'T00:00:00');
-        const end = new Date(endDate + 'T00:00:00');
+        const start = parseLocalDate(startDate);
+        const end = parseLocalDate(endDate);
 
         // Validar que la fecha de inicio no sea mayor a la de fin
         if (start > end) {
@@ -1783,7 +1809,7 @@
         let currentDate = new Date(start);
 
         // Agregar la fecha de inicio
-        dates.push(new Date(currentDate));
+        dates.push(toDateKey(currentDate));
 
         // Generar fechas cada 15 días hasta llegar a la fecha de fin
         while (currentDate <= end) {
@@ -1792,7 +1818,7 @@
 
             // Verificar que no nos pasemos de la fecha de fin
             if (currentDate <= end) {
-                dates.push(new Date(currentDate));
+                dates.push(toDateKey(currentDate));
             }
         }
 
@@ -1804,10 +1830,12 @@
 
     function getAllDatesBetween(startDate, endDate) {
         const dates = [];
-        const currentDate = new Date(startDate);
+        const start = parseLocalDate(startDate);
+        const end = parseLocalDate(endDate);
+        const currentDate = new Date(start);
 
-        while (currentDate <= endDate) {
-            dates.push(new Date(currentDate));
+        while (currentDate <= end) {
+            dates.push(toDateKey(currentDate));
             currentDate.setDate(currentDate.getDate() + 1);
         }
 
@@ -1825,14 +1853,16 @@
             'S': 6,
             'D': 0
         };
-        const currentDate = new Date(startDate);
+        const start = parseLocalDate(startDate);
+        const end = parseLocalDate(endDate);
+        const currentDate = new Date(start);
 
-        while (currentDate <= endDate) {
+        while (currentDate <= end) {
             const dayOfWeek = currentDate.getDay();
             const dayLetter = Object.keys(dayMap).find(key => dayMap[key] === dayOfWeek);
 
             if (days.includes(dayLetter)) {
-                dates.push(new Date(currentDate));
+                dates.push(toDateKey(currentDate));
             }
 
             currentDate.setDate(currentDate.getDate() + 1);
@@ -1843,13 +1873,15 @@
 
     function generateDatesByNumber(startDate, endDate, days) {
         const dates = [];
-        const currentDate = new Date(startDate);
+        const start = parseLocalDate(startDate);
+        const end = parseLocalDate(endDate);
+        const currentDate = new Date(start);
 
-        while (currentDate <= endDate) {
+        while (currentDate <= end) {
             const dayOfMonth = currentDate.getDate();
 
             if (days.includes(dayOfMonth)) {
-                dates.push(new Date(currentDate));
+                dates.push(toDateKey(currentDate));
             }
 
             currentDate.setDate(currentDate.getDate() + 1);
@@ -1861,10 +1893,12 @@
     function generateDatesByInterval(startDate, endDate, days, interval) {
         // Implementación básica para ejemplo
         const dates = [];
-        const currentDate = new Date(startDate);
+        const start = parseLocalDate(startDate);
+        const end = parseLocalDate(endDate);
+        const currentDate = new Date(start);
 
-        while (currentDate <= endDate) {
-            dates.push(new Date(currentDate));
+        while (currentDate <= end) {
+            dates.push(toDateKey(currentDate));
             // Saltar según el intervalo
             currentDate.setDate(currentDate.getDate() + (interval * 7));
         }

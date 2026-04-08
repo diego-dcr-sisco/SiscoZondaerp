@@ -1079,7 +1079,7 @@ class ContractController extends Controller
                 'dates' => $orders->pluck('programmed_date')->map(function ($date) {
                     // Ajustar fechas para la renovación (añadir un año)
                     $newDate = Carbon::parse($date)->addYear();
-                    return $newDate->format('Y-m-d') . 'T00:00:00.000Z';
+                    return $newDate->format('Y-m-d');
                 })->toArray(),
                 'orders' => $orders->map(function ($order) {
                     // Crear nuevos órdenes para la renovación
@@ -1087,7 +1087,7 @@ class ContractController extends Controller
                     return [
                         'id' => null, // Nuevo orden, sin ID
                         'folio' => null, // Se generará nuevo folio
-                        'programmed_date' => $newOrderDate->format('Y-m-d') . 'T00:00:00.000Z',
+                        'programmed_date' => $newOrderDate->format('Y-m-d'),
                         'status_id' => 1, // Estado inicial (pendiente)
                         'status_name' => 'Pendiente',
                         'url' => null // Sin URL aún
