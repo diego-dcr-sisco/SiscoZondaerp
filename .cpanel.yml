@@ -1,0 +1,5 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/sisceqzd/siscoplagaas.zondaerp.mx/
+    - /bin/cp -R * $DEPLOYPATH
