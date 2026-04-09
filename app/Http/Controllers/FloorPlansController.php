@@ -61,6 +61,83 @@ class FloorPlansController extends Controller
         12 => 'Diciembre'
     ];
 
+    private function calculateEditorCanvasDimensions(int $imageWidth, int $imageHeight): array
+    {
+        $maxCanvasWidth = 1400;
+        $minCanvasWidth = 800;
+
+        if ($imageWidth > $maxCanvasWidth) {
+            $scale = $maxCanvasWidth / $imageWidth;
+            return [
+                'width' => $maxCanvasWidth,
+                'height' => (int) round($imageHeight * $scale),
+            ];
+        }
+
+        if ($imageWidth < $minCanvasWidth) {
+            $scale = $minCanvasWidth / $imageWidth;
+            return [
+                'width' => $minCanvasWidth,
+                'height' => (int) round($imageHeight * $scale),
+            ];
+        }
+
+        return [
+            'width' => $imageWidth,
+            'height' => $imageHeight,
+        ];
+    }
+
+    private function getStoredImageDimensions(?string $path): ?array
+    {
+        if (empty($path) || !Storage::disk('public')->exists($path)) {
+            return null;
+        }
+
+        $image = Image::make(Storage::disk('public')->path($path));
+        return ['width' => $image->width(), 'height' => $image->height()];
+    }
+
+    private function rescaleFloorplanDevicesToCanvas(FloorPlans $floorplan, array $oldCanvas, array $newCanvas): void
+    {
+        if (($oldCanvas['width'] ?? 0) <= 0 || ($oldCanvas['height'] ?? 0) <= 0 || ($newCanvas['width'] ?? 0) <= 0 || ($newCanvas['height'] ?? 0) <= 0) {
+            return;
+        }
+
+        $devices = Device::where('floorplan_id', $floorplan->id)->get();
+
+        foreach ($devices as $device) {
+            $baseWidth = ($device->img_tamx && $device->img_tamx > 0) ? (float) $device->img_tamx : (float) $oldCanvas['width'];
+            $baseHeight = ($device->img_tamy && $device->img_tamy > 0) ? (float) $device->img_tamy : (float) $oldCanvas['height'];
+
+            $xNorm = $device->x_norm;
+            $yNorm = $device->y_norm;
+
+            if (is_null($xNorm) && $baseWidth > 0) {
+                $xNorm = (float) $device->map_x / $baseWidth;
+            }
+
+            if (is_null($yNorm) && $baseHeight > 0) {
+                $yNorm = (float) $device->map_y / $baseHeight;
+            }
+
+            if (is_null($xNorm) || is_null($yNorm)) {
+                continue;
+            }
+
+            $xNorm = max(0.0, min(1.0, (float) $xNorm));
+            $yNorm = max(0.0, min(1.0, (float) $yNorm));
+
+            $device->map_x = $xNorm * (float) $newCanvas['width'];
+            $device->map_y = $yNorm * (float) $newCanvas['height'];
+            $device->x_norm = $xNorm;
+            $device->y_norm = $yNorm;
+            $device->img_tamx = (int) $newCanvas['width'];
+            $device->img_tamy = (int) $newCanvas['height'];
+            $device->save();
+        }
+    }
+
     private function countControlPoints($nestedDevices)
     {
         $result = [];
@@ -437,7 +514,7 @@ class FloorPlansController extends Controller
             $services = Service::orderBy('name', 'asc')->get();
             $applications_areas = ApplicationArea::where('customer_id', $floorplan->customer->id)->orderBy('name')->get();
             $devices = Device::where('floorplan_id', $id)->where('version', $version)
-                ->select('id', 'type_control_point_id', 'floorplan_id', 'application_area_id', 'product_id', 'nplan', 'latitude', 'itemnumber', 'longitude', 'map_x', 'map_y', 'img_tamx', 'img_tamy', 'color', 'code', 'size')
+                ->select('id', 'type_control_point_id', 'floorplan_id', 'application_area_id', 'product_id', 'nplan', 'latitude', 'itemnumber', 'longitude', 'map_x', 'map_y', 'x_norm', 'y_norm', 'img_tamx', 'img_tamy', 'color', 'code', 'size')
                 ->get();
 
             // Obtener las últimas 4 revisiones para cada dispositivo
@@ -716,9 +793,8 @@ class FloorPlansController extends Controller
         $floorplan->service_id = $request->input('service_id') ?: null;
 
         if ($request->hasFile('file')) {
-            if ($floorplan->path && Storage::disk('public')->exists($floorplan->path)) {
-                Storage::disk('public')->delete($floorplan->path);
-            }
+            $oldPath = $floorplan->path;
+            $oldImageDimensions = $this->getStoredImageDimensions($oldPath);
 
             $file = $request->file('file');
             $extension = $file->getClientOriginalExtension();
@@ -727,6 +803,22 @@ class FloorPlansController extends Controller
             
             Storage::disk('public')->put($newPath, file_get_contents($file));
             $floorplan->path = $newPath;
+
+            $newImage = Image::make($file->getRealPath());
+            $newImageDimensions = [
+                'width' => $newImage->width(),
+                'height' => $newImage->height(),
+            ];
+
+            if (!empty($oldImageDimensions)) {
+                $oldCanvas = $this->calculateEditorCanvasDimensions($oldImageDimensions['width'], $oldImageDimensions['height']);
+                $newCanvas = $this->calculateEditorCanvasDimensions($newImageDimensions['width'], $newImageDimensions['height']);
+                $this->rescaleFloorplanDevicesToCanvas($floorplan, $oldCanvas, $newCanvas);
+            }
+
+            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
         }
         
         $floorplan->save();

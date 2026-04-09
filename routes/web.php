@@ -36,6 +36,7 @@ use App\Http\Controllers\QuoteController;
 use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\ConfigurationController;
 use App\Http\Controllers\TimbradoController;
+use App\Http\Controllers\ManualCertificateController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -780,6 +781,14 @@ Route::prefix('report')
     ->middleware(['auth', 'single.session'])
     ->group(function () {
         Route::get('/print/{orderId}', [ReportController::class, 'print'])->name('print');
+    });
+
+Route::prefix('report/manual-certificate')
+    ->name('report.manual-certificate.')
+    ->middleware(['auth', 'single.session', 'can:integral'])
+    ->group(function () {
+        Route::get('/', [ManualCertificateController::class, 'index'])->name('index');
+        Route::post('/generate', [ManualCertificateController::class, 'generate'])->name('generate');
     });
 
 

@@ -102,6 +102,15 @@
             transform: translateY(-5px);
         }
 
+        .bg-teal {
+            background-color: #0F6B6B;
+        }
+
+        .bg-teal:hover {
+            box-shadow: 0 10px 20px rgba(15, 107, 107, 0.3);
+            transform: translateY(-5px);
+        }
+
         /* Animaciones personalizadas */
         .card-animate {
             opacity: 0;
@@ -179,6 +188,10 @@
 
         .card-animate:nth-child(8) {
             animation-delay: 1.6s;
+        }
+
+        .card-animate:nth-child(9) {
+            animation-delay: 1.8s;
         }
 
         .table-row-animate:nth-child(1) {
@@ -376,6 +389,19 @@
                         <i class="bi bi-tools d-block fs-4 mb-2"></i>
                         <h3 class="h6 fw-bold mb-1">Operaciones</h3>
                         <p class="small opacity-75 mb-0">Reportes</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Certificado Manual -->
+            <a href="{{ route('report.manual-certificate.index') }}"
+                class="card text-white text-decoration-none hover-scale position-relative bg-teal card-animate"
+                style="width: 150px; height: 130px;">
+                <div class="position-absolute top-50 start-50 translate-middle w-100 px-2" style="margin-top: -5px;">
+                    <div class="text-center">
+                        <i class="bi bi-file-earmark-text-fill d-block fs-4 mb-2"></i>
+                        <h3 class="h6 fw-bold mb-1">Certificado</h3>
+                        <p class="small opacity-75 mb-0">Manual</p>
                     </div>
                 </div>
             </a>
