@@ -428,6 +428,9 @@
             $(document).ready(function() {
                 resetInputs();
                 setDevices();
+                if (can_resize) {
+                    resizePointsToNewCanvas();
+                }
             });
 
             function resetInputs() {
@@ -610,10 +613,8 @@
                     code: code,
                     x: x,
                     y: y,
-                    img_tamx: canvas.getWidth(),
-                    img_tamy: canvas.getHeight(),
-                    x_norm: canvas.getWidth() > 0 ? x / canvas.getWidth() : null,
-                    y_norm: canvas.getHeight() > 0 ? y / canvas.getHeight() : null,
+                    img_tamx: 0,
+                    img_tamy: 0,
                     count: count,
                     size: currentPointSize
                 };
@@ -636,14 +637,8 @@
                 pointGroup.on('moving', function(event) {
                     const i = points.findIndex(p => p.index == newPoint.index);
                     if (i != -1) {
-                        const canvasWidth = canvas.getWidth();
-                        const canvasHeight = canvas.getHeight();
                         points[i].x = pointGroup.left;
                         points[i].y = pointGroup.top;
-                        points[i].img_tamx = canvasWidth;
-                        points[i].img_tamy = canvasHeight;
-                        points[i].x_norm = canvasWidth > 0 ? pointGroup.left / canvasWidth : null;
-                        points[i].y_norm = canvasHeight > 0 ? pointGroup.top / canvasHeight : null;
                     }
                 });
 
@@ -1100,27 +1095,12 @@
             function setDevices() {
                 if (devices) {
                     devices.forEach(device => {
-                        const canvasWidth = canvas.getWidth();
-                        const canvasHeight = canvas.getHeight();
-                        const hasNormCoords = device.x_norm !== null && device.x_norm !== undefined && device.y_norm !== null && device.y_norm !== undefined;
-
-                        let scaledX = device.map_x;
-                        let scaledY = device.map_y;
-
-                        if (hasNormCoords) {
-                            scaledX = parseFloat(device.x_norm) * canvasWidth;
-                            scaledY = parseFloat(device.y_norm) * canvasHeight;
-                        } else if (device.img_tamx && device.img_tamy) {
-                            scaledX = (parseFloat(device.map_x) / parseFloat(device.img_tamx)) * canvasWidth;
-                            scaledY = (parseFloat(device.map_y) / parseFloat(device.img_tamy)) * canvasHeight;
-                        }
-
                         count = device.nplan;
                         index = device.itemnumber;
                         currentPointSize = device.size ?? 10;
                         addPoint(
-                            scaledX,
-                            scaledY,
+                            device.map_x,
+                            device.map_y,
                             device.type_control_point_id,
                             device.application_area_id,
                             device.product_id,
@@ -1224,6 +1204,64 @@
                 canvas.renderAll();
             }
 
+            // FUNCIÓN PARA OBTENER DIMENSIONES ORIGINALES DEL CANVAS
+            function getOriginalCanvasDimensions() {
+                // Esta función debe retornar las dimensiones ANTIGUAS del canvas
+                // (las que se usaban cuando se guardaron los puntos en la BD)
+                // La lógica antigua era: ancho > alto ? 1100x800 : 800x1100
+                
+                const isWide = img_sizes[0] > img_sizes[1];
+                const width = isWide ? 1100 : 800;
+                const height = isWide ? 800 : 1100;
+
+                return [width, height];
+            }
+
+            // FUNCIÓN PARA REAJUSTAR PUNTOS A NUEVAS DIMENSIONES
+            function resizePointsToNewCanvas() {
+                // Obtener dimensiones originales y actuales
+                const [originalWidth, originalHeight] = getOriginalCanvasDimensions();
+                const currentWidth = canvas.getWidth();
+                const currentHeight = canvas.getHeight();
+
+                // Si las dimensiones no han cambiado, no hacer nada
+                if (originalWidth === currentWidth && originalHeight === currentHeight) {
+                    console.log('Las dimensiones del canvas no han cambiado');
+                    return;
+                }
+
+                // Calcular factores de escala
+                const scaleX = currentWidth / originalWidth;
+                const scaleY = currentHeight / originalHeight;
+
+                console.log(`Reajustando puntos de ${originalWidth}x${originalHeight} a ${currentWidth}x${currentHeight}`);
+                console.log(`Factores de escala: X=${scaleX.toFixed(4)}, Y=${scaleY.toFixed(4)}`);
+
+                // Actualizar todos los puntos en el array y en el canvas
+                points.forEach(point => {
+                    // Escalar las coordenadas
+                    const newX = point.x * scaleX;
+                    const newY = point.y * scaleY;
+
+                    // Actualizar el punto en el array
+                    point.x = newX;
+                    point.y = newY;
+
+                    // Buscar y actualizar el objeto visual en el canvas
+                    canvas.getObjects().forEach(obj => {
+                        if (obj.type === 'group' && obj.metadata && obj.metadata.index === point.index) {
+                            obj.set({
+                                left: newX,
+                                top: newY
+                            });
+                            obj.setCoords(); // Actualizar coordenadas para interacción
+                        }
+                    });
+                });
+
+                // Renderizar los cambios
+                canvas.renderAll();
+            }
         </script>
 
         <script>
