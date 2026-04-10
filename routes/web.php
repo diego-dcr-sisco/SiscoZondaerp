@@ -37,6 +37,7 @@ use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\ConfigurationController;
 use App\Http\Controllers\TimbradoController;
 use App\Http\Controllers\ManualCertificateController;
+use App\Http\Controllers\ManualQuotationController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -485,6 +486,9 @@ Route::prefix('customers')
         Route::post('/quote/update/{id}', [QuoteController::class, 'update'])->name('quote.update');
         Route::get('/quote/destroy/{id}', [QuoteController::class, 'destroy'])->name('quote.destroy');
         Route::get('/quote/download/{id}', [QuoteController::class, 'download'])->name('quote.download');
+        Route::post('/quote/pdf/snapshot/{id}', [QuoteController::class, 'storePdfSnapshot'])->name('quote.pdf.snapshot');
+        Route::get('/quote/pdf/generate/{id}', [QuoteController::class, 'generatePdf'])->name('quote.pdf.generate');
+        Route::get('/quote/pdf/download/{id}', [QuoteController::class, 'downloadGeneratedPdf'])->name('quote.pdf.download');
         Route::get('/quote/search', [QuoteController::class, 'search'])->name('quote.search');
 
         Route::get('/graphics/{id}', [CustomerController::class, 'showGraphics'])->name('graphics');
@@ -789,6 +793,14 @@ Route::prefix('report/manual-certificate')
     ->group(function () {
         Route::get('/', [ManualCertificateController::class, 'index'])->name('index');
         Route::post('/generate', [ManualCertificateController::class, 'generate'])->name('generate');
+    });
+
+Route::prefix('report/manual-quotation')
+    ->name('report.manual-quotation.')
+    ->middleware(['auth', 'single.session', 'can:integral'])
+    ->group(function () {
+        Route::get('/', [ManualQuotationController::class, 'index'])->name('index');
+        Route::post('/generate', [ManualQuotationController::class, 'generate'])->name('generate');
     });
 
 

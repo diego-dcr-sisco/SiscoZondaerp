@@ -444,8 +444,20 @@ class ContractController extends Controller
         $service_ids = $contract_services->pluck('service_id')->unique()->toArray();
         $services = Service::whereIn('id', $service_ids)->get();
 
+        $serviceDescriptionsByServiceId = $contract_services
+            ->groupBy('service_id')
+            ->map(function ($rows) {
+                $rowsWithDescription = $rows->filter(function ($row) {
+                    return filled($row->service_description);
+                });
+
+                $selectedRow = $rowsWithDescription->sortByDesc('id')->first()
+                    ?? $rows->sortByDesc('id')->first();
+
+                return $selectedRow?->service_description;
+            });
+
         foreach ($services as $service) {
-            $setting = $contract->setting($service->id);
             $selected_services[] = [
                 'id' => $service->id,
                 'prefix' => $service->prefix,
@@ -453,7 +465,7 @@ class ContractController extends Controller
                 'type' => $service->serviceType->name,
                 'line' => $service->businessLine->name,
                 'cost' => $service->cost,
-                'description' => $setting->service_description ?? $service->description ?? null,
+                'description' => $serviceDescriptionsByServiceId->get($service->id) ?? $service->description ?? null,
                 #settings: [],
             ];
         }
@@ -1046,8 +1058,20 @@ class ContractController extends Controller
         $service_ids = $contract_services->pluck('service_id')->unique()->toArray();
         $services = Service::whereIn('id', $service_ids)->get();
 
+        $serviceDescriptionsByServiceId = $contract_services
+            ->groupBy('service_id')
+            ->map(function ($rows) {
+                $rowsWithDescription = $rows->filter(function ($row) {
+                    return filled($row->service_description);
+                });
+
+                $selectedRow = $rowsWithDescription->sortByDesc('id')->first()
+                    ?? $rows->sortByDesc('id')->first();
+
+                return $selectedRow?->service_description;
+            });
+
         foreach ($services as $service) {
-            $setting = $contract->setting($service->id);
             $selected_services[] = [
                 'id' => $service->id,
                 'prefix' => $service->prefix,
@@ -1055,7 +1079,7 @@ class ContractController extends Controller
                 'type' => $service->serviceType->name,
                 'line' => $service->businessLine->name,
                 'cost' => $service->cost,
-                'description' => $setting->service_description ?? $service->description ?? null,
+                'description' => $serviceDescriptionsByServiceId->get($service->id) ?? $service->description ?? null,
             ];
         }
 

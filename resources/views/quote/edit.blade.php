@@ -37,10 +37,14 @@
                                 <label for="service" class="form-label">Servicio</label>
                                 <select class="form-select" id="service" name="service_id">
                                     <option value="">Sin servicio</option>
-                                    @foreach ($services as $service)
-                                        <option value="{{ $service->id }}"
-                                            {{ $quote->service_id == $service->id ? 'selected' : '' }}>
-                                            {{ $service->name }}
+                                    @foreach ($service_options as $serviceOption)
+                                        @php
+                                            $serviceOptionId = data_get($serviceOption, 'id');
+                                            $serviceOptionName = data_get($serviceOption, 'name', '-');
+                                        @endphp
+                                        <option value="{{ $serviceOptionId }}"
+                                            {{ $quote->service_id == $serviceOptionId ? 'selected' : '' }}>
+                                            {{ $serviceOptionName }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -102,6 +106,23 @@
                                             href="{{ route('customer.quote.download', ['id' => $quote->id]) }}">Descargar
                                             PDF</a></small>
                                 @endif
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <div class="d-flex flex-wrap gap-2">
+                                    <form action="{{ route('customer.quote.pdf.snapshot', ['id' => $quote->id]) }}" method="POST">
+                                        @csrf
+                                        <button type="submit" class="btn btn-outline-secondary btn-sm">Guardar datos PDF</button>
+                                    </form>
+
+                                    <a href="{{ route('customer.quote.pdf.generate', ['id' => $quote->id]) }}"
+                                        class="btn btn-outline-primary btn-sm">Generar PDF</a>
+
+                                    @if ($quote->latestPdfSnapshot && $quote->latestPdfSnapshot->pdf_path)
+                                        <a href="{{ route('customer.quote.pdf.download', ['id' => $quote->id]) }}"
+                                            class="btn btn-outline-success btn-sm">Descargar PDF generado</a>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>

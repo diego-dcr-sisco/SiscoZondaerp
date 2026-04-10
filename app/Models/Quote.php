@@ -55,6 +55,16 @@ class Quote extends Model
     {
         return $this->hasMany(QuoteHistory::class);
     }
+
+    public function pdfSnapshots()
+    {
+        return $this->hasMany(QuotePdfSnapshot::class);
+    }
+
+    public function latestPdfSnapshot()
+    {
+        return $this->hasOne(QuotePdfSnapshot::class)->latestOfMany();
+    }
     
     protected function probability(): Attribute
     {

@@ -393,15 +393,15 @@
                 </div>
             </a>
 
-            <!-- Certificado Manual -->
+            <!-- Emision Manual -->
             <a href="{{ route('report.manual-certificate.index') }}"
                 class="card text-white text-decoration-none hover-scale position-relative bg-teal card-animate"
                 style="width: 150px; height: 130px;">
                 <div class="position-absolute top-50 start-50 translate-middle w-100 px-2" style="margin-top: -5px;">
                     <div class="text-center">
-                        <i class="bi bi-file-earmark-text-fill d-block fs-4 mb-2"></i>
-                        <h3 class="h6 fw-bold mb-1">Certificado</h3>
-                        <p class="small opacity-75 mb-0">Manual</p>
+                        <i class="bi bi-files d-block fs-4 mb-2"></i>
+                        <h3 class="h6 fw-bold mb-1">Emision Manual</h3>
+                        <p class="small opacity-75 mb-0">Certificados / Cotizaciones</p>
                     </div>
                 </div>
             </a>

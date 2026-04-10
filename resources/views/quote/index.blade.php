@@ -72,15 +72,38 @@
                                 </td>
                                 <td class="fw-bold">{{ formatCurrency($quote->value) }}</td>
                                 <td>
-                                    @if (!$quote->file)
-                                        <span class="text-danger fw-bold">Sin archivo PDF</span>
-                                    @else
-                                        <a href="{{ route('customer.quote.download', ['id' => $quote->id]) }}"
-                                            class="btn btn-sm btn-link" data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="Archivo PDF cotización">
-                                            <i class="bi bi-file-earmark-arrow-down-fill"></i> Archivo PDF
+                                    <div class="d-flex flex-column gap-1">
+                                        @if (!$quote->file)
+                                            <span class="text-danger fw-bold">Sin archivo PDF</span>
+                                        @else
+                                            <a href="{{ route('customer.quote.download', ['id' => $quote->id]) }}"
+                                                class="btn btn-sm btn-link p-0 text-start" data-bs-toggle="tooltip" data-bs-placement="top"
+                                                title="Archivo PDF cargado manualmente">
+                                                <i class="bi bi-file-earmark-arrow-down-fill"></i> PDF cargado
+                                            </a>
+                                        @endif
+
+                                        <form action="{{ route('customer.quote.pdf.snapshot', ['id' => $quote->id]) }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                Guardar datos PDF
+                                            </button>
+                                        </form>
+
+                                        <a href="{{ route('customer.quote.pdf.generate', ['id' => $quote->id]) }}"
+                                            class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            title="Generar PDF con la informacion guardada o actual">
+                                            <i class="bi bi-filetype-pdf"></i> Generar PDF
                                         </a>
-                                    @endif
+
+                                        @if ($quote->latestPdfSnapshot && $quote->latestPdfSnapshot->pdf_path)
+                                            <a href="{{ route('customer.quote.pdf.download', ['id' => $quote->id]) }}"
+                                                class="btn btn-sm btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="top"
+                                                title="Descargar ultimo PDF generado">
+                                                <i class="bi bi-download"></i> Descargar generado
+                                            </a>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td>
                                     <a href="{{ route('customer.quote.edit', ['id' => $quote->id]) }}" class="btn btn-sm btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top"

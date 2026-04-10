@@ -587,7 +587,9 @@
                 <!-- Firma Técnico -->
                 <td class="signature-cell">
                     <div class="signature-container">
-                        <img src="{{ $technician['signature_base64'] }}" class="signature-image" alt="Firma">
+                        @if (!empty($technician['signature_base64']))
+                            <img src="{{ $technician['signature_base64'] }}" class="signature-image" alt="Firma">
+                        @endif
                         <div class="signature-title">Nombre y firma del técnico aplicador</div>
                         <div class="signature-name">{{ $technician['name'] }}</div>
                         <div class="signature-rfc">RFC: {{ $technician['rfc'] }}</div>

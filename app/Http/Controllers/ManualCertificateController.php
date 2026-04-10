@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\View\View;
@@ -12,8 +13,16 @@ class ManualCertificateController extends Controller
 {
     public function index(): View
     {
+        $navigation = [
+            'Certificado' => route('report.manual-certificate.index'),
+            'Cotizacion' => route('report.manual-quotation.index'),
+        ];
+
+        session()->flash('warning', 'Esta herramienta es para generar certificados de servicio de forma manual, sin guardar datos en la base de datos. Asegúrate de ingresar toda la información correctamente antes de generar el PDF, ya que no habrá forma de recuperarla posteriormente.');
+
         return view('report.manual-certificate.index', [
             'sampleJson' => json_encode($this->samplePayload(), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
+            'navigation' => $navigation,
         ]);
     }
 
@@ -118,6 +127,20 @@ class ManualCertificateController extends Controller
             ];
         }
 
+        $customerSignatureBase64 = $this->resolveSignatureBase64(
+            $request,
+            'customer_signature_file',
+            'customer_signature_base64'
+        );
+
+        $technicianSignatureBase64 = $this->resolveSignatureBase64(
+            $request,
+            'technician_signature_file',
+            'technician_signature_base64'
+        );
+
+        $photoEvidences = $this->buildPhotoEvidencesFromForm($request);
+
         return [
             'title' => $request->input('title', 'Certificado de Servicio Manual'),
             'filename' => $request->input('filename', ''),
@@ -143,12 +166,12 @@ class ManualCertificateController extends Controller
                 'state' => $request->input('customer_state', '-'),
                 'rfc' => $request->input('customer_rfc', '-'),
                 'signed_by' => $request->input('customer_signed_by', '-'),
-                'signature_base64' => trim((string) $request->input('customer_signature_base64', '')),
+                'signature_base64' => $customerSignatureBase64,
             ],
             'technician' => [
                 'name' => $request->input('technician_name', '-'),
                 'rfc' => $request->input('technician_rfc', '-'),
-                'signature_base64' => trim((string) $request->input('technician_signature_base64', '')),
+                'signature_base64' => $technicianSignatureBase64,
             ],
             'services' => $services,
             'products' => [
@@ -157,12 +180,7 @@ class ManualCertificateController extends Controller
             'reviews' => [],
             'notes' => nl2br(e((string) $request->input('notes', 'Sin notas'))),
             'recommendations' => nl2br(e((string) $request->input('recommendations', 'Sin recomendaciones'))),
-            'photo_evidences' => [
-                'servicio' => [],
-                'notas' => [],
-                'recomendaciones' => [],
-                'evidencias' => [],
-            ],
+            'photo_evidences' => $photoEvidences,
         ];
     }
 
@@ -226,7 +244,7 @@ class ManualCertificateController extends Controller
             ];
         }, $productRows);
 
-        $photoEvidences = is_array($payload['photo_evidences'] ?? null) ? $payload['photo_evidences'] : [];
+        $photoEvidences = $this->normalizePhotoEvidences($payload['photo_evidences'] ?? []);
 
         return [
             'title' => $payload['title'] ?? 'Certificado de Servicio Manual',
@@ -255,12 +273,12 @@ class ManualCertificateController extends Controller
                 'state' => $customer['state'] ?? '-',
                 'rfc' => $customer['rfc'] ?? '-',
                 'signed_by' => $customer['signed_by'] ?? '-',
-                'signature_base64' => $customer['signature_base64'] ?? '',
+                'signature_base64' => $this->normalizeSignatureBase64($customer['signature_base64'] ?? ''),
             ],
             'technician' => [
                 'name' => $technician['name'] ?? '-',
                 'rfc' => $technician['rfc'] ?? '-',
-                'signature_base64' => $technician['signature_base64'] ?? '',
+                'signature_base64' => $this->normalizeSignatureBase64($technician['signature_base64'] ?? ''),
             ],
             'services' => $services,
             'products' => [
@@ -299,6 +317,166 @@ class ManualCertificateController extends Controller
         }
 
         return $filename;
+    }
+
+    private function resolveSignatureBase64(Request $request, string $fileField, string $base64Field): string
+    {
+        $file = $request->file($fileField);
+        if ($file instanceof UploadedFile && $file->isValid()) {
+            $fromFile = $this->fileToDataUri($file);
+            if ($fromFile !== '') {
+                return $fromFile;
+            }
+        }
+
+        return $this->normalizeSignatureBase64((string) $request->input($base64Field, ''));
+    }
+
+    private function fileToDataUri(UploadedFile $file): string
+    {
+        $mimeType = strtolower((string) $file->getMimeType());
+        $allowedMimeTypes = [
+            'image/png',
+            'image/jpeg',
+            'image/jpg',
+            'image/gif',
+            'image/webp',
+        ];
+
+        if (!in_array($mimeType, $allowedMimeTypes, true)) {
+            return '';
+        }
+
+        if ($file->getSize() > 2 * 1024 * 1024) {
+            return '';
+        }
+
+        $raw = @file_get_contents($file->getRealPath());
+        if ($raw === false || $raw === '') {
+            return '';
+        }
+
+        return 'data:' . $mimeType . ';base64,' . base64_encode($raw);
+    }
+
+    private function normalizeSignatureBase64(string $signature): string
+    {
+        $signature = trim($signature);
+        if ($signature === '') {
+            return '';
+        }
+
+        if (preg_match('/^data:image\/(png|jpe?g|gif|webp);base64,/i', $signature) === 1) {
+            return $signature;
+        }
+
+        $decoded = base64_decode($signature, true);
+        if ($decoded === false) {
+            return '';
+        }
+
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = strtolower((string) $finfo->buffer($decoded));
+        $allowedMimeTypes = [
+            'image/png',
+            'image/jpeg',
+            'image/jpg',
+            'image/gif',
+            'image/webp',
+        ];
+
+        if (!in_array($mimeType, $allowedMimeTypes, true)) {
+            return '';
+        }
+
+        return 'data:' . $mimeType . ';base64,' . $signature;
+    }
+
+    private function buildPhotoEvidencesFromForm(Request $request): array
+    {
+        $areas = Arr::wrap($request->input('evidence_area', []));
+        $descriptions = Arr::wrap($request->input('evidence_description', []));
+        $base64Images = Arr::wrap($request->input('evidence_image_base64', []));
+        $uploadedImages = Arr::wrap($request->file('evidence_image_file', []));
+
+        $grouped = [
+            'servicio' => [],
+            'notas' => [],
+            'recomendaciones' => [],
+            'evidencias' => [],
+        ];
+
+        foreach ($areas as $index => $areaRaw) {
+            $area = $this->sanitizeEvidenceArea((string) $areaRaw);
+            $description = trim((string) ($descriptions[$index] ?? ''));
+
+            $image = '';
+            $uploaded = $uploadedImages[$index] ?? null;
+            if ($uploaded instanceof UploadedFile && $uploaded->isValid()) {
+                $image = $this->fileToDataUri($uploaded);
+            }
+
+            if ($image === '') {
+                $image = $this->normalizeSignatureBase64((string) ($base64Images[$index] ?? ''));
+            }
+
+            if ($image === '') {
+                continue;
+            }
+
+            $grouped[$area][] = [
+                'description' => $description !== '' ? $description : 'Evidencia fotografica',
+                'image' => $image,
+            ];
+        }
+
+        return $grouped;
+    }
+
+    private function sanitizeEvidenceArea(string $area): string
+    {
+        $area = trim(strtolower($area));
+        $allowed = ['servicio', 'notas', 'recomendaciones', 'evidencias'];
+
+        return in_array($area, $allowed, true) ? $area : 'evidencias';
+    }
+
+    private function normalizePhotoEvidences(mixed $rawPhotoEvidences): array
+    {
+        $normalized = [
+            'servicio' => [],
+            'notas' => [],
+            'recomendaciones' => [],
+            'evidencias' => [],
+        ];
+
+        if (!is_array($rawPhotoEvidences)) {
+            return $normalized;
+        }
+
+        foreach ($normalized as $area => $items) {
+            $records = is_array($rawPhotoEvidences[$area] ?? null) ? $rawPhotoEvidences[$area] : [];
+
+            foreach ($records as $record) {
+                if (!is_array($record)) {
+                    continue;
+                }
+
+                $description = trim((string) ($record['description'] ?? 'Evidencia fotografica'));
+                $image = trim((string) ($record['image'] ?? ''));
+
+                if ($image === '') {
+                    continue;
+                }
+
+                $normalized[$area][] = [
+                    'description' => $description !== '' ? $description : 'Evidencia fotografica',
+                    'image' => $image,
+                ];
+            }
+        }
+
+        return $normalized;
     }
 
     private function samplePayload(): array
