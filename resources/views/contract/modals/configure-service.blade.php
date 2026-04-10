@@ -1853,6 +1853,10 @@
             'S': 6,
             'D': 0
         };
+        const normalizedDays = (days || []).map(day => {
+            const token = String(day || '').trim().toUpperCase();
+            return token === 'MI' ? 'I' : token;
+        });
         const start = parseLocalDate(startDate);
         const end = parseLocalDate(endDate);
         const currentDate = new Date(start);
@@ -1861,7 +1865,7 @@
             const dayOfWeek = currentDate.getDay();
             const dayLetter = Object.keys(dayMap).find(key => dayMap[key] === dayOfWeek);
 
-            if (days.includes(dayLetter)) {
+            if (normalizedDays.includes(dayLetter)) {
                 dates.push(toDateKey(currentDate));
             }
 

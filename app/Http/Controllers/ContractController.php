@@ -487,7 +487,7 @@ class ContractController extends Controller
                 'frequency_id' => $cs->execution_frequency_id,
                 'interval' => $cs->interval != 0 ? $this->intervals[$cs->interval - 1] : 0,
                 'interval_id' => $cs->interval,
-                'days' => explode(',', json_decode($cs->days)[0] ?? ''),
+                'days' => $this->normalizeWeekDays(explode(',', json_decode($cs->days)[0] ?? '')),
                 'dates' => $orders->pluck('programmed_date')->map(function ($date) {
                     return $date . 'T00:00:00.000Z';
                 })->toArray(),
@@ -1099,7 +1099,7 @@ class ContractController extends Controller
                 'frequency_id' => $cs->execution_frequency_id,
                 'interval' => $this->intervals[$cs->interval],
                 'interval_id' => $cs->interval,
-                'days' => explode(',', json_decode($cs->days)[0] ?? ''),
+                'days' => $this->normalizeWeekDays(explode(',', json_decode($cs->days)[0] ?? '')),
                 'dates' => $orders->pluck('programmed_date')->map(function ($date) {
                     // Ajustar fechas para la renovación (añadir un año)
                     $newDate = Carbon::parse($date)->addYear();
@@ -1146,6 +1146,19 @@ class ContractController extends Controller
                 'view'
             )
         );
+    }
+
+    private function normalizeWeekDays(array $days): array
+    {
+        return array_map(function ($day) {
+            $normalized = strtoupper(trim((string) $day));
+
+            if ($normalized === 'MI') {
+                return 'I';
+            }
+
+            return $day;
+        }, $days);
     }
 
     /**

@@ -94,7 +94,7 @@
             </div>
             <div class="form-text text-danger m-0" id="basic-addon4">
                 * Para añadir días, solo se permite la primera letra en
-                mayúscula: (L) Lunes, (M) Martes, (Mi) Miércoles, (J) Jueves,
+                mayúscula: (L) Lunes, (M) Martes, (I) Miércoles, (J) Jueves,
                 (V) Viernes, (S) Sábado, (D) Domingo.
             </div>
             <div class="col-12 p-0 m-0 mb-1">
