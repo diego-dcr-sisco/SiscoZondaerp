@@ -165,6 +165,7 @@
                                                     </div>
                                                 </div>
                                                 ${range ? `<p class="mb-2">Frecuencia de ${range.frequency} ${range.frequency_type == 'days' ? 'Dias' : (range.frequency_type == 'months' ? 'Semanas' : 'Meses')}</p>` : `<p class="text-danger">No se tiene frecuencia</p>`}
+                                                <p class="mb-2 fw-semibold">Costo: ${tracking.cost ?? '-'}</p>
                                                 <div class="mb-3">${tracking.description ?? '-'}</div>
                                                 <div class="">
                                                     ${range ? 

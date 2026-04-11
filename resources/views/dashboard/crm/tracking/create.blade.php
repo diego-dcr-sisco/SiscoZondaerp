@@ -59,6 +59,11 @@
                         <input type="text" class="form-control" id="title" name="title"
                             placeholder="Título del seguimiento">
                     </div>
+                    <div class="col-4 mb-3">
+                        <label for="cost" class="form-label">Costo</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="cost" name="cost"
+                            placeholder="Costo del seguimiento">
+                    </div>
                     <div class="col-8 mb-3">
                         <label for="description" class="form-label">Descripción</label>
                         <textarea class="form-control" id="description" name="description" rows="3"

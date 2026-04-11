@@ -449,7 +449,7 @@ class CRMController extends Controller
                     ? Carbon::parse($tracking->next_date)->format('d/m/Y')
                     : '',
                 'Servicio' => $tracking->service->name ?? '',
-                'Costo' => $tracking->order->price ?? '',
+                'Costo' => $tracking->cost ?? '',
                 'Descripcion' => $tracking->description ?? '',
                 '¿Se reprogramo?' => '',
             ];
@@ -636,6 +636,7 @@ class CRMController extends Controller
                         'id' => $tracking->id ?? null,
                         'title' => $tracking->title ?? null,
                         'description' => $tracking->description ?? null,
+                        'cost' => $tracking->cost ?? null,
                         'next_date' => $tracking->next_date ?? null,
                         'range' => $tracking->range ?? null,
                         'status' => $tracking->status ?? null,
@@ -720,6 +721,7 @@ class CRMController extends Controller
                 ? 'App\Models\Customer'
                 : 'App\Models\Lead',
             'service_id' => $request->input('service_id'),
+            'cost' => $request->input('cost') !== null && $request->input('cost') !== '' ? (float) $request->input('cost') : null,
             'order_id' => $request->input('order_id'),
             'title' => $request->input('title'),
             'description' => $request->input('description'),
@@ -775,6 +777,7 @@ class CRMController extends Controller
                     'trackable_id' => $mainTracking->trackable_id,
                     'trackable_type' => $mainTracking->trackable_type,
                     'service_id' => $mainTracking->service_id,
+                    'cost' => $mainTracking->cost,
                     'order_id' => $mainTracking->order_id,
                     'title' => $mainTracking->title,
                     'description' => $mainTracking->description,
@@ -945,6 +948,7 @@ class CRMController extends Controller
             'trackable_id' => $tracking->trackable_id,
             'trackable_type' => $tracking->trackable_type,
             'service_id' => $tracking->service_id,
+            'cost' => $tracking->cost,
             'order_id' => $tracking->order_id,
             'title' => null,
             'description' => null,
@@ -1001,6 +1005,7 @@ class CRMController extends Controller
                 'customer' => $tracking->trackable->name,
                 'order' => $orderInfo, // Aquí usamos la estructura segura
                 'service' => $tracking->service_id,
+                'cost' => $tracking->cost,
                 'next_date' => $tracking->next_date,
                 'title' => $tracking->title,
                 'description' => $tracking->description,

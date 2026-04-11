@@ -82,6 +82,7 @@
                         <thead>
                             <tr>
                                 <th scope="col">Servicio</th>
+                                <th scope="col">Costo</th>
                                 <th scope="col">Titulo</th>
                                 <th scope="col">Descripción</th>
                                 <th scope="col">Proxima fecha</th>
@@ -93,6 +94,7 @@
                             @foreach ($trackings as $tracking)
                                 <tr>
                                     <th scope="row">{{ $tracking->service->name }}</th>
+                                    <td>{{ $tracking->cost ?? '-' }}</td>
                                     <td>{{ $tracking->title }}</td>
                                     <td>{{ $tracking->description }}</td>
                                     <td>

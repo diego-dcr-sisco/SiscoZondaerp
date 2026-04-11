@@ -29,6 +29,7 @@
                         <th scope="col">#</th>
                         <th scope="col">Fecha</th>
                         <th scope="col">Servicio</th>
+                        <th scope="col">Costo</th>
                         <th scope="col">Frecuencia</th>
                         <th scope="col">Titulo</th>
                         <th scope="col">Descripción</th>
@@ -79,6 +80,7 @@
                         <td>${++count}</td>
                         <td>${formatToDDMMYYYY(d.date)}</td>
                         <td>${tracking.service_name}</td>
+                        <td>${d.cost ?? '-'}</td>
                         <td>${tracking.frequency}</td>
                         <td>${d.title}</td>
                         <td>${d.description}</td>

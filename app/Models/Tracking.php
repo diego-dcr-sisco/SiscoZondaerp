@@ -15,6 +15,7 @@ class Tracking extends Model
         'tenant_id',
         'user_id',
         'service_id',
+        'cost',
         //'customer_id',
         'order_id',
         'next_date',

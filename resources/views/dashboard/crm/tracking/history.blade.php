@@ -35,6 +35,7 @@
                         <th>Cliente</th>
                         <th>Orden</th>
                         <th>Servicio</th>
+                        <th>Costo</th>
                         <th>Título</th>
                         <th>Descripción</th>
                         <th>Próxima Fecha</th>
@@ -52,6 +53,7 @@
                             <td>{{ $tracking->trackable->name ?? '-' }}</td>
                             <td>{{ $tracking->order->folio ?? '-' }}</td>
                             <td>{{ $tracking->service->name ?? '-' }}</td>
+                            <td>{{ $tracking->cost ?? '-' }}</td>
                             <td>{{ $tracking->title }}</td>
                             <td>{{ $tracking->description ? Str::limit($tracking->description, 100) : '-' }}</td>
                             <td>{{ $tracking->next_date }}</td>

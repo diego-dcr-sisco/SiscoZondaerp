@@ -46,6 +46,11 @@
                         placeholder="Título del seguimiento">
                 </div>
                 <div class="mb-3">
+                    <label for="cost" class="form-label">Costo</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="cost"
+                        placeholder="Costo del seguimiento">
+                </div>
+                <div class="mb-3">
                     <label for="description" class="form-label">Descripción</label>
                     <textarea class="form-control" id="description" name="description" rows="5"
                         placeholder="Ingrese los detalles del seguimiento: acciones tomadas, estado actual del servicio, observaciones relevantes y próximos pasos"></textarea>
@@ -127,7 +132,7 @@
         return dates;
     }
 
-    function createJsonDates(dates, title, description) {
+    function createJsonDates(dates, title, description, cost) {
         var data = [];
         dates.forEach(date => {
             data.push({
@@ -135,6 +140,7 @@
                 date: date,
                 title: title ?? null,
                 description: description ?? null,
+                cost: cost ?? null,
                 status: 'active'
             });
         });
@@ -148,6 +154,7 @@
         const frequency = $('#frequency').val();
         const service_id = $('#service').val();
         const title = $('#title').val();
+        const cost = $('#cost').val();
         const description = $('#description').val();
 
         if (!service_id) {
@@ -169,7 +176,7 @@
             start_date: start_date,
             frequency: frequency,
             reps: reps,
-            dates: createJsonDates(dates, title, description),
+            dates: createJsonDates(dates, title, description, cost),
             user_id: "{{ Auth::id() }}",
             user: "{{ Auth::user()->name ?? '' }}"
         }
@@ -211,6 +218,7 @@
                         <td>${++count}</td>
                         <td>${formatToDDMMYYYY(d.date)}</td>
                         <td>${tracking.service_name}</td>
+                        <td>${d.cost ?? '-'}</td>
                         <td>${tracking.frequency}</td>
                         <td>${d.title}</td>
                         <td>${d.description}</td>
@@ -253,6 +261,7 @@
             $('#tracking-date').val(tracking_data[i].dates[j].date);
             $('#tracking-status').val(tracking_data[i].dates[j].status);
             $('#tracking-title').val(tracking_data[i].dates[j].title);
+            $('#tracking-cost').val(tracking_data[i].dates[j].cost ?? '');
             $('#tracking-description').val(tracking_data[i].dates[j].description);
         }
         edit_i = i;
@@ -269,6 +278,7 @@
             tracking_data[i].dates[j].date = $('#tracking-date').val();
             tracking_data[i].dates[j].status = $('#tracking-status').val();
             tracking_data[i].dates[j].title = $('#tracking-title').val();
+            tracking_data[i].dates[j].cost = $('#tracking-cost').val();
             tracking_data[i].dates[j].description = $('#tracking-description').val();
         }
 

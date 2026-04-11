@@ -68,6 +68,12 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="cost" class="form-label">Costo</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="cost"
+                                name="cost" value="{{ $tracking->cost }}" placeholder="Costo del seguimiento">
+                        </div>
+
+                        <div class="mb-3">
                             <label for="description" class="form-label">Descripción</label>
                             <textarea class="form-control" id="description" name="description" rows="5"
                                 placeholder="Descripción del seguimiento">{{ $tracking->description }}</textarea>

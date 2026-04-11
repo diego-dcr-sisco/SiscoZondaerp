@@ -57,6 +57,7 @@ class TrackingController extends Controller
                     'date' => $t->next_date,
                     'title' => $t->title,
                     'description' => $t->description,
+                    'cost' => $t->cost,
                     'status' => $t->status
                 ];
             }
@@ -104,6 +105,7 @@ class TrackingController extends Controller
                     'user_id' => Auth::id(),
                     'title' => $d->title,
                     'description' => $d->description,
+                    'cost' => isset($d->cost) && $d->cost !== '' ? (float) $d->cost : null,
                     'status' => $d->status,
                 ];
 
@@ -172,6 +174,7 @@ class TrackingController extends Controller
                 'next_date' => $update_tracking->date,
                 'title' => $update_tracking->title,
                 'description' => $update_tracking->description,
+                'cost' => isset($update_tracking->cost) && $update_tracking->cost !== '' ? (float) $update_tracking->cost : null,
                 'status' => $update_tracking->status,
                 'user_id' => Auth::id(),
             ]);

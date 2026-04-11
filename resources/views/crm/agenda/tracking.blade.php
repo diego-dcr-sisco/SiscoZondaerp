@@ -119,6 +119,7 @@
                         <th>Cliente/Cliente potencial</th>
                         <th>Orden</th>
                          <th>Servicio</th>
+                        <th>Costo</th>
                          <th>Próxima Fecha</th>
                         <th>Titulo</th>
                         <th>Descripción</th>
@@ -137,6 +138,7 @@
                              <td>{{ $tracking->trackable->name ?? '-' }}</td>
                             <td>{{ $tracking->order->folio ?? '-' }}</td>
                              <td>{{ $tracking->service->name ?? '-' }}</td>
+                             <td>{{ $tracking->cost ?? '-' }}</td>
                              <td>{{ \Carbon\Carbon::parse($tracking->next_date)->format('d/m/Y') }}</td>
                             <td>{{ $tracking->title ?? '-' }}</td>
                             <td>{{ $tracking->description ?? '-' }}</td>

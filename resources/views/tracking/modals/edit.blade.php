@@ -34,6 +34,11 @@
                     <input type="text" class="form-control" id="tracking-title" placeholder="Título del seguimiento">
                 </div>
                 <div class="mb-3">
+                    <label for="tracking-cost" class="form-label">Costo</label>
+                    <input type="number" step="0.01" min="0" class="form-control" id="tracking-cost"
+                        placeholder="Costo del seguimiento">
+                </div>
+                <div class="mb-3">
                     <label for="description" class="form-label">Descripción</label>
                     <textarea class="form-control" id="tracking-description" rows="5"
                         placeholder="Ingrese los detalles del seguimiento: acciones tomadas, estado actual del servicio, observaciones relevantes y próximos pasos"></textarea>
