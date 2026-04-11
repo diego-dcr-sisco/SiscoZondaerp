@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <title>Seguimientos</title>
     <style>
+        :root {
+            --deep-space-blue: #012640;
+            --deep-navy: #02265A;
+            --true-cobalt: #0A2986;
+            --indigo-velvet: #512A87;
+            --velvet-purple: #793775;
+            --dusty-mauve: #B74453;
+            --fiery-terracotta: #DD513A;
+        }
+
         * {
             box-sizing: border-box;
             font-family: DejaVu Sans, sans-serif;
@@ -11,26 +21,26 @@
 
         body {
             margin: 18px;
-            color: #1f2937;
+            color: var(--deep-space-blue);
             font-size: 11px;
         }
 
         .header {
-            border-bottom: 2px solid #0a2986;
+            border-bottom: 2px solid var(--true-cobalt);
             padding-bottom: 8px;
             margin-bottom: 12px;
         }
 
         .title {
             margin: 0;
-            color: #0a2986;
+            color: var(--deep-navy);
             font-size: 18px;
             font-weight: 700;
         }
 
         .subtitle {
             margin: 4px 0 0;
-            color: #475569;
+            color: var(--velvet-purple);
             font-size: 10px;
         }
 
@@ -41,23 +51,27 @@
         }
 
         thead th {
-            background: #0a2986;
+            background: var(--true-cobalt);
             color: #fff;
-            border: 1px solid #d1d5db;
+            border: 1px solid var(--deep-navy);
             padding: 6px 5px;
             font-size: 10px;
             text-align: center;
         }
 
         tbody td {
-            border: 1px solid #d1d5db;
+            border: 1px solid #c7d1de;
             padding: 5px;
             vertical-align: top;
             word-wrap: break-word;
         }
 
         tbody tr:nth-child(even) {
-            background: #f8fafc;
+            background: #f3f6fb;
+        }
+
+        tbody tr:nth-child(odd) {
+            background: #ffffff;
         }
 
         .col-client { width: 17%; }
@@ -70,8 +84,10 @@
         .footer {
             margin-top: 10px;
             font-size: 10px;
-            color: #64748b;
+            color: var(--dusty-mauve);
             text-align: right;
+            border-top: 1px solid var(--fiery-terracotta);
+            padding-top: 6px;
         }
     </style>
 </head>
