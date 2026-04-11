@@ -77,24 +77,32 @@
                     <div class="mb-2">
                         <a href="{{ route('crm.tracking.create', ['customerId' => $customer->id, 'serviceId' => 0]) }}"
                             class="btn btn-primary btn-sm">Nuevo seguimiento</a>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                            <i class="bi bi-printer"></i> Imprimir tabla
+                        </button>
                     </div>
                     <table class="table">
                         <thead>
                             <tr>
+                                <th scope="col">Nombre del cliente</th>
+                                <th scope="col">Fecha programada</th>
                                 <th scope="col">Servicio</th>
-                                <th scope="col">Titulo</th>
-                                <th scope="col">Descripción</th>
+                                <th scope="col">Costo</th>
+                                <th scope="col">Descripcion</th>
+                                <th scope="col">¿Se reprogramo?</th>
                                 <th scope="col">Proxima fecha</th>
-                                <th scope="col">Status</th>
                                 <th scope="col">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($trackings as $tracking)
                                 <tr>
+                                    <td>{{ $tracking->trackable->name ?? '' }}</td>
+                                    <td>{{ $tracking->order && $tracking->order->programmed_date ? \Carbon\Carbon::parse($tracking->order->programmed_date)->format('d/m/Y') : '' }}</td>
                                     <th scope="row">{{ $tracking->service->name }}</th>
-                                    <td>{{ $tracking->title }}</td>
-                                    <td>{{ $tracking->description }}</td>
+                                    <td>{{ $tracking->order->price ?? '' }}</td>
+                                    <td>{{ $tracking->description ?? '' }}</td>
+                                    <td>{{ '' }}</td>
                                     <td>
                                         @php
                                             $today = \Carbon\Carbon::today();
@@ -113,17 +121,6 @@
                                         <span class="fw-bold {{ $colorClass }}">
                                             {{ $tracking->next_date }}
                                         </span>
-                                    </td>
-                                    <td
-                                        class="fw-bold
-                                    {{ $tracking->status == 'active'
-                                        ? 'text-success'
-                                        : ($tracking->status == 'completed'
-                                            ? 'text-primary'
-                                            : ($tracking->status == 'canceled'
-                                                ? 'text-danger'
-                                                : 'text-secondary')) }}">
-                                        {{ $spanish_status[$tracking->status] }}
                                     </td>
                                     <td>
                                         <div class="btn-group" role="group" aria-label="Basic example">

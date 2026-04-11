@@ -109,19 +109,23 @@
              </form>
          </div>
 
-         <div class="table-responsive">
-             <table class="table table-bordered table-sm">
+        <div class="d-flex justify-content-end mb-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+                <i class="bi bi-printer"></i> Imprimir tabla
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
                  <thead>
                      <tr>
-                         <th>Cliente/Cliente potencial</th>
-                         <th>Orden</th>
+                        <th>Nombre del cliente</th>
+                        <th>Fecha programada</th>
                          <th>Servicio</th>
+                        <th>Costo</th>
+                        <th>Descripcion</th>
+                        <th>¿Se reprogramo?</th>
                          <th>Próxima Fecha</th>
-                         <th>Titulo</th>
-                         <th>Descripción</th>
-                         <th>Rango</th>
-                         <th>Estado</th>
-                         <th>Creado por</th>
                          <th></th>
                      </tr>
                  </thead>
@@ -132,26 +136,12 @@
                          @endphp
                          <tr>
                              <td>{{ $tracking->trackable->name ?? '-' }}</td>
-                             <td>{{ $tracking->order->folio ?? '-' }}</td>
+                            <td>{{ $tracking->order && $tracking->order->programmed_date ? \Carbon\Carbon::parse($tracking->order->programmed_date)->format('d/m/Y') : '' }}</td>
                              <td>{{ $tracking->service->name ?? '-' }}</td>
+                            <td>{{ $tracking->order->price ?? '' }}</td>
+                            <td>{{ $tracking->description ?? '' }}</td>
+                            <td>{{ '' }}</td>
                              <td>{{ \Carbon\Carbon::parse($tracking->next_date)->format('d/m/Y') }}</td>
-                             <td>{{ $tracking->title ?? '-' }}</td>
-                             <td>{{ $tracking->description ?? '-' }}</td>
-
-                             <td> {{ $range && $range->frequency_type ? 'Cada ' . $range->frequency . ' ' . $range->frequency_type : '-' }}
-                             </td>
-                             <td
-                                 class="fw-bold
-                                                    {{ $tracking->status == 'active'
-                                                        ? 'text-success'
-                                                        : ($tracking->status == 'completed'
-                                                            ? 'text-primary'
-                                                            : ($tracking->status == 'canceled'
-                                                                ? 'text-danger'
-                                                                : 'text-secondary')) }}">
-                                 {{ $spanish_status[$tracking->status] }}
-                             </td>
-                             <td>{{ $tracking->user->name ?? '-' }}</td>
                              <td>
                                  <a href="{{ route('crm.tracking.edit', ['id' => $tracking->id]) }}"
                                      class="btn btn-sm btn-secondary"
