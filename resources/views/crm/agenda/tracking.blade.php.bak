@@ -182,44 +182,36 @@
                                 {{ $spanish_status[$tracking->status] }}
                             </td>
                             <td>{{ $tracking->user->name ?? '-' }}</td>
-                             <td class="py-3 px-2">
-                                 <div class="d-flex gap-2 align-items-center justify-content-center flex-wrap">
-                                     <a href="{{ route('crm.tracking.edit', ['id' => $tracking->id]) }}"
-                                         class="btn btn-secondary px-3 py-2"
-                                         onclick="return confirm('📅 EDITAR Seguimiento\n\n¿Deseas reprogramar esta actividad?')"
-                                         data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip"
-                                         data-bs-title="Editar seguimiento"
-                                         style="font-size: 0.95rem;">
-                                         <i class="bi bi-pencil-square"></i> Editar
-                                     </a>
-                                     @if ($tracking->status != 'canceled')
-                                         <a href="{{ route('crm.tracking.complete', ['id' => $tracking->id]) }}"
-                                             class="btn btn-success px-3 py-2"
-                                             onclick="return confirm('✅ COMPLETAR Seguimiento\n\n¿Deseas completar esta actividad?')"
-                                             data-bs-toggle="tooltip" data-bs-placement="top"
-                                             data-bs-custom-class="custom-tooltip" data-bs-title="Completar seguimiento"
-                                             style="font-size: 0.95rem;">
-                                             <i class="bi bi-check-lg"></i> Completar
-                                         </a>
-                                         <a href="{{ route('crm.tracking.cancel', ['id' => $tracking->id]) }}"
-                                             class="btn btn-danger px-3 py-2"
-                                             onclick="return confirm('❌ CANCELAR de Seguimiento\n\n¿Deseas cancelar esta actividad?')"
-                                             data-bs-toggle="tooltip" data-bs-placement="top"
-                                             data-bs-custom-class="custom-tooltip" data-bs-title="Cancelar seguimiento"
-                                             style="font-size: 0.95rem;">
-                                             <i class="bi bi-x-lg"></i> Cancelar
-                                         </a>
-                                     @endif
-                                     <a href="{{ route('crm.tracking.destroy', ['id' => $tracking->id]) }}"
-                                         class="btn btn-outline-danger px-3 py-2"
-                                         onclick="return confirm('ELIMINAR Seguimiento\n\n¿Deseas eliminar esta actividad?')"
+                             <td class="col-1">
+                                 <a href="{{ route('crm.tracking.edit', ['id' => $tracking->id]) }}"
+                                     class="btn btn-sm btn-secondary"
+                                     onclick="return confirm('📅 EDITAR Seguimiento\n\n¿Deseas reprogramar esta actividad?')"
+                                     data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip"
+                                     data-bs-title="Editar seguimiento">
+                                     <i class="bi bi-pencil-square"></i>
+                                 </a>
+                                 @if ($tracking->status != 'canceled')
+                                     <a href="{{ route('crm.tracking.complete', ['id' => $tracking->id]) }}"
+                                         class="btn btn-sm btn-success"
+                                         onclick="return confirm('✅ COMPLETAR Seguimiento\n\n¿Deseas completar esta actividad?')"
                                          data-bs-toggle="tooltip" data-bs-placement="top"
-                                         data-bs-custom-class="custom-tooltip"
-                                         data-bs-title="Eliminar seguimiento"
-                                         style="font-size: 0.95rem;">
-                                         <i class="bi bi-trash-fill"></i> Eliminar
+                                         data-bs-custom-class="custom-tooltip" data-bs-title="Completar seguimiento">
+                                         <i class="bi bi-check-lg"></i>
                                      </a>
-                                 </div>
+                                     <a href="{{ route('crm.tracking.cancel', ['id' => $tracking->id]) }}"
+                                         class="btn btn-sm btn-danger"
+                                         onclick="return confirm('❌ CANCELAR de Seguimiento\n\n¿Deseas cancelar esta actividad?')"
+                                         data-bs-toggle="tooltip" data-bs-placement="top"
+                                         data-bs-custom-class="custom-tooltip" data-bs-title="Cancelar seguimiento">
+                                         <i class="bi bi-x-lg"></i>
+                                     </a>
+                                 @endif
+                                 <a href="{{ route('crm.tracking.destroy', ['id' => $tracking->id]) }}"
+                                     class="btn btn-outline-danger btn-sm"
+                                     onclick="return confirm('ELIMINAR Seguimiento\n\n¿Deseas eliminar esta actividad?')"><i
+                                         class="bi bi-trash-fill" data-bs-toggle="tooltip" data-bs-placement="top"
+                                         data-bs-custom-class="custom-tooltip"
+                                         data-bs-title="Eliminar seguimiento"></i></a>
                              </td>
                          </tr>
                      @endforeach
