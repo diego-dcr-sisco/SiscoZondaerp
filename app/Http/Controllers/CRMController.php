@@ -445,16 +445,13 @@ class CRMController extends Controller
         $rows = $trackings->map(function ($tracking) {
             return [
                 'Nombre del cliente' => $tracking->trackable->name ?? '',
-                'Fecha programada' => $tracking->order && $tracking->order->programmed_date
-                    ? Carbon::parse($tracking->order->programmed_date)->format('d/m/Y')
+                'Fecha' => $tracking->next_date
+                    ? Carbon::parse($tracking->next_date)->format('d/m/Y')
                     : '',
                 'Servicio' => $tracking->service->name ?? '',
                 'Costo' => $tracking->order->price ?? '',
                 'Descripcion' => $tracking->description ?? '',
                 '¿Se reprogramo?' => '',
-                'Proxima Fecha' => $tracking->next_date
-                    ? Carbon::parse($tracking->next_date)->format('d/m/Y')
-                    : '',
             ];
         })->toArray();
 
@@ -463,12 +460,11 @@ class CRMController extends Controller
         return SimpleExcelWriter::streamDownload($fileName)
             ->addHeader([
                 'Nombre del cliente',
-                'Fecha programada',
+                'Fecha',
                 'Servicio',
                 'Costo',
                 'Descripcion',
                 '¿Se reprogramo?',
-                'Proxima Fecha',
             ])
             ->addRows($rows)
             ->toBrowser();
