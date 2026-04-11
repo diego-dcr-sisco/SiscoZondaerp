@@ -8,6 +8,10 @@
                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
              </div>
              <div class="modal-body">
+                 <div class="alert alert-light border py-2 px-3 mb-3 small">
+                     <span class="fw-semibold">Ruta actual:</span>
+                     <span id="parentPathPreview" class="text-break"></span>
+                 </div>
                  <label for="name" class="form-label is-required">Nombre: </label>
                  <input type="text" class="form-control" id="name" name="folder_name" maxlength="1024"
                      autocomplete="off" required>
@@ -27,6 +31,11 @@
          let isSubmitting = false;
          const initialParentPath = $('#directoryForm input[name="parent_path"]').val();
 
+         function refreshParentPathPreview() {
+             const parentPath = ($('#directoryForm input[name="parent_path"]').val() || '').trim();
+             $('#parentPathPreview').text(parentPath || '(sin ruta)');
+         }
+
          function getParentPathFromCurrentRoute() {
              const pathname = window.location.pathname || '';
              const routeMatch = pathname.match(/\/clients\/(system|mip)\/(.+)$/);
@@ -42,6 +51,7 @@
          // Restaurar el parent_path original entregado por backend al abrir el modal.
          $('#directoryModal').on('show.bs.modal', function() {
              $('#directoryForm input[name="parent_path"]').val(initialParentPath);
+             refreshParentPathPreview();
          });
 
          $('#directoryForm').on('submit', function(e) {
@@ -61,6 +71,8 @@
                  }
              }
 
+             refreshParentPathPreview();
+
              const folderName = $('#name').val().trim();
              if (!folderName) {
                  e.preventDefault();
@@ -79,5 +91,7 @@
              $('#btnCreateDir').prop('disabled', false).html('{{ __('buttons.store') }}');
              $('#name').val('');
          });
+
+         refreshParentPathPreview();
      });
  </script>
