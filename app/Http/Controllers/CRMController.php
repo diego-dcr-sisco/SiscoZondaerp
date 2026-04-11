@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use function Laravel\Prompts\select;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
+use Illuminate\Support\Facades\Auth;
 use Spatie\SimpleExcel\SimpleExcelWriter;
 
 class CRMController extends Controller
@@ -358,7 +359,7 @@ class CRMController extends Controller
 
     public function tracking(Request $request)
     {
-        $tracking_query = Tracking::query();
+        $tracking_query = Tracking::query()->with(['user', 'trackable', 'service', 'order']);
 
         //$startDate = now()->startOfWeek();
         //$endDate = now()->endOfWeek();
@@ -720,6 +721,7 @@ class CRMController extends Controller
             'trackable_type' => $trackable_type === 'customer'
                 ? 'App\Models\Customer'
                 : 'App\Models\Lead',
+            'user_id' => Auth::id(),
             'service_id' => $request->input('service_id'),
             'cost' => $request->input('cost') !== null && $request->input('cost') !== '' ? (float) $request->input('cost') : null,
             'order_id' => $request->input('order_id'),
@@ -776,6 +778,7 @@ class CRMController extends Controller
                 $datesToCreate[] = [
                     'trackable_id' => $mainTracking->trackable_id,
                     'trackable_type' => $mainTracking->trackable_type,
+                    'user_id' => $mainTracking->user_id,
                     'service_id' => $mainTracking->service_id,
                     'cost' => $mainTracking->cost,
                     'order_id' => $mainTracking->order_id,
