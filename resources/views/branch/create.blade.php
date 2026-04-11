@@ -1,18 +1,25 @@
 @extends('layouts.app')
 @section('content')
     @if (!auth()->check())
-        <?php header('Location: /login');
-        exit(); ?>
+        <?php
+        header('Location: /login');
+        exit();
+        ?>
     @endif
 
-    <div class="container-fluid">
-        <div class="row border-bottom p-3 mb-3">
-            <a href="{{ route('branch.index') }}" class="col-auto btn-primary p-0 fs-3"><i
-                class="bi bi-arrow-left m-3"></i></a>
-        <h1 class="col-auto fs-2 fw-bold m-0">{{ __('branch.title.create') }} </h1>
-        <div class="row justify-content-center">
-            <div class="col-11">
-                @include('branch.create.form')
+    <div class="container-fluid p-0">
+        <div class="d-flex align-items-center border-bottom px-4 py-3 mb-3">
+            <a href="{{ route('branch.index') }}" class="text-decoration-none pe-3" aria-label="Volver a sucursales">
+                <i class="bi bi-arrow-left fs-4"></i>
+            </a>
+            <span class="text-black fw-bold fs-4">{{ __('branch.title.create') }}</span>
+        </div>
+
+        <div class="px-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3 p-lg-4">
+                    @include('branch.create.form')
+                </div>
             </div>
         </div>
     </div>

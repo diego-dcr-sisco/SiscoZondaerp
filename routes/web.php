@@ -585,6 +585,9 @@ Route::prefix('orders')
         Route::post('/store/signature', [OrderController::class, 'storeSignature'])->name('signature.store');
         // Route::get('/search')
         Route::get('/show/{id}/{section}', [OrderController::class, 'show'])->name('show');
+        Route::post('/store/signature/bulk', [OrderController::class, 'storeBulkSignature'])->name('signature.bulk.store');
+
+
         Route::get('/edit/{id}', [OrderController::class, 'edit'])->name('edit');
         Route::post('/update/{id}', [OrderController::class, 'update'])->name('update');
         Route::get('/destroy/{id}', [OrderController::class, 'destroy'])->name('destroy');

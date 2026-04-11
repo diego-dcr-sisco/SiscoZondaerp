@@ -21,7 +21,8 @@
 
     <div class="container-fluid p-0">
         <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ $customer['type'] == 'App/Models/Customer' ? route('customer.index') : route('customer.index.leads') }}" class="text-decoration-none pe-3">
+            <a href="{{ $customer['type'] == 'App/Models/Customer' ? route('customer.index') : route('customer.index.leads') }}"
+                class="text-decoration-none pe-3">
                 <i class="bi bi-arrow-left fs-4"></i>
             </a>
             <span class="text-black fw-bold fs-4">COTIZACIONES DEL CLIENTE <span class="ms-2 fs-4">
@@ -29,9 +30,9 @@
         </div>
 
         <div class="p-3">
-            <div class="mb-3">
+            <div class="mb-3 d-flex flex-wrap gap-2">
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#quoteModal">
-                    Agregar cotización
+                    Nueva cotización manual
                 </button>
             </div>
             <div class="table-responsive">
@@ -77,13 +78,14 @@
                                             <span class="text-danger fw-bold">Sin archivo PDF</span>
                                         @else
                                             <a href="{{ route('customer.quote.download', ['id' => $quote->id]) }}"
-                                                class="btn btn-sm btn-link p-0 text-start" data-bs-toggle="tooltip" data-bs-placement="top"
-                                                title="Archivo PDF cargado manualmente">
+                                                class="btn btn-sm btn-link p-0 text-start" data-bs-toggle="tooltip"
+                                                data-bs-placement="top" title="Archivo PDF cargado manualmente">
                                                 <i class="bi bi-file-earmark-arrow-down-fill"></i> PDF cargado
                                             </a>
                                         @endif
 
-                                        <form action="{{ route('customer.quote.pdf.snapshot', ['id' => $quote->id]) }}" method="POST">
+                                        <form action="{{ route('customer.quote.pdf.snapshot', ['id' => $quote->id]) }}"
+                                            method="POST">
                                             @csrf
                                             <button type="submit" class="btn btn-sm btn-outline-secondary">
                                                 Guardar datos PDF
@@ -91,22 +93,24 @@
                                         </form>
 
                                         <a href="{{ route('customer.quote.pdf.generate', ['id' => $quote->id]) }}"
-                                            class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip" data-bs-placement="top"
+                                            class="btn btn-sm btn-outline-primary" data-bs-toggle="tooltip"
+                                            data-bs-placement="top"
                                             title="Generar PDF con la informacion guardada o actual">
                                             <i class="bi bi-filetype-pdf"></i> Generar PDF
                                         </a>
 
                                         @if ($quote->latestPdfSnapshot && $quote->latestPdfSnapshot->pdf_path)
                                             <a href="{{ route('customer.quote.pdf.download', ['id' => $quote->id]) }}"
-                                                class="btn btn-sm btn-outline-success" data-bs-toggle="tooltip" data-bs-placement="top"
-                                                title="Descargar ultimo PDF generado">
+                                                class="btn btn-sm btn-outline-success" data-bs-toggle="tooltip"
+                                                data-bs-placement="top" title="Descargar ultimo PDF generado">
                                                 <i class="bi bi-download"></i> Descargar generado
                                             </a>
                                         @endif
                                     </div>
                                 </td>
                                 <td>
-                                    <a href="{{ route('customer.quote.edit', ['id' => $quote->id]) }}" class="btn btn-sm btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
+                                    <a href="{{ route('customer.quote.edit', ['id' => $quote->id]) }}"
+                                        class="btn btn-sm btn-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
                                         title="Editar cotización">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>

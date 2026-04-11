@@ -237,6 +237,41 @@ class OrderController extends Controller
         return redirect()->back()->with('success', 'Firma guardada correctamente.');
     }
 
+    public function storeBulkSignature(Request $request)
+    {
+        $request->validate([
+            'signature_name' => 'required|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
+            'selected_orders' => 'required',
+        ]);
+
+        $selectedOrders = json_decode($request->input('selected_orders', '[]'), true);
+
+        if (!is_array($selectedOrders) || count($selectedOrders) === 0) {
+            return redirect()->back()->with('error', 'Selecciona al menos una orden para firmar.');
+        }
+
+        $selectedOrders = array_map('intval', $selectedOrders);
+
+        $payload = [
+            'signature_name' => $request->input('signature_name'),
+            'updated_at' => now(),
+        ];
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $payload['customer_signature'] = base64_encode(file_get_contents($image->getRealPath()));
+        }
+
+        $updatedCount = Order::whereIn('id', $selectedOrders)->update($payload);
+
+        if ($updatedCount === 0) {
+            return redirect()->back()->with('warning', 'No se encontraron órdenes para actualizar.');
+        }
+
+        return redirect()->back()->with('success', "Se firmaron {$updatedCount} reportes correctamente.");
+    }
+
     public function search(Request $request)
     {
         $customer = $request->input('customer');

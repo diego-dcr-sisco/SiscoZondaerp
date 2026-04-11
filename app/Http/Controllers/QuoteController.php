@@ -14,6 +14,8 @@ use App\Models\Lead;
 use App\Models\Service;
 use App\Models\Customer;
 use App\Models\Tracking;
+use App\Models\QuoteItem;
+use App\Models\QuoteParty;
 use App\Models\QuotePdfSnapshot;
 use App\Enums\QuoteStatus;
 use App\Enums\QuotePriority;
@@ -45,7 +47,13 @@ class QuoteController extends Controller
             return redirect()->back()->with('error', 'Cliente o cliente potencial no encontrado.');
         }
 
+        $modelClass = $customer::class;
+
         $services = Service::select('id', 'name')->orderBy('name')->get();
+        $service_options = $services->map(fn ($service) => [
+            'id' => $service->id,
+            'name' => $service->name,
+        ])->all();
         $quote_status = QuoteStatus::cases();
         $quote_priority = QuotePriority::cases();
 
@@ -68,18 +76,18 @@ class QuoteController extends Controller
         }
 
         $quotes = Quote::where('model_id', $customer->id)
-            ->where('model_type', Customer::class)
-            ->with(['service', 'latestPdfSnapshot'])
+            ->where('model_type', $modelClass)
+            ->with(['service', 'latestPdfSnapshot', 'customerParty', 'items'])
             ->orderBy('created_at', 'desc')
             ->get();
 
         $customer = [
             'id' => $customer->id,
             'name' => $customer->name,
-            'type' => Customer::class,
+            'type' => $modelClass,
         ];
 
-        return view('quote.index', compact('customer', 'services', 'quotes', 'quote_status', 'quote_priority', 'navigation', 'quotes'));
+        return view('quote.index', compact('customer', 'services', 'service_options', 'quotes', 'quote_status', 'quote_priority', 'navigation', 'quotes'));
     }
 
     /**
@@ -96,21 +104,20 @@ class QuoteController extends Controller
     public function store(Request $request)
     {
         $quote = new Quote();
-        $quote->fill($request->except(['file']));
+        $this->syncQuoteManualData($quote, $request);
 
-        if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $fileName = 'quote_' . Str::uuid() . '.' . $file->getClientOriginalExtension();
-            $directory = 'quotes/' . now()->format('Y/m');
-            $filePath = $directory . '/' . $fileName;
-            $fileContent = file_get_contents($file->getRealPath());
+        try {
+            $quote->load(['service', 'model', 'parties', 'items']);
+            $payload = $this->buildPayloadFromQuote($quote);
+            $generated = $this->createSnapshotAndPdf($quote, $payload);
 
-            Storage::disk('public')->put($filePath, $fileContent);
-            $quote->file = $filePath;
+            $quote->file = $generated['pdf_path'];
+            $quote->save();
+        } catch (\Throwable $e) {
+            return back()->with('warning', 'Cotizacion creada, pero no se pudo generar el PDF automatico.');
         }
 
-        $quote->save();
-        return back();
+        return back()->with('success', 'Cotizacion agregada correctamente.');
     }
 
     /**
@@ -232,8 +239,8 @@ class QuoteController extends Controller
 
     public function storePdfSnapshot(Request $request, string $id)
     {
-        $quote = Quote::with(['service', 'model'])->findOrFail($id);
-        $payload = $this->buildPayloadFromQuote($quote, $request);
+        $quote = Quote::with(['service', 'model', 'parties', 'items'])->findOrFail($id);
+        $payload = $this->buildPayloadFromQuote($quote);
 
         $nextVersion = ((int) QuotePdfSnapshot::where('quote_id', $quote->id)->max('version')) + 1;
 
@@ -255,46 +262,18 @@ class QuoteController extends Controller
 
     public function generatePdf(Request $request, string $id)
     {
-        $quote = Quote::with(['service', 'model'])->findOrFail($id);
+        $quote = Quote::with(['service', 'model', 'parties', 'items'])->findOrFail($id);
+        $payload = $this->buildPayloadFromQuote($quote);
+        $generated = $this->createSnapshotAndPdf($quote, $payload);
 
-        $snapshot = QuotePdfSnapshot::where('quote_id', $quote->id)->latest('id')->first();
-        if (!$snapshot) {
-            $payload = $this->buildPayloadFromQuote($quote, $request);
-            $snapshot = QuotePdfSnapshot::create([
-                'quote_id' => $quote->id,
-                'user_id' => Auth::id(),
-                'version' => 1,
-                'title' => $payload['title'],
-                'quote_no' => $payload['quote_no'],
-                'currency' => $payload['currency'],
-                'issued_date' => $this->toDateForDb($payload['issued_date']),
-                'valid_until' => $this->toDateForDb($payload['valid_until']),
-                'tax_percent' => $payload['tax_percent'],
-                'payload' => $payload,
-            ]);
-        }
-
-        $data = $this->buildPdfData($snapshot->payload ?? []);
-
-        $pdf = Pdf::loadView('report.pdf.quotation', $data)->setOptions([
-            'isHtml5ParserEnabled' => true,
-            'isRemoteEnabled' => true,
-            'defaultFont' => 'Arial',
-        ]);
-
-        $pdfPath = 'quotes/generated/' . now()->format('Y/m') . '/quote_' . $quote->id . '_v' . $snapshot->version . '.pdf';
-        Storage::disk('public')->put($pdfPath, $pdf->output());
-
-        $snapshot->update([
-            'pdf_path' => $pdfPath,
-            'generated_at' => now(),
-        ]);
+        $quote->file = $generated['pdf_path'];
+        $quote->save();
 
         if ($request->boolean('download')) {
-            return $pdf->download($data['filename']);
+            return $generated['pdf']->download($generated['data']['filename']);
         }
 
-        return $pdf->stream($data['filename']);
+        return $generated['pdf']->stream($generated['data']['filename']);
     }
 
     public function downloadGeneratedPdf(string $id)
@@ -318,56 +297,223 @@ class QuoteController extends Controller
 
     }
 
-    private function buildPayloadFromQuote(Quote $quote, Request $request): array
+    private function buildPayloadFromQuote(Quote $quote): array
     {
-        $customer = $quote->model;
+        $company = $quote->parties->firstWhere('role', 'company');
+        $customer = $quote->parties->firstWhere('role', 'customer');
+        $items = $quote->items;
 
-        $customerName = (string) ($customer->name ?? 'Cliente');
-        $customerCompany = (string) ($customer->tax_name ?? $customer->businessname ?? $customerName);
-        $customerPhone = (string) ($customer->phone ?? $customer->tel ?? '-');
-        $customerAddress = (string) ($customer->address ?? '-');
-        $customerEmail = (string) ($customer->email ?? '-');
-        $customerRfc = (string) ($customer->rfc ?? '-');
-
-        $issuedDate = Carbon::now()->format('d-m-Y');
-        $validUntil = $quote->valid_until ? Carbon::parse($quote->valid_until)->format('d-m-Y') : Carbon::now()->addDays(15)->format('d-m-Y');
-
-        return [
-            'title' => 'Cotizacion de Servicios',
-            'quote_no' => 'COT-' . str_pad((string) $quote->id, 6, '0', STR_PAD_LEFT),
-            'issued_date' => $issuedDate,
-            'valid_until' => $validUntil,
-            'currency' => 'MXN',
-            'tax_percent' => 16,
-            'payment_terms' => '50% anticipo y 50% contra entrega.',
-            'delivery_time' => 'Segun cronograma aprobado por el cliente.',
-            'company' => [
-                'name' => config('app.name', 'SISCOPLAGAS'),
-                'rfc' => '-',
-                'address' => '-',
-                'email' => '-',
-                'phone' => '-',
-            ],
-            'customer' => [
-                'name' => $customerName,
-                'company' => $customerCompany,
-                'attn' => $customerName,
-                'address' => $customerAddress,
-                'email' => $customerEmail,
-                'phone' => $customerPhone,
-                'rfc' => $customerRfc,
-            ],
-            'services' => [
-                [
-                    'name' => (string) ($quote->service->name ?? 'Servicio de control de plagas'),
+        if ($items->isEmpty()) {
+            $items = collect([
+                new QuoteItem([
+                    'name' => (string) ($quote->service->name ?? 'Servicio'),
                     'description' => (string) ($quote->comments ?? ''),
                     'qty' => 1,
                     'unit' => 'servicio',
-                    'unit_price' => $this->toFloat($quote->value),
-                ],
+                    'unit_price' => $quote->value,
+                    'line_total' => $quote->value,
+                ]),
+            ]);
+        }
+
+        return [
+            'title' => (string) ($quote->title ?: 'Cotizacion de Servicios'),
+            'quote_no' => (string) ($quote->quote_no ?: ('COT-' . str_pad((string) $quote->id, 6, '0', STR_PAD_LEFT))),
+            'issued_date' => optional($quote->issued_date)->format('d-m-Y') ?? Carbon::now()->format('d-m-Y'),
+            'valid_until' => optional($quote->valid_until)->format('d-m-Y') ?? Carbon::now()->addDays(15)->format('d-m-Y'),
+            'currency' => strtoupper((string) ($quote->currency ?: 'MXN')),
+            'tax_percent' => $this->toFloat($quote->tax_percent ?: 16),
+            'payment_terms' => (string) ($quote->payment_terms ?: '50% anticipo y 50% contra entrega.'),
+            'delivery_time' => (string) ($quote->delivery_time ?: 'Segun cronograma aprobado por el cliente.'),
+            'company' => [
+                'name' => (string) ($company->name ?? config('app.name', 'SISCOPLAGAS')),
+                'rfc' => (string) ($company->rfc ?? '-'),
+                'address' => (string) ($company->address ?? '-'),
+                'email' => (string) ($company->email ?? '-'),
+                'phone' => (string) ($company->phone ?? '-'),
             ],
-            'notes' => (string) ($quote->comments ?? ''),
-            'conditions' => 'Precios sujetos a cambio sin previo aviso.',
+            'customer' => [
+                'name' => (string) ($customer->name ?? $quote->model?->name ?? 'Cliente'),
+                'company' => (string) ($customer->business_name ?? $quote->model?->tax_name ?? $quote->model?->businessname ?? '-'),
+                'attn' => (string) ($customer->attention ?? $customer->name ?? '-'),
+                'address' => (string) ($customer->address ?? $quote->model?->address ?? '-'),
+                'email' => (string) ($customer->email ?? $quote->model?->email ?? '-'),
+                'phone' => (string) ($customer->phone ?? $quote->model?->phone ?? $quote->model?->tel ?? '-'),
+                'rfc' => (string) ($customer->rfc ?? $quote->model?->rfc ?? '-'),
+            ],
+            'services' => $items->map(function ($item) {
+                return [
+                    'name' => $item->name,
+                    'description' => $item->description,
+                    'qty' => $item->qty,
+                    'unit' => $item->unit,
+                    'unit_price' => $item->unit_price,
+                ];
+            })->values()->all(),
+            'notes' => (string) ($quote->notes ?? $quote->comments ?? ''),
+            'conditions' => (string) ($quote->conditions ?: 'Precios sujetos a cambio sin previo aviso.'),
+        ];
+    }
+
+    private function syncQuoteManualData(Quote $quote, Request $request): void
+    {
+        $items = $this->buildItemPayloadFromRequest($request);
+        $subtotal = collect($items)->sum('line_total');
+        $taxPercent = $this->toFloat($request->input('tax_percent', 16));
+        $total = $subtotal + ($subtotal * ($taxPercent / 100));
+
+        $quote->fill([
+            'service_id' => $request->input('service_id'),
+            'model_id' => $request->input('model_id'),
+            'model_type' => $request->input('model_type'),
+            'title' => $request->input('title', 'Cotizacion de Servicios'),
+            'quote_no' => $request->input('quote_no'),
+            'issued_date' => $this->toDateForDb($request->input('issued_date')),
+            'currency' => strtoupper((string) $request->input('currency', 'MXN')),
+            'tax_percent' => $taxPercent,
+            'start_date' => $request->input('start_date'),
+            'end_date' => $request->input('end_date'),
+            'valid_until' => $request->input('valid_until'),
+            'value' => $total,
+            'priority' => $request->input('priority'),
+            'status' => $request->input('status'),
+            'comments' => $request->input('comments'),
+            'payment_terms' => $request->input('payment_terms'),
+            'delivery_time' => $request->input('delivery_time'),
+            'conditions' => $request->input('conditions'),
+            'notes' => $request->input('notes'),
+        ]);
+        $quote->save();
+
+        $this->syncQuoteParties($quote, $request);
+        $this->syncQuoteItems($quote, $items);
+    }
+
+    private function syncQuoteParties(Quote $quote, Request $request): void
+    {
+        $defaultCustomer = $quote->model;
+
+        $quote->parties()->updateOrCreate(
+            ['role' => 'company'],
+            [
+                'name' => $request->input('company_name', config('app.name', 'SISCOPLAGAS')),
+                'business_name' => null,
+                'attention' => null,
+                'rfc' => $request->input('company_rfc'),
+                'phone' => $request->input('company_phone'),
+                'email' => $request->input('company_email'),
+                'address' => $request->input('company_address'),
+            ]
+        );
+
+        $quote->parties()->updateOrCreate(
+            ['role' => 'customer'],
+            [
+                'name' => $request->input('customer_name', $defaultCustomer?->name),
+                'business_name' => $request->input('customer_company', $defaultCustomer?->tax_name ?? $defaultCustomer?->businessname),
+                'attention' => $request->input('customer_attn', $defaultCustomer?->name),
+                'rfc' => $request->input('customer_rfc', $defaultCustomer?->rfc),
+                'phone' => $request->input('customer_phone', $defaultCustomer?->phone ?? $defaultCustomer?->tel),
+                'email' => $request->input('customer_email', $defaultCustomer?->email),
+                'address' => $request->input('customer_address', $defaultCustomer?->address),
+            ]
+        );
+    }
+
+    private function syncQuoteItems(Quote $quote, array $items): void
+    {
+        $quote->items()->delete();
+
+        foreach ($items as $item) {
+            $quote->items()->create($item);
+        }
+    }
+
+    private function buildItemPayloadFromRequest(Request $request): array
+    {
+        $names = (array) $request->input('services_name', []);
+        $descriptions = (array) $request->input('services_description', []);
+        $quantities = (array) $request->input('services_qty', []);
+        $units = (array) $request->input('services_unit', []);
+        $unitPrices = (array) $request->input('services_unit_price', []);
+
+        $items = [];
+
+        foreach ($names as $index => $name) {
+            $cleanName = trim((string) $name);
+            $qty = $this->toFloat($quantities[$index] ?? 0);
+            $unitPrice = $this->toFloat($unitPrices[$index] ?? 0);
+
+            if ($cleanName === '' && $qty <= 0 && $unitPrice <= 0) {
+                continue;
+            }
+
+            $normalizedQty = $qty > 0 ? $qty : 1;
+            $lineTotal = $normalizedQty * $unitPrice;
+
+            $items[] = [
+                'position' => count($items) + 1,
+                'name' => $cleanName !== '' ? $cleanName : 'Servicio',
+                'description' => trim((string) ($descriptions[$index] ?? '')),
+                'qty' => $normalizedQty,
+                'unit' => trim((string) ($units[$index] ?? 'servicio')) ?: 'servicio',
+                'unit_price' => $unitPrice,
+                'line_total' => $lineTotal,
+            ];
+        }
+
+        if (empty($items)) {
+            $items[] = [
+                'position' => 1,
+                'name' => (string) $request->input('title', 'Servicio'),
+                'description' => trim((string) $request->input('comments', '')),
+                'qty' => 1,
+                'unit' => 'servicio',
+                'unit_price' => 0,
+                'line_total' => 0,
+            ];
+        }
+
+        return $items;
+    }
+
+    private function createSnapshotAndPdf(Quote $quote, array $payload): array
+    {
+        $nextVersion = ((int) QuotePdfSnapshot::where('quote_id', $quote->id)->max('version')) + 1;
+
+        $snapshot = QuotePdfSnapshot::create([
+            'quote_id' => $quote->id,
+            'user_id' => Auth::id(),
+            'version' => $nextVersion,
+            'title' => $payload['title'] ?? 'Cotizacion de Servicios',
+            'quote_no' => $payload['quote_no'] ?? null,
+            'currency' => $payload['currency'] ?? 'MXN',
+            'issued_date' => $this->toDateForDb($payload['issued_date'] ?? null),
+            'valid_until' => $this->toDateForDb($payload['valid_until'] ?? null),
+            'tax_percent' => $payload['tax_percent'] ?? 16,
+            'payload' => $payload,
+        ]);
+
+        $data = $this->buildPdfData($snapshot->payload ?? []);
+        $pdf = Pdf::loadView('report.pdf.quotation', $data)->setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'defaultFont' => 'Arial',
+        ]);
+
+        $pdfPath = 'quotes/generated/' . now()->format('Y/m') . '/quote_' . $quote->id . '_v' . $snapshot->version . '.pdf';
+        Storage::disk('public')->put($pdfPath, $pdf->output());
+
+        $snapshot->update([
+            'pdf_path' => $pdfPath,
+            'generated_at' => now(),
+        ]);
+
+        return [
+            'snapshot' => $snapshot,
+            'data' => $data,
+            'pdf' => $pdf,
+            'pdf_path' => $pdfPath,
         ];
     }
 

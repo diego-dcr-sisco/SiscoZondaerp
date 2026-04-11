@@ -52,6 +52,10 @@
                             ordenes</a>
                     </li>
                     <li>
+                        <a style="cursor: pointer;" class="dropdown-item" onclick="openBulkSignatureModal()">Firmar
+                            reportes seleccionados</a>
+                    </li>
+                    <li>
                         <a style="cursor: pointer;" class="dropdown-item" data-bs-toggle="modal"
                             data-bs-target="#technicianModal">Asignar técnicos en rango</a>
                     </li>

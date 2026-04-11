@@ -1,85 +1,76 @@
 <!-- Modal -->
 <form class="form" method="POST" action="{{ route('branch.store') }}" enctype="multipart/form-data">
     @csrf
-    <div class="row">
-        <div class="col-4 mb-3">
+    <div class="row g-3">
+        <div class="col-lg-4 col-12">
             <label for="name" class="form-label is-required">{{ __('modals.branch_data.name') }}: </label>
-            <input type="text" class="form-control" id="name" name="name"
-                required>
+            <input type="text" class="form-control" id="name" name="name" required>
         </div>
-        <div class="col-4 mb-3">
+        <div class="col-lg-4 col-12">
             <label for="email" class="form-label">{{ __('modals.branch_data.email') }}: </label>
             <input type="email" class="form-control" id="email" name="email">
         </div>
-        <div class="col-4 mb-3">
+        <div class="col-lg-4 col-12">
             <label for="email" class="form-label ">Correo alternativo: </label>
-            <input type="email" class="form-control" id="alt-email"
-                name="alt_email">
+            <input type="email" class="form-control" id="alt-email" name="alt_email">
         </div>
-        <div class="col-3 mb-3">
+        <div class="col-lg-3 col-12">
             <label for="phone" class="form-label">{{ __('modals.branch_data.phone') }}: </label>
             <input type="number" class="form-control" id="phone" name="phone">
         </div>
-        <div class="col-3 mb-3">
+        <div class="col-lg-3 col-12">
             <label for="alt_phone" class="form-label">Teléfono alternativo: </label>
-            <input type="number" class="form-control" id="alt_phone"
-                name="alt_phone">
+            <input type="number" class="form-control" id="alt_phone" name="alt_phone">
         </div>
-        <div class="col-2 mb-3">
+        <div class="col-lg-2 col-12">
             <label for="code" class="form-label">Código: </label>
             <input type="number" class="form-control" id="code" name="code">
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col-4 mb-3">
+        <div class="col-lg-4 col-12">
             <label for="address" class="form-label is-required">{{ __('modals.branch_data.address') }}: </label>
             <input type="text" class="form-control" id="address" name="address"
                 placeholder="{{ __('modals.branch_data.address_specify') }}" required>
         </div>
-        <div class="col-4 mb-3">
+        <div class="col-lg-4 col-12">
             <label for="colony" class="form-label is-required">{{ __('modals.branch_data.colony') }}: </label>
-            <input type="text" class="form-control" id="colony" name="colony"
-                required>
+            <input type="text" class="form-control" id="colony" name="colony" required>
         </div>
-        <div class="col-2 mb-3">
+        <div class="col-lg-2 col-12">
             <label for="zip_code" class="form-label is-required">{{ __('modals.branch_data.zip_code') }}: </label>
-            <input type="number" class="form-control" id="zip_code" name="zip_code"
-                required>
+            <input type="number" class="form-control" id="zip_code" name="zip_code" required>
         </div>
-        <div class="col-2 mb-3">
+        <div class="col-lg-2 col-12">
             <label for="country" class="form-label">{{ __('modals.branch_data.country') }}: </label>
             <select class="form-select  bg-secondary-subtle" id="country" name="country" required>
                 <option value="Mex">México</option>
             </select>
         </div>
 
-        <div class="col-3 mb-3">
+        <div class="col-lg-3 col-12">
             <label for="state" class="form-label is-required">{{ __('modals.branch_data.state') }}: </label>
-            <select class="form-select " id="state" name="state"
-                onchange="load_city()" required>
+            <select class="form-select " id="state" name="state" onchange="load_city()" required>
                 <option value="" selected disabled hidden>{{ __('modals.branch_data.state_select') }}</option>
                 @foreach ($states as $state)
                     <option value="{{ $state['key'] }}">{{ $state['name'] }}</option>
                 @endforeach
             </select>
         </div>
-        <div class="col-3 mb-3">
+        <div class="col-lg-3 col-12">
             <label for="city" class="form-label is-required">{{ __('modals.branch_data.city') }}: </label>
-            <select type="text" class="form-select " id="city" name="city"
-                required>
+            <select type="text" class="form-select " id="city" name="city" required>
             </select>
         </div>
-    </div>
-    <div class="row">
-        <div class="col-6 mb-3">
+        <div class="col-lg-6 col-12">
             <label for="license_number" class="form-label fw-bold is-required">NO. de licencia sanitaria (COFEPRIS): </label>
-            <input type="text" class="form-control" id="license_number"
-                name="license_number" required>
+            <input type="text" class="form-control" id="license_number" name="license_number" required>
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary"> Crear </button>
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check2-circle"></i> Crear sucursal
+        </button>
+    </div>
 </form>
 
 <script type="text/javascript">

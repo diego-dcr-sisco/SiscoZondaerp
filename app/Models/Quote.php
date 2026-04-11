@@ -16,8 +16,10 @@ class Quote extends Model
         'priority' => QuotePriority::class,
         'start_date' => 'date',
         'end_date' => 'date',
+        'issued_date' => 'date',
         'valid_until' => 'date',
         'value' => 'float',
+        'tax_percent' => 'float',
     ];
     
     protected $attributes = [
@@ -30,6 +32,11 @@ class Quote extends Model
         'service_id',
         'model_id',
         'model_type',
+        'title',
+        'quote_no',
+        'issued_date',
+        'currency',
+        'tax_percent',
         'start_date',
         'end_date',
         'valid_until',
@@ -38,6 +45,10 @@ class Quote extends Model
         'status',
         'probability',
         'comments',
+        'payment_terms',
+        'delivery_time',
+        'conditions',
+        'notes',
         'file'
     ];
 
@@ -54,6 +65,26 @@ class Quote extends Model
     public function histories()
     {
         return $this->hasMany(QuoteHistory::class);
+    }
+
+    public function parties()
+    {
+        return $this->hasMany(QuoteParty::class);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(QuoteItem::class)->orderBy('position');
+    }
+
+    public function companyParty()
+    {
+        return $this->hasOne(QuoteParty::class)->where('role', 'company');
+    }
+
+    public function customerParty()
+    {
+        return $this->hasOne(QuoteParty::class)->where('role', 'customer');
     }
 
     public function pdfSnapshots()
