@@ -99,11 +99,25 @@
 
                      <!-- Botón Buscar -->
                      <div class="col-lg-12 d-flex justify-content-end px-3 gap-2">
-                         <a href="{{ route('crm.tracking.export', request()->query()) }}" class="btn btn-success btn-sm">
-                             <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+                         <a href="{{ route('crm.tracking.export', request()->query()) }}"
+                             class="btn btn-success btn-sm export-btn" data-export-type="Excel">
+                             <span class="btn-content">
+                                 <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+                             </span>
+                             <span class="btn-loading d-none">
+                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                 Exportando...
+                             </span>
                          </a>
-                         <a href="{{ route('crm.tracking.export.pdf', request()->query()) }}" class="btn btn-danger btn-sm">
-                             <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+                         <a href="{{ route('crm.tracking.export.pdf', request()->query()) }}"
+                             class="btn btn-danger btn-sm export-btn" data-export-type="PDF">
+                             <span class="btn-content">
+                                 <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+                             </span>
+                             <span class="btn-loading d-none">
+                                 <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                 Exportando...
+                             </span>
                          </a>
                          <button type="submit" class="btn btn-primary btn-sm" id="search" name="search">
                              <i class="bi bi-funnel-fill"></i> Buscar
@@ -229,6 +243,34 @@
              $('#date-range').on('apply.daterangepicker', function(ev, picker) {
                  $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
                      'DD/MM/YYYY'));
+             });
+
+             $('.export-btn').on('click', function(e) {
+                 e.preventDefault();
+
+                 const button = $(this);
+                 const exportUrl = button.attr('href');
+                 const exportType = button.data('export-type');
+
+                 alert(
+                     `Se exportara la informacion de la tabla en formato ${exportType}. Se recomienda aplicar los filtros antes de continuar.`
+                 );
+
+                 button.addClass('disabled');
+                 button.css('pointer-events', 'none');
+                 button.find('.btn-content').addClass('d-none');
+                 button.find('.btn-loading').removeClass('d-none');
+
+                 setTimeout(function() {
+                     window.location.href = exportUrl;
+                 }, 150);
+
+                 setTimeout(function() {
+                     button.removeClass('disabled');
+                     button.css('pointer-events', '');
+                     button.find('.btn-loading').addClass('d-none');
+                     button.find('.btn-content').removeClass('d-none');
+                 }, 6000);
              });
          });
      </script>
