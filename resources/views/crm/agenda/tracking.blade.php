@@ -252,9 +252,13 @@
                  const exportUrl = button.attr('href');
                  const exportType = button.data('export-type');
 
-                 alert(
-                     `Se exportara la informacion de la tabla en formato ${exportType}. Se recomienda aplicar los filtros antes de continuar.`
+                 const accepted = confirm(
+                     `Se exportara la informacion de la tabla en formato ${exportType}. Se recomienda aplicar los filtros antes de continuar.\n\n¿Deseas continuar?`
                  );
+
+                 if (!accepted) {
+                     return;
+                 }
 
                  button.addClass('disabled');
                  button.css('pointer-events', 'none');
