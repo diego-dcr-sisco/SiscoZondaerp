@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use function Laravel\Prompts\select;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
+use Spatie\SimpleExcel\SimpleExcelWriter;
 
 class CRMController extends Controller
 {
@@ -403,6 +404,74 @@ class CRMController extends Controller
             'navigation' => $navigation,
             'nav' => 't',
         ]);
+    }
+
+    public function exportTrackings(Request $request)
+    {
+        $trackingQuery = Tracking::query()->with(['trackable', 'service', 'order']);
+
+        if ($request->filled('trackable')) {
+            $searchTerm = '%' . $request->trackable . '%';
+
+            $trackingQuery->where(function ($query) use ($searchTerm) {
+                $query->whereHasMorph('trackable', [Customer::class], function ($q) use ($searchTerm) {
+                    $q->where('name', 'like', $searchTerm);
+                })
+                    ->orWhereHasMorph('trackable', [Lead::class], function ($q) use ($searchTerm) {
+                        $q->where('name', 'like', $searchTerm);
+                    });
+            });
+        }
+
+        if ($request->filled('date-range')) {
+            [$startDate, $endDate] = array_map(function ($d) {
+                return Carbon::createFromFormat('d/m/Y', trim($d));
+            }, explode(' - ', $request->input('date-range')));
+
+            $trackingQuery->whereBetween('next_date', [$startDate, $endDate]);
+        }
+
+        if ($request->filled('service')) {
+            $trackingQuery->whereHas('service', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->service . '%');
+            });
+        }
+
+        $trackings = $trackingQuery
+            ->orderByRaw("FIELD(status, 'active', 'completed', 'canceled')")
+            ->orderBy('next_date', 'asc')
+            ->get();
+
+        $rows = $trackings->map(function ($tracking) {
+            return [
+                'Nombre del cliente' => $tracking->trackable->name ?? '',
+                'Fecha programada' => $tracking->order && $tracking->order->programmed_date
+                    ? Carbon::parse($tracking->order->programmed_date)->format('d/m/Y')
+                    : '',
+                'Servicio' => $tracking->service->name ?? '',
+                'Costo' => $tracking->order->price ?? '',
+                'Descripcion' => $tracking->description ?? '',
+                '¿Se reprogramo?' => '',
+                'Proxima Fecha' => $tracking->next_date
+                    ? Carbon::parse($tracking->next_date)->format('d/m/Y')
+                    : '',
+            ];
+        })->toArray();
+
+        $fileName = 'seguimientos_' . now()->format('Ymd_His') . '.xlsx';
+
+        return SimpleExcelWriter::streamDownload($fileName)
+            ->addHeader([
+                'Nombre del cliente',
+                'Fecha programada',
+                'Servicio',
+                'Costo',
+                'Descripcion',
+                '¿Se reprogramo?',
+                'Proxima Fecha',
+            ])
+            ->addRows($rows)
+            ->toBrowser();
     }
 
     public function quotation(Request $request)

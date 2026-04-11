@@ -98,7 +98,10 @@
                      </div>
 
                      <!-- Botón Buscar -->
-                     <div class="col-lg-12 d-flex justify-content-end px-3">
+                     <div class="col-lg-12 d-flex justify-content-end px-3 gap-2">
+                         <a href="{{ route('crm.tracking.export', request()->query()) }}" class="btn btn-success btn-sm">
+                             <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+                         </a>
                          <button type="submit" class="btn btn-primary btn-sm" id="search" name="search">
                              <i class="bi bi-funnel-fill"></i> Buscar
                          </button>
@@ -109,23 +112,19 @@
              </form>
          </div>
 
-        <div class="d-flex justify-content-end mb-2">
-            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print()">
-                <i class="bi bi-printer"></i> Imprimir tabla
-            </button>
-        </div>
-
         <div class="table-responsive">
             <table class="table table-bordered table-sm">
                  <thead>
                      <tr>
-                        <th>Nombre del cliente</th>
-                        <th>Fecha programada</th>
+                        <th>Cliente/Cliente potencial</th>
+                        <th>Orden</th>
                          <th>Servicio</th>
-                        <th>Costo</th>
-                        <th>Descripcion</th>
-                        <th>¿Se reprogramo?</th>
                          <th>Próxima Fecha</th>
+                        <th>Titulo</th>
+                        <th>Descripción</th>
+                        <th>Rango</th>
+                        <th>Estado</th>
+                        <th>Creado por</th>
                          <th></th>
                      </tr>
                  </thead>
@@ -136,12 +135,26 @@
                          @endphp
                          <tr>
                              <td>{{ $tracking->trackable->name ?? '-' }}</td>
-                            <td>{{ $tracking->order && $tracking->order->programmed_date ? \Carbon\Carbon::parse($tracking->order->programmed_date)->format('d/m/Y') : '' }}</td>
+                            <td>{{ $tracking->order->folio ?? '-' }}</td>
                              <td>{{ $tracking->service->name ?? '-' }}</td>
-                            <td>{{ $tracking->order->price ?? '' }}</td>
-                            <td>{{ $tracking->description ?? '' }}</td>
-                            <td>{{ '' }}</td>
                              <td>{{ \Carbon\Carbon::parse($tracking->next_date)->format('d/m/Y') }}</td>
+                            <td>{{ $tracking->title ?? '-' }}</td>
+                            <td>{{ $tracking->description ?? '-' }}</td>
+
+                            <td> {{ $range && $range->frequency_type ? 'Cada ' . $range->frequency . ' ' . $range->frequency_type : '-' }}
+                            </td>
+                            <td
+                                class="fw-bold
+                                                    {{ $tracking->status == 'active'
+                                                        ? 'text-success'
+                                                        : ($tracking->status == 'completed'
+                                                            ? 'text-primary'
+                                                            : ($tracking->status == 'canceled'
+                                                                ? 'text-danger'
+                                                                : 'text-secondary')) }}">
+                                {{ $spanish_status[$tracking->status] }}
+                            </td>
+                            <td>{{ $tracking->user->name ?? '-' }}</td>
                              <td>
                                  <a href="{{ route('crm.tracking.edit', ['id' => $tracking->id]) }}"
                                      class="btn btn-sm btn-secondary"
