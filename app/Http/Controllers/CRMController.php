@@ -568,7 +568,6 @@ class CRMController extends Controller
         $pdf = Pdf::loadView('crm.pdf.trackings', [
             'trackings' => $trackings,
             'generatedAt' => now(),
-            'generatedBy' => Auth::user()->name ?? 'Sistema',
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('seguimientos_' . now()->format('Ymd_His') . '.pdf');

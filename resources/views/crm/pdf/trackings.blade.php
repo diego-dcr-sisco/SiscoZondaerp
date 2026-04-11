@@ -64,9 +64,8 @@
         .col-date { width: 9%; text-align: center; }
         .col-service { width: 12%; }
         .col-cost { width: 8%; text-align: right; }
-        .col-desc { width: 28%; }
-        .col-reschedule { width: 10%; text-align: center; }
-        .col-created { width: 16%; }
+        .col-desc { width: 40%; }
+        .col-reschedule { width: 14%; text-align: center; }
 
         .footer {
             margin-top: 10px;
@@ -79,7 +78,7 @@
 <body>
     <div class="header">
         <h1 class="title">Exportacion de Seguimientos</h1>
-        <p class="subtitle">Generado por: {{ $generatedBy }} | Fecha: {{ $generatedAt->format('d/m/Y H:i') }}</p>
+        <p class="subtitle">Fecha: {{ $generatedAt->format('d/m/Y H:i') }}</p>
     </div>
 
     <table>
@@ -91,7 +90,6 @@
                 <th class="col-cost">Costo</th>
                 <th class="col-desc">Descripcion</th>
                 <th class="col-reschedule">¿Se reprogramo?</th>
-                <th class="col-created">Creado por</th>
             </tr>
         </thead>
         <tbody>
@@ -103,11 +101,10 @@
                     <td class="col-cost">{{ $tracking->cost !== null ? number_format((float) $tracking->cost, 2) : '' }}</td>
                     <td>{{ $tracking->description ?? '' }}</td>
                     <td class="col-reschedule"></td>
-                    <td>{{ $tracking->user->name ?? '' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 12px;">Sin seguimientos para exportar</td>
+                    <td colspan="6" style="text-align: center; padding: 12px;">Sin seguimientos para exportar</td>
                 </tr>
             @endforelse
         </tbody>
