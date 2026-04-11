@@ -182,7 +182,7 @@
                                 {{ $spanish_status[$tracking->status] }}
                             </td>
                             <td>{{ $tracking->user->name ?? '-' }}</td>
-                             <td class="col-2">
+                             <td class="col-1">
                                  <a href="{{ route('crm.tracking.edit', ['id' => $tracking->id]) }}"
                                      class="btn btn-sm btn-secondary"
                                      onclick="return confirm('📅 EDITAR Seguimiento\n\n¿Deseas reprogramar esta actividad?')"
