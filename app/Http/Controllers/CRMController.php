@@ -795,7 +795,7 @@ class CRMController extends Controller
     {
         $tracking = Tracking::find($trackingId);
         $order = Order::find($tracking->order_id);
-        $services = Service::whereIn('id', $order->services->pluck('service_id'))->select('id', 'name')->get();
+        $services =  Service::where('id', $tracking->service_id)->select('id', 'name')->get();
 
         return view('tracking.edit', compact('tracking', 'services'));
     }
