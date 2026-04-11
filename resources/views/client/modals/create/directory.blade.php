@@ -26,11 +26,32 @@
      $(document).ready(function() {
          let isSubmitting = false;
 
+         function syncParentPathWithCurrentRoute() {
+             const pathname = window.location.pathname || '';
+             const routeMatch = pathname.match(/\/clients\/(system|mip)\/(.+)$/);
+
+             if (!routeMatch || !routeMatch[2]) {
+                 return;
+             }
+
+             const currentPath = decodeURIComponent(routeMatch[2]).replace(/\/+$/, '');
+             if (currentPath) {
+                 $('#directoryForm input[name="parent_path"]').val(currentPath);
+             }
+         }
+
+         // Asegura que siempre se use la ruta actual de navegación como carpeta padre.
+         $('#directoryModal').on('show.bs.modal', function() {
+             syncParentPathWithCurrentRoute();
+         });
+
          $('#directoryForm').on('submit', function(e) {
              if (isSubmitting) {
                  e.preventDefault();
                  return false;
              }
+
+             syncParentPathWithCurrentRoute();
 
              const folderName = $('#name').val().trim();
              if (!folderName) {

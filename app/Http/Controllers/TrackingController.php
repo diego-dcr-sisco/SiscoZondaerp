@@ -92,6 +92,15 @@ class TrackingController extends Controller
         $order = Order::find($request->order_id);
         $trackable_id = $request->trackable_id;
 
+        if (!$order) {
+            return back()->withErrors(['order_id' => 'No se encontró la orden para guardar seguimientos.']);
+        }
+
+        $customerId = $order->customer_id;
+        if (empty($customerId) && $request->trackable_type === 'customer') {
+            $customerId = $trackable_id;
+        }
+
         foreach ($trackings_data as $tracking) {
             $dates = $tracking->dates;
             foreach ($dates as $d) {
@@ -103,6 +112,7 @@ class TrackingController extends Controller
                         'frequency_type' => $tracking->frequency
                     ]),
                     'user_id' => Auth::id(),
+                    'customer_id' => $customerId,
                     'title' => $d->title,
                     'description' => $d->description,
                     'cost' => isset($d->cost) && $d->cost !== '' ? (float) $d->cost : null,
@@ -126,7 +136,7 @@ class TrackingController extends Controller
                             'trackable_type' => $request->trackable_type == 'customer' ? Customer::class : Lead::class,
                             'user_id' => Auth::id(),
                             'service_id' => $tracking->service_id,
-                            //'customer_id' => $order->customer_id,
+                            'customer_id' => $customerId,
                             'order_id' => $order->id,
                             'next_date' => $d->date,
                         ],
