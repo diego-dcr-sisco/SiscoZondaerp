@@ -146,6 +146,69 @@ class ClientController extends Controller
         return $normalizedBase . '/' . $normalizedPath;
     }
 
+    private function canonicalPathSegment(string $segment): string
+    {
+        $ascii = Str::ascii($segment);
+        $lower = mb_strtolower($ascii, 'UTF-8');
+        return preg_replace('/[^a-z0-9]+/u', '', $lower) ?? $lower;
+    }
+
+    private function resolveExistingDirectoryPath(string $path, string $basePath): string
+    {
+        $normalizedBase = trim($basePath, '/');
+        $normalizedPath = $this->normalizeStoragePath($path, $basePath);
+
+        if ($this->diskDirectoryExists($normalizedPath)) {
+            return $normalizedPath;
+        }
+
+        $relativePath = ltrim(Str::after($normalizedPath, $normalizedBase), '/');
+        if ($relativePath === '') {
+            return $normalizedPath;
+        }
+
+        $segments = array_values(array_filter(explode('/', $relativePath), fn($segment) => $segment !== ''));
+        $currentPath = $normalizedBase;
+
+        foreach ($segments as $segment) {
+            if (!$this->diskDirectoryExists($currentPath)) {
+                return $normalizedPath;
+            }
+
+            $contents = $this->diskListContents($currentPath, false);
+            $directories = [];
+
+            foreach ($contents as $item) {
+                if ($item->isDir()) {
+                    $directories[] = basename($item->path());
+                }
+            }
+
+            if (in_array($segment, $directories, true)) {
+                $currentPath = $currentPath . '/' . $segment;
+                continue;
+            }
+
+            $segmentKey = $this->canonicalPathSegment($segment);
+            $matched = null;
+
+            foreach ($directories as $dirName) {
+                if ($this->canonicalPathSegment($dirName) === $segmentKey) {
+                    $matched = $dirName;
+                    break;
+                }
+            }
+
+            if ($matched === null) {
+                return $normalizedPath;
+            }
+
+            $currentPath = $currentPath . '/' . $matched;
+        }
+
+        return $currentPath;
+    }
+
     // Método para listar directorios (compatible con Flysystem v3)
     private function getDirectoriesInPath($path)
     {
@@ -1616,6 +1679,18 @@ class ClientController extends Controller
             $basePath = $isMip ? $this->mip_path : $this->path;
 
             $parentPath = $parentPath ? $this->normalizeStoragePath($parentPath, $basePath) : null;
+
+            if ($parentPath) {
+                $resolvedParentPath = $this->resolveExistingDirectoryPath($parentPath, $basePath);
+
+                if (!$this->diskDirectoryExists($resolvedParentPath)) {
+                    return back()->withErrors([
+                        'folder_name' => 'La ruta destino no existe: ' . $parentPath,
+                    ])->withInput();
+                }
+
+                $parentPath = $resolvedParentPath;
+            }
 
             // Construir la ruta completa
             $fullPath = $parentPath
