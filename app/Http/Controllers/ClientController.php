@@ -124,6 +124,27 @@ class ClientController extends Controller
     {
         return $this->getDiskDriver()->mimeType($path);
     }
+    private function normalizeStoragePath(?string $path, string $basePath): string
+    {
+        $normalizedBase = trim(str_replace('\\', '/', $basePath), '/');
+        $rawPath = rawurldecode((string) $path);
+        $normalizedPath = trim(str_replace('\\', '/', $rawPath));
+        $normalizedPath = preg_replace('~/+~', '/', $normalizedPath ?? '') ?? '';
+        $normalizedPath = trim($normalizedPath, '/');
+
+        if ($normalizedPath === '') {
+            return $normalizedBase;
+        }
+
+        $basePattern = preg_quote($normalizedBase, '~');
+        $normalizedPath = preg_replace('~^(?:' . $basePattern . '/)+~u', $normalizedBase . '/', $normalizedPath) ?? $normalizedPath;
+
+        if ($normalizedPath === $normalizedBase || Str::startsWith($normalizedPath, $normalizedBase . '/')) {
+            return $normalizedPath;
+        }
+
+        return $normalizedBase . '/' . $normalizedPath;
+    }
 
     // Método para listar directorios (compatible con Flysystem v3)
     private function getDirectoriesInPath($path)
@@ -1066,12 +1087,7 @@ class ClientController extends Controller
         ]);
 
         $disk = $this->getDisk();
-        $destinationInput = trim($request->path, '/');
-        
-        // Normalizar ruta de destino
-        if (strpos($destinationInput, 'client_system/') !== 0) {
-            $destinationInput = 'client_system/' . $destinationInput;
-        }
+        $destinationInput = $this->normalizeStoragePath($request->path, $this->path);
         $destination = Str::finish($destinationInput, '/');
         
         $directories = json_decode($request->directories, true);
@@ -1080,10 +1096,7 @@ class ClientController extends Controller
 
         foreach ($directories as $directory) {
             // Normalizar ruta de origen
-            $sourceInput = trim($directory, '/');
-            if (strpos($sourceInput, 'client_system/') !== 0) {
-                $sourceInput = 'client_system/' . $sourceInput;
-            }
+            $sourceInput = $this->normalizeStoragePath($directory, $this->path);
             $source = Str::finish($sourceInput, '/');
             
             $dirname = basename(rtrim($source, '/'));
@@ -1189,12 +1202,7 @@ class ClientController extends Controller
         ]);
 
         $disk = $this->getDisk();
-        $destinationInput = trim($request->path, '/');
-        
-        // Normalizar ruta de destino
-        if (strpos($destinationInput, 'client_system/') !== 0) {
-            $destinationInput = 'client_system/' . $destinationInput;
-        }
+        $destinationInput = $this->normalizeStoragePath($request->path, $this->path);
         $destination = Str::finish($destinationInput, '/');
         
         $directories = json_decode($request->directories, true);
@@ -1203,10 +1211,7 @@ class ClientController extends Controller
 
         foreach ($directories as $directory) {
             // Normalizar ruta de origen
-            $sourceInput = trim($directory, '/');
-            if (strpos($sourceInput, 'client_system/') !== 0) {
-                $sourceInput = 'client_system/' . $sourceInput;
-            }
+            $sourceInput = $this->normalizeStoragePath($directory, $this->path);
             $source = rtrim($sourceInput, '/');
             
             $dirname = basename($source);
@@ -1292,12 +1297,7 @@ class ClientController extends Controller
         ]);
 
         $disk = $this->getDisk();
-        $destinationInput = trim($request->path, '/');
-        
-        // Normalizar ruta de destino
-        if (strpos($destinationInput, 'client_system/') !== 0) {
-            $destinationInput = 'client_system/' . $destinationInput;
-        }
+        $destinationInput = $this->normalizeStoragePath($request->path, $this->path);
         $destination = Str::finish($destinationInput, '/');
         
         $files = json_decode($request->file_paths, true);
@@ -1306,10 +1306,7 @@ class ClientController extends Controller
 
         foreach ($files as $file) {
             // Normalizar ruta de origen
-            $sourceInput = trim($file, '/');
-            if (strpos($sourceInput, 'client_system/') !== 0) {
-                $sourceInput = 'client_system/' . $sourceInput;
-            }
+            $sourceInput = $this->normalizeStoragePath($file, $this->path);
             $source = $sourceInput;
             
             $filename = basename($source);
@@ -1368,12 +1365,7 @@ class ClientController extends Controller
         ]);
 
         $disk = $this->getDisk();
-        $destinationInput = trim($request->path, '/');
-        
-        // Normalizar ruta de destino
-        if (strpos($destinationInput, 'client_system/') !== 0) {
-            $destinationInput = 'client_system/' . $destinationInput;
-        }
+        $destinationInput = $this->normalizeStoragePath($request->path, $this->path);
         $destination = Str::finish($destinationInput, '/');
         
         $files = json_decode($request->file_paths, true);
@@ -1382,10 +1374,7 @@ class ClientController extends Controller
 
         foreach ($files as $file) {
             // Normalizar ruta de origen
-            $sourceInput = trim($file, '/');
-            if (strpos($sourceInput, 'client_system/') !== 0) {
-                $sourceInput = 'client_system/' . $sourceInput;
-            }
+            $sourceInput = $this->normalizeStoragePath($file, $this->path);
             $source = $sourceInput;
             
             $filename = basename($source);
@@ -1523,13 +1512,9 @@ class ClientController extends Controller
 
     public function listDirs(Request $request)
     {
-        $input = trim($request->input('path', ''), '/');
-
-        if (strpos($input, 'client_system/') === 0) {
-            $subpath = substr($input, strlen('client_system/'));
-        } else {
-            $subpath = $input;
-        }
+        $input = $request->input('path', '');
+        $normalized = $this->normalizeStoragePath($input, $this->path);
+        $subpath = ltrim(Str::after($normalized, trim($this->path, '/')), '/');
 
         $disk = $this->getDisk();
         $basePath = $subpath !== '' ? "client_system/{$subpath}" : 'client_system';
@@ -1566,14 +1551,9 @@ class ClientController extends Controller
     public function listDirectories(Request $request)
     {
         try {
-            $input = trim($request->input('path', ''), '/');
-            
-            // Normalizar la ruta - remover 'client_system/' si ya está presente
-            if (strpos($input, 'client_system/') === 0) {
-                $subpath = substr($input, strlen('client_system/'));
-            } else {
-                $subpath = $input;
-            }
+            $input = $request->input('path', '');
+            $normalized = $this->normalizeStoragePath($input, $this->path);
+            $subpath = ltrim(Str::after($normalized, trim($this->path, '/')), '/');
 
             $disk = $this->getDisk();
             $basePath = $subpath !== '' ? "client_system/{$subpath}" : 'client_system';
@@ -1635,20 +1615,7 @@ class ClientController extends Controller
             // Determinar la ruta base según el tipo
             $basePath = $isMip ? $this->mip_path : $this->path;
 
-            // Normalizar parent_path y anclarlo a la raíz esperada para evitar rutas erróneas.
-            $normalizedParentPath = trim((string) $parentPath);
-            $normalizedParentPath = trim($normalizedParentPath, '/');
-            $normalizedBasePath = trim((string) $basePath, '/');
-
-            if ($normalizedParentPath !== '' && !Str::startsWith($normalizedParentPath, $normalizedBasePath . '/')) {
-                if ($normalizedParentPath === $normalizedBasePath) {
-                    $normalizedParentPath = $normalizedBasePath;
-                } else {
-                    $normalizedParentPath = $normalizedBasePath . '/' . $normalizedParentPath;
-                }
-            }
-
-            $parentPath = $normalizedParentPath !== '' ? $normalizedParentPath : null;
+            $parentPath = $parentPath ? $this->normalizeStoragePath($parentPath, $basePath) : null;
 
             // Construir la ruta completa
             $fullPath = $parentPath
@@ -1747,7 +1714,9 @@ class ClientController extends Controller
             $isMip = $request->input('is_mip', false);
 
             $basePath = $isMip ? $this->mip_path : $this->path;
-            $fullBasePath = $parentPath ?: $basePath;
+            $fullBasePath = $parentPath
+                ? $this->normalizeStoragePath($parentPath, $basePath)
+                : trim($basePath, '/');
 
             $folders = explode('/', trim($folderPath, '/'));
             $currentPath = rtrim($fullBasePath, '/');
