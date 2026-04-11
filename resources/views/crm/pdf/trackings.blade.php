@@ -74,12 +74,14 @@
             background: #ffffff;
         }
 
-        .col-client { width: 17%; }
-        .col-date { width: 9%; text-align: center; }
-        .col-service { width: 12%; }
+        .col-client { width: 14%; }
+        .col-phone { width: 12%; }
+        .col-email { width: 15%; }
+        .col-date { width: 8%; text-align: center; }
+        .col-service { width: 11%; }
         .col-cost { width: 8%; text-align: right; }
-        .col-desc { width: 40%; }
-        .col-reschedule { width: 14%; text-align: center; }
+        .col-desc { width: 22%; }
+        .col-reschedule { width: 10%; text-align: center; }
 
         .footer {
             margin-top: 10px;
@@ -101,6 +103,8 @@
         <thead>
             <tr>
                 <th class="col-client">Nombre del cliente</th>
+                <th class="col-phone">Telefono</th>
+                <th class="col-email">Correo</th>
                 <th class="col-date">Fecha</th>
                 <th class="col-service">Servicio</th>
                 <th class="col-cost">Costo</th>
@@ -112,6 +116,8 @@
             @forelse ($trackings as $tracking)
                 <tr>
                     <td>{{ $tracking->trackable->name ?? '' }}</td>
+                    <td>{{ $tracking->trackable->phone ?? $tracking->trackable->tel ?? '' }}</td>
+                    <td>{{ $tracking->trackable->email ?? '' }}</td>
                     <td class="col-date">{{ $tracking->next_date ? \Carbon\Carbon::parse($tracking->next_date)->format('d/m/Y') : '' }}</td>
                     <td>{{ $tracking->service->name ?? '' }}</td>
                     <td class="col-cost">{{ $tracking->cost !== null ? number_format((float) $tracking->cost, 2) : '' }}</td>
@@ -120,7 +126,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 12px;">Sin seguimientos para exportar</td>
+                    <td colspan="8" style="text-align: center; padding: 12px;">Sin seguimientos para exportar</td>
                 </tr>
             @endforelse
         </tbody>

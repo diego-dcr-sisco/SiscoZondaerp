@@ -450,6 +450,8 @@ class CRMController extends Controller
 
         $headers = [
             'Nombre del cliente',
+            'Telefono',
+            'Correo',
             'Fecha',
             'Servicio',
             'Costo',
@@ -458,8 +460,13 @@ class CRMController extends Controller
         ];
 
         $rows = $trackings->map(function ($tracking) {
+            $phone = $tracking->trackable->phone ?? $tracking->trackable->tel ?? '';
+            $email = $tracking->trackable->email ?? '';
+
             return [
                 $tracking->trackable->name ?? '',
+                $phone,
+                $email,
                 $tracking->next_date ? Carbon::parse($tracking->next_date)->format('d/m/Y') : '',
                 $tracking->service->name ?? '',
                 $tracking->cost !== null ? (float) $tracking->cost : null,
@@ -476,9 +483,9 @@ class CRMController extends Controller
         $sheet->fromArray($rows, null, 'A2');
 
         $lastRow = max(2, count($rows) + 1);
-        $headerRange = 'A1:F1';
-        $dataRange = "A2:F{$lastRow}";
-        $fullRange = "A1:F{$lastRow}";
+        $headerRange = 'A1:H1';
+        $dataRange = "A2:H{$lastRow}";
+        $fullRange = "A1:H{$lastRow}";
 
         $sheet->getStyle($headerRange)->applyFromArray([
             'font' => [
@@ -500,17 +507,17 @@ class CRMController extends Controller
 
         $sheet->getStyle($dataRange)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
         $sheet->getStyle($dataRange)->getAlignment()->setWrapText(true);
-        $sheet->getStyle("D2:D{$lastRow}")->getNumberFormat()->setFormatCode('#,##0.00');
-        $sheet->getStyle("D2:D{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        $sheet->getStyle("F2:F{$lastRow}")->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle("F2:F{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
         for ($row = 2; $row <= $lastRow; $row++) {
             if ($row % 2 === 0) {
-                $sheet->getStyle("A{$row}:F{$row}")->getFill()->setFillType(Fill::FILL_SOLID);
-                $sheet->getStyle("A{$row}:F{$row}")->getFill()->getStartColor()->setARGB('FFF8FAFC');
+                $sheet->getStyle("A{$row}:H{$row}")->getFill()->setFillType(Fill::FILL_SOLID);
+                $sheet->getStyle("A{$row}:H{$row}")->getFill()->getStartColor()->setARGB('FFF8FAFC');
             }
         }
 
-        foreach (range('A', 'F') as $column) {
+        foreach (range('A', 'H') as $column) {
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
 
