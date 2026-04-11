@@ -102,6 +102,9 @@
                          <a href="{{ route('crm.tracking.export', request()->query()) }}" class="btn btn-success btn-sm">
                              <i class="bi bi-file-earmark-excel"></i> Exportar Excel
                          </a>
+                         <a href="{{ route('crm.tracking.export.pdf', request()->query()) }}" class="btn btn-danger btn-sm">
+                             <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+                         </a>
                          <button type="submit" class="btn btn-primary btn-sm" id="search" name="search">
                              <i class="bi bi-funnel-fill"></i> Buscar
                          </button>

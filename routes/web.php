@@ -168,6 +168,7 @@ Route::prefix('crm')->name('crm.')->middleware(['auth', 'single.session', 'can:i
     Route::get('/agenda/calendar', [CRMController::class, 'agenda'])->name('agenda');
     Route::get('/agenda/tracking', [CRMController::class, 'tracking'])->name('tracking');
     Route::get('/agenda/tracking/export', [CRMController::class, 'exportTrackings'])->name('tracking.export');
+    Route::get('/agenda/tracking/export/pdf', [CRMController::class, 'exportTrackingsPdf'])->name('tracking.export.pdf');
     Route::get('/agenda/quotation', [CRMController::class, 'quotation'])->name('quotation');
 
     Route::get('/tracking/services/{customerId}', [CRMController::class, 'servicesByCustomer'])->name('tracking.services');

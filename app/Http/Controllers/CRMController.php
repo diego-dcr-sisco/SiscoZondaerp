@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Customer;
 use App\Models\Lead;
 use App\Models\Order;
@@ -526,6 +527,51 @@ class CRMController extends Controller
         }, $fileName, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    public function exportTrackingsPdf(Request $request)
+    {
+        $trackingQuery = Tracking::query()->with(['trackable', 'service', 'order', 'user']);
+
+        if ($request->filled('trackable')) {
+            $searchTerm = '%' . $request->trackable . '%';
+
+            $trackingQuery->where(function ($query) use ($searchTerm) {
+                $query->whereHasMorph('trackable', [Customer::class], function ($q) use ($searchTerm) {
+                    $q->where('name', 'like', $searchTerm);
+                })
+                    ->orWhereHasMorph('trackable', [Lead::class], function ($q) use ($searchTerm) {
+                        $q->where('name', 'like', $searchTerm);
+                    });
+            });
+        }
+
+        if ($request->filled('date-range')) {
+            [$startDate, $endDate] = array_map(function ($d) {
+                return Carbon::createFromFormat('d/m/Y', trim($d));
+            }, explode(' - ', $request->input('date-range')));
+
+            $trackingQuery->whereBetween('next_date', [$startDate, $endDate]);
+        }
+
+        if ($request->filled('service')) {
+            $trackingQuery->whereHas('service', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->service . '%');
+            });
+        }
+
+        $trackings = $trackingQuery
+            ->orderByRaw("FIELD(status, 'active', 'completed', 'canceled')")
+            ->orderBy('next_date', 'asc')
+            ->get();
+
+        $pdf = Pdf::loadView('crm.pdf.trackings', [
+            'trackings' => $trackings,
+            'generatedAt' => now(),
+            'generatedBy' => Auth::user()->name ?? 'Sistema',
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('seguimientos_' . now()->format('Ymd_His') . '.pdf');
     }
 
     public function quotation(Request $request)
