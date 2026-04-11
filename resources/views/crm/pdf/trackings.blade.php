@@ -21,7 +21,7 @@
 
         body {
             margin: 18px;
-            color: var(--deep-space-blue);
+            color: #000000;
             font-size: 11px;
         }
 
@@ -33,14 +33,14 @@
 
         .title {
             margin: 0;
-            color: var(--deep-navy);
+            color: #000000;
             font-size: 18px;
             font-weight: 700;
         }
 
         .subtitle {
             margin: 4px 0 0;
-            color: var(--velvet-purple);
+            color: #000000;
             font-size: 10px;
         }
 
@@ -52,7 +52,7 @@
 
         thead th {
             background: var(--true-cobalt);
-            color: #fff;
+            color: #000000;
             border: 1px solid var(--deep-navy);
             padding: 6px 5px;
             font-size: 10px;
@@ -84,7 +84,7 @@
         .footer {
             margin-top: 10px;
             font-size: 10px;
-            color: var(--dusty-mauve);
+            color: #000000;
             text-align: right;
             border-top: 1px solid var(--fiery-terracotta);
             padding-top: 6px;
