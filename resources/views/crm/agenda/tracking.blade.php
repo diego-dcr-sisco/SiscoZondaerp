@@ -153,7 +153,15 @@
                          @endphp
                          <tr>
                              <td>{{ $tracking->trackable->name ?? '-' }}</td>
-                            <td>{{ $tracking->order->folio ?? '-' }}</td>
+                            <td>
+                                @if($tracking->order_id && $tracking->order)
+                                    <a href="{{ route('order.edit', ['id' => $tracking->order_id]) }}" target="_blank">
+                                        {{ $tracking->order->folio ?? $tracking->order_id }}
+                                    </a>
+                                @else
+                                    -
+                                @endif
+                            </td>
                              <td>{{ $tracking->service->name ?? '-' }}</td>
                              <td>{{ $tracking->cost ?? '-' }}</td>
                              <td>{{ \Carbon\Carbon::parse($tracking->next_date)->format('d/m/Y') }}</td>
@@ -174,7 +182,7 @@
                                 {{ $spanish_status[$tracking->status] }}
                             </td>
                             <td>{{ $tracking->user->name ?? '-' }}</td>
-                             <td>
+                             <td class="col-2">
                                  <a href="{{ route('crm.tracking.edit', ['id' => $tracking->id]) }}"
                                      class="btn btn-sm btn-secondary"
                                      onclick="return confirm('📅 EDITAR Seguimiento\n\n¿Deseas reprogramar esta actividad?')"
