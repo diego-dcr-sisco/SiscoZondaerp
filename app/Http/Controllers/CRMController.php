@@ -15,7 +15,11 @@ use function Laravel\Prompts\select;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Auth;
-use Spatie\SimpleExcel\SimpleExcelWriter;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class CRMController extends Controller
 {
@@ -443,32 +447,85 @@ class CRMController extends Controller
             ->orderBy('next_date', 'asc')
             ->get();
 
+        $headers = [
+            'Nombre del cliente',
+            'Fecha',
+            'Servicio',
+            'Costo',
+            'Descripcion',
+            '¿Se reprogramo?',
+        ];
+
         $rows = $trackings->map(function ($tracking) {
             return [
-                'Nombre del cliente' => $tracking->trackable->name ?? '',
-                'Fecha' => $tracking->next_date
-                    ? Carbon::parse($tracking->next_date)->format('d/m/Y')
-                    : '',
-                'Servicio' => $tracking->service->name ?? '',
-                'Costo' => $tracking->cost ?? '',
-                'Descripcion' => $tracking->description ?? '',
-                '¿Se reprogramo?' => '',
+                $tracking->trackable->name ?? '',
+                $tracking->next_date ? Carbon::parse($tracking->next_date)->format('d/m/Y') : '',
+                $tracking->service->name ?? '',
+                $tracking->cost !== null ? (float) $tracking->cost : null,
+                $tracking->description ?? '',
+                '',
             ];
         })->toArray();
 
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Seguimientos');
+
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->fromArray($rows, null, 'A2');
+
+        $lastRow = max(2, count($rows) + 1);
+        $headerRange = 'A1:F1';
+        $dataRange = "A2:F{$lastRow}";
+        $fullRange = "A1:F{$lastRow}";
+
+        $sheet->getStyle($headerRange)->applyFromArray([
+            'font' => [
+                'bold' => true,
+                'color' => ['argb' => 'FFFFFFFF'],
+                'size' => 11,
+            ],
+            'fill' => [
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FF0A2986'],
+            ],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+
+        $sheet->getStyle($fullRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+
+        $sheet->getStyle($dataRange)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+        $sheet->getStyle($dataRange)->getAlignment()->setWrapText(true);
+        $sheet->getStyle("D2:D{$lastRow}")->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle("D2:D{$lastRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+        for ($row = 2; $row <= $lastRow; $row++) {
+            if ($row % 2 === 0) {
+                $sheet->getStyle("A{$row}:F{$row}")->getFill()->setFillType(Fill::FILL_SOLID);
+                $sheet->getStyle("A{$row}:F{$row}")->getFill()->getStartColor()->setARGB('FFF8FAFC');
+            }
+        }
+
+        foreach (range('A', 'F') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+
+        $sheet->freezePane('A2');
+        $sheet->setAutoFilter($headerRange);
+
         $fileName = 'seguimientos_' . now()->format('Ymd_His') . '.xlsx';
 
-        return SimpleExcelWriter::streamDownload($fileName)
-            ->addHeader([
-                'Nombre del cliente',
-                'Fecha',
-                'Servicio',
-                'Costo',
-                'Descripcion',
-                '¿Se reprogramo?',
-            ])
-            ->addRows($rows)
-            ->toBrowser();
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new Xlsx($spreadsheet);
+            $writer->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     public function quotation(Request $request)
