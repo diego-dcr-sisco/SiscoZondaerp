@@ -1635,6 +1635,21 @@ class ClientController extends Controller
             // Determinar la ruta base según el tipo
             $basePath = $isMip ? $this->mip_path : $this->path;
 
+            // Normalizar parent_path y anclarlo a la raíz esperada para evitar rutas erróneas.
+            $normalizedParentPath = trim((string) $parentPath);
+            $normalizedParentPath = trim($normalizedParentPath, '/');
+            $normalizedBasePath = trim((string) $basePath, '/');
+
+            if ($normalizedParentPath !== '' && !Str::startsWith($normalizedParentPath, $normalizedBasePath . '/')) {
+                if ($normalizedParentPath === $normalizedBasePath) {
+                    $normalizedParentPath = $normalizedBasePath;
+                } else {
+                    $normalizedParentPath = $normalizedBasePath . '/' . $normalizedParentPath;
+                }
+            }
+
+            $parentPath = $normalizedParentPath !== '' ? $normalizedParentPath : null;
+
             // Construir la ruta completa
             $fullPath = $parentPath
                 ? rtrim($parentPath, '/') . '/' . $folderName

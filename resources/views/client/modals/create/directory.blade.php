@@ -25,24 +25,23 @@
  <script>
      $(document).ready(function() {
          let isSubmitting = false;
+         const initialParentPath = $('#directoryForm input[name="parent_path"]').val();
 
-         function syncParentPathWithCurrentRoute() {
+         function getParentPathFromCurrentRoute() {
              const pathname = window.location.pathname || '';
              const routeMatch = pathname.match(/\/clients\/(system|mip)\/(.+)$/);
 
              if (!routeMatch || !routeMatch[2]) {
-                 return;
+                 return null;
              }
 
              const currentPath = decodeURIComponent(routeMatch[2]).replace(/\/+$/, '');
-             if (currentPath) {
-                 $('#directoryForm input[name="parent_path"]').val(currentPath);
-             }
+             return currentPath || null;
          }
 
-         // Asegura que siempre se use la ruta actual de navegación como carpeta padre.
+         // Restaurar el parent_path original entregado por backend al abrir el modal.
          $('#directoryModal').on('show.bs.modal', function() {
-             syncParentPathWithCurrentRoute();
+             $('#directoryForm input[name="parent_path"]').val(initialParentPath);
          });
 
          $('#directoryForm').on('submit', function(e) {
@@ -51,7 +50,16 @@
                  return false;
              }
 
-             syncParentPathWithCurrentRoute();
+             const parentPathInput = $('#directoryForm input[name="parent_path"]');
+             const parentPathValue = (parentPathInput.val() || '').trim();
+
+             // Solo usar la URL como respaldo cuando el backend no envía parent_path.
+             if (!parentPathValue) {
+                 const fallbackPath = getParentPathFromCurrentRoute();
+                 if (fallbackPath) {
+                     parentPathInput.val(fallbackPath);
+                 }
+             }
 
              const folderName = $('#name').val().trim();
              if (!folderName) {
