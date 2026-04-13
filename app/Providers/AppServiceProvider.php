@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Exceptions\GoogleDriveAuthException;
 use App\Models\Contract;
 use App\Models\Customer;
 use App\Models\Order;
@@ -12,6 +13,7 @@ use App\Observers\ModelObserver;
 use App\Observers\QuoteObserver;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 
 use Illuminate\Support\Facades\Storage;
@@ -52,21 +54,48 @@ class AppServiceProvider extends ServiceProvider
             $client->setClientSecret($config['clientSecret']);
             
             if (!empty($config['refreshToken'])) {
-                $client->refreshToken($config['refreshToken']);
+                try {
+                    // Intenta refrescar access token para evitar 401 al primer uso del disco.
+                    $token = $client->fetchAccessTokenWithRefreshToken($config['refreshToken']);
+
+                    if (is_array($token) && isset($token['error'])) {
+                        Log::error('Google Drive OAuth refresh failed while bootstrapping disk.', [
+                            'error' => $token['error'] ?? 'unknown_error',
+                            'error_description' => $token['error_description'] ?? null,
+                        ]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('Google Drive OAuth refresh exception while bootstrapping disk.', [
+                        'message' => $e->getMessage(),
+                    ]);
+                }
+            } else {
+                Log::warning('Google Drive disk loaded without refresh token.');
             }
             
             $client->addScope(Drive::DRIVE);
             $client->addScope(Drive::DRIVE_FILE);
-            
-            $service = new Drive($client);
-            $adapter = new GoogleDriveAdapter($service, $config['folderId'] ?? 'root');
 
-            // Retorna FilesystemAdapter de Laravel en lugar de Filesystem directo
-            return new FilesystemAdapter(
-                new Filesystem($adapter, $config),
-                $adapter,
-                $config
-            );
+            try {
+                $service = new Drive($client);
+                $adapter = new GoogleDriveAdapter($service, $config['folderId'] ?? 'root');
+
+                // Retorna FilesystemAdapter de Laravel en lugar de Filesystem directo
+                return new FilesystemAdapter(
+                    new Filesystem($adapter, $config),
+                    $adapter,
+                    $config
+                );
+            } catch (\Throwable $e) {
+                Log::error('Google Drive adapter initialization failed.', [
+                    'message' => $e->getMessage(),
+                ]);
+
+                throw new GoogleDriveAuthException(
+                    'Ocurrió un problema al intentar acceder a tus Carpetas MIP. ',
+                    previous: $e
+                );
+            }
         });
     }
 }

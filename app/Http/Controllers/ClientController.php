@@ -35,6 +35,25 @@ class ClientController extends Controller
 
     private $size = 50;
 
+    private function isGoogleAuthError(string $message): bool
+    {
+        $needles = [
+            'UNAUTHENTICATED',
+            'CREDENTIALS_MISSING',
+            'Login Required',
+            'required authentication credential',
+            '401',
+        ];
+
+        foreach ($needles as $needle) {
+            if (stripos($message, $needle) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function logClientFolderChange(string $event, array $payload = []): void
     {
         try {
@@ -448,6 +467,13 @@ class ClientController extends Controller
 
             } catch (\Exception $e) {
                 Log::error("Error uploading file {$filename}: " . $e->getMessage());
+
+                if ($this->disk_type === 'google' && $this->isGoogleAuthError($e->getMessage())) {
+                    return response()->view('google-drive-auth-error', [
+                        'error_message' => $e->getMessage(),
+                    ], 401);
+                }
+
                 $errors[] = "Error al subir {$originalFilename}: " . $e->getMessage();
             }
         }

@@ -3,6 +3,7 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Request;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -25,6 +26,19 @@ class Handler extends ExceptionHandler
     {
         $this->reportable(function (Throwable $e) {
             //
+        });
+
+        $this->renderable(function (GoogleDriveAuthException $e, Request $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'error' => 'google_drive_auth_failed',
+                    'message' => $e->getMessage(),
+                ], 401);
+            }
+
+            return response()->view('google-drive-auth-error', [
+                'error_message' => $e->getMessage(),
+            ], 401);
         });
     }
 }

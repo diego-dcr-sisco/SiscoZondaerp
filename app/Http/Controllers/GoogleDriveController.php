@@ -92,6 +92,32 @@ use Illuminate\Support\Facades\Storage;
 
 class GoogleDriveController extends Controller
 {
+    private function isGoogleAuthError(string $message): bool
+    {
+        $needles = [
+            'UNAUTHENTICATED',
+            'CREDENTIALS_MISSING',
+            'Login Required',
+            'required authentication credential',
+            '401',
+        ];
+
+        foreach ($needles as $needle) {
+            if (stripos($message, $needle) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function googleAuthErrorView(string $message)
+    {
+        return response()->view('google-drive-auth-error', [
+            'error_message' => $message,
+        ], 401);
+    }
+
     protected function getClient()
     {
         $client = new GoogleClient();
@@ -153,6 +179,10 @@ class GoogleDriveController extends Controller
                     ], 400);
                 }
             } catch (\Exception $e) {
+                if ($this->isGoogleAuthError($e->getMessage())) {
+                    return $this->googleAuthErrorView($e->getMessage());
+                }
+
                 return response()->json([
                     'error' => 'Authentication failed',
                     'message' => $e->getMessage()
@@ -179,6 +209,10 @@ class GoogleDriveController extends Controller
                 'file_content' => $content
             ]);
         } catch (\Exception $e) {
+            if ($this->isGoogleAuthError($e->getMessage())) {
+                return $this->googleAuthErrorView($e->getMessage());
+            }
+
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage()
