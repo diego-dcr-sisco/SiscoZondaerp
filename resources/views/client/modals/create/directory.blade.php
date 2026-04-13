@@ -80,6 +80,10 @@
                  return false;
              }
 
+             const finalParentPath = (parentPathInput.val() || '').trim().replace(/\/+$/, '');
+             const targetPath = finalParentPath ? `${finalParentPath}/${folderName}` : folderName;
+             alert('Se va a crear la carpeta en:\n' + targetPath);
+
              isSubmitting = true;
              $('#btnCreateDir').prop('disabled', true).html(
                  '<span class="spinner-border spinner-border-sm me-2"></span>Creando...');
