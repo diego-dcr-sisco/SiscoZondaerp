@@ -104,8 +104,73 @@
                                             </li>
                                         </ul>
                                     </div>
-                                </div>
 
+                                    <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal"
+                                        data-bs-target="#chartsModal">
+                                        <i class="bi bi-graph-up"></i> Gráficas
+                                    </button>
+                                </div>
+                                {{-- Modal de Gráficas --}}
+                                <div class="modal fade" id="chartsModal" tabindex="-1"
+                                    aria-labelledby="chartsModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-fullscreen">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="chartsModalLabel">Gráficas de análisis</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body" style="overflow-y: auto;">
+                                                <div class="row g-3">
+                                                    <div class="col-lg-6">
+                                                        <div class="card h-100 shadow-sm">
+                                                            <div class="card-header bg-white fw-semibold">
+                                                                1) Medio de contacto con mayor cantidad
+                                                            </div>
+                                                            <div class="card-body">
+                                                                {!! $contactMethodChart->renderHtml() !!}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        <div class="card h-100 shadow-sm">
+                                                            <div class="card-header bg-white fw-semibold">
+                                                                2) Grafica de montos ($)
+                                                            </div>
+                                                            <div class="card-body">
+                                                                {!! $amountsChart->renderHtml() !!}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        <div class="card h-100 shadow-sm">
+                                                            <div class="card-header bg-white fw-semibold">
+                                                                3) Clientes ingresados por semana/mes en un anio
+                                                            </div>
+                                                            <div class="card-body">
+                                                                {!! $clientsPeriodChart->renderHtml() !!}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-lg-6">
+                                                        <div class="card h-100 shadow-sm">
+                                                            <div class="card-header bg-white fw-semibold">
+                                                                4) Tasa de conversion (%)
+                                                            </div>
+                                                            <div class="card-body">
+                                                                <canvas id="dailyTrackingConversionChart"></canvas>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-outline-secondary"
+                                                    data-bs-dismiss="modal">Cerrar</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 {{-- Filtros --}}
                                 <div class="border p-2 text-dark rounded mb-3 bg-light">
                                     <form method="GET" action="{{ route('crm.daily-tracking.index') }}">
@@ -226,48 +291,7 @@
                                     </form>
                                 </div>
 
-                                <div class="row g-3 mb-3">
-                                    <div class="col-lg-6">
-                                        <div class="card h-100 shadow-sm">
-                                            <div class="card-header bg-white fw-semibold">
-                                                1) Medio de contacto con mayor cantidad
-                                            </div>
-                                            <div class="card-body">
-                                                {!! $contactMethodChart->renderHtml() !!}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="card h-100 shadow-sm">
-                                            <div class="card-header bg-white fw-semibold">
-                                                2) Grafica de montos ($)
-                                            </div>
-                                            <div class="card-body">
-                                                {!! $amountsChart->renderHtml() !!}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="card h-100 shadow-sm">
-                                            <div class="card-header bg-white fw-semibold">
-                                                3) Clientes ingresados por semana/mes en un anio
-                                            </div>
-                                            <div class="card-body">
-                                                {!! $clientsPeriodChart->renderHtml() !!}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-lg-6">
-                                        <div class="card h-100 shadow-sm">
-                                            <div class="card-header bg-white fw-semibold">
-                                                4) Tasa de conversion (%)
-                                            </div>
-                                            <div class="card-body">
-                                                <canvas id="dailyTrackingConversionChart"></canvas>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+
 
                                 {{-- Tabla --}}
                                 <div class="table-responsive">

@@ -106,7 +106,7 @@ class DailyTrackingController extends Controller
             'chart_type' => 'line',
             'where_raw' => $chartWhereRaw,
             'chart_color' => '0, 123, 255',
-            'date_format' => 'Y-W',
+            'date_format' => 'o-\\WW',
             'continuous_time' => true,
         ];
 

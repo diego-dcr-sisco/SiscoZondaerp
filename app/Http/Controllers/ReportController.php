@@ -310,12 +310,12 @@ class ReportController extends Controller
             $product = ProductCatalog::find($product_data['product_id']);
             $op = OrderProduct::updateOrCreate([
                 'order_id' => $order->id,
+                'service_id' => $product_data['service_id'],
                 'product_id' => $product->id,
+                'application_method_id' => $product_data['app_method_id'] ?? null,
                 'lot_id' => $product_data['lot_id'] ?? null,
             ], [
-                'service_id' => $product_data['service_id'],
                 'metric_id' => $product_data['metric_id'] ?? $product->metric_id ?? null,
-                'application_method_id' => $product_data['app_method_id'] ?? null,
                 'amount' => $product_data['amount'],
                 'dosage' => $product_data['dosage'] ?? $product->dosage ?? null,
             ]);
@@ -1123,6 +1123,7 @@ class ReportController extends Controller
         if (!$op_id) {
             // Buscar si ya existe un OrderProduct con las mismas características
             $existing_order_product = OrderProduct::where('order_id', $order->id)
+                ->where('service_id', $data['service_id'])
                 ->where('product_id', $data['product_id'])
                 ->where('application_method_id', $data['application_method_id'] ?? null)
                 ->where('lot_id', $data['lot_id'])
@@ -1180,15 +1181,23 @@ class ReportController extends Controller
         }
 
         $ops = OrderProduct::where('order_id', $order->id)->get();
-        $groupedProducts = $ops->groupBy('product_id');
+        $groupedProducts = $ops->groupBy(function ($product) {
+            return implode('|', [
+                $product->service_id ?? 'null',
+                $product->product_id,
+                $product->application_method_id ?? 'null',
+                $product->lot_id ?? 'null',
+                $product->metric_id ?? 'null',
+                $product->dosage ?? '',
+            ]);
+        });
 
-        foreach ($groupedProducts as $product_id => $products) {
-            $service = $order->services()->first();
+        foreach ($groupedProducts as $products) {
             $totalAmount = $products->sum('amount');
             $firstProduct = $products->first();
             $products_data[] = [
-                'product_id' => $product_id,
-                'service_id' => $service->id ?? null,
+                'product_id' => $firstProduct->product_id,
+                'service_id' => $firstProduct->service_id,
                 'lot_id' => $firstProduct?->lot_id,
                 'metric_id' => $firstProduct?->metric_id,
                 'app_method_id' => $firstProduct->application_method_id,
