@@ -421,6 +421,7 @@ class ClientController extends Controller
     {
         $file_path = trim($request->input('path'), '/');
         $files = $request->file('files');
+        $maxFileSize = 5 * 1024 * 1024; // 5 MB en bytes
 
         if (!$files || count($files) === 0) {
             return redirect()->back()->withErrors(['files' => 'No files uploaded.']);
@@ -434,6 +435,11 @@ class ClientController extends Controller
         foreach ($files as $file) {
             if (!$file->isValid()) {
                 $errors[] = 'Archivo inválido: ' . $file->getClientOriginalName();
+                continue;
+            }
+
+            if ($file->getSize() > $maxFileSize) {
+                $errors[] = 'El archivo ' . $file->getClientOriginalName() . ' excede el límite de 5 MB.';
                 continue;
             }
 

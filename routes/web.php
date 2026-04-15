@@ -38,6 +38,7 @@ use App\Http\Controllers\ConfigurationController;
 use App\Http\Controllers\TimbradoController;
 use App\Http\Controllers\ManualCertificateController;
 use App\Http\Controllers\ManualQuotationController;
+use App\Http\Controllers\DailyTrackingController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -187,6 +188,9 @@ Route::prefix('crm')->name('crm.')->middleware(['auth', 'single.session', 'can:i
 
     Route::get('/trackings/pending', [CRMController::class, 'getTrackings'])->name('tracking.pending');
     Route::post('/trackings/set', [CRMController::class, 'setTracking'])->name('tracking.set');
+
+    Route::get('/daily-trackings/export', [DailyTrackingController::class, 'export'])->name('daily-tracking.export');
+    Route::resource('/daily-tracking', DailyTrackingController::class);
 });
 
 

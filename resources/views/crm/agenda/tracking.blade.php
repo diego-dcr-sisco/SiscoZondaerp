@@ -14,17 +14,80 @@
          ];
      @endphp
 
+     <style>
+         .font-small {
+             font-size: 14px;
+         }
+
+         /* Estilos mejorados para nav-tabs CRM */
+         .nav-tabs {
+             border: none !important;
+             background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+             border-radius: 12px;
+             padding: 4px;
+             gap: 6px;
+             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+             margin-bottom: 1.5rem !important;
+             border: 1px solid rgba(0, 0, 0, 0.1) !important;
+         }
+
+         .nav-tabs .nav-link {
+             border: none !important;
+             color: #495057 !important;
+             font-weight: 500;
+             padding: 0.5rem 1rem;
+             border-radius: 8px;
+             transition: all 0.3s ease;
+             display: flex;
+             align-items: center;
+             gap: 0.5rem;
+             position: relative;
+             background: transparent;
+         }
+
+         .nav-tabs .nav-link:hover {
+             background-color: rgba(0, 123, 255, 0.1);
+             color: #0056b3 !important;
+             transform: translateY(-2px);
+         }
+
+         .nav-tabs .nav-link.active {
+             background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+             color: white !important;
+             border-radius: 8px;
+             box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+         }
+
+         .nav-tabs .nav-link i {
+             font-size: 1.1em;
+         }
+     </style>
+
      <div class="container-fluid font-small p-3">
          <ul class="nav nav-tabs mb-3">
              <li class="nav-item">
-                 <a class="nav-link {{ $nav == 'c' ? 'active' : '' }}" aria-current="page"
-                     href="{{ route('crm.agenda') }}">Calendario</a>
+                 <a class="nav-link {{ $nav == 'c' ? 'active' : '' }}" aria-current="page" href="{{ route('crm.agenda') }}">
+                     <i class="bi bi-calendar-week"></i>
+                     <span>Calendario</span>
+                 </a>
              </li>
              <li class="nav-item">
-                 <a class="nav-link {{ $nav == 't' ? 'active' : '' }}" href="{{ route('crm.tracking') }}">Seguimientos</a>
+                 <a class="nav-link {{ $nav == 't' ? 'active' : '' }}" href="{{ route('crm.tracking') }}">
+                     <i class="bi bi-arrow-repeat"></i>
+                     <span>Seguimientos</span>
+                 </a>
              </li>
              <li class="nav-item">
-                 <a class="nav-link {{ $nav == 'q' ? 'active' : '' }}" href="{{ route('crm.quotation') }}">Cotizaciones</a>
+                 <a class="nav-link {{ $nav == 'q' ? 'active' : '' }}" href="{{ route('crm.quotation') }}">
+                     <i class="bi bi-receipt"></i>
+                     <span>Cotizaciones</span>
+                 </a>
+             </li>
+             <li class="nav-item">
+                 <a class="nav-link {{ $nav == 'd' ? 'active' : '' }}" href="{{ route('crm.daily-tracking.index') }}">
+                     <i class="bi bi-clock-history"></i>
+                     <span>Actividades diarias</span>
+                 </a>
              </li>
          </ul>
 
@@ -129,20 +192,20 @@
              </form>
          </div>
 
-        <div class="table-responsive">
-            <table class="table table-bordered table-sm">
+         <div class="table-responsive">
+             <table class="table table-bordered table-sm">
                  <thead>
                      <tr>
-                        <th>Cliente/Cliente potencial</th>
-                        <th>Orden</th>
+                         <th>Cliente/Cliente potencial</th>
+                         <th>Orden</th>
                          <th>Servicio</th>
-                        <th>Costo</th>
+                         <th>Costo</th>
                          <th>Próxima Fecha</th>
-                        <th>Titulo</th>
-                        <th>Descripción</th>
-                        <th>Rango</th>
-                        <th>Estado</th>
-                        <th>Creado por</th>
+                         <th>Titulo</th>
+                         <th>Descripción</th>
+                         <th>Rango</th>
+                         <th>Estado</th>
+                         <th>Creado por</th>
                          <th></th>
                      </tr>
                  </thead>
@@ -153,25 +216,25 @@
                          @endphp
                          <tr>
                              <td>{{ $tracking->trackable->name ?? '-' }}</td>
-                            <td>
-                                @if($tracking->order_id && $tracking->order)
-                                    <a href="{{ route('order.edit', ['id' => $tracking->order_id]) }}" target="_blank">
-                                        {{ $tracking->order->folio ?? $tracking->order_id }}
-                                    </a>
-                                @else
-                                    -
-                                @endif
-                            </td>
+                             <td>
+                                 @if ($tracking->order_id && $tracking->order)
+                                     <a href="{{ route('order.edit', ['id' => $tracking->order_id]) }}" target="_blank">
+                                         {{ $tracking->order->folio ?? $tracking->order_id }}
+                                     </a>
+                                 @else
+                                     -
+                                 @endif
+                             </td>
                              <td>{{ $tracking->service->name ?? '-' }}</td>
                              <td>{{ $tracking->cost ?? '-' }}</td>
                              <td>{{ \Carbon\Carbon::parse($tracking->next_date)->format('d/m/Y') }}</td>
-                            <td>{{ $tracking->title ?? '-' }}</td>
-                            <td>{{ $tracking->description ?? '-' }}</td>
+                             <td>{{ $tracking->title ?? '-' }}</td>
+                             <td>{{ $tracking->description ?? '-' }}</td>
 
-                            <td> {{ $range && $range->frequency_type ? 'Cada ' . $range->frequency . ' ' . $range->frequency_type : '-' }}
-                            </td>
-                            <td
-                                class="fw-bold
+                             <td> {{ $range && $range->frequency_type ? 'Cada ' . $range->frequency . ' ' . $range->frequency_type : '-' }}
+                             </td>
+                             <td
+                                 class="fw-bold
                                                     {{ $tracking->status == 'active'
                                                         ? 'text-success'
                                                         : ($tracking->status == 'completed'
@@ -179,16 +242,16 @@
                                                             : ($tracking->status == 'canceled'
                                                                 ? 'text-danger'
                                                                 : 'text-secondary')) }}">
-                                {{ $spanish_status[$tracking->status] }}
-                            </td>
-                            <td>{{ $tracking->user->name ?? '-' }}</td>
+                                 {{ $spanish_status[$tracking->status] }}
+                             </td>
+                             <td>{{ $tracking->user->name ?? '-' }}</td>
                              <td class="py-3 px-2">
                                  <div class="d-flex gap-2 align-items-center justify-content-center flex-wrap">
                                      <a href="{{ route('crm.tracking.edit', ['id' => $tracking->id]) }}"
                                          class="btn btn-secondary px-3 py-2"
                                          onclick="return confirm('📅 EDITAR Seguimiento\n\n¿Deseas reprogramar esta actividad?')"
-                                         data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="custom-tooltip"
-                                         data-bs-title="Editar seguimiento"
+                                         data-bs-toggle="tooltip" data-bs-placement="top"
+                                         data-bs-custom-class="custom-tooltip" data-bs-title="Editar seguimiento"
                                          style="font-size: 0.95rem;">
                                          <i class="bi bi-pencil-square"></i> Editar
                                      </a>
@@ -214,8 +277,7 @@
                                          class="btn btn-outline-danger px-3 py-2"
                                          onclick="return confirm('ELIMINAR Seguimiento\n\n¿Deseas eliminar esta actividad?')"
                                          data-bs-toggle="tooltip" data-bs-placement="top"
-                                         data-bs-custom-class="custom-tooltip"
-                                         data-bs-title="Eliminar seguimiento"
+                                         data-bs-custom-class="custom-tooltip" data-bs-title="Eliminar seguimiento"
                                          style="font-size: 0.95rem;">
                                          <i class="bi bi-trash-fill"></i> Eliminar
                                      </a>

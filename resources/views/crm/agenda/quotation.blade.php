@@ -26,17 +26,80 @@
             return 'text-success';
         }
     @endphp
+    <style>
+        .font-small {
+            font-size: 14px;
+        }
+
+        /* Estilos mejorados para nav-tabs CRM */
+        .nav-tabs {
+            border: none !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+            border-radius: 12px;
+            padding: 4px;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .nav-tabs .nav-link {
+            border: none !important;
+            color: #495057 !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            background: transparent;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+            color: #0056b3 !important;
+            transform: translateY(-2px);
+        }
+
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white !important;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+        .nav-tabs .nav-link i {
+            font-size: 1.1em;
+        }
+    </style>
     <div class="container-fluid font-small p-3">
         <ul class="nav nav-tabs mb-3">
             <li class="nav-item">
                 <a class="nav-link {{ $nav == 'c' ? 'active' : '' }}" aria-current="page"
-                    href="{{ route('crm.agenda') }}">Calendario</a>
+                    href="{{ route('crm.agenda') }}">
+                    <i class="bi bi-calendar-week"></i>
+                    <span>Calendario</span>
+                </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ $nav == 't' ? 'active' : '' }}" href="{{ route('crm.tracking') }}">Seguimientos</a>
+                <a class="nav-link {{ $nav == 't' ? 'active' : '' }}" href="{{ route('crm.tracking') }}">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span>Seguimientos</span>
+                </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ $nav == 'q' ? 'active' : '' }}" href="{{ route('crm.quotation') }}">Cotizaciones</a>
+                <a class="nav-link {{ $nav == 'q' ? 'active' : '' }}" href="{{ route('crm.quotation') }}">
+                    <i class="bi bi-receipt"></i>
+                    <span>Cotizaciones</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $nav == 'd' ? 'active' : '' }}" href="{{ route('crm.daily-tracking.index') }}">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Actividades diarias</span>
+                </a>
             </li>
         </ul>
 

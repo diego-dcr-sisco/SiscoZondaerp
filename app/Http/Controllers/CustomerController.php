@@ -671,6 +671,10 @@ class CustomerController extends Controller
     {
         $request->validate([
             'file' => 'required|mimes:jpeg,png,jpg,pdf|max:5120',
+        ], [
+            'file.required' => 'Debes seleccionar un archivo.',
+            'file.mimes' => 'El archivo debe ser PDF, JPG, JPEG o PNG.',
+            'file.max' => 'El archivo no debe ser mayor a 5 MB.',
         ]);
 
         $file = $request->file('file');

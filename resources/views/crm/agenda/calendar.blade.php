@@ -10,6 +10,49 @@
             background-color: rgba(0, 0, 0, 0.3);
         }
 
+        /* Estilos mejorados para nav-tabs CRM */
+        .nav-tabs {
+            border: none !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #fff 100%);
+            border-radius: 12px;
+            padding: 4px;
+            gap: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            margin-bottom: 1.5rem !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .nav-tabs .nav-link {
+            border: none !important;
+            color: #495057 !important;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            background: transparent;
+        }
+
+        .nav-tabs .nav-link:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+            color: #0056b3 !important;
+            transform: translateY(-2px);
+        }
+
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white !important;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+        .nav-tabs .nav-link i {
+            font-size: 1.1em;
+        }
+
         /* Estilos para FullCalendar */
         #calendar {
             background: white;
@@ -237,220 +280,238 @@
     <div class="container-fluid font-small p-3">
         <ul class="nav nav-tabs mb-3">
             <li class="nav-item">
-                <a class="nav-link {{ $nav == 'c' ? 'active' : '' }}" aria-current="page"
-                    href="{{ route('crm.agenda') }}">Calendario</a>
+                <a class="nav-link {{ $nav == 'c' ? 'active' : '' }}" aria-current="page" href="{{ route('crm.agenda') }}">
+                    <i class="bi bi-calendar-week"></i>
+                    <span>Calendario</span>
+                </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ $nav == 't' ? 'active' : '' }}" href="{{ route('crm.tracking') }}">Seguimientos</a>
+                <a class="nav-link {{ $nav == 't' ? 'active' : '' }}" href="{{ route('crm.tracking') }}">
+                    <i class="bi bi-arrow-repeat"></i>
+                    <span>Seguimientos</span>
+                </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ $nav == 'q' ? 'active' : '' }}" href="{{ route('crm.quotation') }}">Cotizaciones</a>
+                <a class="nav-link {{ $nav == 'q' ? 'active' : '' }}" href="{{ route('crm.quotation') }}">
+                    <i class="bi bi-receipt"></i>
+                    <span>Cotizaciones</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $nav == 'd' ? 'active' : '' }}" href="{{ route('crm.daily-tracking.index') }}">
+                    <i class="bi bi-clock-history"></i>
+                    <span>Actividades diarias</span>
+                </a>
             </li>
         </ul>
 
         <div class="row">
             <!-- Sidebar de Filtros -->
             <div class="col-lg-3 col-md-4 mb-3">
-                <div class="filters-sidebar border border-secondary">
-                    <h5 class="mb-4 text-primary">
-                        <i class="bi bi-funnel-fill me-2"></i>Filtros
-                    </h5>
-
-                    <form id="filter-form" action="{{ route('crm.agenda') }}" method="GET">
-
-                        <div class="row border rounded mb-3">
-                            <div class="col-6 text-center bg-secondary-subtle px-0">
-                                <button type="button" class="btn btn-success w-100 ms-0" id="btn-orders"
-                                    onclick="setActiveView('orders')">Ordenes de servicio</button>
-                            </div>
-                            <div class="col-6 text-center bg-secondary-subtle px-0">
-                                <button type="button" class="btn w-100 ms-0" id="btn-trackings"
-                                    onclick="setActiveView('trackings')">Seguimientos</button>
-                            </div>
-                        </div>
-
-                        <!-- No. Reporte -->
-                        <div class="filter-section">
-                            <label for="folio" class="form-label">No. Reporte</label>
-                            <div class="input-group input-group-sm  mb-3">
-                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-key-fill"></i></span>
-                                <input type="text" class="form-control form-control-sm" id="folio" name="folio"
-                                    value="{{ request('folio') }}" placeholder="Buscar por folio... ">
-                            </div>
-                        </div>
-
-                        <!-- Cliente -->
-                        <div class="filter-section">
-                            <label for="customer" class="form-label">Cliente</label>
-                            <div class="input-group input-group-sm  mb-3">
-                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-person-circle"></i></span>
-                                <input type="text" class="form-control form-control-sm" id="customer" name="customer"
-                                    value="{{ request('customer') }}" placeholder="Buscar cliente">
-                            </div>
-
-                        </div>
-
-                        <!-- Servicio -->
-                        <div class="filter-section">
-                            <label for="service" class="form-label">Servicio</label>
-                            <div class="input-group input-group-sm mb-3">
-                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-gear-fill"></i></span>
-                                <input type="text" class="form-control form-control-sm" id="service" name="service"
-                                    value="{{ request('service') }}" placeholder="Buscar servicio">
-                            </div>
-                        </div>
-
-                        <!-- Rango de Fechas -->
-                        <div class="filter-section">
-                            <label for="date_range" class="form-label">Rango de Fechas</label>
-                            <div class="input-group input-group-sm mb-3">
-                                <span class="input-group-text" id="basic-addon1"><i
-                                        class="bi bi-calendar-week-fill"></i></span>
-                                <input type="text" class="form-control form-control-sm date-range-picker" id="date-range"
-                                    name="date_range" value="{{ request('date_range') }}" placeholder="Selecciona un rango"
-                                    autocomplete="off">
-                            </div>
-                        </div>
-
-                        <!-- Hora -->
-                        <div class="filter-section">
-                            <label for="time" class="form-label">Hora Programada</label>
-                            <div class="input-group input-group-sm mb-3">
-                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-clock-fill"></i></span>
-                                <input type="time" class="form-control form-control-sm" id="time" name="time"
-                                    value="{{ request('time') }}">
-                            </div>
-                        </div>
-
-                        <!-- Estado -->
-                        <div class="filter-section">
-                            <label for="status" class="form-label">Estado</label>
-                            <div class="input-group input-group-sm mb-3">
-                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-circle-half"></i></span>
-                                <select class="form-select form-select-sm" id="status" name="status">
-                                    <option value="">Todos los estados</option>
-                                    @foreach ($order_status as $status)
-                                        <option value="{{ $status->id }}"
-                                            {{ request('status') == $status->id ? 'selected' : '' }}>
-                                            {{ $status->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Tipo de Orden -->
-                        <div class="filter-section">
-                            <label for="order_type" class="form-label">Tipo de Orden</label>
-                            <div class="input-group input-group-sm mb-3">
-                                <span class="input-group-text" id="basic-addon1"><i
-                                        class="bi bi-dash-circle-fill"></i></span>
-                                <select class="form-select form-select-sm" id="order_type" name="order_type">
-                                    <option value="">Todos los tipos</option>
-                                    <option value="MIP" {{ request('order_type') == 'MIP' ? 'selected' : '' }}>MIP
-                                    </option>
-                                    <option value="Seguimiento"
-                                        {{ request('order_type') == 'Seguimiento' ? 'selected' : '' }}>
-                                        Seguimiento
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Firma -->
-                        <div class="filter-section">
-                            <label for="signature_status" class="form-label">Estado de Firma</label>
-                            <div class="input-group input-group-sm mb-3">
-                                <span class="input-group-text" id="basic-addon1"><i class="bi bi-pen-fill"></i></span>
-                                <select class="form-select form-select-sm" id="signature_status" name="signature_status">
-                                    <option value="">Todos</option>
-                                    <option value="signed"
-                                        {{ request('signature_status') == 'signed' ? 'selected' : '' }}>
-                                        Firmadas
-                                    </option>
-                                    <option value="unsigned"
-                                        {{ request('signature_status') == 'unsigned' ? 'selected' : '' }}>
-                                        No Firmadas
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Ordenación -->
-                        <div class="filter-section">
-                            <label for="direction" class="form-label">Direccion</label>
-                            <div class="input-group input-group-sm mb-3">
-                                <span class="input-group-text" id="basic-addon1"><i
-                                        class="bi bi-arrow-down-up"></i></span>
-                                <select class="form-select form-select-sm" id="direction" name="direction">
-                                    <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>
-                                        Ascendente
-                                    </option>
-                                    <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
-                                        Descendente
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Botones de acción -->
-                        <div class="filter-actions">
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i class="bi bi-funnel-fill me-1"></i> Aplicar Filtros
-                                </button>
-                                <a href="{{ route('crm.agenda') }}" class="btn btn-secondary btn-sm">
-                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar Filtros
-                                </a>
-                            </div>
-                        </div>
-
-                        <input type="hidden" id="filter-action" name="filter_action" value="{{ $filter_action }}">
-                    </form>
-                </div>
-            </div>
-
-            <!-- Calendario -->
-            <div class="col-lg-9 col-md-8">
-                <div class="calendar-container rounded border border-secondary">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0 text-dark">
-                            <i class="bi bi-calendar-week me-2"></i>Calendario de Actividades
+                    <div class="filters-sidebar border border-secondary">
+                        <h5 class="mb-4 text-primary">
+                            <i class="bi bi-funnel-fill me-2"></i>Filtros
                         </h5>
 
-                        <div class="legend-container">
-                            <div class="d-flex align-items-center gap-3">
-                                <!-- Doméstico -->
-                                <div class="legend-item d-flex align-items-center">
-                                    <div class="legend-color"
-                                        style="background-color: #B71C1C; width: 16px; height: 16px; border-radius: 3px; margin-right: 6px;">
-                                    </div>
-                                    <small class="text-muted">Doméstico</small>
+                        <form id="filter-form" action="{{ route('crm.agenda') }}" method="GET">
+
+                            <div class="row border rounded mb-3">
+                                <div class="col-6 text-center bg-secondary-subtle px-0">
+                                    <button type="button" class="btn btn-success w-100 ms-0" id="btn-orders"
+                                        onclick="setActiveView('orders')">Ordenes de servicio</button>
+                                </div>
+                                <div class="col-6 text-center bg-secondary-subtle px-0">
+                                    <button type="button" class="btn w-100 ms-0" id="btn-trackings"
+                                        onclick="setActiveView('trackings')">Seguimientos</button>
+                                </div>
+                            </div>
+
+                            <!-- No. Reporte -->
+                            <div class="filter-section">
+                                <label for="folio" class="form-label">No. Reporte</label>
+                                <div class="input-group input-group-sm  mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i class="bi bi-key-fill"></i></span>
+                                    <input type="text" class="form-control form-control-sm" id="folio" name="folio"
+                                        value="{{ request('folio') }}" placeholder="Buscar por folio... ">
+                                </div>
+                            </div>
+
+                            <!-- Cliente -->
+                            <div class="filter-section">
+                                <label for="customer" class="form-label">Cliente</label>
+                                <div class="input-group input-group-sm  mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i
+                                            class="bi bi-person-circle"></i></span>
+                                    <input type="text" class="form-control form-control-sm" id="customer"
+                                        name="customer" value="{{ request('customer') }}" placeholder="Buscar cliente">
                                 </div>
 
-                                <!-- Comercial -->
-                                <div class="legend-item d-flex align-items-center">
-                                    <div class="legend-color"
-                                        style="background-color: #1B5E20; width: 16px; height: 16px; border-radius: 3px; margin-right: 6px;">
-                                    </div>
-                                    <small class="text-muted">Comercial</small>
-                                </div>
+                            </div>
 
-                                <!-- Industrial -->
-                                <div class="legend-item d-flex align-items-center">
-                                    <div class="legend-color"
-                                        style="background-color: #1A237E; width: 16px; height: 16px; border-radius: 3px; margin-right: 6px;">
+                            <!-- Servicio -->
+                            <div class="filter-section">
+                                <label for="service" class="form-label">Servicio</label>
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i class="bi bi-gear-fill"></i></span>
+                                    <input type="text" class="form-control form-control-sm" id="service" name="service"
+                                        value="{{ request('service') }}" placeholder="Buscar servicio">
+                                </div>
+                            </div>
+
+                            <!-- Rango de Fechas -->
+                            <div class="filter-section">
+                                <label for="date_range" class="form-label">Rango de Fechas</label>
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i
+                                            class="bi bi-calendar-week-fill"></i></span>
+                                    <input type="text" class="form-control form-control-sm date-range-picker"
+                                        id="date-range" name="date_range" value="{{ request('date_range') }}"
+                                        placeholder="Selecciona un rango" autocomplete="off">
+                                </div>
+                            </div>
+
+                            <!-- Hora -->
+                            <div class="filter-section">
+                                <label for="time" class="form-label">Hora Programada</label>
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i class="bi bi-clock-fill"></i></span>
+                                    <input type="time" class="form-control form-control-sm" id="time"
+                                        name="time" value="{{ request('time') }}">
+                                </div>
+                            </div>
+
+                            <!-- Estado -->
+                            <div class="filter-section">
+                                <label for="status" class="form-label">Estado</label>
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i
+                                            class="bi bi-circle-half"></i></span>
+                                    <select class="form-select form-select-sm" id="status" name="status">
+                                        <option value="">Todos los estados</option>
+                                        @foreach ($order_status as $status)
+                                            <option value="{{ $status->id }}"
+                                                {{ request('status') == $status->id ? 'selected' : '' }}>
+                                                {{ $status->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Tipo de Orden -->
+                            <div class="filter-section">
+                                <label for="order_type" class="form-label">Tipo de Orden</label>
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i
+                                            class="bi bi-dash-circle-fill"></i></span>
+                                    <select class="form-select form-select-sm" id="order_type" name="order_type">
+                                        <option value="">Todos los tipos</option>
+                                        <option value="MIP" {{ request('order_type') == 'MIP' ? 'selected' : '' }}>MIP
+                                        </option>
+                                        <option value="Seguimiento"
+                                            {{ request('order_type') == 'Seguimiento' ? 'selected' : '' }}>
+                                            Seguimiento
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Firma -->
+                            <div class="filter-section">
+                                <label for="signature_status" class="form-label">Estado de Firma</label>
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i
+                                            class="bi bi-pen-fill"></i></span>
+                                    <select class="form-select form-select-sm" id="signature_status"
+                                        name="signature_status">
+                                        <option value="">Todos</option>
+                                        <option value="signed"
+                                            {{ request('signature_status') == 'signed' ? 'selected' : '' }}>
+                                            Firmadas
+                                        </option>
+                                        <option value="unsigned"
+                                            {{ request('signature_status') == 'unsigned' ? 'selected' : '' }}>
+                                            No Firmadas
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Ordenación -->
+                            <div class="filter-section">
+                                <label for="direction" class="form-label">Direccion</label>
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i
+                                            class="bi bi-arrow-down-up"></i></span>
+                                    <select class="form-select form-select-sm" id="direction" name="direction">
+                                        <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>
+                                            Ascendente
+                                        </option>
+                                        <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
+                                            Descendente
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Botones de acción -->
+                            <div class="filter-actions">
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm">
+                                        <i class="bi bi-funnel-fill me-1"></i> Aplicar Filtros
+                                    </button>
+                                    <a href="{{ route('crm.agenda') }}" class="btn btn-secondary btn-sm">
+                                        <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar Filtros
+                                    </a>
+                                </div>
+                            </div>
+
+                            <input type="hidden" id="filter-action" name="filter_action" value="{{ $filter_action }}">
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Calendario -->
+                <div class="col-lg-9 col-md-8">
+                    <div class="calendar-container rounded border border-secondary">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0 text-dark">
+                                <i class="bi bi-calendar-week me-2"></i>Calendario de Actividades
+                            </h5>
+
+                            <div class="legend-container">
+                                <div class="d-flex align-items-center gap-3">
+                                    <!-- Doméstico -->
+                                    <div class="legend-item d-flex align-items-center">
+                                        <div class="legend-color"
+                                            style="background-color: #B71C1C; width: 16px; height: 16px; border-radius: 3px; margin-right: 6px;">
+                                        </div>
+                                        <small class="text-muted">Doméstico</small>
                                     </div>
-                                    <small class="text-muted">Industrial</small>
+
+                                    <!-- Comercial -->
+                                    <div class="legend-item d-flex align-items-center">
+                                        <div class="legend-color"
+                                            style="background-color: #1B5E20; width: 16px; height: 16px; border-radius: 3px; margin-right: 6px;">
+                                        </div>
+                                        <small class="text-muted">Comercial</small>
+                                    </div>
+
+                                    <!-- Industrial -->
+                                    <div class="legend-item d-flex align-items-center">
+                                        <div class="legend-color"
+                                            style="background-color: #1A237E; width: 16px; height: 16px; border-radius: 3px; margin-right: 6px;">
+                                        </div>
+                                        <small class="text-muted">Industrial</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        <div id="calendar"></div>
                     </div>
-                    <div id="calendar"></div>
                 </div>
             </div>
         </div>
-    </div>
 
     <!-- Modal para detalles del evento -->
     <div id="eventModal" class="event-modal">

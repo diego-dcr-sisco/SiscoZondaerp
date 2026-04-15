@@ -97,6 +97,11 @@ class Service extends Model
         return $this->hasMany(FloorPlans::class, 'service_id', 'id');
     }
 
+    public function dailyTrackings()
+    {
+        return $this->hasMany(DailyTracking::class, 'service_id', 'id');
+    }
+
     public function hasDevices() {
         $floorplanIds = $this->floorplans()->pluck('id')->toArray();
         $devices = Device::whereIn('floorplan_id', $floorplanIds)->get();

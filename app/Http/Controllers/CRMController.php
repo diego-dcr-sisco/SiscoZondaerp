@@ -179,6 +179,7 @@ class CRMController extends Controller
             'Clientes potenciales' => Route('customer.index.leads'),
             'Estadisticas' => route('crm.chart.dashboard'),
             'Ordenes de servicio' => route('order.index'),
+            'Actividades diarias' => route('crm.daily-tracking.index'),
         ];
     }
 
