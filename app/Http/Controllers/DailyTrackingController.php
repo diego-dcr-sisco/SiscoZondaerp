@@ -51,6 +51,17 @@ class DailyTrackingController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
+        return view('crm.daily-tracking.index', array_merge($this->formData(), [
+            'navigation' => $navigation,
+            'dailyTrackings' => $dailyTrackings,
+            'statusOptions' => DailyTrackingStatus::cases(),
+            'serviceTypeOptions' => DailyTrackingServiceType::cases(),
+            'nav' => 'd',
+        ]));
+    }
+
+    public function charts(Request $request)
+    {
         $chartDateRange = $this->parseDateRange((string) $request->input('date_range', ''));
         $chartWhereRaw = $this->buildChartWhereRaw($request);
 
@@ -142,17 +153,13 @@ class DailyTrackingController extends Controller
             $conversionData[] = $conversionRate;
         }
 
-        return view('crm.daily-tracking.index', array_merge($this->formData(), [
-            'navigation' => $navigation,
-            'dailyTrackings' => $dailyTrackings,
-            'statusOptions' => DailyTrackingStatus::cases(),
-            'serviceTypeOptions' => DailyTrackingServiceType::cases(),
+        return view('crm.daily-tracking.charts', array_merge($this->formData(), [
             'contactMethodChart' => $contactMethodChart,
             'amountsChart' => $amountsChart,
             'clientsPeriodChart' => $clientsPeriodChart,
             'conversionLabels' => $conversionLabels,
             'conversionData' => $conversionData,
-            'nav' => 'd',
+            'statusOptions' => DailyTrackingStatus::cases(),
         ]));
     }
 

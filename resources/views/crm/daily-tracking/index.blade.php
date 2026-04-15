@@ -48,19 +48,6 @@
                                 .nav-tabs .nav-link i {
                                     font-size: 1.1em;
                                 }
-
-                                .charts-modal-dialog {
-                                    max-width: 1200px;
-                                }
-
-                                .charts-modal-body {
-                                    max-height: 75vh;
-                                    overflow-y: auto;
-                                }
-
-                                .charts-modal-card .card-body {
-                                    min-height: 320px;
-                                }
                             </style>
 
                             <div class="container-fluid font-small p-3">
@@ -116,80 +103,11 @@
                                                 </button>
                                             </li>
                                             <li>
-                                                <button type="button" class="dropdown-item" data-bs-toggle="modal"
-                                                    data-bs-target="#chartsModal">
-                                                    Gráficas
-                                                </button>
+                                                <a class="dropdown-item" href="{{ route('crm.daily-tracking.charts', request()->query()) }}">
+                                                    <i class="bi bi-bar-chart-line"></i> Gráficas
+                                                </a>
                                             </li>
                                         </ul>
-                                    </div>
-                                </div>
-                                {{-- Modal de Gráficas --}}
-                                <div class="modal fade" id="chartsModal" tabindex="-1"
-                                    aria-labelledby="chartsModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-xl modal-dialog-scrollable charts-modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="chartsModalLabel">Gráficas de análisis</h5>
-                                                <div class="d-flex gap-2">
-                                                    <a href="{{ route('crm.daily-tracking.export-charts', request()->query()) }}" 
-                                                        class="btn btn-sm btn-danger" data-bs-toggle="tooltip" 
-                                                        data-bs-title="Exportar gráficas a PDF">
-                                                        <i class="bi bi-filetype-pdf"></i> PDF
-                                                    </a>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                        aria-label="Close"></button>
-                                                </div>
-                                            </div>
-                                            <div class="modal-body charts-modal-body">
-                                                <div class="row g-3">
-                                                    <div class="col-lg-6">
-                                                        <div class="card h-100 shadow-sm charts-modal-card">
-                                                            <div class="card-header bg-white fw-semibold">
-                                                                1) Medio de contacto con mayor cantidad
-                                                            </div>
-                                                            <div class="card-body">
-                                                                {!! $contactMethodChart->renderHtml() !!}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-lg-6">
-                                                        <div class="card h-100 shadow-sm charts-modal-card">
-                                                            <div class="card-header bg-white fw-semibold">
-                                                                2) Grafica de montos ($)
-                                                            </div>
-                                                            <div class="card-body">
-                                                                {!! $amountsChart->renderHtml() !!}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-lg-6">
-                                                        <div class="card h-100 shadow-sm charts-modal-card">
-                                                            <div class="card-header bg-white fw-semibold">
-                                                                3) Clientes ingresados por semana/mes en un anio
-                                                            </div>
-                                                            <div class="card-body">
-                                                                {!! $clientsPeriodChart->renderHtml() !!}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-lg-6">
-                                                        <div class="card h-100 shadow-sm charts-modal-card">
-                                                            <div class="card-header bg-white fw-semibold">
-                                                                4) Tasa de conversion (%)
-                                                            </div>
-                                                            <div class="card-body">
-                                                                <canvas id="dailyTrackingConversionChart"></canvas>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-outline-secondary"
-                                                    data-bs-dismiss="modal">Cerrar</button>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                                 {{-- Filtros --}}
@@ -547,49 +465,7 @@
 
                             </div>
 
-                            {!! $contactMethodChart->renderChartJsLibrary() !!}
-                            {!! $contactMethodChart->renderJs() !!}
-                            {!! $amountsChart->renderJs() !!}
-                            {!! $clientsPeriodChart->renderJs() !!}
-
                             <script>
-                                const conversionCtx = document.getElementById('dailyTrackingConversionChart')
-                                if (conversionCtx) {
-                                    new Chart(conversionCtx, {
-                                        type: 'line',
-                                        data: {
-                                            labels: @json($conversionLabels),
-                                            datasets: [{
-                                                label: 'Tasa de conversion (%)',
-                                                data: @json($conversionData),
-                                                borderColor: 'rgba(255, 159, 64, 1)',
-                                                backgroundColor: 'rgba(255, 159, 64, 0.2)',
-                                                borderWidth: 2,
-                                                fill: true,
-                                            }]
-                                        },
-                                        options: {
-                                            scales: {
-                                                yAxes: [{
-                                                    ticks: {
-                                                        beginAtZero: true,
-                                                        callback: function(value) {
-                                                            return value + '%'
-                                                        }
-                                                    }
-                                                }]
-                                            },
-                                            tooltips: {
-                                                callbacks: {
-                                                    label: function(tooltipItem) {
-                                                        return tooltipItem.yLabel + '%'
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    })
-                                }
-
                                 const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
                                 const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
 

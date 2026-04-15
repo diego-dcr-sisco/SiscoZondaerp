@@ -191,6 +191,7 @@ Route::prefix('crm')->name('crm.')->middleware(['auth', 'single.session', 'can:i
 
     Route::get('/daily-trackings/export', [DailyTrackingController::class, 'export'])->name('daily-tracking.export');
     Route::get('/daily-trackings/export-charts', [DailyTrackingController::class, 'exportCharts'])->name('daily-tracking.export-charts');
+    Route::get('/daily-trackings/charts', [DailyTrackingController::class, 'charts'])->name('daily-tracking.charts');
     Route::resource('/daily-tracking', DailyTrackingController::class);
 });
 
