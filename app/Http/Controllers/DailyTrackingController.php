@@ -15,6 +15,7 @@ use App\Http\Requests\StoreDailyTrackingRequest;
 use App\Http\Requests\UpdateDailyTrackingRequest;
 use App\Models\DailyTracking;
 use App\Models\Service;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -530,5 +531,116 @@ class DailyTrackingController extends Controller
             'invoiceOptions' => DailyTrackingInvoice::cases(),
             'paymentMethodOptions' => DailyTrackingPaymentMethod::cases(),
         ];
+    }
+
+    public function exportCharts(Request $request)
+    {
+        // Generate the same charts as in the index method
+        $chartDateRange = $this->parseDateRange((string) $request->input('date_range', ''));
+        $chartWhereRaw = $this->buildChartWhereRaw($request);
+
+        $contactMethodChart = new LaravelChart([
+            'chart_title' => 'Medio de contacto con mayor cantidad',
+            'report_type' => 'group_by_string',
+            'model' => DailyTracking::class,
+            'group_by_field' => 'contact_method',
+            'aggregate_function' => 'count',
+            'chart_type' => 'bar',
+            'where_raw' => $chartWhereRaw,
+            'chart_color' => '23, 162, 184',
+            'labels' => [
+                'google' => 'Google',
+                'pagina' => 'Pagina web',
+                'llamada' => 'Llamada',
+                'cambaceo' => 'Cambaceo',
+            ],
+        ]);
+
+        $amountsChartOptions = [
+            'chart_title' => 'Montos facturados ($) por periodo',
+            'report_type' => 'group_by_date',
+            'model' => DailyTracking::class,
+            'group_by_field' => 'created_at',
+            'group_by_period' => 'month',
+            'aggregate_function' => 'sum',
+            'aggregate_field' => 'billed_amount',
+            'chart_type' => 'bar',
+            'where_raw' => $chartWhereRaw,
+            'chart_color' => '40, 167, 69',
+            'date_format' => 'Y-m',
+            'continuous_time' => true,
+        ];
+
+        if ($chartDateRange !== null) {
+            $amountsChartOptions['filter_field'] = 'created_at';
+            $amountsChartOptions['range_date_start'] = $chartDateRange['start'];
+            $amountsChartOptions['range_date_end'] = $chartDateRange['end'];
+        } else {
+            $amountsChartOptions['filter_field'] = 'created_at';
+            $amountsChartOptions['filter_period'] = 'year';
+        }
+
+        $amountsChart = new LaravelChart($amountsChartOptions);
+
+        $clientsPeriodChartOptions = [
+            'chart_title' => 'Clientes ingresados por semana (anio actual)',
+            'report_type' => 'group_by_date',
+            'model' => DailyTracking::class,
+            'group_by_field' => 'created_at',
+            'group_by_period' => 'week',
+            'aggregate_function' => 'count',
+            'chart_type' => 'line',
+            'where_raw' => $chartWhereRaw,
+            'chart_color' => '0, 123, 255',
+            'date_format' => 'o-\\WW',
+            'continuous_time' => true,
+        ];
+
+        if ($chartDateRange !== null) {
+            $clientsPeriodChartOptions['filter_field'] = 'created_at';
+            $clientsPeriodChartOptions['range_date_start'] = $chartDateRange['start'];
+            $clientsPeriodChartOptions['range_date_end'] = $chartDateRange['end'];
+        } else {
+            $clientsPeriodChartOptions['filter_field'] = 'created_at';
+            $clientsPeriodChartOptions['filter_period'] = 'year';
+        }
+
+        $clientsPeriodChart = new LaravelChart($clientsPeriodChartOptions);
+
+        $conversionRows = $this->buildFilteredQuery($request)
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period")
+            ->selectRaw("SUM(CASE WHEN quoted = 'yes' THEN 1 ELSE 0 END) as quoted_count")
+            ->selectRaw("SUM(CASE WHEN closed = 'yes' THEN 1 ELSE 0 END) as closed_count")
+            ->whereNotNull('created_at')
+            ->groupBy('period')
+            ->orderBy('period')
+            ->get();
+
+        $conversionLabels = [];
+        $conversionData = [];
+        foreach ($conversionRows as $row) {
+            $quotedCount = (int) $row->quoted_count;
+            $closedCount = (int) $row->closed_count;
+            $conversionRate = $quotedCount > 0 ? round(($closedCount / $quotedCount) * 100, 2) : 0;
+
+            $conversionLabels[] = (string) $row->period;
+            $conversionData[] = $conversionRate;
+        }
+
+        $html = view('crm.daily-tracking.charts-pdf', [
+            'contactMethodChart' => $contactMethodChart,
+            'amountsChart' => $amountsChart,
+            'clientsPeriodChart' => $clientsPeriodChart,
+            'conversionLabels' => $conversionLabels,
+            'conversionData' => $conversionData,
+            'dateRange' => $chartDateRange,
+        ])->render();
+
+        $pdf = Pdf::loadHTML($html)
+            ->setPaper('a4', 'landscape')
+            ->setOption('isPhpEnabled', true)
+            ->setOption('isSvgEnabled', true);
+
+        return $pdf->download('graficas-analisis-' . now()->format('Y-m-d-His') . '.pdf');
     }
 }

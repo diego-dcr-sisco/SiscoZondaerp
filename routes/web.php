@@ -190,6 +190,7 @@ Route::prefix('crm')->name('crm.')->middleware(['auth', 'single.session', 'can:i
     Route::post('/trackings/set', [CRMController::class, 'setTracking'])->name('tracking.set');
 
     Route::get('/daily-trackings/export', [DailyTrackingController::class, 'export'])->name('daily-tracking.export');
+    Route::get('/daily-trackings/export-charts', [DailyTrackingController::class, 'exportCharts'])->name('crm.daily-tracking.export-charts');
     Route::resource('/daily-tracking', DailyTrackingController::class);
 });
 

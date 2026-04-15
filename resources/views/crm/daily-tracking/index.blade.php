@@ -131,8 +131,15 @@
                                         <div class="modal-content">
                                             <div class="modal-header">
                                                 <h5 class="modal-title" id="chartsModalLabel">Gráficas de análisis</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                    aria-label="Close"></button>
+                                                <div class="d-flex gap-2">
+                                                    <a href="{{ route('crm.daily-tracking.export-charts', request()->query()) }}" 
+                                                        class="btn btn-sm btn-primary" data-bs-toggle="tooltip" 
+                                                        data-bs-title="Exportar gráficas a PDF">
+                                                        <i class="bi bi-filetype-pdf"></i> PDF
+                                                    </a>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                        aria-label="Close"></button>
+                                                </div>
                                             </div>
                                             <div class="modal-body charts-modal-body">
                                                 <div class="row g-3">
