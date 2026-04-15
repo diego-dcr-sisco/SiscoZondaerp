@@ -42,7 +42,7 @@
         }
         
         .chart-section {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             page-break-inside: avoid;
         }
         
@@ -108,17 +108,17 @@
             color: #999;
         }
         
-        .stat-box {
-            background: #f0f0f0;
-            padding: 8px;
-            margin: 5px 0;
-            border-left: 3px solid #dc3545;
+        .text-right {
+            text-align: right;
         }
         
-        .stat-value {
-            font-weight: bold;
+        .text-center {
+            text-align: center;
+        }
+        
+        .highlight {
             color: #dc3545;
-            font-size: 11px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -138,17 +138,55 @@
     <div class="chart-section">
         <div class="chart-title">1) Medio de contacto con mayor cantidad</div>
         <div class="chart-container">
-            {!! $contactMethodChart->renderHtml() !!}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Medio de Contacto</th>
+                        <th style="text-align: center;">Cantidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($contactMethodsData as $item)
+                        <tr>
+                            <td>{{ $contactMethodLabels[$item->contact_method] ?? $item->contact_method }}</td>
+                            <td class="text-center">{{ $item->count }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="2" class="text-center" style="color: #999;">Sin datos disponibles</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
     
-    {{-- Chart 2: Amounts --}}
+    {{-- Chart 2 & 3: Side by side --}}
     <div class="row">
         <div class="col-50">
             <div class="chart-section">
-                <div class="chart-title">2) Montos facturados ($) por periodo</div>
+                <div class="chart-title">2) Montos facturados ($) por período</div>
                 <div class="chart-container">
-                    {!! $amountsChart->renderHtml() !!}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Período</th>
+                                <th class="text-right">Monto ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($amountsData as $item)
+                                <tr>
+                                    <td>{{ $item->period }}</td>
+                                    <td class="text-right">{{ number_format((float)$item->total, 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="text-center" style="color: #999;">Sin datos disponibles</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -157,7 +195,28 @@
             <div class="chart-section">
                 <div class="chart-title">3) Clientes ingresados por semana</div>
                 <div class="chart-container">
-                    {!! $clientsPeriodChart->renderHtml() !!}
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Año</th>
+                                <th class="text-center">Semana</th>
+                                <th class="text-center">Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($clientsData as $item)
+                                <tr>
+                                    <td>{{ $item->year }}</td>
+                                    <td class="text-center">{{ $item->week }}</td>
+                                    <td class="text-center">{{ $item->count }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="text-center" style="color: #999;">Sin datos disponibles</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -171,22 +230,22 @@
                 <thead>
                     <tr>
                         <th>Período</th>
-                        <th style="text-align: center;">Cotizados</th>
-                        <th style="text-align: center;">Cerrados</th>
-                        <th style="text-align: center;">Tasa (%)</th>
+                        <th class="text-center">Cotizados</th>
+                        <th class="text-center">Cerrados</th>
+                        <th class="text-center">Tasa (%)</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($conversionData as $index => $rate)
                         <tr>
                             <td>{{ $conversionLabels[$index] ?? '-' }}</td>
-                            <td style="text-align: center;">{{ $conversionQuotedCounts[$index] ?? '-' }}</td>
-                            <td style="text-align: center;">{{ $conversionClosedCounts[$index] ?? '-' }}</td>
-                            <td style="text-align: center; font-weight: bold; color: #dc3545;">{{ $rate }}%</td>
+                            <td class="text-center">{{ $conversionQuotedCounts[$index] ?? '-' }}</td>
+                            <td class="text-center">{{ $conversionClosedCounts[$index] ?? '-' }}</td>
+                            <td class="text-center highlight">{{ $rate }}%</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" style="text-align: center; color: #999;">Sin datos disponibles</td>
+                            <td colspan="4" class="text-center" style="color: #999;">Sin datos disponibles</td>
                         </tr>
                     @endforelse
                 </tbody>
