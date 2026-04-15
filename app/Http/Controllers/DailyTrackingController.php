@@ -74,7 +74,7 @@ class DailyTrackingController extends Controller
             'chart_title' => 'Montos facturados ($) por periodo',
             'report_type' => 'group_by_date',
             'model' => DailyTracking::class,
-            'group_by_field' => 'service_date',
+            'group_by_field' => 'created_at',
             'group_by_period' => 'month',
             'aggregate_function' => 'sum',
             'aggregate_field' => 'billed_amount',
@@ -86,11 +86,11 @@ class DailyTrackingController extends Controller
         ];
 
         if ($chartDateRange !== null) {
-            $amountsChartOptions['filter_field'] = 'service_date';
+            $amountsChartOptions['filter_field'] = 'created_at';
             $amountsChartOptions['range_date_start'] = $chartDateRange['start'];
             $amountsChartOptions['range_date_end'] = $chartDateRange['end'];
         } else {
-            $amountsChartOptions['filter_field'] = 'service_date';
+            $amountsChartOptions['filter_field'] = 'created_at';
             $amountsChartOptions['filter_period'] = 'year';
         }
 
@@ -100,7 +100,7 @@ class DailyTrackingController extends Controller
             'chart_title' => 'Clientes ingresados por semana (anio actual)',
             'report_type' => 'group_by_date',
             'model' => DailyTracking::class,
-            'group_by_field' => 'service_date',
+            'group_by_field' => 'created_at',
             'group_by_period' => 'week',
             'aggregate_function' => 'count',
             'chart_type' => 'line',
@@ -111,21 +111,21 @@ class DailyTrackingController extends Controller
         ];
 
         if ($chartDateRange !== null) {
-            $clientsPeriodChartOptions['filter_field'] = 'service_date';
+            $clientsPeriodChartOptions['filter_field'] = 'created_at';
             $clientsPeriodChartOptions['range_date_start'] = $chartDateRange['start'];
             $clientsPeriodChartOptions['range_date_end'] = $chartDateRange['end'];
         } else {
-            $clientsPeriodChartOptions['filter_field'] = 'service_date';
+            $clientsPeriodChartOptions['filter_field'] = 'created_at';
             $clientsPeriodChartOptions['filter_period'] = 'year';
         }
 
         $clientsPeriodChart = new LaravelChart($clientsPeriodChartOptions);
 
         $conversionRows = $this->buildFilteredQuery($request)
-            ->selectRaw("DATE_FORMAT(service_date, '%Y-%m') as period")
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period")
             ->selectRaw("SUM(CASE WHEN quoted = 'yes' THEN 1 ELSE 0 END) as quoted_count")
             ->selectRaw("SUM(CASE WHEN closed = 'yes' THEN 1 ELSE 0 END) as closed_count")
-            ->whereNotNull('service_date')
+            ->whereNotNull('created_at')
             ->groupBy('period')
             ->orderBy('period')
             ->get();
@@ -404,20 +404,20 @@ class DailyTrackingController extends Controller
                 try {
                     $startDate = Carbon::createFromFormat('d/m/Y', trim($range[0]))->toDateString();
                     $endDate = Carbon::createFromFormat('d/m/Y', trim($range[1]))->toDateString();
-                    $query->whereBetween('service_date', [$startDate, $endDate]);
+                    $query->whereBetween('created_at', [$startDate, $endDate]);
                 } catch (\Exception $e) {
                     // Ignore invalid date range and keep remaining filters.
                 }
             }
         } else {
             if ($request->filled('from')) {
-                $query->whereDate('service_date', '>=', (string) $request->from);
+                $query->whereDate('created_at', '>=', (string) $request->from);
             }
             if ($request->filled('to')) {
-                $query->whereDate('service_date', '<=', (string) $request->to);
+                $query->whereDate('created_at', '<=', (string) $request->to);
             }
             if ($request->filled('service_date')) {
-                $query->whereDate('service_date', (string) $request->service_date);
+                $query->whereDate('created_at', (string) $request->service_date);
             }
         }
 
@@ -497,7 +497,7 @@ class DailyTrackingController extends Controller
 
         $dateRange = $this->parseDateRange((string) $request->input('date_range', ''));
         if ($dateRange !== null) {
-            $conditions[] = "service_date BETWEEN '{$dateRange['start']}' AND '{$dateRange['end']}'";
+            $conditions[] = "created_at BETWEEN '{$dateRange['start']}' AND '{$dateRange['end']}'";
         }
 
         return implode(' AND ', $conditions);
