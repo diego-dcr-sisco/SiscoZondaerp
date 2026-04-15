@@ -39,6 +39,7 @@
                         </ul>
                     </div>
                 </div>
+                <div class="mb-3 d-none" id="file-size-alert"></div>
 
                 <input type="hidden" name="path" value="{{ $data['root_path'] }}">
 
@@ -57,6 +58,8 @@
         const dropArea = $('#dropArea');
         const fileInput = $('#fileInput');
         const fileList = $('#file-list');
+        const fileSizeAlert = $('#file-size-alert');
+        const maxFileSize = 5 * 1024 * 1024;
         let currentFiles = []; // Mantener un registro de los archivos actuales
         let isSubmitting = false;
 
@@ -83,6 +86,7 @@
             isSubmitting = false;
             $('#btnUpload').prop('disabled', false).html('{{ __('buttons.upload') }}');
             currentFiles = [];
+            clearSizeWarnings();
             updateFileInput();
             updateFileList();
         });
@@ -125,8 +129,14 @@
         // Función para agregar archivos manteniendo los existentes
         function addFiles(newFiles) {
             const filesToAdd = Array.from(newFiles);
+            const oversizedFiles = [];
 
             filesToAdd.forEach(newFile => {
+                if (newFile.size > maxFileSize) {
+                    oversizedFiles.push(newFile);
+                    return;
+                }
+
                 // Verificar si el archivo ya existe
                 const exists = currentFiles.some(existingFile =>
                     existingFile.name == newFile.name &&
@@ -139,8 +149,33 @@
                 }
             });
 
+            if (oversizedFiles.length > 0) {
+                renderSizeWarnings(oversizedFiles);
+            } else {
+                clearSizeWarnings();
+            }
+
             updateFileInput();
             updateFileList();
+        }
+
+        function renderSizeWarnings(oversizedFiles) {
+            const listItems = oversizedFiles.map(file =>
+                `<li><strong>${file.name}</strong>: ${formatFileSize(file.size)} (máximo permitido: 5 MB)</li>`
+            ).join('');
+
+            fileSizeAlert
+                .removeClass('d-none')
+                .html(
+                    `<div class="alert alert-warning mb-0" role="alert">
+                        <strong>Algunos archivos no se agregaron por tamaño:</strong>
+                        <ul class="mb-0 mt-2">${listItems}</ul>
+                    </div>`
+                );
+        }
+
+        function clearSizeWarnings() {
+            fileSizeAlert.addClass('d-none').empty();
         }
 
         // Actualizar el input file con los archivos actuales
