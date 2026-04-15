@@ -48,6 +48,19 @@
                                 .nav-tabs .nav-link i {
                                     font-size: 1.1em;
                                 }
+
+                                .charts-modal-dialog {
+                                    max-width: 1200px;
+                                }
+
+                                .charts-modal-body {
+                                    max-height: 75vh;
+                                    overflow-y: auto;
+                                }
+
+                                .charts-modal-card .card-body {
+                                    min-height: 320px;
+                                }
                             </style>
 
                             <div class="container-fluid font-small p-3">
@@ -93,7 +106,7 @@
                                     <div class="dropdown">
                                         <button class="btn btn-success btn-sm dropdown-toggle" type="button"
                                             data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bi bi-file-earmark-excel"></i> Reportes
+                                            <i class="bi bi-stars"></i> Funciones especiales
                                         </button>
                                         <ul class="dropdown-menu">
                                             <li>
@@ -102,28 +115,29 @@
                                                     Exportar Excel
                                                 </button>
                                             </li>
+                                            <li>
+                                                <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                                                    data-bs-target="#chartsModal">
+                                                    Gráficas
+                                                </button>
+                                            </li>
                                         </ul>
                                     </div>
-
-                                    <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal"
-                                        data-bs-target="#chartsModal">
-                                        <i class="bi bi-graph-up"></i> Gráficas
-                                    </button>
                                 </div>
                                 {{-- Modal de Gráficas --}}
                                 <div class="modal fade" id="chartsModal" tabindex="-1"
                                     aria-labelledby="chartsModalLabel" aria-hidden="true">
-                                    <div class="modal-dialog modal-fullscreen">
+                                    <div class="modal-dialog modal-xl modal-dialog-scrollable charts-modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header">
                                                 <h5 class="modal-title" id="chartsModalLabel">Gráficas de análisis</h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"
                                                     aria-label="Close"></button>
                                             </div>
-                                            <div class="modal-body" style="overflow-y: auto;">
+                                            <div class="modal-body charts-modal-body">
                                                 <div class="row g-3">
                                                     <div class="col-lg-6">
-                                                        <div class="card h-100 shadow-sm">
+                                                        <div class="card h-100 shadow-sm charts-modal-card">
                                                             <div class="card-header bg-white fw-semibold">
                                                                 1) Medio de contacto con mayor cantidad
                                                             </div>
@@ -133,7 +147,7 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-6">
-                                                        <div class="card h-100 shadow-sm">
+                                                        <div class="card h-100 shadow-sm charts-modal-card">
                                                             <div class="card-header bg-white fw-semibold">
                                                                 2) Grafica de montos ($)
                                                             </div>
@@ -143,7 +157,7 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-6">
-                                                        <div class="card h-100 shadow-sm">
+                                                        <div class="card h-100 shadow-sm charts-modal-card">
                                                             <div class="card-header bg-white fw-semibold">
                                                                 3) Clientes ingresados por semana/mes en un anio
                                                             </div>
@@ -153,7 +167,7 @@
                                                         </div>
                                                     </div>
                                                     <div class="col-lg-6">
-                                                        <div class="card h-100 shadow-sm">
+                                                        <div class="card h-100 shadow-sm charts-modal-card">
                                                             <div class="card-header bg-white fw-semibold">
                                                                 4) Tasa de conversion (%)
                                                             </div>
@@ -307,6 +321,7 @@
                                                 <th>Cerrado</th>
                                                 <th>Monto</th>
                                                 <th>Fecha servicio</th>
+                                                <th>Creado</th>
                                                 <th></th>
                                             </tr>
                                         </thead>
@@ -344,6 +359,7 @@
                                                     <td>{{ $closedLabel }}</td>
                                                     <td>{{ $amount ? '$' . number_format((float) $amount, 2) : '-' }}</td>
                                                     <td>{{ optional($item->service_date)->format('d/m/Y') ?? '-' }}</td>
+                                                    <td>{{ optional($item->created_at)->format('d/m/Y H:i') ?? '-' }}</td>
                                                     <td class="py-2 px-2">
                                                         <div
                                                             class="d-flex gap-1 align-items-center justify-content-center flex-wrap">
