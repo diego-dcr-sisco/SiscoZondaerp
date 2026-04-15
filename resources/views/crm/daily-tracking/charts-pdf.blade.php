@@ -8,68 +8,89 @@
         body {
             font-family: Arial, sans-serif;
             color: #333;
-            margin: 20px;
-            line-height: 1.6;
+            margin: 15px;
+            line-height: 1.4;
+            font-size: 10px;
         }
         
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #007bff;
-            padding-bottom: 15px;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #dc3545;
+            padding-bottom: 10px;
         }
         
         .header h1 {
             margin: 0;
-            color: #007bff;
-            font-size: 24px;
+            color: #dc3545;
+            font-size: 18px;
         }
         
         .header p {
-            margin: 5px 0 0 0;
+            margin: 3px 0 0 0;
             color: #666;
-            font-size: 12px;
+            font-size: 9px;
         }
         
         .filters-info {
             background: #f8f9fa;
-            padding: 10px;
-            margin-bottom: 20px;
-            border-left: 4px solid #007bff;
-            font-size: 11px;
+            padding: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #dc3545;
+            font-size: 9px;
             color: #555;
         }
         
-        .filters-info strong {
-            color: #333;
-        }
-        
         .chart-section {
-            margin-bottom: 40px;
+            margin-bottom: 25px;
             page-break-inside: avoid;
         }
         
         .chart-title {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
-            color: #007bff;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
+            color: #dc3545;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #dc3545;
+            padding-bottom: 4px;
         }
         
         .chart-container {
             background: white;
-            padding: 10px;
+            padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
-            min-height: 250px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+            margin-bottom: 5px;
+        }
+        
+        table th {
+            background: #f0f0f0;
+            color: #333;
+            padding: 5px;
+            text-align: left;
+            border-bottom: 2px solid #ddd;
+            font-weight: bold;
+        }
+        
+        table td {
+            padding: 4px 5px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        table tr:nth-child(even) {
+            background: #f9f9f9;
         }
         
         .row {
             display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 15px;
             flex-wrap: wrap;
         }
         
@@ -80,11 +101,24 @@
         
         .footer {
             text-align: center;
-            margin-top: 40px;
-            padding-top: 10px;
+            margin-top: 20px;
+            padding-top: 8px;
             border-top: 1px solid #ddd;
-            font-size: 10px;
+            font-size: 8px;
             color: #999;
+        }
+        
+        .stat-box {
+            background: #f0f0f0;
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 3px solid #dc3545;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: #dc3545;
+            font-size: 11px;
         }
     </style>
 </head>
@@ -100,77 +134,63 @@
         </div>
     @endif
     
+    {{-- Chart 1: Contact Methods --}}
+    <div class="chart-section">
+        <div class="chart-title">1) Medio de contacto con mayor cantidad</div>
+        <div class="chart-container">
+            {!! $contactMethodChart->renderHtml() !!}
+        </div>
+    </div>
+    
+    {{-- Chart 2: Amounts --}}
     <div class="row">
         <div class="col-50">
             <div class="chart-section">
-                <div class="chart-title">1) Medio de contacto con mayor cantidad</div>
-                <div class="chart-container">
-                    {!! $contactMethodChart->renderHtml() !!}
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-50">
-            <div class="chart-section">
-                <div class="chart-title">2) Grafica de montos ($)</div>
+                <div class="chart-title">2) Montos facturados ($) por periodo</div>
                 <div class="chart-container">
                     {!! $amountsChart->renderHtml() !!}
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="row">
+        
         <div class="col-50">
             <div class="chart-section">
-                <div class="chart-title">3) Clientes ingresados por semana/mes en un año</div>
+                <div class="chart-title">3) Clientes ingresados por semana</div>
                 <div class="chart-container">
                     {!! $clientsPeriodChart->renderHtml() !!}
                 </div>
             </div>
         </div>
-        
-        <div class="col-50">
-            <div class="chart-section">
-                <div class="chart-title">4) Tasa de conversión (%)</div>
-                <div class="chart-container">
-                    <canvas id="dailyTrackingConversionChart" width="400" height="300"></canvas>
-                    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-                    <script>
-                        const ctx = document.getElementById('dailyTrackingConversionChart').getContext('2d');
-                        new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: {!! json_encode($conversionLabels) !!},
-                                datasets: [{
-                                    label: 'Tasa de conversión (%)',
-                                    data: {!! json_encode($conversionData) !!},
-                                    borderColor: '#28a745',
-                                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                                    tension: 0.4,
-                                    fill: true,
-                                    pointRadius: 4,
-                                    pointBackgroundColor: '#28a745'
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: true,
-                                plugins: {
-                                    legend: { display: true }
-                                },
-                                scales: {
-                                    y: {
-                                        type: 'linear',
-                                        position: 'left',
-                                        max: 100
-                                    }
-                                }
-                            }
-                        });
-                    </script>
-                </div>
-            </div>
+    </div>
+    
+    {{-- Chart 4: Conversion Rate --}}
+    <div class="chart-section">
+        <div class="chart-title">4) Tasa de Conversión por Período (%)</div>
+        <div class="chart-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Período</th>
+                        <th style="text-align: center;">Cotizados</th>
+                        <th style="text-align: center;">Cerrados</th>
+                        <th style="text-align: center;">Tasa (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($conversionData as $index => $rate)
+                        <tr>
+                            <td>{{ $conversionLabels[$index] ?? '-' }}</td>
+                            <td style="text-align: center;">{{ $conversionQuotedCounts[$index] ?? '-' }}</td>
+                            <td style="text-align: center;">{{ $conversionClosedCounts[$index] ?? '-' }}</td>
+                            <td style="text-align: center; font-weight: bold; color: #dc3545;">{{ $rate }}%</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #999;">Sin datos disponibles</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
     

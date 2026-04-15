@@ -618,6 +618,8 @@ class DailyTrackingController extends Controller
 
         $conversionLabels = [];
         $conversionData = [];
+        $conversionQuotedCounts = [];
+        $conversionClosedCounts = [];
         foreach ($conversionRows as $row) {
             $quotedCount = (int) $row->quoted_count;
             $closedCount = (int) $row->closed_count;
@@ -625,6 +627,8 @@ class DailyTrackingController extends Controller
 
             $conversionLabels[] = (string) $row->period;
             $conversionData[] = $conversionRate;
+            $conversionQuotedCounts[] = $quotedCount;
+            $conversionClosedCounts[] = $closedCount;
         }
 
         $html = view('crm.daily-tracking.charts-pdf', [
@@ -633,6 +637,8 @@ class DailyTrackingController extends Controller
             'clientsPeriodChart' => $clientsPeriodChart,
             'conversionLabels' => $conversionLabels,
             'conversionData' => $conversionData,
+            'conversionQuotedCounts' => $conversionQuotedCounts,
+            'conversionClosedCounts' => $conversionClosedCounts,
             'dateRange' => $chartDateRange,
         ])->render();
 
