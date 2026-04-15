@@ -539,8 +539,9 @@ class DailyTrackingController extends Controller
         $chartDateRange = $this->parseDateRange((string) $request->input('date_range', ''));
         $chartWhereRaw = $this->buildChartWhereRaw($request);
 
-        // Chart 1: Contact Methods - obtener datos crudos
-        $contactMethodsData = DailyTracking::whereRaw($chartWhereRaw)
+        // Chart 1: Contact Methods - obtener datos crudos (como texto plano sin hydration)
+        $contactMethodsRaw = DB::table('daily_trackings')
+            ->whereRaw($chartWhereRaw)
             ->selectRaw('contact_method, COUNT(*) as count')
             ->groupBy('contact_method')
             ->orderByRaw('COUNT(*) DESC')
@@ -552,6 +553,14 @@ class DailyTrackingController extends Controller
             'llamada' => 'Llamada',
             'cambaceo' => 'Cambaceo',
         ];
+
+        // Convertir a formato esperado
+        $contactMethodsData = $contactMethodsRaw->map(function ($item) {
+            return (object) [
+                'contact_method' => $item->contact_method,
+                'count' => $item->count,
+            ];
+        });
 
         // Chart 2: Amounts by period - obtener datos crudos
         $amountsData = DailyTracking::whereRaw($chartWhereRaw)
