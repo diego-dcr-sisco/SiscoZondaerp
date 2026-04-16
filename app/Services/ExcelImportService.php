@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
-use App\Imports\CommercialProspectsImport;
-use App\Imports\DailyTrackingImport;
+use App\Models\CommercialProspect;
+use App\Models\DailyTracking;
+use App\Models\Service;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Throwable;
 
 class ExcelImportService
@@ -23,12 +25,16 @@ class ExcelImportService
             'data' => [
                 'daily_tracking' => [
                     'inserted' => 0,
+                    'updated' => 0,
                     'skipped' => 0,
+                    'empty_rows' => 0,
                     'errors' => [],
                 ],
                 'commercial_prospects' => [
                     'inserted' => 0,
+                    'updated' => 0,
                     'skipped' => 0,
+                    'empty_rows' => 0,
                     'errors' => [],
                 ],
             ],
@@ -41,62 +47,95 @@ class ExcelImportService
         try {
             DB::beginTransaction();
 
-            // Importar hoja 1: Registro_Diario_CRM
-            Log::info('Iniciando importación de Registro_Diario_CRM');
-            $dailyTrackingImport = new DailyTrackingImport();
+            $spreadsheet = IOFactory::load($filePath);
+            Log::info('Archivo Excel cargado para importación', [
+                'file_path' => $filePath,
+                'sheets' => array_map(fn ($sheet) => $sheet->getTitle(), $spreadsheet->getAllSheets()),
+            ]);
 
-            try {
-                Excel::import($dailyTrackingImport, $filePath, null, \Maatwebsite\Excel\Excel::XLSX);
-                $result['data']['daily_tracking']['inserted'] = $dailyTrackingImport->getInsertedCount();
-                $result['data']['daily_tracking']['skipped'] = $dailyTrackingImport->getSkippedCount();
-                $result['data']['daily_tracking']['errors'] = $dailyTrackingImport->getErrors();
+            $dailySheet = $this->findSheetByName($spreadsheet->getAllSheets(), ['Registro_Diario_CRM']);
+            if (! $dailySheet) {
+                $dailySheet = $this->findFirstDailyTrackingSheet($spreadsheet->getAllSheets());
+            }
+            $prospectsSheet = $this->findSheetByName($spreadsheet->getAllSheets(), ['PROSPECTOS COMERCIALES']);
 
-                Log::info('Hoja Registro_Diario_CRM importada', [
-                    'inserted' => $result['data']['daily_tracking']['inserted'],
-                    'skipped' => $result['data']['daily_tracking']['skipped'],
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Error importando Registro_Diario_CRM: ' . $e->getMessage());
-                $result['data']['daily_tracking']['errors'][] = 'Error general: ' . $e->getMessage();
+            if (! $dailySheet && ! $prospectsSheet) {
+                throw new \RuntimeException('No se encontraron las hojas esperadas: Registro_Diario_CRM y/o PROSPECTOS COMERCIALES.');
             }
 
-            // Importar hoja 2: PROSPECTOS COMERCIALES
-            Log::info('Iniciando importación de PROSPECTOS COMERCIALES');
-            $commercialProspectsImport = new CommercialProspectsImport();
+            if ($dailySheet) {
+                Log::info('Iniciando importación de Registro_Diario_CRM');
+                $dailyResult = $this->importDailyTrackingSheet($dailySheet);
+                $result['data']['daily_tracking'] = $dailyResult;
 
-            try {
-                Excel::import($commercialProspectsImport, $filePath, null, \Maatwebsite\Excel\Excel::XLSX);
-                $result['data']['commercial_prospects']['inserted'] = $commercialProspectsImport->getInsertedCount();
-                $result['data']['commercial_prospects']['skipped'] = $commercialProspectsImport->getSkippedCount();
-                $result['data']['commercial_prospects']['errors'] = $commercialProspectsImport->getErrors();
+                Log::info('Hoja Registro_Diario_CRM importada', [
+                    'inserted' => $dailyResult['inserted'],
+                    'updated' => $dailyResult['updated'],
+                    'skipped' => $dailyResult['skipped'],
+                    'errors_count' => count($dailyResult['errors']),
+                ]);
+            } else {
+                $result['data']['daily_tracking']['errors'][] = 'No se encontró la hoja Registro_Diario_CRM.';
+                Log::warning('No se encontró la hoja Registro_Diario_CRM en el archivo importado.');
+            }
+
+            if ($prospectsSheet) {
+                Log::info('Iniciando importación de PROSPECTOS COMERCIALES');
+                $prospectResult = $this->importCommercialProspectsSheet($prospectsSheet);
+                $result['data']['commercial_prospects'] = $prospectResult;
 
                 Log::info('Hoja PROSPECTOS COMERCIALES importada', [
-                    'inserted' => $result['data']['commercial_prospects']['inserted'],
-                    'skipped' => $result['data']['commercial_prospects']['skipped'],
+                    'inserted' => $prospectResult['inserted'],
+                    'updated' => $prospectResult['updated'],
+                    'skipped' => $prospectResult['skipped'],
+                    'errors_count' => count($prospectResult['errors']),
                 ]);
-            } catch (\Exception $e) {
-                Log::error('Error importando PROSPECTOS COMERCIALES: ' . $e->getMessage());
-                $result['data']['commercial_prospects']['errors'][] = 'Error general: ' . $e->getMessage();
+            } else {
+                Log::info('No se encontró la hoja PROSPECTOS COMERCIALES en el archivo importado. Se omite su importación.');
             }
 
             DB::commit();
 
-            $totalRecords = $result['data']['daily_tracking']['inserted'] + $result['data']['commercial_prospects']['inserted'];
+            $totalRecords =
+                $result['data']['daily_tracking']['inserted'] +
+                $result['data']['daily_tracking']['updated'] +
+                $result['data']['commercial_prospects']['inserted'] +
+                $result['data']['commercial_prospects']['updated'];
+            $totalEmptyRows =
+                $result['data']['daily_tracking']['empty_rows'] +
+                $result['data']['commercial_prospects']['empty_rows'];
             $totalErrors = count($result['data']['daily_tracking']['errors']) + count($result['data']['commercial_prospects']['errors']);
 
             if ($totalRecords > 0) {
                 $result['success'] = true;
-                $result['message'] = "Importación completada: {$totalRecords} registros insertados";
+                $result['message'] = "Importación completada: {$totalRecords} registros procesados";
+
+                if ($totalEmptyRows > 0) {
+                    $result['message'] .= " ({$totalEmptyRows} líneas vacías omitidas)";
+                }
 
                 if ($totalErrors > 0) {
                     $result['message'] .= " ({$totalErrors} errores)";
                 }
             } else {
-                $result['message'] = 'No se insertaron registros. Revisa los errores para más detalles.';
+                if ($totalEmptyRows > 0 && $totalErrors === 0) {
+                    $result['message'] = "No se insertaron registros. Se detectaron {$totalEmptyRows} líneas vacías.";
+                } else {
+                    $result['message'] = 'No se insertaron registros. Revisa los errores para más detalles.';
+                }
             }
 
             $result['total_records'] = $totalRecords;
-            $result['import_time'] = Carbon::now()->diffInSeconds($startTime);
+            $result['import_time'] = abs($startTime->diffInSeconds(Carbon::now()));
+
+            Log::info('Resumen importación Excel', [
+                'daily_tracking' => $result['data']['daily_tracking'],
+                'commercial_prospects' => $result['data']['commercial_prospects'],
+                'total_records' => $result['total_records'],
+                'total_empty_rows' => $totalEmptyRows,
+                'import_time_seconds' => $result['import_time'],
+                'note' => 'Los prospectos comerciales se guardan en commercial_prospects y no aparecen en el index de daily-trackings.',
+            ]);
 
         } catch (Throwable $e) {
             DB::rollBack();
@@ -109,5 +148,574 @@ class ExcelImportService
         }
 
         return $result;
+    }
+
+    /**
+     * @param array<int, Worksheet> $sheets
+     */
+    private function findSheetByName(array $sheets, array $names): ?Worksheet
+    {
+        $normalizedNames = array_map(fn ($name) => $this->normalizeHeader((string) $name), $names);
+
+        foreach ($sheets as $sheet) {
+            if (in_array($this->normalizeHeader($sheet->getTitle()), $normalizedNames, true)) {
+                return $sheet;
+            }
+        }
+
+        return null;
+    }
+
+    private function importDailyTrackingSheet(Worksheet $sheet): array
+    {
+        $result = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'empty_rows' => 0, 'errors' => []];
+        $rows = $sheet->toArray(null, true, true, true);
+
+        if (count($rows) < 2) {
+            $result['errors'][] = 'La hoja Registro_Diario_CRM no contiene datos.';
+            return $result;
+        }
+
+        $headers = $this->extractHeaders((array) reset($rows));
+        $serviceId = Service::query()->value('id');
+
+        if (! $serviceId) {
+            $result['errors'][] = 'No existe un servicio predeterminado en la base de datos.';
+            return $result;
+        }
+
+        $headerMap = [
+            'id' => 'id',
+            'service_id' => 'service_id',
+            'customer_name' => 'customer_name',
+            'phone' => 'phone',
+            'customer_type' => 'customer_type',
+            'state' => 'state',
+            'city' => 'city',
+            'address' => 'address',
+            'contact_method' => 'contact_method',
+            'status' => 'status',
+            'service_type' => 'service_type',
+            'responded' => 'responded',
+            'quoted' => 'quoted',
+            'closed' => 'closed',
+            'has_coverage' => 'has_coverage',
+            'quoted_amount' => 'quoted_amount',
+            'billed_amount' => 'billed_amount',
+            'payment_method' => 'payment_method',
+            'invoice' => 'invoice',
+            'service_date' => 'service_date',
+            'quote_sent_date' => 'quote_sent_date',
+            'close_date' => 'close_date',
+            'payment_date' => 'payment_date',
+            'follow_up_date' => 'follow_up_date',
+            'service_time' => 'service_time',
+            'notes' => 'notes',
+            'status_updated_at' => 'status_updated_at',
+            'status_updated_by' => 'status_updated_by',
+            'fecha' => 'service_date',
+            'cliente_empresa' => 'customer_name',
+            'tipo_de_cliente' => 'customer_type',
+            'telefono' => 'phone',
+            'estado_ciudad' => 'city',
+            'medio_de_contacto' => 'contact_method',
+            'contesto' => 'responded',
+            'disc' => 'notes',
+            'estatus' => 'status',
+            'se_cotizo' => 'quoted',
+            'monto_cotizado' => 'quoted_amount',
+            'se_cerro_el_servicio' => 'closed',
+            'monto_facturado' => 'billed_amount',
+            'fecha_cierre' => 'close_date',
+            'fecha_recibi_pago_servicio' => 'payment_date',
+            'plaga' => 'notes',
+            'distancia' => 'notes',
+            'observaciones' => 'notes',
+            'hora' => 'service_time',
+            'domicilio' => 'address',
+            'concenso' => 'has_coverage',
+            'tipo_de_servicio' => 'service_type',
+            'factura' => 'invoice',
+            'metodo_pago' => 'payment_method',
+        ];
+
+        $rowNumber = 1;
+        foreach (array_slice($rows, 1) as $row) {
+            $rowNumber++;
+
+            try {
+                $mapped = $this->mapRowByHeader((array) $row, $headers, $headerMap);
+
+                if ($this->isRowEmpty($mapped)) {
+                    $result['empty_rows']++;
+                    continue;
+                }
+
+                if ($this->isDailyTrackingSemanticallyEmpty($mapped)) {
+                    $result['empty_rows']++;
+                    continue;
+                }
+
+                if (empty($mapped['customer_name'])) {
+                    throw new \RuntimeException('Cliente/Empresa vacío.');
+                }
+
+                unset($mapped['id'], $mapped['created_at'], $mapped['updated_at']);
+
+                $mapped['service_id'] = $serviceId;
+                $mapped['customer_type'] = $this->normalizeCustomerType($mapped['customer_type'] ?? null) ?? 'comercial';
+                $mapped['service_type'] = $this->normalizeServiceType($mapped['service_type'] ?? null) ?? 'comercial';
+                $mapped['contact_method'] = $this->normalizeContactMethod($mapped['contact_method'] ?? null);
+                $mapped['status'] = $this->normalizeStatus($mapped['status'] ?? null) ?? 'survey';
+                $mapped['quoted'] = $this->normalizeQuoted($mapped['quoted'] ?? null) ?? 'pending';
+                $mapped['closed'] = $this->normalizeClosed($mapped['closed'] ?? null) ?? 'pending';
+                $mapped['responded'] = $this->toBoolean($mapped['responded'] ?? false);
+                $mapped['has_coverage'] = $this->toBoolean($mapped['has_coverage'] ?? false);
+
+                if (empty($mapped['contact_method'])) {
+                    $mapped['contact_method'] = 'llamada';
+                }
+
+                foreach (['service_date', 'close_date', 'payment_date', 'quote_sent_date', 'follow_up_date'] as $dateField) {
+                    if (isset($mapped[$dateField]) && $mapped[$dateField] !== '') {
+                        $mapped[$dateField] = $this->parseDate($mapped[$dateField]);
+                    }
+                }
+
+                if (isset($mapped['service_time']) && $mapped['service_time'] !== '') {
+                    $mapped['service_time'] = $this->parseTime($mapped['service_time']);
+                }
+
+                $record = DailyTracking::updateOrCreate(
+                    [
+                        'customer_name' => (string) $mapped['customer_name'],
+                        'service_date' => $mapped['service_date'] ?? now()->toDateString(),
+                    ],
+                    $mapped
+                );
+
+                if ($record->wasRecentlyCreated) {
+                    $result['inserted']++;
+                } else {
+                    $result['updated']++;
+                }
+            } catch (\Throwable $e) {
+                $result['errors'][] = "Fila {$rowNumber}: {$e->getMessage()}";
+                $result['skipped']++;
+                $this->logSkippedRow('daily_tracking', $rowNumber, $e->getMessage(), (array) $row);
+            }
+        }
+
+        return $result;
+    }
+
+    private function importCommercialProspectsSheet(Worksheet $sheet): array
+    {
+        $result = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'empty_rows' => 0, 'errors' => []];
+        $rows = $sheet->toArray(null, true, true, true);
+
+        if (count($rows) < 2) {
+            $result['errors'][] = 'La hoja PROSPECTOS COMERCIALES no contiene datos.';
+            return $result;
+        }
+
+        $headers = $this->extractHeaders((array) reset($rows));
+        $headerMap = [
+            'nombre_comercial' => 'commercial_name',
+            'fecha' => 'date',
+            'tipo_de_comercio' => 'commerce_type',
+            'cotizacion' => 'quotation_status',
+            'cerro_o_motivo_de_no_cierre' => 'close_reason',
+            'medio_de_contacto' => 'contact_method',
+            'fecha_programada' => 'scheduled_date',
+        ];
+        $serviceId = Service::query()->value('id');
+
+        $rowNumber = 1;
+        foreach (array_slice($rows, 1) as $row) {
+            $rowNumber++;
+
+            try {
+                $mapped = $this->mapRowByHeader((array) $row, $headers, $headerMap);
+
+                if ($this->isRowEmpty($mapped)) {
+                    $result['empty_rows']++;
+                    continue;
+                }
+
+                if (empty($mapped['commercial_name'])) {
+                    throw new \RuntimeException('Nombre comercial vacío.');
+                }
+
+                if (isset($mapped['date']) && $mapped['date'] !== '') {
+                    $mapped['date'] = $this->parseDate($mapped['date']);
+                }
+
+                if (isset($mapped['scheduled_date']) && $mapped['scheduled_date'] !== '') {
+                    $mapped['scheduled_date'] = $this->parseDate($mapped['scheduled_date']);
+                }
+
+                $record = CommercialProspect::updateOrCreate(
+                    ['commercial_name' => (string) $mapped['commercial_name']],
+                    $mapped
+                );
+
+                if ($serviceId) {
+                    $this->syncProspectToDailyTracking($mapped, (int) $serviceId);
+                }
+
+                if ($record->wasRecentlyCreated) {
+                    $result['inserted']++;
+                } else {
+                    $result['updated']++;
+                }
+            } catch (\Throwable $e) {
+                $result['errors'][] = "Fila {$rowNumber}: {$e->getMessage()}";
+                $result['skipped']++;
+                $this->logSkippedRow('commercial_prospects', $rowNumber, $e->getMessage(), (array) $row);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array<string, mixed> $mappedProspect
+     */
+    private function syncProspectToDailyTracking(array $mappedProspect, int $serviceId): void
+    {
+        $serviceDate =
+            $mappedProspect['date']
+            ?? $mappedProspect['scheduled_date']
+            ?? now()->toDateString();
+
+        $contactMethod = $this->normalizeContactMethod($mappedProspect['contact_method'] ?? null) ?? 'llamada';
+        $status = $this->normalizeStatus($mappedProspect['quotation_status'] ?? null) ?? 'survey';
+
+        $dailyData = [
+            'service_id' => $serviceId,
+            'customer_name' => (string) $mappedProspect['commercial_name'],
+            'service_date' => $serviceDate,
+            'customer_type' => $this->normalizeCustomerType($mappedProspect['commerce_type'] ?? null) ?? 'comercial',
+            'service_type' => 'comercial',
+            'contact_method' => $contactMethod,
+            'status' => $status,
+            'quoted' => 'pending',
+            'closed' => 'pending',
+            'responded' => false,
+            'has_coverage' => false,
+            'notes' => $mappedProspect['close_reason'] ?? null,
+        ];
+
+        DailyTracking::updateOrCreate(
+            [
+                'customer_name' => $dailyData['customer_name'],
+                'service_date' => $dailyData['service_date'],
+            ],
+            $dailyData
+        );
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, string>
+     */
+    private function extractHeaders(array $row): array
+    {
+        $headers = [];
+        foreach ($row as $column => $value) {
+            $headers[(string) $column] = $this->normalizeHeader((string) ($value ?? ''));
+        }
+
+        return $headers;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @param array<string, string> $headers
+     * @param array<string, string> $headerMap
+     * @return array<string, mixed>
+     */
+    private function mapRowByHeader(array $row, array $headers, array $headerMap): array
+    {
+        $mapped = [];
+
+        foreach ($row as $column => $value) {
+            $header = $headers[(string) $column] ?? '';
+            if ($header === '' || $value === null || $value === '') {
+                continue;
+            }
+
+            foreach ($headerMap as $excelPattern => $dbField) {
+                if (strpos(str_replace('_', '', $header), str_replace('_', '', $excelPattern)) !== false) {
+                    $mapped[$dbField] = $value;
+                    break;
+                }
+            }
+        }
+
+        return $mapped;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function isRowEmpty(array $row): bool
+    {
+        foreach ($row as $value) {
+            if ($value !== null && $value !== '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function normalizeHeader(string $header): string
+    {
+        $header = strtolower(trim($header));
+        return (string) preg_replace('/[^a-z0-9]+/i', '_', $header);
+    }
+
+    /**
+     * Considera fila vacía cuando sólo tiene banderas/valores por defecto pero no datos de cliente.
+     * @param array<string, mixed> $mappedRow
+     */
+    private function isDailyTrackingSemanticallyEmpty(array $mappedRow): bool
+    {
+        $meaningfulKeys = [
+            'customer_name',
+            'phone',
+            'city',
+            'address',
+            'service_date',
+            'quoted_amount',
+            'billed_amount',
+            'notes',
+        ];
+
+        foreach ($meaningfulKeys as $key) {
+            $value = $mappedRow[$key] ?? null;
+            if ($value !== null && trim((string) $value) !== '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function toBoolean(mixed $value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        $value = strtolower(trim((string) $value));
+        $value = str_replace(['á', 'é', 'í', 'ó', 'ú'], ['a', 'e', 'i', 'o', 'u'], $value);
+        $value = preg_replace('/\s+/', ' ', $value) ?? $value;
+
+        if (in_array($value, ['yes', 'si', 'true', '1', 'verdadero'], true)) {
+            return true;
+        }
+
+        if (in_array($value, ['no', 'false', '0', 'falso', 'no aplica', 'n/a', 'na'], true)) {
+            return false;
+        }
+
+        return false;
+    }
+
+    private function normalizeContactMethod(mixed $value): ?string
+    {
+        $raw = strtoupper(trim((string) $value));
+
+        if ($raw === '') {
+            return null;
+        }
+
+        return match (true) {
+            str_contains($raw, 'GOOGLE') => 'google',
+            str_contains($raw, 'FACEBOOK'), $raw === 'FB', str_contains($raw, 'INSTAGRAM'), str_contains($raw, 'PAGINA'), str_contains($raw, 'WEB') => 'pagina',
+            str_contains($raw, 'LLAMADA'), str_contains($raw, 'TELEFONO') => 'llamada',
+            str_contains($raw, 'CAMBACEO') => 'cambaceo',
+            str_contains($raw, 'RECOMENDACION'), str_contains($raw, 'PROSPECTO') => 'llamada',
+            default => null,
+        };
+    }
+
+    private function normalizeCustomerType(mixed $value): ?string
+    {
+        $raw = strtoupper(trim((string) $value));
+
+        if ($raw === '') {
+            return null;
+        }
+
+        $raw = rtrim($raw, " /\\");
+
+        return match (true) {
+            str_contains($raw, 'DOMESTICO') => 'domestico',
+            str_contains($raw, 'COMERCIAL') => 'comercial',
+            str_contains($raw, 'INDUTRIAL'), str_contains($raw, 'INDUSTRIAL'), str_contains($raw, 'PLANTA') => 'industrial',
+            default => null,
+        };
+    }
+
+    private function normalizeServiceType(mixed $value): ?string
+    {
+        $raw = strtoupper(trim((string) $value));
+
+        if ($raw === '') {
+            return null;
+        }
+
+        $raw = rtrim($raw, " /\\");
+
+        return match (true) {
+            str_contains($raw, 'COMERCIAL') => 'comercial',
+            str_contains($raw, 'INDUTRIAL'), str_contains($raw, 'INDUSTRIAL'), str_contains($raw, 'PLANTA') => 'industrial',
+            default => null,
+        };
+    }
+
+    private function normalizeStatus(mixed $value): ?string
+    {
+        $raw = strtoupper(trim((string) $value));
+
+        if ($raw === '') {
+            return null;
+        }
+
+        return match (true) {
+            in_array($raw, ['CERRADO', 'CLOSED'], true) => 'closed',
+            in_array($raw, ['CANCELLED', 'CANCELED', 'CANCELADO'], true) => 'no_requiere',
+            in_array($raw, ['NO', 'N/C', 'NO REQUIERE'], true) => 'no_requiere',
+            default => 'survey',
+        };
+    }
+
+    /**
+     * @param array<int, Worksheet> $sheets
+     */
+    private function findFirstDailyTrackingSheet(array $sheets): ?Worksheet
+    {
+        foreach ($sheets as $sheet) {
+            $rows = $sheet->toArray(null, true, true, true);
+            if (count($rows) === 0) {
+                continue;
+            }
+
+            $headers = $this->extractHeaders((array) reset($rows));
+            $values = array_values($headers);
+
+            if (in_array('customer_name', $values, true) && in_array('service_date', $values, true)) {
+                return $sheet;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeQuoted(mixed $value): ?string
+    {
+        $raw = strtoupper(trim((string) $value));
+
+        if ($raw === '') {
+            return null;
+        }
+
+        return match (true) {
+            in_array($raw, ['SI', 'SÍ', 'YES', '1', 'TRUE'], true) => 'yes',
+            default => 'pending',
+        };
+    }
+
+    private function normalizeClosed(mixed $value): ?string
+    {
+        $raw = strtoupper(trim((string) $value));
+
+        if ($raw === '') {
+            return null;
+        }
+
+        return match (true) {
+            in_array($raw, ['SI', 'SÍ', 'YES', '1', 'TRUE'], true) => 'yes',
+            in_array($raw, ['NO', '0', 'FALSE'], true) => 'no',
+            default => 'pending',
+        };
+    }
+
+    private function parseDate(mixed $dateValue): ?string
+    {
+        if ($dateValue === null || $dateValue === '') {
+            return null;
+        }
+
+        if (is_numeric($dateValue)) {
+            try {
+                return Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $dateValue))->toDateString();
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        try {
+            return Carbon::parse((string) $dateValue)->toDateString();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function parseTime(mixed $timeValue): ?string
+    {
+        if ($timeValue === null || $timeValue === '') {
+            return null;
+        }
+
+        if (is_numeric($timeValue)) {
+            try {
+                return Carbon::instance(\PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject((float) $timeValue))->format('H:i:s');
+            } catch (\Throwable) {
+                return null;
+            }
+        }
+
+        try {
+            return Carbon::parse((string) $timeValue)->format('H:i:s');
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     */
+    private function logSkippedRow(string $sheet, int $rowNumber, string $reason, array $row): void
+    {
+        Log::warning('Fila omitida en importación de Excel', [
+            'sheet' => $sheet,
+            'row_number' => $rowNumber,
+            'reason' => $reason,
+            'row_data' => $this->sanitizeRowForLog($row),
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, scalar|null>
+     */
+    private function sanitizeRowForLog(array $row): array
+    {
+        $sanitized = [];
+
+        foreach ($row as $key => $value) {
+            if (is_scalar($value) || $value === null) {
+                $sanitized[(string) $key] = $value;
+            } else {
+                $sanitized[(string) $key] = (string) json_encode($value);
+            }
+        }
+
+        return $sanitized;
     }
 }

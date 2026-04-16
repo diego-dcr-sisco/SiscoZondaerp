@@ -427,7 +427,7 @@ class DailyTrackingController extends Controller
                 $query->whereDate('created_at', '<=', (string) $request->to);
             }
             if ($request->filled('service_date')) {
-                $query->whereDate('created_at', (string) $request->service_date);
+                $query->whereDate('service_date', (string) $request->service_date);
             }
         }
 

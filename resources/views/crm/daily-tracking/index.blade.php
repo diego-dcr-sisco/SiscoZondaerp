@@ -116,6 +116,68 @@
                                         </ul>
                                     </div>
                                 </div>
+
+                                @if (session('import_result'))
+                                    @php
+                                        $importResult = session('import_result');
+                                        $daily = $importResult['daily_tracking'] ?? ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => []];
+                                        $prospects = $importResult['commercial_prospects'] ?? ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => []];
+                                    @endphp
+
+                                    <div class="alert alert-info border mb-3">
+                                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                                            <div>
+                                                <strong>Resumen de importación</strong><br>
+                                                <small class="text-muted">Los prospectos se guardan en la tabla de prospectos comerciales y no aparecen en esta tabla de actividades diarias.</small>
+                                            </div>
+                                            <div class="small text-muted">
+                                                Tiempo: {{ session('import_time', 0) }}s
+                                            </div>
+                                        </div>
+                                        <hr class="my-2">
+                                        <div class="row g-2">
+                                            <div class="col-md-6">
+                                                <div class="p-2 rounded bg-light border h-100">
+                                                    <strong>Registro_Diario_CRM</strong>
+                                                    <div class="small mt-1">
+                                                        Insertados: <strong>{{ $daily['inserted'] ?? 0 }}</strong> |
+                                                        Actualizados: <strong>{{ $daily['updated'] ?? 0 }}</strong> |
+                                                        Omitidos: <strong>{{ $daily['skipped'] ?? 0 }}</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="p-2 rounded bg-light border h-100">
+                                                    <strong>PROSPECTOS COMERCIALES</strong>
+                                                    <div class="small mt-1">
+                                                        Insertados: <strong>{{ $prospects['inserted'] ?? 0 }}</strong> |
+                                                        Actualizados: <strong>{{ $prospects['updated'] ?? 0 }}</strong> |
+                                                        Omitidos: <strong>{{ $prospects['skipped'] ?? 0 }}</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        @php
+                                            $dailyErrors = array_slice($daily['errors'] ?? [], 0, 5);
+                                            $prospectErrors = array_slice($prospects['errors'] ?? [], 0, 5);
+                                        @endphp
+
+                                        @if (!empty($dailyErrors) || !empty($prospectErrors))
+                                            <div class="mt-3">
+                                                <strong>Primeros errores detectados:</strong>
+                                                <ul class="mb-0 mt-1 small">
+                                                    @foreach ($dailyErrors as $error)
+                                                        <li>[Registro] {{ $error }}</li>
+                                                    @endforeach
+                                                    @foreach ($prospectErrors as $error)
+                                                        <li>[Prospectos] {{ $error }}</li>
+                                                    @endforeach
+                                                </ul>
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
                                 {{-- Filtros --}}
                                 <div class="border p-2 text-dark rounded mb-3 bg-light">
                                     <form method="GET" action="{{ route('crm.daily-tracking.index') }}">
