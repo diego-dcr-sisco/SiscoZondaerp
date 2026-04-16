@@ -98,8 +98,14 @@
                                         <ul class="dropdown-menu">
                                             <li>
                                                 <button type="button" class="dropdown-item" data-bs-toggle="modal"
+                                                    data-bs-target="#importDailyTrackingModal">
+                                                    <i class="bi bi-cloud-upload"></i> Importar Excel
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="button" class="dropdown-item" data-bs-toggle="modal"
                                                     data-bs-target="#exportDailyTrackingModal">
-                                                    Exportar Excel
+                                                    <i class="bi bi-cloud-download"></i> Exportar Excel
                                                 </button>
                                             </li>
                                             <li>
@@ -463,12 +469,110 @@
                                     </div>
                                 </div>
 
+                                {{-- Import Modal --}}
+                                <div class="modal fade" id="importDailyTrackingModal" data-bs-backdrop="static"
+                                    data-bs-keyboard="false" tabindex="-1"
+                                    aria-labelledby="importDailyTrackingModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-primary text-white">
+                                                <h5 class="modal-title" id="importDailyTrackingModalLabel">
+                                                    <i class="bi bi-cloud-upload"></i> Importar Excel
+                                                </h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <form method="POST" action="{{ route('crm.daily-tracking.import-excel') }}"
+                                                enctype="multipart/form-data" id="importExcelForm">
+                                                @csrf
+                                                <div class="modal-body">
+                                                    <div class="alert alert-info mb-3">
+                                                        <i class="bi bi-info-circle"></i>
+                                                        <strong>Instrucciones:</strong>
+                                                        <ul class="mb-0">
+                                                            <li>Archivo Excel con 2 hojas: "Registro_Diario_CRM" y "PROSPECTOS COMERCIALES"</li>
+                                                            <li>Formato: .xlsx o .csv (máximo 5MB)</li>
+                                                            <li>Los registros duplicados se actualizarán automáticamente</li>
+                                                        </ul>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Selecciona archivo</label>
+                                                        <div class="upload-zone border-2 border-dashed border-primary rounded p-4 text-center"
+                                                            id="uploadZone" style="cursor: pointer; background-color: #f0f7ff; transition: all 0.3s;">
+                                                            <div class="mb-2">
+                                                                <i class="bi bi-cloud-arrow-up text-primary" style="font-size: 2.5rem;"></i>
+                                                            </div>
+                                                            <p class="mb-1 fw-semibold text-primary">Arrastra tu archivo aquí o haz clic</p>
+                                                            <p class="small text-muted mb-0">Soporta: Excel (.xlsx, .xls) y CSV</p>
+                                                            <input type="file" name="excel_file" id="excelFileInput"
+                                                                class="d-none" accept=".xlsx,.xls,.csv">
+                                                        </div>
+                                                        <div class="mt-2" id="fileName" class="alert alert-success d-none">
+                                                            <i class="bi bi-check-circle"></i> <span id="fileNameText"></span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-outline-secondary"
+                                                        data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-primary" id="importBtn">
+                                                        <i class="bi bi-upload"></i> Importar datos
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
 
                             <script>
                                 const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
                                 const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+                                // Drag and drop para modal de importación
+                                const uploadZone = document.getElementById('uploadZone')
+                                const excelFileInput = document.getElementById('excelFileInput')
+                                const fileNameDisplay = document.getElementById('fileName')
+                                const fileNameText = document.getElementById('fileNameText')
+                                const importBtn = document.getElementById('importBtn')
 
+                                if (uploadZone) {
+                                    uploadZone.addEventListener('click', () => excelFileInput.click())
+
+                                    uploadZone.addEventListener('dragover', (e) => {
+                                        e.preventDefault()
+                                        uploadZone.style.borderColor = '#0056b3'
+                                        uploadZone.style.backgroundColor = '#e7f1ff'
+                                    })
+
+                                    uploadZone.addEventListener('dragleave', () => {
+                                        uploadZone.style.borderColor = '#0056cc'
+                                        uploadZone.style.backgroundColor = '#f0f7ff'
+                                    })
+
+                                    uploadZone.addEventListener('drop', (e) => {
+                                        e.preventDefault()
+                                        uploadZone.style.borderColor = '#0056cc'
+                                        uploadZone.style.backgroundColor = '#f0f7ff'
+                                        const files = e.dataTransfer.files
+                                        if (files.length > 0) {
+                                            excelFileInput.files = files
+                                            handleFileSelected()
+                                        }
+                                    })
+
+                                    excelFileInput.addEventListener('change', handleFileSelected)
+
+                                    function handleFileSelected() {
+                                        if (excelFileInput.files.length > 0) {
+                                            const file = excelFileInput.files[0]
+                                            fileNameText.textContent = '✓ ' + file.name
+                                            fileNameDisplay.classList.remove('d-none')
+                                            importBtn.disabled = false
+                                        }
+                                    }
+                                }
                                 $(document).ready(function() {
                                     $('input[name="date_range"]').daterangepicker({
                                         locale: {
