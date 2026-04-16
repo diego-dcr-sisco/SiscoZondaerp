@@ -13,8 +13,10 @@ use App\Enums\DailyTrackingServiceType;
 use App\Enums\DailyTrackingStatus;
 use App\Http\Requests\StoreDailyTrackingRequest;
 use App\Http\Requests\UpdateDailyTrackingRequest;
+use App\Http\Requests\ImportExcelRequest;
 use App\Models\DailyTracking;
 use App\Models\Service;
+use App\Services\ExcelImportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -73,7 +75,7 @@ class DailyTrackingController extends Controller
             'aggregate_function' => 'count',
             'chart_type' => 'bar',
             'where_raw' => $chartWhereRaw,
-            'chart_color' => '23, 162, 184',
+            'chart_color' => '10, 41, 134',
             'labels' => [
                 'google' => 'Google',
                 'pagina' => 'Pagina web',
@@ -92,7 +94,7 @@ class DailyTrackingController extends Controller
             'aggregate_field' => 'billed_amount',
             'chart_type' => 'bar',
             'where_raw' => $chartWhereRaw,
-            'chart_color' => '40, 167, 69',
+            'chart_color' => '183, 68, 83',
             'date_format' => 'Y-m',
             'continuous_time' => true,
         ];
@@ -117,7 +119,7 @@ class DailyTrackingController extends Controller
             'aggregate_function' => 'count',
             'chart_type' => 'line',
             'where_raw' => $chartWhereRaw,
-            'chart_color' => '0, 123, 255',
+            'chart_color' => '81, 42, 135',
             'date_format' => 'o-\\WW',
             'continuous_time' => true,
         ];
@@ -609,7 +611,116 @@ class DailyTrackingController extends Controller
             $conversionClosedCounts[] = $closedCount;
         }
 
-        $html = view('crm.daily-tracking.charts-pdf', [
+        $contactChartLabels = $contactMethodsData
+            ->map(fn ($item) => $contactMethodLabels[$item->contact_method] ?? (string) $item->contact_method)
+            ->values()
+            ->toArray();
+        $contactChartValues = $contactMethodsData
+            ->map(fn ($item) => (int) $item->count)
+            ->values()
+            ->toArray();
+
+        $amountChartLabels = $amountsData
+            ->pluck('period')
+            ->map(fn ($period) => (string) $period)
+            ->values()
+            ->toArray();
+        $amountChartValues = $amountsData
+            ->pluck('total')
+            ->map(fn ($value) => round((float) $value, 2))
+            ->values()
+            ->toArray();
+
+        $clientsChartLabels = $clientsData
+            ->map(fn ($item) => sprintf('%s-W%02d', (string) $item->year, (int) $item->week))
+            ->values()
+            ->toArray();
+        $clientsChartValues = $clientsData
+            ->pluck('count')
+            ->map(fn ($value) => (int) $value)
+            ->values()
+            ->toArray();
+
+        $contactChartImage = $this->generateQuickChartImage([
+            'type' => 'bar',
+            'data' => [
+                'labels' => $contactChartLabels,
+                'datasets' => [[
+                    'label' => 'Cantidad',
+                    'data' => $contactChartValues,
+                    'backgroundColor' => 'rgba(10,41,134,0.62)',
+                    'borderColor' => '#0A2986',
+                    'borderWidth' => 1,
+                ]],
+            ],
+            'options' => [
+                'plugins' => ['legend' => ['display' => false]],
+                'scales' => ['y' => ['beginAtZero' => true]],
+            ],
+        ]);
+
+        $amountChartImage = $this->generateQuickChartImage([
+            'type' => 'bar',
+            'data' => [
+                'labels' => $amountChartLabels,
+                'datasets' => [[
+                    'label' => 'Monto facturado',
+                    'data' => $amountChartValues,
+                    'backgroundColor' => 'rgba(183,68,83,0.58)',
+                    'borderColor' => '#B74453',
+                    'borderWidth' => 1,
+                ]],
+            ],
+            'options' => [
+                'plugins' => ['legend' => ['display' => false]],
+                'scales' => ['y' => ['beginAtZero' => true]],
+            ],
+        ]);
+
+        $clientsChartImage = $this->generateQuickChartImage([
+            'type' => 'line',
+            'data' => [
+                'labels' => $clientsChartLabels,
+                'datasets' => [[
+                    'label' => 'Clientes',
+                    'data' => $clientsChartValues,
+                    'borderColor' => '#512A87',
+                    'backgroundColor' => 'rgba(81,42,135,0.20)',
+                    'fill' => true,
+                    'tension' => 0.35,
+                ]],
+            ],
+            'options' => [
+                'plugins' => ['legend' => ['display' => false]],
+                'scales' => ['y' => ['beginAtZero' => true]],
+            ],
+        ]);
+
+        $conversionChartImage = $this->generateQuickChartImage([
+            'type' => 'line',
+            'data' => [
+                'labels' => $conversionLabels,
+                'datasets' => [[
+                    'label' => 'Tasa de conversion (%)',
+                    'data' => $conversionData,
+                    'borderColor' => '#DD513A',
+                    'backgroundColor' => 'rgba(221,81,58,0.22)',
+                    'fill' => true,
+                    'tension' => 0.35,
+                ]],
+            ],
+            'options' => [
+                'plugins' => ['legend' => ['display' => false]],
+                'scales' => [
+                    'y' => [
+                        'beginAtZero' => true,
+                        'max' => 100,
+                    ],
+                ],
+            ],
+        ]);
+
+        $pdfData = [
             'contactMethodsData' => $contactMethodsData,
             'contactMethodLabels' => $contactMethodLabels,
             'amountsData' => $amountsData,
@@ -619,13 +730,80 @@ class DailyTrackingController extends Controller
             'conversionQuotedCounts' => $conversionQuotedCounts,
             'conversionClosedCounts' => $conversionClosedCounts,
             'dateRange' => $chartDateRange,
-        ])->render();
+            'contactChartImage' => $contactChartImage,
+            'amountChartImage' => $amountChartImage,
+            'clientsChartImage' => $clientsChartImage,
+            'conversionChartImage' => $conversionChartImage,
+        ];
 
-        $pdf = Pdf::loadHTML($html)
-            ->setPaper('a4', 'landscape')
-            ->setOption('isPhpEnabled', true)
-            ->setOption('isSvgEnabled', true);
+        $pdf = Pdf::loadView('crm.daily-tracking.charts-pdf', $pdfData)->setOptions([
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => true,
+            'defaultFont' => 'Arial',
+        ])->setPaper('a4', 'landscape');
 
         return $pdf->download('graficas-analisis-' . now()->format('Y-m-d-His') . '.pdf');
+    }
+
+    private function generateQuickChartImage(array $config): string
+    {
+        $chartConfig = json_encode($config);
+        $url = 'https://quickchart.io/chart?c=' . urlencode((string) $chartConfig) . '&width=900&height=430&devicePixelRatio=2';
+
+        try {
+            $imageData = file_get_contents($url);
+
+            if ($imageData === false) {
+                throw new \RuntimeException('No se pudo generar la imagen de grafica.');
+            }
+
+            return 'data:image/png;base64,' . base64_encode($imageData);
+        } catch (\Throwable $e) {
+            // Imagen de respaldo de 1x1 para evitar romper el PDF
+            return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        }
+    }
+
+    /**
+     * Muestra el formulario para importar Excel
+     */
+    public function showImportForm()
+    {
+        return view('crm.daily-tracking.import-excel', [
+            'navigation' => $this->navigation(),
+        ]);
+    }
+
+    /**
+     * Procesa la importación del archivo Excel
+     */
+    public function importFromExcel(ImportExcelRequest $request, ExcelImportService $importService)
+    {
+        try {
+            $file = $request->file('excel_file');
+            $filePath = $file->store('imports', 'local');
+
+            $result = $importService->importFile(storage_path('app/' . $filePath));
+
+            // Limpiar archivo después de procesar
+            \Illuminate\Support\Facades\Storage::delete($filePath);
+
+            if ($result['success']) {
+                return redirect()
+                    ->route('crm.daily-tracking.index')
+                    ->with('success', $result['message'])
+                    ->with('import_result', $result['data'])
+                    ->with('import_time', $result['import_time']);
+            } else {
+                return back()
+                    ->with('error', $result['message'])
+                    ->with('import_result', $result['data']);
+            }
+
+        } catch (\Exception $e) {
+            return back()
+                ->with('error', 'Error al procesar el archivo: ' . $e->getMessage())
+                ->withInput();
+        }
     }
 }

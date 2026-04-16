@@ -5,9 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gráficas de Análisis - Reporte</title>
     <style>
+        :root {
+            --deep-space-blue: #012640;
+            --deep-navy: #02265A;
+            --true-cobalt: #0A2986;
+            --indigo-velvet: #512A87;
+            --velvet-purple: #793775;
+            --dusty-mauve: #B74453;
+            --fiery-terracotta: #DD513A;
+            --surface-soft: #f5f7fb;
+            --line-soft: #d6deea;
+            --text-main: #012640;
+            --text-muted: #4d5f78;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            color: #333;
+            color: var(--text-main);
             margin: 15px;
             line-height: 1.4;
             font-size: 10px;
@@ -16,29 +30,29 @@
         .header {
             text-align: center;
             margin-bottom: 20px;
-            border-bottom: 3px solid #dc3545;
+            border-bottom: 3px solid var(--fiery-terracotta);
             padding-bottom: 10px;
         }
         
         .header h1 {
             margin: 0;
-            color: #dc3545;
+            color: var(--deep-space-blue);
             font-size: 18px;
         }
         
         .header p {
             margin: 3px 0 0 0;
-            color: #666;
+            color: var(--text-muted);
             font-size: 9px;
         }
         
         .filters-info {
-            background: #f8f9fa;
+            background: var(--surface-soft);
             padding: 8px;
             margin-bottom: 15px;
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid var(--true-cobalt);
             font-size: 9px;
-            color: #555;
+            color: var(--text-muted);
         }
         
         .chart-section {
@@ -49,16 +63,24 @@
         .chart-title {
             font-size: 12px;
             font-weight: bold;
-            color: #dc3545;
+            color: var(--deep-space-blue);
             margin-bottom: 8px;
-            border-bottom: 2px solid #dc3545;
+            border-bottom: 2px solid var(--dusty-mauve);
             padding-bottom: 4px;
         }
         
         .chart-container {
             background: white;
             padding: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--line-soft);
+            border-radius: 4px;
+        }
+
+        .chart-image {
+            width: 100%;
+            height: auto;
+            display: block;
+            border: 1px solid var(--line-soft);
             border-radius: 4px;
         }
         
@@ -70,21 +92,21 @@
         }
         
         table th {
-            background: #f0f0f0;
-            color: #333;
+            background: var(--deep-navy);
+            color: #ffffff;
             padding: 5px;
             text-align: left;
-            border-bottom: 2px solid #ddd;
+            border-bottom: 2px solid var(--true-cobalt);
             font-weight: bold;
         }
         
         table td {
             padding: 4px 5px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid var(--line-soft);
         }
         
         table tr:nth-child(even) {
-            background: #f9f9f9;
+            background: var(--surface-soft);
         }
         
         .row {
@@ -103,9 +125,9 @@
             text-align: center;
             margin-top: 20px;
             padding-top: 8px;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid var(--line-soft);
             font-size: 8px;
-            color: #999;
+            color: var(--text-muted);
         }
         
         .text-right {
@@ -117,7 +139,7 @@
         }
         
         .highlight {
-            color: #dc3545;
+            color: var(--velvet-purple);
             font-weight: bold;
         }
     </style>
@@ -138,6 +160,43 @@
     <div class="chart-section">
         <div class="chart-title">1) Medio de contacto con mayor cantidad</div>
         <div class="chart-container">
+            <img src="{{ $contactChartImage }}" alt="Grafica de medio de contacto" class="chart-image">
+        </div>
+    </div>
+
+    {{-- Chart 2 & 3: Side by side --}}
+    <div class="row">
+        <div class="col-50">
+            <div class="chart-section">
+                <div class="chart-title">2) Montos facturados ($) por período</div>
+                <div class="chart-container">
+                    <img src="{{ $amountChartImage }}" alt="Grafica de montos" class="chart-image">
+                </div>
+            </div>
+        </div>
+
+        <div class="col-50">
+            <div class="chart-section">
+                <div class="chart-title">3) Clientes ingresados por semana</div>
+                <div class="chart-container">
+                    <img src="{{ $clientsChartImage }}" alt="Grafica de clientes" class="chart-image">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Chart 4 Image --}}
+    <div class="chart-section">
+        <div class="chart-title">4) Tasa de Conversión por Período (%)</div>
+        <div class="chart-container">
+            <img src="{{ $conversionChartImage }}" alt="Grafica de conversion" class="chart-image">
+        </div>
+    </div>
+
+    {{-- Tablas de respaldo / detalle --}}
+    <div class="chart-section">
+        <div class="chart-title">Detalle 1) Datos de medio de contacto</div>
+        <div class="chart-container">
             <table>
                 <thead>
                     <tr>
@@ -153,7 +212,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="2" class="text-center" style="color: #999;">Sin datos disponibles</td>
+                            <td colspan="2" class="text-center" style="color: #4d5f78;">Sin datos disponibles</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -161,11 +220,11 @@
         </div>
     </div>
     
-    {{-- Chart 2 & 3: Side by side --}}
+    {{-- Detalle 2 & 3: Side by side --}}
     <div class="row">
         <div class="col-50">
             <div class="chart-section">
-                <div class="chart-title">2) Montos facturados ($) por período</div>
+                <div class="chart-title">Detalle 2) Datos de montos facturados</div>
                 <div class="chart-container">
                     <table>
                         <thead>
@@ -182,7 +241,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="2" class="text-center" style="color: #999;">Sin datos disponibles</td>
+                                    <td colspan="2" class="text-center" style="color: #4d5f78;">Sin datos disponibles</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -193,7 +252,7 @@
         
         <div class="col-50">
             <div class="chart-section">
-                <div class="chart-title">3) Clientes ingresados por semana</div>
+                        <div class="chart-title">Detalle 3) Datos de clientes ingresados</div>
                 <div class="chart-container">
                     <table>
                         <thead>
@@ -212,7 +271,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="text-center" style="color: #999;">Sin datos disponibles</td>
+                                    <td colspan="3" class="text-center" style="color: #4d5f78;">Sin datos disponibles</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -222,9 +281,9 @@
         </div>
     </div>
     
-    {{-- Chart 4: Conversion Rate --}}
+    {{-- Chart 4: Conversion Rate (detail table) --}}
     <div class="chart-section">
-        <div class="chart-title">4) Tasa de Conversión por Período (%)</div>
+        <div class="chart-title">Detalle 4) Datos de tasa de conversión</div>
         <div class="chart-container">
             <table>
                 <thead>
@@ -245,7 +304,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center" style="color: #999;">Sin datos disponibles</td>
+                            <td colspan="4" class="text-center" style="color: #4d5f78;">Sin datos disponibles</td>
                         </tr>
                     @endforelse
                 </tbody>

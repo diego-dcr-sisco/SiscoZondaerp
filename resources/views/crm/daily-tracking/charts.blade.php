@@ -1,135 +1,172 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container-fluid font-small p-3">
+    <style>
+        .charts-page-wrapper .nav-tabs {
+            flex-wrap: wrap;
+            row-gap: 0.5rem;
+        }
 
-        {{-- Tabs CRM --}}
-        <ul class="nav nav-tabs mb-3">
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('crm.agenda') }}">
-                    <i class="bi bi-calendar-week"></i> Calendario
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('crm.tracking') }}">
-                    <i class="bi bi-arrow-repeat"></i> Seguimientos
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('crm.quotation') }}">
-                    <i class="bi bi-receipt"></i> Cotizaciones
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link active" href="{{ route('crm.daily-tracking.index') }}">
-                    <i class="bi bi-clock-history"></i> Actividades diarias
-                </a>
-            </li>
-        </ul>
+        .charts-page-wrapper .chart-card .card-body {
+            min-height: 320px;
+            overflow-x: auto;
+        }
 
-        {{-- Header --}}
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('crm.daily-tracking.index', request()->query()) }}"
-                    class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-arrow-left"></i> Volver
+        .charts-page-wrapper .chart-canvas-wrap {
+            height: 320px;
+        }
+
+        .charts-page-wrapper .chart-canvas-wrap canvas {
+            max-width: 100% !important;
+            width: 100% !important;
+        }
+
+        @media (max-width: 991.98px) {
+            .charts-page-wrapper .charts-header {
+                gap: 0.75rem;
+            }
+
+            .charts-page-wrapper .charts-header h5 {
+                font-size: 1rem;
+            }
+        }
+    </style>
+
+    <div class="container-fluid font-small p-0 charts-page-wrapper">
+
+        <div class="p-3">
+
+            {{-- Tabs CRM --}}
+            <ul class="nav nav-tabs mb-3">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('crm.agenda') }}">
+                        <i class="bi bi-calendar-week"></i> Calendario
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('crm.tracking') }}">
+                        <i class="bi bi-arrow-repeat"></i> Seguimientos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ route('crm.quotation') }}">
+                        <i class="bi bi-receipt"></i> Cotizaciones
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="{{ route('crm.daily-tracking.index') }}">
+                        <i class="bi bi-clock-history"></i> Actividades diarias
+                    </a>
+                </li>
+            </ul>
+
+            {{-- Header --}}
+            <div class="d-flex justify-content-between align-items-center flex-wrap mb-3 charts-header">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <a href="{{ route('crm.daily-tracking.index', request()->query()) }}"
+                        class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Volver
+                    </a>
+                    <h5 class="mb-0 fw-semibold"><i class="bi bi-bar-chart-line"></i> Gráficas de análisis</h5>
+                </div>
+                <a href="{{ route('crm.daily-tracking.export-charts', request()->query()) }}" class="btn btn-sm btn-danger">
+                    <i class="bi bi-filetype-pdf"></i> Exportar PDF
                 </a>
-                <h5 class="mb-0 fw-semibold"><i class="bi bi-bar-chart-line"></i> Gráficas de análisis</h5>
             </div>
-            <a href="{{ route('crm.daily-tracking.export-charts', request()->query()) }}"
-                class="btn btn-sm btn-danger">
-                <i class="bi bi-filetype-pdf"></i> Exportar PDF
-            </a>
-        </div>
 
-        {{-- Filtros --}}
-        <div class="border p-2 text-dark rounded mb-3 bg-light">
-            <form method="GET" action="{{ route('crm.daily-tracking.charts') }}">
-                <div class="row g-2 align-items-end">
-                    <div class="col-lg-4">
-                        <label class="form-label form-label-sm mb-1">Rango de fechas (creación)</label>
-                        <input type="text" name="date_range" class="form-control form-control-sm"
-                            placeholder="dd/mm/yyyy - dd/mm/yyyy"
-                            value="{{ request('date_range') }}" autocomplete="off" readonly>
-                    </div>
-                    <div class="col-lg-3">
-                        <label class="form-label form-label-sm mb-1">Servicio</label>
-                        <select name="service_id" class="form-select form-select-sm">
-                            <option value="">Todos</option>
-                            @foreach ($services as $service)
-                                <option value="{{ $service->id }}" {{ request('service_id') == $service->id ? 'selected' : '' }}>
-                                    {{ $service->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-lg-2">
-                        <label class="form-label form-label-sm mb-1">Estatus</label>
-                        <select name="status" class="form-select form-select-sm">
-                            <option value="">Todos</option>
-                            @foreach ($statusOptions as $opt)
-                                <option value="{{ $opt->value }}" {{ request('status') == $opt->value ? 'selected' : '' }}>
-                                    {{ $opt->label() }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-lg-2">
-                        <div class="d-flex gap-1">
-                            <button type="submit" class="btn btn-sm btn-primary w-100">
-                                <i class="bi bi-funnel"></i> Filtrar
+            {{-- Filtros --}}
+            <div class="border p-2 text-dark rounded mb-3 bg-light">
+                <form method="GET" action="{{ route('crm.daily-tracking.charts') }}">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <label class="form-label form-label-sm mb-1">Rango de fechas (creación)</label>
+                            <input type="text" name="date_range" class="form-control form-control-sm"
+                                placeholder="dd/mm/yyyy - dd/mm/yyyy" value="{{ request('date_range') }}" autocomplete="off"
+                                readonly>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label class="form-label form-label-sm mb-1">Servicio</label>
+                            <select name="service_id" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                @foreach ($services as $service)
+                                    <option value="{{ $service->id }}"
+                                        {{ request('service_id') == $service->id ? 'selected' : '' }}>
+                                        {{ $service->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            <label class="form-label form-label-sm mb-1">Estatus</label>
+                            <select name="status" class="form-select form-select-sm">
+                                <option value="">Todos</option>
+                                @foreach ($statusOptions as $opt)
+                                    <option value="{{ $opt->value }}"
+                                        {{ request('status') == $opt->value ? 'selected' : '' }}>
+                                        {{ $opt->label() }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-12 d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-funnel-fill"></i> Filtrar
                             </button>
                             <a href="{{ route('crm.daily-tracking.charts') }}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-x"></i>
+                                <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                             </a>
                         </div>
                     </div>
-                </div>
-            </form>
-        </div>
+                </form>
+            </div>
 
-        {{-- Gráficas --}}
-        <div class="row g-3">
-            <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white fw-semibold">
-                        <i class="bi bi-diagram-3 text-info"></i> 1) Medio de contacto con mayor cantidad
+            {{-- Gráficas --}}
+            <div class="row g-3">
+                <div class="col-12 col-xl-6">
+                    <div class="card shadow-sm h-100 chart-card">
+                        <div class="card-header bg-white fw-semibold">
+                            <i class="bi bi-diagram-3 text-info"></i> 1) Medio de contacto con mayor cantidad
+                        </div>
+                        <div class="card-body">
+                            {!! $contactMethodChart->renderHtml() !!}
+                        </div>
                     </div>
-                    <div class="card-body">
-                        {!! $contactMethodChart->renderHtml() !!}
+                </div>
+                <div class="col-12 col-xl-6">
+                    <div class="card shadow-sm h-100 chart-card">
+                        <div class="card-header bg-white fw-semibold">
+                            <i class="bi bi-currency-dollar text-success"></i> 2) Montos facturados ($) por período
+                        </div>
+                        <div class="card-body">
+                            {!! $amountsChart->renderHtml() !!}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-6">
+                    <div class="card shadow-sm h-100 chart-card">
+                        <div class="card-header bg-white fw-semibold">
+                            <i class="bi bi-people text-primary"></i> 3) Clientes ingresados por semana/mes
+                        </div>
+                        <div class="card-body">
+                            {!! $clientsPeriodChart->renderHtml() !!}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-xl-6">
+                    <div class="card shadow-sm h-100 chart-card">
+                        <div class="card-header bg-white fw-semibold">
+                            <i class="bi bi-percent text-warning"></i> 4) Tasa de conversión (%)
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-canvas-wrap">
+                                <canvas id="dailyTrackingConversionChartPage"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white fw-semibold">
-                        <i class="bi bi-currency-dollar text-success"></i> 2) Montos facturados ($) por período
-                    </div>
-                    <div class="card-body">
-                        {!! $amountsChart->renderHtml() !!}
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white fw-semibold">
-                        <i class="bi bi-people text-primary"></i> 3) Clientes ingresados por semana/mes
-                    </div>
-                    <div class="card-body">
-                        {!! $clientsPeriodChart->renderHtml() !!}
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header bg-white fw-semibold">
-                        <i class="bi bi-percent text-warning"></i> 4) Tasa de conversión (%)
-                    </div>
-                    <div class="card-body">
-                        <canvas id="dailyTrackingConversionChartPage"></canvas>
-                    </div>
-                </div>
-            </div>
+
         </div>
 
     </div>
@@ -149,20 +186,27 @@
                     datasets: [{
                         label: 'Tasa de conversión (%)',
                         data: @json($conversionData),
-                        borderColor: 'rgba(255, 159, 64, 1)',
-                        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                        borderColor: '#DD513A',
+                        backgroundColor: 'rgba(221, 81, 58, 0.20)',
                         borderWidth: 2,
                         fill: true,
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { display: true } },
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
                     scales: {
                         y: {
                             beginAtZero: true,
                             ticks: {
-                                callback: function(value) { return value + '%' }
+                                callback: function(value) {
+                                    return value + '%'
+                                }
                             }
                         }
                     }
@@ -190,7 +234,8 @@
             });
 
             $('input[name="date_range"]').on('apply.daterangepicker', function(ev, picker) {
-                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
+                    'DD/MM/YYYY'));
             });
 
             $('input[name="date_range"]').on('cancel.daterangepicker', function() {
