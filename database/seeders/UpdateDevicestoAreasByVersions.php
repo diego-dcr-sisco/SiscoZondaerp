@@ -26,6 +26,12 @@ class UpdateDevicestoAreasByVersions extends Seeder
             ->where('version', $version)
             ->get();
 
+        $this->command->info("Devices a actualizar (versión {$version_to_update}): {$devices_to_update->count()}");
+        $this->command->info("Devices fuente (versión {$version}): {$fetch_devices->count()}");
+
+        $updated = 0;
+        $skipped = 0;
+
         foreach ($devices_to_update as $device) {
             $matching_device = $fetch_devices
                 ->where('type_control_point_id', $device->type_control_point_id)
@@ -36,7 +42,15 @@ class UpdateDevicestoAreasByVersions extends Seeder
                 $device->update([
                     'application_area_id' => $matching_device->application_area_id,
                 ]);
+                $this->command->line("  [OK] Device ID {$device->id} (nplan: {$device->nplan}) → area_id: {$matching_device->application_area_id}");
+                $updated++;
+            } else {
+                $this->command->warn("  [SIN MATCH] Device ID {$device->id} (nplan: {$device->nplan}, type_control_point_id: {$device->type_control_point_id})");
+                $skipped++;
             }
         }
+
+        $this->command->info("─────────────────────────────────────");
+        $this->command->info("Actualizados: {$updated} | Sin match: {$skipped}");
     }
 }
