@@ -1091,6 +1091,16 @@ class ContractController extends Controller
             }
 
             $orders = Order::where('setting_id', $cs->id)->orderBy('programmed_date')->get();
+            $renewDate = function (string $date) use ($cs) {
+                $parsedDate = Carbon::parse($date);
+
+                // Para frecuencias semanales/quincenales se conserva el mismo día de la semana.
+                if (in_array((int) $cs->execution_frequency_id, [2, 5], true)) {
+                    return $parsedDate->addWeeks(52);
+                }
+
+                return $parsedDate->addYear();
+            };
             $configurations[] = [
                 'config_id' => $count_indexs[$cs->service_id],
                 'setting_id' => $cs->id,
@@ -1100,14 +1110,12 @@ class ContractController extends Controller
                 'interval' => $this->intervals[$cs->interval],
                 'interval_id' => $cs->interval,
                 'days' => $this->normalizeWeekDays(explode(',', json_decode($cs->days)[0] ?? '')),
-                'dates' => $orders->pluck('programmed_date')->map(function ($date) {
-                    // Ajustar fechas para la renovación (añadir un año)
-                    $newDate = Carbon::parse($date)->addYear();
+                'dates' => $orders->pluck('programmed_date')->map(function ($date) use ($renewDate) {
+                    $newDate = $renewDate($date);
                     return $newDate->format('Y-m-d');
                 })->toArray(),
-                'orders' => $orders->map(function ($order) {
-                    // Crear nuevos órdenes para la renovación
-                    $newOrderDate = Carbon::parse($order->programmed_date)->addYear();
+                'orders' => $orders->map(function ($order) use ($renewDate) {
+                    $newOrderDate = $renewDate($order->programmed_date);
                     return [
                         'id' => null, // Nuevo orden, sin ID
                         'folio' => null, // Se generará nuevo folio
