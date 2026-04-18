@@ -175,7 +175,7 @@ class ProductController extends Controller
 
             if ($request->hasFile('file')) {
                 $request->validate([
-                    'file' => 'required|file|mimes:pdf|max:10000',
+                    'file' => 'required|file|mimes:pdf,xlsx|max:10000',
                 ]);
 
                 $file = $request->file('file');

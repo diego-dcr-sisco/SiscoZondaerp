@@ -8,7 +8,6 @@ use App\Enums\DailyTrackingCustomerType;
 use App\Enums\DailyTrackingInvoice;
 use App\Enums\DailyTrackingPaymentMethod;
 use App\Enums\DailyTrackingQuoted;
-use App\Enums\DailyTrackingServiceType;
 use App\Enums\DailyTrackingStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -28,13 +27,14 @@ class UpdateDailyTrackingRequest extends FormRequest
             'customer_name' => ['required', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'customer_type' => ['required', new Enum(DailyTrackingCustomerType::class)],
+            'customer_category' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
             'contact_method' => ['required', new Enum(DailyTrackingContactMethod::class)],
             'status' => ['required', new Enum(DailyTrackingStatus::class)],
-            'service_type' => ['required', new Enum(DailyTrackingServiceType::class)],
             'responded' => ['nullable', 'boolean'],
+            'is_recurrent' => ['nullable', 'boolean'],
             'quoted' => ['required', new Enum(DailyTrackingQuoted::class)],
             'closed' => ['required', new Enum(DailyTrackingClosed::class)],
             'has_coverage' => ['nullable', 'boolean'],
@@ -48,6 +48,7 @@ class UpdateDailyTrackingRequest extends FormRequest
             'payment_date' => ['nullable', 'date'],
             'follow_up_date' => ['nullable', 'date'],
             'service_time' => ['nullable', 'date_format:H:i'],
+            'focused_pest' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string'],
         ];
     }
@@ -58,6 +59,7 @@ class UpdateDailyTrackingRequest extends FormRequest
 
         $this->merge([
             'responded' => $this->boolean('responded'),
+            'is_recurrent' => $this->boolean('is_recurrent'),
             'has_coverage' => $this->boolean('has_coverage'),
             'quoted_amount' => $this->input('quoted_amount') !== '' ? $this->input('quoted_amount') : null,
             'billed_amount' => $this->input('billed_amount') !== '' ? $this->input('billed_amount') : null,

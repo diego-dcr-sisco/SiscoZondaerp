@@ -107,6 +107,19 @@
         </div>
 
         <div class="col-md-4">
+            <label class="form-label fw-semibold mb-1">Categoria de cliente</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-tag-fill"></i></span>
+                <input type="text" name="customer_category" class="form-control form-control-sm @error('customer_category') is-invalid @enderror"
+                    value="{{ old('customer_category', data_get($model, 'customer_category')) }}" maxlength="255"
+                    placeholder="Ej: AAA, VIP, Residencial, Prioritario">
+            </div>
+            @error('customer_category')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="col-md-4">
             <label class="form-label fw-semibold mb-1">Metodo de contacto *</label>
             <div class="input-group input-group-sm">
                 <span class="input-group-text"><i class="bi bi-chat-left-text-fill"></i></span>
@@ -127,8 +140,22 @@
             <label class="form-label fw-semibold mb-1">Estado</label>
             <div class="input-group input-group-sm">
                 <span class="input-group-text"><i class="bi bi-map-fill"></i></span>
-                <input type="text" name="state" class="form-control form-control-sm @error('state') is-invalid @enderror"
-                    value="{{ old('state', data_get($model, 'state')) }}">
+                @php
+                    $selectedState = old('state', data_get($model, 'state'));
+                @endphp
+                <select id="state" name="state" onchange="load_city()"
+                    class="form-select form-select-sm @error('state') is-invalid @enderror">
+                    <option value="">Seleccionar estado</option>
+                    @foreach ($states as $stateItem)
+                        @php
+                            $stateKey = is_array($stateItem) ? ($stateItem['key'] ?? ($stateItem['name'] ?? '')) : (string) $stateItem;
+                            $stateName = is_array($stateItem) ? ($stateItem['name'] ?? $stateKey) : (string) $stateItem;
+                        @endphp
+                        <option value="{{ $stateKey }}" @selected((string) $selectedState === (string) $stateKey || (string) $selectedState === (string) $stateName)>
+                            {{ $stateName }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
             @error('state')
                 <div class="invalid-feedback">{{ $message }}</div>
@@ -139,27 +166,12 @@
             <label class="form-label fw-semibold mb-1">Ciudad</label>
             <div class="input-group input-group-sm">
                 <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
-                <input type="text" name="city" class="form-control form-control-sm @error('city') is-invalid @enderror"
-                    value="{{ old('city', data_get($model, 'city')) }}">
-            </div>
-            @error('city')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-        </div>
-
-        <div class="col-md-4">
-            <label class="form-label fw-semibold mb-1">Tipo de servicio *</label>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text"><i class="bi bi-wrench-adjustable-circle-fill"></i></span>
-                <select name="service_type" class="form-select form-select-sm @error('service_type') is-invalid @enderror" required>
-                    @foreach ($serviceTypeOptions as $option)
-                        <option value="{{ $option->value }}" @selected(old('service_type', data_get($model, 'service_type.value') ?? data_get($model, 'service_type')) === $option->value)>
-                            {{ $option->label() }}
-                        </option>
-                    @endforeach
+                <select id="city" name="city" data-selected-city="{{ old('city', data_get($model, 'city')) }}"
+                    class="form-select form-select-sm @error('city') is-invalid @enderror">
+                    <option value="">Seleccionar ciudad</option>
                 </select>
             </div>
-            @error('service_type')
+            @error('city')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
@@ -173,6 +185,39 @@
             @error('address')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
+        </div>
+
+        <div class="col-12 border-top pt-3 mt-1">
+            <h6 class="mb-1 text-primary"><i class="bi bi-toggles2 me-1"></i> Indicadores de contacto</h6>
+            <small class="text-muted">Banderas rapidas de respuesta y cobertura del cliente.</small>
+        </div>
+
+        <div class="col-md-3">
+            <input type="hidden" name="responded" value="0">
+            <div class="form-check form-switch mt-2">
+                <input class="form-check-input" type="checkbox" id="responded" name="responded" value="1"
+                    @checked(old('responded', data_get($model, 'responded')))>
+                <label class="form-check-label" for="responded">Respondio</label>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <input type="hidden" name="has_coverage" value="0">
+            <div class="form-check form-switch mt-2">
+                <input class="form-check-input" type="checkbox" id="has_coverage" name="has_coverage" value="1"
+                    @checked(old('has_coverage', data_get($model, 'has_coverage'))) x-model="hasCoverage">
+                <label class="form-check-label" for="has_coverage">Tiene cobertura</label>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <input type="hidden" name="is_recurrent" value="0">
+            <div class="form-check form-switch mt-2">
+                <input class="form-check-input" type="checkbox" id="is_recurrent" name="is_recurrent" value="1"
+                    @checked(old('is_recurrent', data_get($model, 'is_recurrent')))
+                >
+                <label class="form-check-label" for="is_recurrent">Es recurrente</label>
+            </div>
         </div>
 
         <div class="col-12 border-top pt-3 mt-1">
@@ -293,8 +338,8 @@
         </div>
 
         <div class="col-12 border-top pt-3 mt-1">
-            <h6 class="mb-1 text-primary"><i class="bi bi-calendar3 me-1"></i> Agenda y fechas</h6>
-            <small class="text-muted">Programacion del servicio y fechas clave de seguimiento.</small>
+            <h6 class="mb-1 text-primary"><i class="bi bi-calendar-event me-1"></i> Servicio programado</h6>
+            <small class="text-muted">Define la fecha y la hora programada del servicio.</small>
         </div>
 
         <div class="col-md-4">
@@ -307,6 +352,23 @@
             @error('service_date')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label fw-semibold mb-1">Hora del servicio</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-clock-fill"></i></span>
+                <input type="time" name="service_time" class="form-control form-control-sm @error('service_time') is-invalid @enderror"
+                    value="{{ old('service_time', substr((string) data_get($model, 'service_time', ''), 0, 5)) }}">
+            </div>
+            @error('service_time')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
+        <div class="col-12 border-top pt-3 mt-1">
+            <h6 class="mb-1 text-primary"><i class="bi bi-calendar3-range me-1"></i> Fechas de seguimiento</h6>
+            <small class="text-muted">Control de cotizacion, cierre, pago y proximo seguimiento.</small>
         </div>
 
         <div class="col-md-4">
@@ -359,39 +421,21 @@
             @enderror
         </div>
 
-        <div class="col-md-4">
-            <label class="form-label fw-semibold mb-1">Hora del servicio</label>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text"><i class="bi bi-clock-fill"></i></span>
-                <input type="time" name="service_time" class="form-control form-control-sm @error('service_time') is-invalid @enderror"
-                    value="{{ old('service_time', substr((string) data_get($model, 'service_time', ''), 0, 5)) }}">
-            </div>
-            @error('service_time')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-        </div>
-
-        <div class="col-md-3">
-            <input type="hidden" name="responded" value="0">
-            <div class="form-check form-switch mt-4">
-                <input class="form-check-input" type="checkbox" id="responded" name="responded" value="1"
-                    @checked(old('responded', data_get($model, 'responded')))>
-                <label class="form-check-label" for="responded">Respondio</label>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <input type="hidden" name="has_coverage" value="0">
-            <div class="form-check form-switch mt-4">
-                <input class="form-check-input" type="checkbox" id="has_coverage" name="has_coverage" value="1"
-                    @checked(old('has_coverage', data_get($model, 'has_coverage'))) x-model="hasCoverage">
-                <label class="form-check-label" for="has_coverage">Tiene cobertura</label>
-            </div>
-        </div>
-
         <div class="col-12 border-top pt-3 mt-1">
             <h6 class="mb-1 text-primary"><i class="bi bi-journal-text me-1"></i> Notas</h6>
             <small class="text-muted">Comentarios adicionales del seguimiento.</small>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label fw-semibold mb-1">Plaga enfocada</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-bug-fill"></i></span>
+                <input type="text" name="focused_pest" class="form-control form-control-sm @error('focused_pest') is-invalid @enderror"
+                    value="{{ old('focused_pest', data_get($model, 'focused_pest')) }}" placeholder="Ej: Cucaracha alemana, roedor, mosca">
+            </div>
+            @error('focused_pest')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
         <div class="col-12">
@@ -406,3 +450,43 @@
         </div>
     </div>
 </div>
+
+<script type="text/javascript">
+    var states = @json($states);
+    var cities = @json($cities);
+
+    $(document).ready(function() {
+        load_city();
+    });
+
+    function load_city() {
+        var state = $("#state").val();
+        var $selector_city = $("#city");
+        var selectedCity = $selector_city.attr('data-selected-city') || '';
+
+        $selector_city.empty();
+        $selector_city.append($('<option>', {
+            value: '',
+            text: 'Seleccionar ciudad'
+        }));
+
+        if (state) {
+            var found_cities = cities[state] || [];
+
+            if (Array.isArray(found_cities)) {
+                $selector_city.append(found_cities.map(function(c) {
+                    var value = (typeof c === 'object' && c !== null) ? (c.name || '') : c;
+                    return $('<option>', {
+                        value: value,
+                        text: value,
+                        selected: value === selectedCity
+                    });
+                }));
+            }
+        }
+    }
+
+    function convertToUppercase(id) {
+        $("#" + id).val($("#" + id).val().toUpperCase());
+    }
+</script>

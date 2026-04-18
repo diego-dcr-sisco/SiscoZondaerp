@@ -19,9 +19,10 @@
                         <p class="mb-1"><strong>Cliente:</strong> {{ $dailyTracking->customer_name }}</p>
                         <p class="mb-1"><strong>Telefono:</strong> {{ $dailyTracking->phone ?? '-' }}</p>
                         <p class="mb-1"><strong>Tipo cliente:</strong> {{ $dailyTracking->customer_type?->label() ?? '-' }}</p>
+                        <p class="mb-1"><strong>Categoria cliente:</strong> {{ $dailyTracking->customer_category ?? '-' }}</p>
                         <p class="mb-1"><strong>Metodo contacto:</strong> {{ $dailyTracking->contact_method?->label() ?? '-' }}</p>
                         <p class="mb-1"><strong>Estatus:</strong> {{ $dailyTracking->status?->label() ?? '-' }}</p>
-                        <p class="mb-0"><strong>Tipo servicio:</strong> {{ $dailyTracking->service_type?->label() ?? '-' }}</p>
+                        <p class="mb-1"><strong>Es recurrente:</strong> {{ $dailyTracking->is_recurrent ? 'Si' : 'No' }}</p>
                     </div>
                 </div>
             </div>

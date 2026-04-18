@@ -265,7 +265,7 @@
     <div class="import-wrapper">
         <div class="import-card">
             <div class="import-header">
-                <h2><i class="bi bi-upload"></i> Importar Excel</h2>
+                <h2><i class="bi bi-upload"></i> Importar CSV</h2>
                 <p>Carga un archivo con datos de Registro Diario y Prospectos Comerciales</p>
             </div>
 
@@ -395,9 +395,8 @@
                     <div class="info-box">
                         <strong>📋 Instrucciones para la importación:</strong>
                         <ul>
-                            <li><strong>Hoja 1:</strong> "Registro_Diario_CRM" - Datos de seguimiento diario con 23 columnas</li>
-                            <li><strong>Hoja 2:</strong> "PROSPECTOS COMERCIALES" - Datos de prospectos con 7 columnas</li>
-                            <li><strong>Formato:</strong> .xlsx o .csv, máximo 5MB</li>
+                            <li><strong>Archivo:</strong> CSV con datos de seguimiento diario</li>
+                            <li><strong>Formato:</strong> .csv, máximo 5MB</li>
                             <li><strong>Validación:</strong> Fechas, números y campos obligatorios son validados automáticamente</li>
                             <li><strong>Duplicados:</strong> Se actualiza si el registro ya existe</li>
                         </ul>
@@ -413,13 +412,16 @@
                             </div>
                             <div class="upload-text">
                                 <strong>Arrastra tu archivo aquí o haz clic</strong>
-                                <p>Soporta formatos: Excel (.xlsx, .xls) y CSV</p>
+                                <p>Soporta formatos: CSV (.csv)</p>
                                 <p style="font-size: 12px; color: #999;">Tamaño máximo: 5MB</p>
                             </div>
-                            <input type="file" name="excel_file" id="fileInput" class="file-input" accept=".xlsx,.xls,.csv"
+                            <input type="file" name="excel_file" id="fileInput" class="file-input" accept=".csv,text/csv"
                                 required>
                             <button type="button" class="btn-upload">Seleccionar Archivo</button>
                             <div class="file-name" id="fileName"></div>
+                            <div class="text-danger mt-2" id="fileError" style="display: none; font-size: 13px;">
+                                Por favor, selecciona un archivo CSV antes de importar.
+                            </div>
                         </div>
 
                         <div class="btn-group" style="justify-content: flex-end;">
@@ -440,8 +442,25 @@
         const uploadZone = document.getElementById('uploadZone');
         const fileInput = document.getElementById('fileInput');
         const fileNameDisplay = document.getElementById('fileName');
+        const fileError = document.getElementById('fileError');
         const submitBtn = document.getElementById('submitBtn');
         const uploadBtn = document.querySelector('.btn-upload');
+        const uploadForm = document.getElementById('uploadForm');
+
+        function updateSelectedFile(file) {
+            if (!file) {
+                fileNameDisplay.textContent = '';
+                fileNameDisplay.classList.remove('show');
+                fileError.style.display = 'none';
+                submitBtn.disabled = true;
+                return;
+            }
+
+            fileNameDisplay.textContent = '✓ ' + file.name;
+            fileNameDisplay.classList.add('show');
+            fileError.style.display = 'none';
+            submitBtn.disabled = false;
+        }
 
         // Mostrar input file cuando se hace clic
         uploadBtn.addEventListener('click', (e) => {
@@ -452,11 +471,7 @@
         // Seleccionar archivo
         fileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
-            if (file) {
-                fileNameDisplay.textContent = '✓ ' + file.name;
-                fileNameDisplay.classList.add('show');
-                submitBtn.disabled = false;
-            }
+            updateSelectedFile(file);
         });
 
         // Drag and drop
@@ -475,11 +490,18 @@
 
             const files = e.dataTransfer.files;
             if (files.length > 0) {
-                fileInput.files = files;
-                const file = files[0];
-                fileNameDisplay.textContent = '✓ ' + file.name;
-                fileNameDisplay.classList.add('show');
-                submitBtn.disabled = false;
+                const dt = new DataTransfer();
+                dt.items.add(files[0]);
+                fileInput.files = dt.files;
+                updateSelectedFile(files[0]);
+            }
+        });
+
+        uploadForm.addEventListener('submit', (e) => {
+            if (!fileInput.files || fileInput.files.length === 0) {
+                e.preventDefault();
+                submitBtn.disabled = true;
+                fileError.style.display = 'block';
             }
         });
     </script>

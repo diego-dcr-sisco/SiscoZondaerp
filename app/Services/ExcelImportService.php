@@ -27,6 +27,7 @@ class ExcelImportService
                     'inserted' => 0,
                     'updated' => 0,
                     'skipped' => 0,
+                    'skipped_rows' => [],
                     'empty_rows' => 0,
                     'errors' => [],
                 ],
@@ -34,6 +35,7 @@ class ExcelImportService
                     'inserted' => 0,
                     'updated' => 0,
                     'skipped' => 0,
+                    'skipped_rows' => [],
                     'empty_rows' => 0,
                     'errors' => [],
                 ],
@@ -53,14 +55,21 @@ class ExcelImportService
                 'sheets' => array_map(fn ($sheet) => $sheet->getTitle(), $spreadsheet->getAllSheets()),
             ]);
 
-            $dailySheet = $this->findSheetByName($spreadsheet->getAllSheets(), ['Registro_Diario_CRM']);
+            $sheets = $spreadsheet->getAllSheets();
+
+            // Nuevo enfoque: detectar por headers primero (independiente del nombre de hoja).
+            $dailySheet = $this->findFirstDailyTrackingSheet($sheets);
             if (! $dailySheet) {
-                $dailySheet = $this->findFirstDailyTrackingSheet($spreadsheet->getAllSheets());
+                $dailySheet = $this->findSheetByName($sheets, ['Registro_Diario_CRM']);
             }
-            $prospectsSheet = $this->findSheetByName($spreadsheet->getAllSheets(), ['PROSPECTOS COMERCIALES']);
+
+            $prospectsSheet = $this->findFirstCommercialProspectsSheet($sheets, $dailySheet);
+            if (! $prospectsSheet) {
+                $prospectsSheet = $this->findSheetByName($sheets, ['PROSPECTOS COMERCIALES']);
+            }
 
             if (! $dailySheet && ! $prospectsSheet) {
-                throw new \RuntimeException('No se encontraron las hojas esperadas: Registro_Diario_CRM y/o PROSPECTOS COMERCIALES.');
+                throw new \RuntimeException('No se encontraron hojas con headers compatibles para CRM y/o Prospección.');
             }
 
             if ($dailySheet) {
@@ -75,8 +84,8 @@ class ExcelImportService
                     'errors_count' => count($dailyResult['errors']),
                 ]);
             } else {
-                $result['data']['daily_tracking']['errors'][] = 'No se encontró la hoja Registro_Diario_CRM.';
-                Log::warning('No se encontró la hoja Registro_Diario_CRM en el archivo importado.');
+                $result['data']['daily_tracking']['errors'][] = 'No se encontró una hoja con headers compatibles para CRM.';
+                Log::warning('No se encontró una hoja con headers compatibles para CRM en el archivo importado.');
             }
 
             if ($prospectsSheet) {
@@ -91,7 +100,7 @@ class ExcelImportService
                     'errors_count' => count($prospectResult['errors']),
                 ]);
             } else {
-                Log::info('No se encontró la hoja PROSPECTOS COMERCIALES en el archivo importado. Se omite su importación.');
+                Log::info('No se encontró una hoja con headers compatibles para Prospección en el archivo importado. Se omite su importación.');
             }
 
             DB::commit();
@@ -168,7 +177,7 @@ class ExcelImportService
 
     private function importDailyTrackingSheet(Worksheet $sheet): array
     {
-        $result = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'empty_rows' => 0, 'errors' => []];
+        $result = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'skipped_rows' => [], 'empty_rows' => 0, 'errors' => []];
         $rows = $sheet->toArray(null, true, true, true);
 
         if (count($rows) < 2) {
@@ -190,13 +199,14 @@ class ExcelImportService
             'customer_name' => 'customer_name',
             'phone' => 'phone',
             'customer_type' => 'customer_type',
+            'customer_category' => 'customer_category',
             'state' => 'state',
             'city' => 'city',
             'address' => 'address',
             'contact_method' => 'contact_method',
             'status' => 'status',
-            'service_type' => 'service_type',
             'responded' => 'responded',
+            'is_recurrent' => 'is_recurrent',
             'quoted' => 'quoted',
             'closed' => 'closed',
             'has_coverage' => 'has_coverage',
@@ -210,16 +220,20 @@ class ExcelImportService
             'payment_date' => 'payment_date',
             'follow_up_date' => 'follow_up_date',
             'service_time' => 'service_time',
+            'focused_pest' => 'focused_pest',
             'notes' => 'notes',
             'status_updated_at' => 'status_updated_at',
             'status_updated_by' => 'status_updated_by',
             'fecha' => 'service_date',
             'cliente_empresa' => 'customer_name',
             'tipo_de_cliente' => 'customer_type',
+            'categoria_de_cliente' => 'customer_category',
+            'categoria_cliente' => 'customer_category',
             'telefono' => 'phone',
             'estado_ciudad' => 'city',
             'medio_de_contacto' => 'contact_method',
             'contesto' => 'responded',
+            'recurrente' => 'is_recurrent',
             'disc' => 'notes',
             'estatus' => 'status',
             'se_cotizo' => 'quoted',
@@ -228,13 +242,12 @@ class ExcelImportService
             'monto_facturado' => 'billed_amount',
             'fecha_cierre' => 'close_date',
             'fecha_recibi_pago_servicio' => 'payment_date',
-            'plaga' => 'notes',
+            'plaga' => 'focused_pest',
             'distancia' => 'notes',
             'observaciones' => 'notes',
             'hora' => 'service_time',
             'domicilio' => 'address',
             'concenso' => 'has_coverage',
-            'tipo_de_servicio' => 'service_type',
             'factura' => 'invoice',
             'metodo_pago' => 'payment_method',
         ];
@@ -256,20 +269,24 @@ class ExcelImportService
                     continue;
                 }
 
-                if (empty($mapped['customer_name'])) {
-                    throw new \RuntimeException('Cliente/Empresa vacío.');
+                if (empty(trim((string) ($mapped['customer_name'] ?? '')))) {
+                    $mapped['customer_name'] = 'Nombre desconocido';
                 }
 
                 unset($mapped['id'], $mapped['created_at'], $mapped['updated_at']);
 
                 $mapped['service_id'] = $serviceId;
                 $mapped['customer_type'] = $this->normalizeCustomerType($mapped['customer_type'] ?? null) ?? 'comercial';
-                $mapped['service_type'] = $this->normalizeServiceType($mapped['service_type'] ?? null) ?? 'comercial';
                 $mapped['contact_method'] = $this->normalizeContactMethod($mapped['contact_method'] ?? null);
                 $mapped['status'] = $this->normalizeStatus($mapped['status'] ?? null) ?? 'survey';
                 $mapped['quoted'] = $this->normalizeQuoted($mapped['quoted'] ?? null) ?? 'pending';
                 $mapped['closed'] = $this->normalizeClosed($mapped['closed'] ?? null) ?? 'pending';
+                $mapped['quoted_amount'] = $this->parseAmount($mapped['quoted_amount'] ?? null);
+                $mapped['billed_amount'] = $this->parseAmount($mapped['billed_amount'] ?? null);
+                $mapped['payment_method'] = $this->normalizePaymentMethod($mapped['payment_method'] ?? null);
+                $mapped['invoice'] = $this->normalizeInvoice($mapped['invoice'] ?? null) ?? 'not_applicable';
                 $mapped['responded'] = $this->toBoolean($mapped['responded'] ?? false);
+                $mapped['is_recurrent'] = $this->toBoolean($mapped['is_recurrent'] ?? false);
                 $mapped['has_coverage'] = $this->toBoolean($mapped['has_coverage'] ?? false);
 
                 if (empty($mapped['contact_method'])) {
@@ -302,6 +319,11 @@ class ExcelImportService
             } catch (\Throwable $e) {
                 $result['errors'][] = "Fila {$rowNumber}: {$e->getMessage()}";
                 $result['skipped']++;
+                $result['skipped_rows'][] = [
+                    'row_number' => $rowNumber,
+                    'reason' => $e->getMessage(),
+                    'row_data' => $this->sanitizeRowForLog((array) $row),
+                ];
                 $this->logSkippedRow('daily_tracking', $rowNumber, $e->getMessage(), (array) $row);
             }
         }
@@ -311,7 +333,7 @@ class ExcelImportService
 
     private function importCommercialProspectsSheet(Worksheet $sheet): array
     {
-        $result = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'empty_rows' => 0, 'errors' => []];
+        $result = ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'skipped_rows' => [], 'empty_rows' => 0, 'errors' => []];
         $rows = $sheet->toArray(null, true, true, true);
 
         if (count($rows) < 2) {
@@ -343,8 +365,8 @@ class ExcelImportService
                     continue;
                 }
 
-                if (empty($mapped['commercial_name'])) {
-                    throw new \RuntimeException('Nombre comercial vacío.');
+                if (empty(trim((string) ($mapped['commercial_name'] ?? '')))) {
+                    $mapped['commercial_name'] = 'Nombre desconocido';
                 }
 
                 if (isset($mapped['date']) && $mapped['date'] !== '') {
@@ -372,6 +394,11 @@ class ExcelImportService
             } catch (\Throwable $e) {
                 $result['errors'][] = "Fila {$rowNumber}: {$e->getMessage()}";
                 $result['skipped']++;
+                $result['skipped_rows'][] = [
+                    'row_number' => $rowNumber,
+                    'reason' => $e->getMessage(),
+                    'row_data' => $this->sanitizeRowForLog((array) $row),
+                ];
                 $this->logSkippedRow('commercial_prospects', $rowNumber, $e->getMessage(), (array) $row);
             }
         }
@@ -397,12 +424,12 @@ class ExcelImportService
             'customer_name' => (string) $mappedProspect['commercial_name'],
             'service_date' => $serviceDate,
             'customer_type' => $this->normalizeCustomerType($mappedProspect['commerce_type'] ?? null) ?? 'comercial',
-            'service_type' => 'comercial',
             'contact_method' => $contactMethod,
             'status' => $status,
             'quoted' => 'pending',
             'closed' => 'pending',
             'responded' => false,
+            'is_recurrent' => false,
             'has_coverage' => false,
             'notes' => $mappedProspect['close_reason'] ?? null,
         ];
@@ -599,6 +626,15 @@ class ExcelImportService
      */
     private function findFirstDailyTrackingSheet(array $sheets): ?Worksheet
     {
+        $headerAliases = [
+            'customer_name',
+            'cliente_empresa',
+            'nombre_cliente',
+            'service_date',
+            'fecha',
+            'fecha_servicio',
+        ];
+
         foreach ($sheets as $sheet) {
             $rows = $sheet->toArray(null, true, true, true);
             if (count($rows) === 0) {
@@ -608,7 +644,63 @@ class ExcelImportService
             $headers = $this->extractHeaders((array) reset($rows));
             $values = array_values($headers);
 
-            if (in_array('customer_name', $values, true) && in_array('service_date', $values, true)) {
+            $hasCustomerHeader = in_array('customer_name', $values, true) || in_array('cliente_empresa', $values, true) || in_array('nombre_cliente', $values, true);
+            $hasDateHeader = in_array('service_date', $values, true) || in_array('fecha', $values, true) || in_array('fecha_servicio', $values, true);
+
+            if ($hasCustomerHeader && $hasDateHeader) {
+                return $sheet;
+            }
+
+            $matchedAliases = 0;
+            foreach ($headerAliases as $alias) {
+                if (in_array($alias, $values, true)) {
+                    $matchedAliases++;
+                }
+            }
+
+            if ($matchedAliases >= 2) {
+                return $sheet;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<int, Worksheet> $sheets
+     */
+    private function findFirstCommercialProspectsSheet(array $sheets, ?Worksheet $excludeSheet = null): ?Worksheet
+    {
+        $requiredHeaders = [
+            'nombre_comercial',
+            'cotizacion',
+            'cerro_o_motivo_de_no_cierre',
+            'fecha_programada',
+            'medio_de_contacto',
+        ];
+
+        foreach ($sheets as $sheet) {
+            if ($excludeSheet && $sheet->getTitle() === $excludeSheet->getTitle()) {
+                continue;
+            }
+
+            $rows = $sheet->toArray(null, true, true, true);
+            if (count($rows) === 0) {
+                continue;
+            }
+
+            $headers = $this->extractHeaders((array) reset($rows));
+            $values = array_values($headers);
+
+            $matches = 0;
+            foreach ($requiredHeaders as $required) {
+                if (in_array($required, $values, true)) {
+                    $matches++;
+                }
+            }
+
+            // Exigimos al menos 2 headers clave para evitar falsos positivos.
+            if ($matches >= 2 && in_array('nombre_comercial', $values, true)) {
                 return $sheet;
             }
         }
@@ -642,6 +734,99 @@ class ExcelImportService
             in_array($raw, ['SI', 'SÍ', 'YES', '1', 'TRUE'], true) => 'yes',
             in_array($raw, ['NO', '0', 'FALSE'], true) => 'no',
             default => 'pending',
+        };
+    }
+
+    private function normalizePaymentMethod(mixed $value): ?string
+    {
+        $raw = strtoupper(trim((string) $value));
+
+        if ($raw === '') {
+            return null;
+        }
+
+        return match (true) {
+            str_contains($raw, 'EFECTIVO') => 'cash',
+            str_contains($raw, 'TRANSFER') => 'transfer',
+            str_contains($raw, 'CHEQUE') => 'check',
+            in_array($raw, ['AMBAS', 'NO CONFIRMO', 'NO CONFIRMADO', 'NO DEFINIDO'], true) => 'other',
+            default => null,
+        };
+    }
+
+    private function parseAmount(mixed $value): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_numeric($value)) {
+            return round((float) $value, 2);
+        }
+
+        $raw = strtoupper(trim((string) $value));
+        if (in_array($raw, ['NO', 'N/A', 'NA', 'PENDIENTE', 'FALSE', 'FALSO'], true)) {
+            return null;
+        }
+
+        if (! preg_match('/-?\d[\d.,]*/', $raw, $match)) {
+            return null;
+        }
+
+        $number = $match[0];
+        $number = preg_replace('/[^\d,.-]/', '', $number) ?? '';
+
+        if ($number === '' || $number === '-' || $number === '.' || $number === ',') {
+            return null;
+        }
+
+        $hasComma = str_contains($number, ',');
+        $hasDot = str_contains($number, '.');
+
+        if ($hasComma && $hasDot) {
+            $lastComma = strrpos($number, ',');
+            $lastDot = strrpos($number, '.');
+
+            if ($lastComma !== false && $lastDot !== false && $lastComma > $lastDot) {
+                // Formato 1.234,56
+                $number = str_replace('.', '', $number);
+                $number = str_replace(',', '.', $number);
+            } else {
+                // Formato 1,234.56
+                $number = str_replace(',', '', $number);
+            }
+        } elseif ($hasComma) {
+            // Si termina en ,dd usar coma como decimal; si no, coma como miles.
+            $number = preg_match('/,\d{1,2}$/', $number)
+                ? str_replace(',', '.', $number)
+                : str_replace(',', '', $number);
+        } elseif ($hasDot) {
+            // Si no parece decimal al final, tratar punto como miles.
+            if (! preg_match('/\.\d{1,2}$/', $number)) {
+                $number = str_replace('.', '', $number);
+            }
+        }
+
+        if (! is_numeric($number)) {
+            return null;
+        }
+
+        return round((float) $number, 2);
+    }
+
+    private function normalizeInvoice(mixed $value): ?string
+    {
+        $raw = strtoupper(trim((string) $value));
+
+        if ($raw === '') {
+            return null;
+        }
+
+        return match (true) {
+            in_array($raw, ['SI', 'SÍ', 'YES', '1', 'TRUE'], true) => 'yes',
+            in_array($raw, ['NO', '0', 'FALSE'], true) => 'no',
+            in_array($raw, ['NO APLICA', 'N/A', 'NA', 'NOAPLICA'], true) => 'not_applicable',
+            default => 'not_applicable',
         };
     }
 

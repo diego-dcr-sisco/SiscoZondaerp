@@ -194,6 +194,8 @@ Route::prefix('crm')->name('crm.')->middleware(['auth', 'single.session', 'can:i
     Route::get('/daily-trackings/charts', [DailyTrackingController::class, 'charts'])->name('daily-tracking.charts');
     Route::get('/daily-trackings/import', [DailyTrackingController::class, 'showImportForm'])->name('daily-tracking.import-form');
     Route::post('/daily-trackings/import', [DailyTrackingController::class, 'importFromExcel'])->name('daily-tracking.import-excel');
+    Route::post('/daily-tracking/{dailyTracking}/store-customer', [DailyTrackingController::class, 'storeCustomerFromTracking'])
+        ->name('daily-tracking.store-customer');
     Route::resource('/daily-tracking', DailyTrackingController::class);
 });
 

@@ -535,11 +535,11 @@ class UserController extends Controller
 	{
 		try {
 			$request->validate([
-				'file' => 'required|mimes:jpeg,png,jpg,pdf|max:5120',
+				'file' => 'required|mimes:jpeg,png,jpg,pdf,xlsx|max:5120',
 				'filename_id' => 'required'
 			], [
 				'file.required' => 'Debe seleccionar un archivo',
-				'file.mimes' => 'El archivo debe ser JPEG, PNG, JPG o PDF',
+				'file.mimes' => 'El archivo debe ser JPEG, PNG, JPG, PDF o XLSX',
 				'file.max' => 'El archivo no debe exceder los 5MB',
 				'filename_id.required' => 'El tipo de archivo es requerido'
 			]);
@@ -585,7 +585,7 @@ class UserController extends Controller
 		try {
 			// Validación
 			$request->validate([
-				'file' => 'required|mimes:jpeg,png,jpg,pdf|max:5120',
+				'file' => 'required|mimes:jpeg,png,jpg,pdf,xlsx|max:5120',
 				'filename' => 'required|string|max:255',
 				'expirated_at' => 'nullable|date',
 			]);

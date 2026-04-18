@@ -21,9 +21,9 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label is-required">Archivo</label>
-                    <input class="form-control" accept=".pdf, .png, .jpg, .jpeg" type="file" id="file"
+                    <input class="form-control" accept=".pdf, .xlsx, .png, .jpg, .jpeg" type="file" id="file"
                         name="file" required>
-                    <div class="form-text">Solo se permiten archivos .PDF .JPG .JPEG .PNG y no deben superar 5 MB.</div>
+                    <div class="form-text">Solo se permiten archivos .PDF .XLSX .JPG .JPEG .PNG y no deben superar 5 MB.</div>
                     <div class="invalid-feedback d-block" id="file-size-error" style="display: none !important;"></div>
                 </div>
             </div>

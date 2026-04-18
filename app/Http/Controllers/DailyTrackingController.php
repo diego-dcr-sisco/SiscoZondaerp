@@ -9,13 +9,15 @@ use App\Enums\DailyTrackingCustomerType;
 use App\Enums\DailyTrackingInvoice;
 use App\Enums\DailyTrackingPaymentMethod;
 use App\Enums\DailyTrackingQuoted;
-use App\Enums\DailyTrackingServiceType;
 use App\Enums\DailyTrackingStatus;
 use App\Http\Requests\StoreDailyTrackingRequest;
 use App\Http\Requests\UpdateDailyTrackingRequest;
 use App\Http\Requests\ImportExcelRequest;
+use App\Models\Branch;
+use App\Models\Customer;
 use App\Models\DailyTracking;
 use App\Models\Service;
+use App\Models\ServiceType;
 use App\Services\ExcelImportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -23,6 +25,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use LaravelDaily\LaravelCharts\Classes\LaravelChart;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
@@ -38,7 +42,7 @@ class DailyTrackingController extends Controller
             $perPage = 15;
         }
 
-        $sortableColumns = ['service_date', 'customer_name', 'status', 'service_type', 'created_at'];
+        $sortableColumns = ['service_date', 'customer_name', 'status', 'created_at'];
         $sort = $request->get('sort', 'created_at');
         if (! in_array($sort, $sortableColumns, true)) {
             $sort = 'created_at';
@@ -57,7 +61,6 @@ class DailyTrackingController extends Controller
             'navigation' => $navigation,
             'dailyTrackings' => $dailyTrackings,
             'statusOptions' => DailyTrackingStatus::cases(),
-            'serviceTypeOptions' => DailyTrackingServiceType::cases(),
             'nav' => 'd',
         ]));
     }
@@ -212,8 +215,6 @@ class DailyTrackingController extends Controller
             ->selectRaw("SUM(CASE WHEN customer_type = 'comercial' THEN 1 ELSE 0 END) as commercial")
             ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' THEN 1 ELSE 0 END) as industrial")
             ->selectRaw("SUM(CASE WHEN customer_type = 'comercial' THEN 1 ELSE 0 END) as new_commercial_clients")
-            ->selectRaw("SUM(CASE WHEN service_type = 'comercial' THEN 1 ELSE 0 END) as commercial_services")
-            ->selectRaw("SUM(CASE WHEN service_type = 'industrial' THEN 1 ELSE 0 END) as industrial_services")
             ->selectRaw("SUM(CASE WHEN invoice = 'yes' THEN 1 ELSE 0 END) as total_invoiced")
             ->groupBy('period')
             ->orderBy('period')
@@ -245,8 +246,6 @@ class DailyTrackingController extends Controller
             'Comercial',
             'Industrial',
             'Clientes comerciales nuevos',
-            'Servicios comerciales',
-            'Servicios industriales',
         ];
 
         $methodHeadings = array_map(
@@ -286,8 +285,6 @@ class DailyTrackingController extends Controller
                 (int) $row->commercial,
                 (int) $row->industrial,
                 (int) $row->new_commercial_clients,
-                (int) $row->commercial_services,
-                (int) $row->industrial_services,
             ];
 
             $methodData = array_map(function ($method) use ($row, $contactMethodConfig) {
@@ -385,6 +382,69 @@ class DailyTrackingController extends Controller
             ->with('success', 'Registro diario eliminado correctamente.');
     }
 
+    public function storeCustomerFromTracking(Request $request, DailyTracking $dailyTracking)
+    {
+        $contactMediumOptions = $this->customerContactMediumOptions();
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'service_type_id' => ['nullable', 'integer', Rule::exists('service_type', 'id')],
+            'branch_id' => ['required', 'integer', Rule::exists('branch', 'id')],
+            'contact_medium' => ['required', Rule::in(array_keys($contactMediumOptions))],
+            'state' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'email' => ['nullable', 'email', 'max:255'],
+        ]);
+
+        // Derive service_type_id from the tracking's customer_type if not supplied
+        if (empty($validated['service_type_id'])) {
+            $customerTypeValue = $dailyTracking->customer_type instanceof \BackedEnum
+                ? $dailyTracking->customer_type->value
+                : (string) $dailyTracking->customer_type;
+
+            $serviceType = \App\Models\ServiceType::where(
+                \Illuminate\Support\Facades\DB::raw('LOWER(name)'),
+                'LIKE',
+                strtolower($customerTypeValue) . '%'
+            )->first();
+
+            $validated['service_type_id'] = $serviceType?->id;
+        }
+
+        abort_if(empty($validated['service_type_id']), 422, 'No se pudo determinar el tipo de servicio para el cliente.');
+
+        $customer = new Customer();
+        $serviceTypeId = (int) $validated['service_type_id'];
+
+        $customer->blueprints = $serviceTypeId === 3 ? 1 : 0;
+        $customer->print_doc = $serviceTypeId === 3 ? 1 : 0;
+        $customer->validate_certificate = $serviceTypeId === 3 ? 1 : 0;
+        $customer->code = $this->generateCustomerCode((string) $validated['name']);
+
+        $customer->fill([
+            'name' => $validated['name'],
+            'service_type_id' => $serviceTypeId,
+            'branch_id' => (int) $validated['branch_id'],
+            'contact_medium' => $validated['contact_medium'],
+            'state' => $validated['state'] ?: null,
+            'city' => $validated['city'] ?: null,
+            'address' => $validated['address'] ?: null,
+            'phone' => $validated['phone'] ?: null,
+            'email' => $validated['email'] ?: null,
+            'administrative_id' => Auth::id(),
+            'general_sedes' => 0,
+        ]);
+
+        $customer->status = 1;
+        $customer->save();
+
+        return redirect()
+            ->route('crm.daily-tracking.index')
+            ->with('success', 'Cliente creado correctamente desde el registro diario #' . $dailyTracking->id . '.');
+    }
+
     private function buildFilteredQuery(Request $request): Builder
     {
         $query = DailyTracking::query();
@@ -395,10 +455,6 @@ class DailyTrackingController extends Controller
 
         if ($request->filled('status')) {
             $query->where('status', (string) $request->status);
-        }
-
-        if ($request->filled('service_type')) {
-            $query->where('service_type', (string) $request->service_type);
         }
 
         if ($request->filled('contact_methods')) {
@@ -500,11 +556,6 @@ class DailyTrackingController extends Controller
             $conditions[] = "status = '{$status}'";
         }
 
-        if ($request->filled('service_type')) {
-            $serviceType = str_replace("'", "''", (string) $request->input('service_type'));
-            $conditions[] = "service_type = '{$serviceType}'";
-        }
-
         $dateRange = $this->parseDateRange((string) $request->input('date_range', ''));
         if ($dateRange !== null) {
             $conditions[] = "created_at BETWEEN '{$dateRange['start']}' AND '{$dateRange['end']}'";
@@ -528,18 +579,58 @@ class DailyTrackingController extends Controller
 
     private function formData(): array
     {
+        $statesPath = public_path('datas/json/Mexico_states.json');
+        $citiesPath = public_path('datas/json/Mexico_cities.json');
+
+        $states = is_file($statesPath)
+            ? json_decode((string) file_get_contents($statesPath), true)
+            : [];
+
+        $cities = is_file($citiesPath)
+            ? json_decode((string) file_get_contents($citiesPath), true)
+            : [];
+
         return [
             'navigation' => $this->navigation(),
             'services' => Service::query()->select('id', 'name')->orderBy('name')->get(),
             'statusOptions' => DailyTrackingStatus::cases(),
             'contactMethodOptions' => DailyTrackingContactMethod::cases(),
-            'serviceTypeOptions' => DailyTrackingServiceType::cases(),
             'customerTypeOptions' => DailyTrackingCustomerType::cases(),
             'quotedOptions' => DailyTrackingQuoted::cases(),
             'closedOptions' => DailyTrackingClosed::cases(),
             'invoiceOptions' => DailyTrackingInvoice::cases(),
             'paymentMethodOptions' => DailyTrackingPaymentMethod::cases(),
+            'customerBranches' => Branch::query()->select('id', 'name')->orderBy('name')->get(),
+            'customerServiceTypes' => ServiceType::query()->select('id', 'name')->orderBy('id')->get(),
+            'customerContactMediumOptions' => $this->customerContactMediumOptions(),
+            'states' => is_array($states) ? $states : [],
+            'cities' => is_array($cities) ? $cities : [],
         ];
+    }
+
+    private function customerContactMediumOptions(): array
+    {
+        return [
+            'whatsapp' => 'WhatsApp',
+            'sms' => 'Mensaje SMS',
+            'call' => 'Llamada telefonica',
+            'email' => 'Correo electronico',
+            'flyer' => 'Volanteo fisico',
+        ];
+    }
+
+    private function generateCustomerCode(string $name): string
+    {
+        $prefix = strtoupper(preg_replace('/[^A-Z]/', '', substr(preg_replace('/[^A-Za-z]/', '', $name), 0, 3)));
+        if ($prefix === '') {
+            $prefix = 'CUS';
+        }
+
+        do {
+            $code = $prefix . random_int(1000, 9999);
+        } while (Customer::where('code', $code)->exists());
+
+        return $code;
     }
 
     public function exportCharts(Request $request)
@@ -781,9 +872,25 @@ class DailyTrackingController extends Controller
     {
         try {
             $file = $request->file('excel_file');
+
+            Log::info('Daily tracking import started', [
+                'user_id' => optional($request->user())->id,
+                'has_excel_file' => $request->hasFile('excel_file'),
+                'excel_file_name' => $file?->getClientOriginalName(),
+                'excel_file_mime' => $file?->getMimeType(),
+                'excel_file_size' => $file?->getSize(),
+            ]);
+
             $filePath = $file->store('imports', 'local');
 
             $result = $importService->importFile(storage_path('app/' . $filePath));
+
+            Log::info('Daily tracking import processed', [
+                'user_id' => optional($request->user())->id,
+                'file_path' => $filePath,
+                'success' => $result['success'] ?? false,
+                'message' => $result['message'] ?? null,
+            ]);
 
             // Limpiar archivo después de procesar
             \Illuminate\Support\Facades\Storage::delete($filePath);
@@ -801,6 +908,12 @@ class DailyTrackingController extends Controller
             }
 
         } catch (\Exception $e) {
+            Log::error('Daily tracking import failed', [
+                'user_id' => optional($request->user())->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return back()
                 ->with('error', 'Error al procesar el archivo: ' . $e->getMessage())
                 ->withInput();

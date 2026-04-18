@@ -99,7 +99,7 @@
                                             <li>
                                                 <button type="button" class="dropdown-item" data-bs-toggle="modal"
                                                     data-bs-target="#importDailyTrackingModal">
-                                                    <i class="bi bi-cloud-upload"></i> Importar Excel
+                                                    <i class="bi bi-cloud-upload"></i> Importar CSV
                                                 </button>
                                             </li>
                                             <li>
@@ -120,8 +120,11 @@
                                 @if (session('import_result'))
                                     @php
                                         $importResult = session('import_result');
-                                        $daily = $importResult['daily_tracking'] ?? ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => []];
-                                        $prospects = $importResult['commercial_prospects'] ?? ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => []];
+                                        $daily = $importResult['daily_tracking'] ?? ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'skipped_rows' => [], 'errors' => []];
+                                        $prospects = $importResult['commercial_prospects'] ?? ['inserted' => 0, 'updated' => 0, 'skipped' => 0, 'skipped_rows' => [], 'errors' => []];
+                                        $dailySkippedRows = $daily['skipped_rows'] ?? [];
+                                        $prospectsSkippedRows = $prospects['skipped_rows'] ?? [];
+                                        $totalSkippedRows = count($dailySkippedRows) + count($prospectsSkippedRows);
                                     @endphp
 
                                     <div class="alert alert-info border mb-3">
@@ -176,7 +179,62 @@
                                                 </ul>
                                             </div>
                                         @endif
+
+                                        @if ($totalSkippedRows > 0)
+                                            <div class="mt-3">
+                                                <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal"
+                                                    data-bs-target="#skippedRowsImportModal">
+                                                    <i class="bi bi-list-ul"></i> Ver filas no insertadas ({{ $totalSkippedRows }})
+                                                </button>
+                                            </div>
+                                        @endif
                                     </div>
+
+                                    @if ($totalSkippedRows > 0)
+                                        <div class="modal fade" id="skippedRowsImportModal" tabindex="-1"
+                                            aria-labelledby="skippedRowsImportModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="skippedRowsImportModalLabel">Filas no insertadas en importación</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        @if (!empty($dailySkippedRows))
+                                                            <h6 class="mb-2">Registro_Diario_CRM ({{ count($dailySkippedRows) }})</h6>
+                                                            @foreach ($dailySkippedRows as $row)
+                                                                <div class="border rounded p-2 mb-2 bg-light">
+                                                                    <div class="small mb-1"><strong>Fila:</strong> {{ $row['row_number'] ?? '-' }}</div>
+                                                                    <div class="small mb-2"><strong>Motivo:</strong> {{ $row['reason'] ?? 'Sin detalle' }}</div>
+                                                                    <details>
+                                                                        <summary class="small">Ver datos de la fila</summary>
+                                                                        <pre class="small bg-white border rounded p-2 mt-2 mb-0">{{ json_encode($row['row_data'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                                                                    </details>
+                                                                </div>
+                                                            @endforeach
+                                                        @endif
+
+                                                        @if (!empty($prospectsSkippedRows))
+                                                            <h6 class="mt-3 mb-2">PROSPECTOS COMERCIALES ({{ count($prospectsSkippedRows) }})</h6>
+                                                            @foreach ($prospectsSkippedRows as $row)
+                                                                <div class="border rounded p-2 mb-2 bg-light">
+                                                                    <div class="small mb-1"><strong>Fila:</strong> {{ $row['row_number'] ?? '-' }}</div>
+                                                                    <div class="small mb-2"><strong>Motivo:</strong> {{ $row['reason'] ?? 'Sin detalle' }}</div>
+                                                                    <details>
+                                                                        <summary class="small">Ver datos de la fila</summary>
+                                                                        <pre class="small bg-white border rounded p-2 mt-2 mb-0">{{ json_encode($row['row_data'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+                                                                    </details>
+                                                                </div>
+                                                            @endforeach
+                                                        @endif
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
                                 @endif
                                 {{-- Filtros --}}
                                 <div class="border p-2 text-dark rounded mb-3 bg-light">
@@ -212,22 +270,6 @@
                                             </div>
 
                                             <div class="col-lg-2">
-                                                <label class="form-label">Tipo de servicio</label>
-                                                <div class="input-group input-group-sm mb-3">
-                                                    <span class="input-group-text"><i class="bi bi-gear-fill"></i></span>
-                                                    <select name="service_type" class="form-select form-select-sm">
-                                                        <option value="">Todos</option>
-                                                        @foreach ($serviceTypeOptions as $option)
-                                                            <option value="{{ $option->value }}"
-                                                                @selected(request('service_type') === $option->value)>
-                                                                {{ $option->label() }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            <div class="col-lg-2">
                                                 <label class="form-label">Rango de fechas</label>
                                                 <div class="input-group input-group-sm mb-3">
                                                     <span class="input-group-text"><i
@@ -253,8 +295,6 @@
                                                         <option value="customer_name" @selected(request('sort') === 'customer_name')>Cliente
                                                         </option>
                                                         <option value="status" @selected(request('sort') === 'status')>Estatus</option>
-                                                        <option value="service_type" @selected(request('sort') === 'service_type')>Tipo
-                                                        </option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -309,7 +349,7 @@
                                                 <th>Servicio</th>
                                                 <th>Cliente</th>
                                                 <th>Estatus</th>
-                                                <th>Tipo de servicio</th>
+                                                <th>Recurrente</th>
                                                 <th>Cotizado</th>
                                                 <th>Cerrado</th>
                                                 <th>Monto</th>
@@ -331,7 +371,8 @@
                                                     };
                                                     $quotedLabel = $item->quoted?->label() ?? $item->quoted;
                                                     $closedLabel = $item->closed?->label() ?? $item->closed;
-                                                    $stypeLabel = $item->service_type?->label() ?? $item->service_type;
+                                                    $recurrentBadgeClass = $item->is_recurrent ? 'text-bg-info' : 'text-bg-light text-dark';
+                                                    $recurrentLabel = $item->is_recurrent ? 'Si' : 'No';
                                                     $amount = $item->billed_amount ?? $item->quoted_amount;
                                                 @endphp
                                                 <tr>
@@ -347,7 +388,7 @@
                                                     <td><span
                                                             class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
                                                     </td>
-                                                    <td>{{ $stypeLabel }}</td>
+                                                        <td><span class="badge {{ $recurrentBadgeClass }}">{{ $recurrentLabel }}</span></td>
                                                     <td>{{ $quotedLabel }}</td>
                                                     <td>{{ $closedLabel }}</td>
                                                     <td>{{ $amount ? '$' . number_format((float) $amount, 2) : '-' }}</td>
@@ -366,6 +407,19 @@
                                                                 data-bs-toggle="tooltip" data-bs-title="Editar">
                                                                 <i class="bi bi-pencil-square"></i>
                                                             </a>
+                                                            <button type="button"
+                                                                class="btn btn-warning btn-sm px-2 btn-create-customer"
+                                                                data-bs-toggle="tooltip"
+                                                                data-bs-title="Crear cliente"
+                                                                data-daily-tracking-id="{{ $item->id }}"
+                                                                data-customer-name="{{ $item->customer_name }}"
+                                                                data-phone="{{ $item->phone }}"
+                                                                data-state="{{ $item->state }}"
+                                                                data-city="{{ $item->city }}"
+                                                                data-address="{{ $item->address }}"
+                                                                data-customer-type="{{ $item->customer_type?->value ?? $item->customer_type }}">
+                                                                <i class="bi bi-person-plus-fill"></i>
+                                                            </button>
                                                             <form
                                                                 action="{{ route('crm.daily-tracking.destroy', $item) }}"
                                                                 method="POST"
@@ -383,7 +437,7 @@
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="10" class="text-center py-4 text-muted">
+                                                    <td colspan="11" class="text-center py-4 text-muted">
                                                         <i class="bi bi-inbox fs-3 d-block mb-1"></i>
                                                         No hay registros para mostrar.
                                                     </td>
@@ -442,7 +496,107 @@
                                     </div>
                                 </div>
 
-                                <div class="modal fade" id="exportDailyTrackingModal" da                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ta-bs-backdrop="static"
+                                <div class="modal fade" id="createCustomerFromTrackingModal" data-bs-backdrop="static"
+                                    data-bs-keyboard="false" tabindex="-1"
+                                    aria-labelledby="createCustomerFromTrackingModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-warning-subtle">
+                                                <h5 class="modal-title" id="createCustomerFromTrackingModalLabel">
+                                                    <i class="bi bi-person-plus-fill"></i> Crear cliente desde actividad diaria
+                                                </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
+                                            </div>
+                                            <form id="createCustomerFromTrackingForm" method="POST" action="#">
+                                                @csrf
+                                                <div class="modal-body">
+                                                    <div class="alert alert-info py-2">
+                                                        Se tomaran los datos del registro diario seleccionado y podras ajustarlos antes de guardar.
+                                                    </div>
+
+                                                    <div class="row g-3">
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Nombre *</label>
+                                                            <input type="text" class="form-control form-control-sm" name="name" id="ct-name" required>
+                                                        </div>
+
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Telefono</label>
+                                                            <input type="text" class="form-control form-control-sm" name="phone" id="ct-phone">
+                                                        </div>
+
+                                                        <div class="col-md-4">
+                                                            <label class="form-label">Tipo de servicio *</label>
+                                                            <select class="form-select form-select-sm" name="service_type_id" id="ct-service-type" required>
+                                                                <option value="">Seleccionar</option>
+                                                                @foreach ($customerServiceTypes as $serviceType)
+                                                                    <option value="{{ $serviceType->id }}">{{ $serviceType->name }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-md-4">
+                                                            <label class="form-label">Sucursal *</label>
+                                                            <select class="form-select form-select-sm" name="branch_id" id="ct-branch" required>
+                                                                <option value="">Seleccionar</option>
+                                                                @foreach ($customerBranches as $branch)
+                                                                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-md-4">
+                                                            <label class="form-label">Medio de contacto *</label>
+                                                            <select class="form-select form-select-sm" name="contact_medium" id="ct-contact-medium" required>
+                                                                @foreach ($customerContactMediumOptions as $key => $label)
+                                                                    <option value="{{ $key }}" @selected($key === 'call')>{{ $label }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Estado</label>
+                                                            <select class="form-select form-select-sm" name="state" id="ct-state">
+                                                                <option value="">Seleccionar</option>
+                                                                @foreach ($states as $state)
+                                                                    <option value="{{ $state['name'] ?? '' }}" data-key="{{ $state['key'] ?? '' }}">{{ $state['name'] ?? '' }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-md-6">
+                                                            <label class="form-label">Ciudad</label>
+                                                            <select class="form-select form-select-sm" name="city" id="ct-city">
+                                                                <option value="">Seleccionar</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div class="col-12">
+                                                            <label class="form-label">Direccion</label>
+                                                            <textarea class="form-control form-control-sm" name="address" id="ct-address" rows="2"></textarea>
+                                                        </div>
+
+                                                        <div class="col-12">
+                                                            <label class="form-label">Email (opcional)</label>
+                                                            <input type="email" class="form-control form-control-sm" name="email" id="ct-email"
+                                                                placeholder="cliente@correo.com">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                        data-bs-dismiss="modal">Cancelar</button>
+                                                    <button type="submit" class="btn btn-warning btn-sm">
+                                                        <i class="bi bi-check-lg"></i> Crear cliente
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="modal fade" id="exportDailyTrackingModal" data-bs-backdrop="static"
                                     data-bs-keyboard="false" tabindex="-1"
                                     aria-labelledby="exportDailyTrackingModalLabel" aria-hidden="true">
                                     <div class="modal-dialog">
@@ -516,8 +670,6 @@
                                                         value="{{ request('customer') }}">
                                                     <input type="hidden" name="status"
                                                         value="{{ request('status') }}">
-                                                    <input type="hidden" name="service_type"
-                                                        value="{{ request('service_type') }}">
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-outline-secondary btn-sm"
@@ -539,7 +691,7 @@
                                         <div class="modal-content">
                                             <div class="modal-header bg-primary text-white">
                                                 <h5 class="modal-title" id="importDailyTrackingModalLabel">
-                                                    <i class="bi bi-cloud-upload"></i> Importar Excel
+                                                    <i class="bi bi-cloud-upload"></i> Importar CSV
                                                 </h5>
                                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                                                     aria-label="Close"></button>
@@ -552,8 +704,8 @@
                                                         <i class="bi bi-info-circle"></i>
                                                         <strong>Instrucciones:</strong>
                                                         <ul class="mb-0">
-                                                            <li>Archivo Excel con 2 hojas: "Registro_Diario_CRM" y "PROSPECTOS COMERCIALES"</li>
-                                                            <li>Formato: .xlsx o .csv (máximo 5MB)</li>
+                                                            <li>Archivo CSV con los campos requeridos para importación</li>
+                                                            <li>Formato: .csv (máximo 5MB)</li>
                                                             <li>Los registros duplicados se actualizarán automáticamente</li>
                                                         </ul>
                                                     </div>
@@ -566,18 +718,32 @@
                                                                 <i class="bi bi-cloud-arrow-up text-primary" style="font-size: 2.5rem;"></i>
                                                             </div>
                                                             <p class="mb-1 fw-semibold text-primary">Arrastra tu archivo aquí o haz clic</p>
-                                                            <p class="small text-muted mb-0">Soporta: Excel (.xlsx, .xls) y CSV</p>
+                                                            <p class="small text-muted mb-0">Soporta: CSV (.csv)</p>
                                                             <input type="file" name="excel_file" id="excelFileInput"
-                                                                class="d-none" accept=".xlsx,.xls,.csv">
+                                                                class="d-none" accept=".csv,text/csv" required>
                                                         </div>
                                                         <div class="mt-2" id="fileName" class="alert alert-success d-none">
                                                             <i class="bi bi-check-circle"></i> <span id="fileNameText"></span>
                                                         </div>
+                                                        <div class="text-danger mt-2 d-none" id="excelFileError">
+                                                            Por favor, selecciona un archivo CSV antes de importar.
+                                                        </div>
+                                                    </div>
+
+                                                    <div id="importLoadingState" class="d-none border rounded p-3 bg-light">
+                                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                                            <div class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></div>
+                                                            <span class="fw-semibold text-primary">Importando archivo...</span>
+                                                        </div>
+                                                        <div class="progress" role="progressbar" aria-label="Import progress" aria-valuemin="0" aria-valuemax="100">
+                                                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                                                        </div>
+                                                        <small class="text-muted d-block mt-2">Esto puede tardar unos segundos dependiendo del tamano del archivo.</small>
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-outline-secondary"
-                                                        data-bs-dismiss="modal">Cancelar</button>
+                                                        data-bs-dismiss="modal" id="importCancelBtn">Cancelar</button>
                                                     <button type="submit" class="btn btn-primary" id="importBtn">
                                                         <i class="bi bi-upload"></i> Importar datos
                                                     </button>
@@ -586,6 +752,132 @@
                                         </div>
                                     </div>
                                 </div>
+
+                            {{-- Modal: Crear Cliente desde registro diario --}}
+                            <div class="modal fade" id="createCustomerFromTrackingModal" data-bs-backdrop="static"
+                                data-bs-keyboard="false" tabindex="-1"
+                                aria-labelledby="createCustomerFromTrackingModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-warning">
+                                            <h5 class="modal-title text-dark" id="createCustomerFromTrackingModalLabel">
+                                                <i class="bi bi-person-plus-fill me-1"></i> Crear cliente desde registro diario
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                        </div>
+                                        <form id="createCustomerFromTrackingForm" method="POST" action="">
+                                            @csrf
+                                            <div class="modal-body">
+                                                <div class="alert alert-info small mb-3">
+                                                    <i class="bi bi-info-circle"></i>
+                                                    Los datos se precargaron del registro seleccionado. Revisa y completa los campos requeridos antes de guardar.
+                                                </div>
+
+                                                <div class="row g-3">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold mb-1">Nombre del cliente *</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                                            <input type="text" name="name" id="ctf_name"
+                                                                class="form-control form-control-sm" required maxlength="255">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold mb-1">Telefono</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text"><i class="bi bi-telephone-fill"></i></span>
+                                                            <input type="text" name="phone" id="ctf_phone"
+                                                                class="form-control form-control-sm" maxlength="50">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold mb-1">Correo electronico</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+                                                            <input type="email" name="email" id="ctf_email"
+                                                                class="form-control form-control-sm" maxlength="255">
+                                                        </div>
+                                                    </div>
+
+                                                    <input type="hidden" name="service_type_id" id="ctf_service_type_id">
+                                                    <span id="ctf_service_type_map" class="d-none"
+                                                        data-map="{{ htmlspecialchars(json_encode($customerServiceTypes->map(fn($st) => ['id' => $st->id, 'name' => strtolower($st->name)])->values()->all()), ENT_QUOTES) }}"></span>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold mb-1">Sucursal asignada *</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text"><i class="bi bi-building"></i></span>
+                                                            <select name="branch_id" id="ctf_branch_id"
+                                                                class="form-select form-select-sm" required>
+                                                                <option value="">— Seleccionar —</option>
+                                                                @foreach ($customerBranches as $branch)
+                                                                    <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold mb-1">Medio de contacto *</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text"><i class="bi bi-chat-left-text-fill"></i></span>
+                                                            <select name="contact_medium" id="ctf_contact_medium"
+                                                                class="form-select form-select-sm" required>
+                                                                <option value="">— Seleccionar —</option>
+                                                                @foreach ($customerContactMediumOptions as $key => $label)
+                                                                    <option value="{{ $key }}">{{ $label }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold mb-1">Estado</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text"><i class="bi bi-map-fill"></i></span>
+                                                            <select name="state" id="ctf_state" class="form-select form-select-sm">
+                                                                <option value="">— Seleccionar estado —</option>
+                                                                @foreach ($states as $st)
+                                                                    <option value="{{ $st['name'] }}">{{ $st['name'] }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-md-6">
+                                                        <label class="form-label fw-semibold mb-1">Ciudad</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
+                                                            <select name="city" id="ctf_city" class="form-select form-select-sm">
+                                                                <option value="">— Selecciona primero el estado —</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="col-12">
+                                                        <label class="form-label fw-semibold mb-1">Direccion</label>
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text"><i class="bi bi-pin-map-fill"></i></span>
+                                                            <input type="text" name="address" id="ctf_address"
+                                                                class="form-control form-control-sm" maxlength="500">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                                    data-bs-dismiss="modal">Cancelar</button>
+                                                <button type="submit" class="btn btn-warning btn-sm text-dark fw-semibold">
+                                                    <i class="bi bi-person-check-fill"></i> Crear cliente
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
 
                             </div>
 
@@ -598,6 +890,10 @@
                                 const fileNameDisplay = document.getElementById('fileName')
                                 const fileNameText = document.getElementById('fileNameText')
                                 const importBtn = document.getElementById('importBtn')
+                                const importForm = document.getElementById('importExcelForm')
+                                const importLoadingState = document.getElementById('importLoadingState')
+                                const importCancelBtn = document.getElementById('importCancelBtn')
+                                const excelFileError = document.getElementById('excelFileError')
 
                                 if (uploadZone) {
                                     uploadZone.addEventListener('click', () => excelFileInput.click())
@@ -631,9 +927,45 @@
                                             const file = excelFileInput.files[0]
                                             fileNameText.textContent = '✓ ' + file.name
                                             fileNameDisplay.classList.remove('d-none')
+                                            if (excelFileError) {
+                                                excelFileError.classList.add('d-none')
+                                            }
                                             importBtn.disabled = false
                                         }
                                     }
+                                }
+
+                                if (importForm) {
+                                    importForm.addEventListener('submit', function(e) {
+                                        if (!excelFileInput || !excelFileInput.files || excelFileInput.files.length === 0) {
+                                            e.preventDefault()
+                                            if (excelFileError) {
+                                                excelFileError.classList.remove('d-none')
+                                            }
+                                            if (importBtn) {
+                                                importBtn.disabled = true
+                                            }
+                                            return
+                                        }
+
+                                        if (importLoadingState) {
+                                            importLoadingState.classList.remove('d-none')
+                                        }
+
+                                        if (uploadZone) {
+                                            uploadZone.classList.add('opacity-50')
+                                            uploadZone.style.pointerEvents = 'none'
+                                        }
+
+                                        if (importBtn) {
+                                            importBtn.disabled = true
+                                            importBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Procesando...'
+                                        }
+
+                                        if (importCancelBtn) {
+                                            importCancelBtn.disabled = true
+                                        }
+                                    })
                                 }
                                 $(document).ready(function() {
                                     $('input[name="date_range"]').daterangepicker({
@@ -711,7 +1043,6 @@
                                     setFieldValue('address', 'Calle Demo 123, Colonia Centro')
                                     setFieldValue('contact_method', 'llamada')
                                     setFieldValue('status', 'survey')
-                                    setFieldValue('service_type', 'comercial')
                                     setFieldValue('quoted', 'yes')
                                     setFieldValue('closed', 'pending')
                                     setFieldValue('quoted_amount', '2500.00')
@@ -741,11 +1072,97 @@
                                             bubbles: true
                                         }))
                                     }
+
+                                    const isRecurrent = form.querySelector('[name="is_recurrent"][type="checkbox"]')
+                                    if (isRecurrent) {
+                                        isRecurrent.checked = false
+                                        isRecurrent.dispatchEvent(new Event('change', {
+                                            bubbles: true
+                                        }))
+                                    }
                                 }
 
                                 @if ($errors->any())
                                     const createModal = new bootstrap.Modal(document.getElementById('createDailyTrackingModal'))
                                     createModal.show()
                                 @endif
+
+                                // --- Crear Cliente desde registro diario ---
+                                ;(function () {
+                                    const ctfCitiesData = @json($cities);
+                                    const ctfStatesData = @json($states);
+
+                                    const stateSelect = document.getElementById('ctf_state');
+                                    const citySelect  = document.getElementById('ctf_city');
+
+                                    function loadCtfCities(stateName, selectedCity) {
+                                        citySelect.innerHTML = '<option value="">— Seleccionar ciudad —</option>';
+
+                                        // Busca la key del estado por nombre
+                                        const stateObj = ctfStatesData.find(s => s.name === stateName);
+                                        if (!stateObj) return;
+
+                                        const citiesList = ctfCitiesData[stateObj.key] || [];
+                                        citiesList.forEach(function (city) {
+                                            const opt = document.createElement('option');
+                                            opt.value = typeof city === 'object' ? city.name : city;
+                                            opt.textContent = typeof city === 'object' ? city.name : city;
+                                            if (opt.value === selectedCity) opt.selected = true;
+                                            citySelect.appendChild(opt);
+                                        });
+                                    }
+
+                                    stateSelect.addEventListener('change', function () {
+                                        loadCtfCities(this.value, '');
+                                    });
+
+                                    // Mapa customer_type (enum) -> service_type_id
+                                    const ctfServiceTypeMapEl = document.getElementById('ctf_service_type_map');
+                                    const ctfServiceTypeMap = ctfServiceTypeMapEl
+                                        ? JSON.parse(ctfServiceTypeMapEl.getAttribute('data-map') || '[]')
+                                        : [];
+
+                                    function resolveServiceTypeId(customerTypeValue) {
+                                        const val = (customerTypeValue || '').toLowerCase();
+                                        const found = ctfServiceTypeMap.find(function (st) {
+                                            return st.name === val || st.name.startsWith(val);
+                                        });
+                                        return found ? found.id : '';
+                                    }
+
+                                    document.querySelectorAll('.btn-create-customer').forEach(function (btn) {
+                                        btn.addEventListener('click', function () {
+                                            const trackingId   = this.dataset.dailyTrackingId;
+                                            const name         = this.dataset.customerName || '';
+                                            const phone        = this.dataset.phone || '';
+                                            const state        = this.dataset.state || '';
+                                            const city         = this.dataset.city || '';
+                                            const address      = this.dataset.address || '';
+                                            const customerType = this.dataset.customerType || '';
+
+                                            // Set action URL
+                                            const form = document.getElementById('createCustomerFromTrackingForm');
+                                            form.action = '/crm/daily-tracking/' + trackingId + '/store-customer';
+
+                                            // Prefill basics
+                                            document.getElementById('ctf_name').value    = name;
+                                            document.getElementById('ctf_phone').value   = phone;
+                                            document.getElementById('ctf_address').value = address;
+                                            document.getElementById('ctf_email').value   = '';
+
+                                            // Deriva service_type_id del tipo de cliente
+                                            document.getElementById('ctf_service_type_id').value =
+                                                resolveServiceTypeId(customerType);
+
+                                            // Select state
+                                            stateSelect.value = state;
+                                            loadCtfCities(state, city);
+
+                                            // Show modal
+                                            const modal = new bootstrap.Modal(document.getElementById('createCustomerFromTrackingModal'));
+                                            modal.show();
+                                        });
+                                    });
+                                })();
                             </script>
                         @endsection

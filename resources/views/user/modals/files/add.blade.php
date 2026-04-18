@@ -17,9 +17,9 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label is-required">Archivo</label>
-                    <input class="form-control" accept=".pdf, .png, .jpg, .jpeg" type="file" id="file"
+                    <input class="form-control" accept=".pdf, .xlsx, .png, .jpg, .jpeg" type="file" id="file"
                         name="file" required>
-                    <div class="form-text">Solo se permiten archivos con formato .PDF .JPG .JPEG .PNG</div>
+                    <div class="form-text">Solo se permiten archivos con formato .PDF .XLSX .JPG .JPEG .PNG</div>
                 </div>
             </div>
             <div class="modal-footer">
