@@ -13,6 +13,11 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('backup:restore')->everyMinute()->exec('2>&1 >> ' . storage_path('logs/schedule.log'));
+
+        $schedule->command('client-system:export-tree')
+            ->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/client-system-tree.log'));
     }
 
     /**
