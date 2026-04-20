@@ -21,6 +21,11 @@
             width: 100% !important;
         }
 
+        .charts-page-wrapper .filters-card {
+            position: sticky;
+            top: 1rem;
+        }
+
         @media (max-width: 991.98px) {
             .charts-page-wrapper .charts-header {
                 gap: 0.75rem;
@@ -74,185 +79,133 @@
                 </a>
             </div>
 
-            {{-- Filtros --}}
-            <div class="border p-2 text-dark rounded mb-3 bg-light">
-                <form method="GET" action="{{ route('crm.daily-tracking.charts') }}">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-12 col-md-6 col-lg-4">
-                            <label class="form-label form-label-sm mb-1">Rango de fechas (creación)</label>
-                            <input type="text" name="date_range" class="form-control form-control-sm"
-                                placeholder="dd/mm/yyyy - dd/mm/yyyy" value="{{ request('date_range') }}" autocomplete="off"
-                                readonly>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <label class="form-label form-label-sm mb-1">Servicio</label>
-                            <select name="service_id" class="form-select form-select-sm">
-                                <option value="">Todos</option>
-                                @foreach ($services as $service)
-                                    <option value="{{ $service->id }}"
-                                        {{ request('service_id') == $service->id ? 'selected' : '' }}>
-                                        {{ $service->name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-2">
-                            <label class="form-label form-label-sm mb-1">Estatus</label>
-                            <select name="status" class="form-select form-select-sm">
-                                <option value="">Todos</option>
-                                @foreach ($statusOptions as $opt)
-                                    <option value="{{ $opt->value }}"
-                                        {{ request('status') == $opt->value ? 'selected' : '' }}>
-                                        {{ $opt->label() }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-2">
-                            <label class="form-label form-label-sm mb-1">Grafica 1</label>
-                            <select name="chart_type_contact" class="form-select form-select-sm">
-                                <option value="bar"
-                                    {{ ($chartTypes['contact'] ?? request('chart_type_contact', 'bar')) === 'bar' ? 'selected' : '' }}>
-                                    Barras
-                                </option>
-                                <option value="line"
-                                    {{ ($chartTypes['contact'] ?? request('chart_type_contact', 'bar')) === 'line' ? 'selected' : '' }}>
-                                    Lineal
-                                </option>
-                                <option value="pie"
-                                    {{ ($chartTypes['contact'] ?? request('chart_type_contact', 'bar')) === 'pie' ? 'selected' : '' }}>
-                                    Circular
-                                </option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-2">
-                            <label class="form-label form-label-sm mb-1">Grafica 2</label>
-                            <select name="chart_type_amounts" class="form-select form-select-sm">
-                                <option value="bar"
-                                    {{ ($chartTypes['amounts'] ?? request('chart_type_amounts', 'bar')) === 'bar' ? 'selected' : '' }}>
-                                    Barras
-                                </option>
-                                <option value="line"
-                                    {{ ($chartTypes['amounts'] ?? request('chart_type_amounts', 'bar')) === 'line' ? 'selected' : '' }}>
-                                    Lineal
-                                </option>
-                                <option value="pie"
-                                    {{ ($chartTypes['amounts'] ?? request('chart_type_amounts', 'bar')) === 'pie' ? 'selected' : '' }}>
-                                    Circular
-                                </option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-2">
-                            <label class="form-label form-label-sm mb-1">Grafica 3</label>
-                            <select name="chart_type_clients" class="form-select form-select-sm">
-                                <option value="bar"
-                                    {{ ($chartTypes['clients'] ?? request('chart_type_clients', 'line')) === 'bar' ? 'selected' : '' }}>
-                                    Barras
-                                </option>
-                                <option value="line"
-                                    {{ ($chartTypes['clients'] ?? request('chart_type_clients', 'line')) === 'line' ? 'selected' : '' }}>
-                                    Lineal
-                                </option>
-                                <option value="pie"
-                                    {{ ($chartTypes['clients'] ?? request('chart_type_clients', 'line')) === 'pie' ? 'selected' : '' }}>
-                                    Circular
-                                </option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-2">
-                            <label class="form-label form-label-sm mb-1">Grafica 4</label>
-                            <select name="chart_type_conversion" class="form-select form-select-sm">
-                                <option value="bar"
-                                    {{ ($chartTypes['conversion'] ?? request('chart_type_conversion', 'line')) === 'bar' ? 'selected' : '' }}>
-                                    Barras
-                                </option>
-                                <option value="line"
-                                    {{ ($chartTypes['conversion'] ?? request('chart_type_conversion', 'line')) === 'line' ? 'selected' : '' }}>
-                                    Lineal
-                                </option>
-                                <option value="pie"
-                                    {{ ($chartTypes['conversion'] ?? request('chart_type_conversion', 'line')) === 'pie' ? 'selected' : '' }}>
-                                    Circular
-                                </option>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-6 col-lg-2">
-                            <label class="form-label form-label-sm mb-1">Division</label>
-                            <select name="period_division" class="form-select form-select-sm">
-                                <option value="auto"
-                                    {{ ($periodDivision ?? request('period_division', 'auto')) === 'auto' ? 'selected' : '' }}>
-                                    Auto
-                                </option>
-                                <option value="week"
-                                    {{ ($periodDivision ?? request('period_division', 'auto')) === 'week' ? 'selected' : '' }}>
-                                    Semanal
-                                </option>
-                                <option value="month"
-                                    {{ ($periodDivision ?? request('period_division', 'auto')) === 'month' ? 'selected' : '' }}>
-                                    Mensual
-                                </option>
-                                <option value="year"
-                                    {{ ($periodDivision ?? request('period_division', 'auto')) === 'year' ? 'selected' : '' }}>
-                                    Anual
-                                </option>
-                            </select>
-                        </div>
+            <div class="row g-3 align-items-start">
+                <div class="col-12 col-lg-4 col-xl-3">
+                    <div class="border p-3 text-dark rounded bg-light filters-card">
+                        <form method="GET" action="{{ route('crm.daily-tracking.charts') }}">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12">
+                                    <label class="form-label form-label-sm mb-1">Grafica a visualizar</label>
+                                    <select name="chart_view" class="form-select form-select-sm">
+                                        <option value="contact" {{ ($chartView ?? request('chart_view', 'contact')) === 'contact' ? 'selected' : '' }}>Medio de contacto</option>
+                                        <option value="amounts" {{ ($chartView ?? request('chart_view', 'contact')) === 'amounts' ? 'selected' : '' }}>Montos facturados</option>
+                                        <option value="clients" {{ ($chartView ?? request('chart_view', 'contact')) === 'clients' ? 'selected' : '' }}>Clientes por periodo</option>
+                                        <option value="conversion" {{ ($chartView ?? request('chart_view', 'contact')) === 'conversion' ? 'selected' : '' }}>Tasa de conversion</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label form-label-sm mb-1">Tipo de grafica</label>
+                                    <select name="chart_type" class="form-select form-select-sm">
+                                        <option value="bar" {{ ($chartType ?? request('chart_type', 'bar')) === 'bar' ? 'selected' : '' }}>Barras</option>
+                                        <option value="line" {{ ($chartType ?? request('chart_type', 'bar')) === 'line' ? 'selected' : '' }}>Lineal</option>
+                                        <option value="pie" {{ ($chartType ?? request('chart_type', 'bar')) === 'pie' ? 'selected' : '' }}>Circular</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label form-label-sm mb-1">Rango de fechas (creación)</label>
+                                    <input type="text" name="date_range" class="form-control form-control-sm"
+                                        placeholder="dd/mm/yyyy - dd/mm/yyyy" value="{{ request('date_range') }}" autocomplete="off"
+                                        readonly>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label form-label-sm mb-1">Servicio</label>
+                                    <select name="service_id" class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        @foreach ($services as $service)
+                                            <option value="{{ $service->id }}"
+                                                {{ request('service_id') == $service->id ? 'selected' : '' }}>
+                                                {{ $service->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label form-label-sm mb-1">Estatus</label>
+                                    <select name="status" class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        @foreach ($statusOptions as $opt)
+                                            <option value="{{ $opt->value }}"
+                                                {{ request('status') == $opt->value ? 'selected' : '' }}>
+                                                {{ $opt->label() }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label form-label-sm mb-1">Division</label>
+                                    <select name="period_division" class="form-select form-select-sm">
+                                        <option value="auto"
+                                            {{ ($periodDivision ?? request('period_division', 'auto')) === 'auto' ? 'selected' : '' }}>
+                                            Auto
+                                        </option>
+                                        <option value="week"
+                                            {{ ($periodDivision ?? request('period_division', 'auto')) === 'week' ? 'selected' : '' }}>
+                                            Semanal
+                                        </option>
+                                        <option value="month"
+                                            {{ ($periodDivision ?? request('period_division', 'auto')) === 'month' ? 'selected' : '' }}>
+                                            Mensual
+                                        </option>
+                                        <option value="year"
+                                            {{ ($periodDivision ?? request('period_division', 'auto')) === 'year' ? 'selected' : '' }}>
+                                            Anual
+                                        </option>
+                                    </select>
+                                </div>
 
-                        <div class="col-12 d-flex justify-content-end gap-2">
-                            <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="bi bi-funnel-fill"></i> Filtrar
-                            </button>
-                            <a href="{{ route('crm.daily-tracking.charts') }}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-arrow-counterclockwise"></i> Limpiar
-                            </a>
-                        </div>
+                                <div class="col-12 d-flex gap-2">
+                                    <button type="submit" class="btn btn-sm btn-primary flex-grow-1">
+                                        <i class="bi bi-funnel-fill"></i> Filtrar
+                                    </button>
+                                    <a href="{{ route('crm.daily-tracking.charts') }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                </form>
-            </div>
+                </div>
 
-            {{-- Gráficas --}}
-            <div class="row g-3">
-                <div class="col-12 col-xl-6">
-                    <div class="card shadow-sm h-100 chart-card">
-                        <div class="card-header bg-white fw-semibold">
-                            <i class="bi bi-diagram-3 text-info"></i> 1) Medio de contacto con mayor cantidad
-                        </div>
-                        <div class="card-body">
-                            {!! $contactMethodChart->renderHtml() !!}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-xl-6">
-                    <div class="card shadow-sm h-100 chart-card">
-                        <div class="card-header bg-white fw-semibold">
-                            <i class="bi bi-currency-dollar text-success"></i> 2) Montos facturados ($) por período
-                        </div>
-                        <div class="card-body">
-                            {!! $amountsChart->renderHtml() !!}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-xl-6">
-                    <div class="card shadow-sm h-100 chart-card">
-                        <div class="card-header bg-white fw-semibold">
-                            <i class="bi bi-people text-primary"></i> 3) Clientes ingresados por {{ $periodDivisionLabel ?? 'periodo' }}
-                        </div>
-                        <div class="card-body">
-                            {!! $clientsPeriodChart->renderHtml() !!}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-xl-6">
-                    <div class="card shadow-sm h-100 chart-card">
-                        <div class="card-header bg-white fw-semibold">
-                            <i class="bi bi-percent text-warning"></i> 4) Tasa de conversión (%)
-                        </div>
-                        <div class="card-body">
-                            <div class="chart-canvas-wrap">
-                                <canvas id="dailyTrackingConversionChartPage"></canvas>
+                <div class="col-12 col-lg-8 col-xl-9">
+                    @if (($chartView ?? 'contact') === 'contact')
+                        <div class="card shadow-sm h-100 chart-card">
+                            <div class="card-header bg-white fw-semibold">
+                                <i class="bi bi-diagram-3 text-info"></i> Medio de contacto con mayor cantidad
+                            </div>
+                            <div class="card-body">
+                                {!! $contactMethodChart->renderHtml() !!}
                             </div>
                         </div>
-                    </div>
+                    @elseif (($chartView ?? 'contact') === 'amounts')
+                        <div class="card shadow-sm h-100 chart-card">
+                            <div class="card-header bg-white fw-semibold">
+                                <i class="bi bi-currency-dollar text-success"></i> Montos facturados ($) por período
+                            </div>
+                            <div class="card-body">
+                                {!! $amountsChart->renderHtml() !!}
+                            </div>
+                        </div>
+                    @elseif (($chartView ?? 'contact') === 'clients')
+                        <div class="card shadow-sm h-100 chart-card">
+                            <div class="card-header bg-white fw-semibold">
+                                <i class="bi bi-people text-primary"></i> Clientes ingresados por {{ $periodDivisionLabel ?? 'periodo' }}
+                            </div>
+                            <div class="card-body">
+                                {!! $clientsPeriodChart->renderHtml() !!}
+                            </div>
+                        </div>
+                    @else
+                        <div class="card shadow-sm h-100 chart-card">
+                            <div class="card-header bg-white fw-semibold">
+                                <i class="bi bi-percent text-warning"></i> Tasa de conversión (%)
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-canvas-wrap">
+                                    <canvas id="dailyTrackingConversionChartPage"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -261,12 +214,16 @@
     </div>
 
     {!! $contactMethodChart->renderChartJsLibrary() !!}
-    {!! $contactMethodChart->renderJs() !!}
-    {!! $amountsChart->renderJs() !!}
-    {!! $clientsPeriodChart->renderJs() !!}
+    @if (($chartView ?? 'contact') === 'contact')
+        {!! $contactMethodChart->renderJs() !!}
+    @elseif (($chartView ?? 'contact') === 'amounts')
+        {!! $amountsChart->renderJs() !!}
+    @elseif (($chartView ?? 'contact') === 'clients')
+        {!! $clientsPeriodChart->renderJs() !!}
+    @endif
 
     <script>
-        const selectedConversionType = @json($chartTypes['conversion'] ?? 'line')
+        const selectedConversionType = @json($chartType ?? 'bar')
         const conversionCtx = document.getElementById('dailyTrackingConversionChartPage')
         if (conversionCtx) {
             const conversionOptions = {

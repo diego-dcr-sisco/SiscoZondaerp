@@ -69,12 +69,8 @@ class DailyTrackingController extends Controller
     {
         $chartDateRange = $this->parseDateRange((string) $request->input('date_range', ''));
         $chartWhereRaw = $this->buildChartWhereRaw($request);
-        $chartTypes = [
-            'contact' => $this->resolveChartType($request, 'chart_type_contact', 'bar'),
-            'amounts' => $this->resolveChartType($request, 'chart_type_amounts', 'bar'),
-            'clients' => $this->resolveChartType($request, 'chart_type_clients', 'line'),
-            'conversion' => $this->resolveChartType($request, 'chart_type_conversion', 'line'),
-        ];
+        $chartType = $this->resolveChartType($request);
+        $chartView = $this->resolveChartView($request);
         $periodDivision = $this->resolvePeriodDivision($request, $chartDateRange);
         $periodConfig = $this->chartPeriodConfig($periodDivision);
 
@@ -84,7 +80,7 @@ class DailyTrackingController extends Controller
             'model' => DailyTracking::class,
             'group_by_field' => 'contact_method',
             'aggregate_function' => 'count',
-            'chart_type' => $chartTypes['contact'],
+            'chart_type' => $chartType,
             'where_raw' => $chartWhereRaw,
             'chart_color' => '10, 41, 134',
             'labels' => [
@@ -103,7 +99,7 @@ class DailyTrackingController extends Controller
             'group_by_period' => $periodConfig['group_by_period'],
             'aggregate_function' => 'sum',
             'aggregate_field' => 'billed_amount',
-            'chart_type' => $chartTypes['amounts'],
+            'chart_type' => $chartType,
             'where_raw' => $chartWhereRaw,
             'chart_color' => '183, 68, 83',
             'date_format' => $periodConfig['date_format'],
@@ -128,7 +124,7 @@ class DailyTrackingController extends Controller
             'group_by_field' => 'created_at',
             'group_by_period' => $periodConfig['group_by_period'],
             'aggregate_function' => 'count',
-            'chart_type' => $chartTypes['clients'],
+            'chart_type' => $chartType,
             'where_raw' => $chartWhereRaw,
             'chart_color' => '81, 42, 135',
             'date_format' => $periodConfig['date_format'],
@@ -172,7 +168,8 @@ class DailyTrackingController extends Controller
             'clientsPeriodChart' => $clientsPeriodChart,
             'conversionLabels' => $conversionLabels,
             'conversionData' => $conversionData,
-            'chartTypes' => $chartTypes,
+            'chartType' => $chartType,
+            'chartView' => $chartView,
             'periodDivision' => $periodDivision,
             'periodDivisionLabel' => $periodConfig['label'],
             'statusOptions' => DailyTrackingStatus::cases(),
@@ -590,6 +587,14 @@ class DailyTrackingController extends Controller
         $allowedTypes = ['bar', 'line', 'pie'];
 
         return in_array($chartType, $allowedTypes, true) ? $chartType : $default;
+    }
+
+    private function resolveChartView(Request $request): string
+    {
+        $chartView = strtolower((string) $request->input('chart_view', 'contact'));
+        $allowedViews = ['contact', 'amounts', 'clients', 'conversion'];
+
+        return in_array($chartView, $allowedViews, true) ? $chartView : 'contact';
     }
 
     private function resolvePeriodDivision(Request $request, ?array $chartDateRange): string
