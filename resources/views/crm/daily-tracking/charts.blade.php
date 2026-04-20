@@ -108,6 +108,95 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            <label class="form-label form-label-sm mb-1">Grafica 1</label>
+                            <select name="chart_type_contact" class="form-select form-select-sm">
+                                <option value="bar"
+                                    {{ ($chartTypes['contact'] ?? request('chart_type_contact', 'bar')) === 'bar' ? 'selected' : '' }}>
+                                    Barras
+                                </option>
+                                <option value="line"
+                                    {{ ($chartTypes['contact'] ?? request('chart_type_contact', 'bar')) === 'line' ? 'selected' : '' }}>
+                                    Lineal
+                                </option>
+                                <option value="pie"
+                                    {{ ($chartTypes['contact'] ?? request('chart_type_contact', 'bar')) === 'pie' ? 'selected' : '' }}>
+                                    Circular
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            <label class="form-label form-label-sm mb-1">Grafica 2</label>
+                            <select name="chart_type_amounts" class="form-select form-select-sm">
+                                <option value="bar"
+                                    {{ ($chartTypes['amounts'] ?? request('chart_type_amounts', 'bar')) === 'bar' ? 'selected' : '' }}>
+                                    Barras
+                                </option>
+                                <option value="line"
+                                    {{ ($chartTypes['amounts'] ?? request('chart_type_amounts', 'bar')) === 'line' ? 'selected' : '' }}>
+                                    Lineal
+                                </option>
+                                <option value="pie"
+                                    {{ ($chartTypes['amounts'] ?? request('chart_type_amounts', 'bar')) === 'pie' ? 'selected' : '' }}>
+                                    Circular
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            <label class="form-label form-label-sm mb-1">Grafica 3</label>
+                            <select name="chart_type_clients" class="form-select form-select-sm">
+                                <option value="bar"
+                                    {{ ($chartTypes['clients'] ?? request('chart_type_clients', 'line')) === 'bar' ? 'selected' : '' }}>
+                                    Barras
+                                </option>
+                                <option value="line"
+                                    {{ ($chartTypes['clients'] ?? request('chart_type_clients', 'line')) === 'line' ? 'selected' : '' }}>
+                                    Lineal
+                                </option>
+                                <option value="pie"
+                                    {{ ($chartTypes['clients'] ?? request('chart_type_clients', 'line')) === 'pie' ? 'selected' : '' }}>
+                                    Circular
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            <label class="form-label form-label-sm mb-1">Grafica 4</label>
+                            <select name="chart_type_conversion" class="form-select form-select-sm">
+                                <option value="bar"
+                                    {{ ($chartTypes['conversion'] ?? request('chart_type_conversion', 'line')) === 'bar' ? 'selected' : '' }}>
+                                    Barras
+                                </option>
+                                <option value="line"
+                                    {{ ($chartTypes['conversion'] ?? request('chart_type_conversion', 'line')) === 'line' ? 'selected' : '' }}>
+                                    Lineal
+                                </option>
+                                <option value="pie"
+                                    {{ ($chartTypes['conversion'] ?? request('chart_type_conversion', 'line')) === 'pie' ? 'selected' : '' }}>
+                                    Circular
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6 col-lg-2">
+                            <label class="form-label form-label-sm mb-1">Division</label>
+                            <select name="period_division" class="form-select form-select-sm">
+                                <option value="auto"
+                                    {{ ($periodDivision ?? request('period_division', 'auto')) === 'auto' ? 'selected' : '' }}>
+                                    Auto
+                                </option>
+                                <option value="week"
+                                    {{ ($periodDivision ?? request('period_division', 'auto')) === 'week' ? 'selected' : '' }}>
+                                    Semanal
+                                </option>
+                                <option value="month"
+                                    {{ ($periodDivision ?? request('period_division', 'auto')) === 'month' ? 'selected' : '' }}>
+                                    Mensual
+                                </option>
+                                <option value="year"
+                                    {{ ($periodDivision ?? request('period_division', 'auto')) === 'year' ? 'selected' : '' }}>
+                                    Anual
+                                </option>
+                            </select>
+                        </div>
 
                         <div class="col-12 d-flex justify-content-end gap-2">
                             <button type="submit" class="btn btn-sm btn-primary">
@@ -146,7 +235,7 @@
                 <div class="col-12 col-xl-6">
                     <div class="card shadow-sm h-100 chart-card">
                         <div class="card-header bg-white fw-semibold">
-                            <i class="bi bi-people text-primary"></i> 3) Clientes ingresados por semana/mes
+                            <i class="bi bi-people text-primary"></i> 3) Clientes ingresados por {{ $periodDivisionLabel ?? 'periodo' }}
                         </div>
                         <div class="card-body">
                             {!! $clientsPeriodChart->renderHtml() !!}
@@ -177,10 +266,34 @@
     {!! $clientsPeriodChart->renderJs() !!}
 
     <script>
+        const selectedConversionType = @json($chartTypes['conversion'] ?? 'line')
         const conversionCtx = document.getElementById('dailyTrackingConversionChartPage')
         if (conversionCtx) {
+            const conversionOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                }
+            }
+
+            if (selectedConversionType !== 'pie') {
+                conversionOptions.scales = {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%'
+                            }
+                        }
+                    }
+                }
+            }
+
             new Chart(conversionCtx, {
-                type: 'line',
+                type: selectedConversionType,
                 data: {
                     labels: @json($conversionLabels),
                     datasets: [{
@@ -189,28 +302,10 @@
                         borderColor: '#DD513A',
                         backgroundColor: 'rgba(221, 81, 58, 0.20)',
                         borderWidth: 2,
-                        fill: true,
+                        fill: selectedConversionType !== 'pie',
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return value + '%'
-                                }
-                            }
-                        }
-                    }
-                }
+                options: conversionOptions
             })
         }
 

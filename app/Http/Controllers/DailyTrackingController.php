@@ -69,6 +69,14 @@ class DailyTrackingController extends Controller
     {
         $chartDateRange = $this->parseDateRange((string) $request->input('date_range', ''));
         $chartWhereRaw = $this->buildChartWhereRaw($request);
+        $chartTypes = [
+            'contact' => $this->resolveChartType($request, 'chart_type_contact', 'bar'),
+            'amounts' => $this->resolveChartType($request, 'chart_type_amounts', 'bar'),
+            'clients' => $this->resolveChartType($request, 'chart_type_clients', 'line'),
+            'conversion' => $this->resolveChartType($request, 'chart_type_conversion', 'line'),
+        ];
+        $periodDivision = $this->resolvePeriodDivision($request, $chartDateRange);
+        $periodConfig = $this->chartPeriodConfig($periodDivision);
 
         $contactMethodChart = new LaravelChart([
             'chart_title' => 'Medio de contacto con mayor cantidad',
@@ -76,7 +84,7 @@ class DailyTrackingController extends Controller
             'model' => DailyTracking::class,
             'group_by_field' => 'contact_method',
             'aggregate_function' => 'count',
-            'chart_type' => 'bar',
+            'chart_type' => $chartTypes['contact'],
             'where_raw' => $chartWhereRaw,
             'chart_color' => '10, 41, 134',
             'labels' => [
@@ -92,13 +100,13 @@ class DailyTrackingController extends Controller
             'report_type' => 'group_by_date',
             'model' => DailyTracking::class,
             'group_by_field' => 'created_at',
-            'group_by_period' => 'month',
+            'group_by_period' => $periodConfig['group_by_period'],
             'aggregate_function' => 'sum',
             'aggregate_field' => 'billed_amount',
-            'chart_type' => 'bar',
+            'chart_type' => $chartTypes['amounts'],
             'where_raw' => $chartWhereRaw,
             'chart_color' => '183, 68, 83',
-            'date_format' => 'Y-m',
+            'date_format' => $periodConfig['date_format'],
             'continuous_time' => true,
         ];
 
@@ -114,16 +122,16 @@ class DailyTrackingController extends Controller
         $amountsChart = new LaravelChart($amountsChartOptions);
 
         $clientsPeriodChartOptions = [
-            'chart_title' => 'Clientes ingresados por semana (anio actual)',
+            'chart_title' => 'Clientes ingresados por ' . $periodConfig['label'],
             'report_type' => 'group_by_date',
             'model' => DailyTracking::class,
             'group_by_field' => 'created_at',
-            'group_by_period' => 'week',
+            'group_by_period' => $periodConfig['group_by_period'],
             'aggregate_function' => 'count',
-            'chart_type' => 'line',
+            'chart_type' => $chartTypes['clients'],
             'where_raw' => $chartWhereRaw,
             'chart_color' => '81, 42, 135',
-            'date_format' => 'o-\\WW',
+            'date_format' => $periodConfig['date_format'],
             'continuous_time' => true,
         ];
 
@@ -139,7 +147,7 @@ class DailyTrackingController extends Controller
         $clientsPeriodChart = new LaravelChart($clientsPeriodChartOptions);
 
         $conversionRows = $this->buildFilteredQuery($request)
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period")
+            ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
             ->selectRaw("SUM(CASE WHEN quoted = 'yes' THEN 1 ELSE 0 END) as quoted_count")
             ->selectRaw("SUM(CASE WHEN closed = 'yes' THEN 1 ELSE 0 END) as closed_count")
             ->whereNotNull('created_at')
@@ -164,6 +172,9 @@ class DailyTrackingController extends Controller
             'clientsPeriodChart' => $clientsPeriodChart,
             'conversionLabels' => $conversionLabels,
             'conversionData' => $conversionData,
+            'chartTypes' => $chartTypes,
+            'periodDivision' => $periodDivision,
+            'periodDivisionLabel' => $periodConfig['label'],
             'statusOptions' => DailyTrackingStatus::cases(),
         ]));
     }
@@ -457,6 +468,10 @@ class DailyTrackingController extends Controller
             $query->where('status', (string) $request->status);
         }
 
+        if ($request->filled('service_id')) {
+            $query->where('service_id', (int) $request->input('service_id'));
+        }
+
         if ($request->filled('contact_methods')) {
             $contactMethods = array_values(array_filter((array) $request->input('contact_methods')));
             if (! empty($contactMethods)) {
@@ -556,12 +571,90 @@ class DailyTrackingController extends Controller
             $conditions[] = "status = '{$status}'";
         }
 
+        if ($request->filled('service_id')) {
+            $serviceId = (int) $request->input('service_id');
+            $conditions[] = "service_id = {$serviceId}";
+        }
+
         $dateRange = $this->parseDateRange((string) $request->input('date_range', ''));
         if ($dateRange !== null) {
             $conditions[] = "created_at BETWEEN '{$dateRange['start']}' AND '{$dateRange['end']}'";
         }
 
         return implode(' AND ', $conditions);
+    }
+
+    private function resolveChartType(Request $request, string $inputName = 'chart_type', string $default = 'bar'): string
+    {
+        $chartType = strtolower((string) $request->input($inputName, $default));
+        $allowedTypes = ['bar', 'line', 'pie'];
+
+        return in_array($chartType, $allowedTypes, true) ? $chartType : $default;
+    }
+
+    private function resolvePeriodDivision(Request $request, ?array $chartDateRange): string
+    {
+        $requestedDivision = strtolower((string) $request->input('period_division', 'auto'));
+        $allowedDivisions = ['auto', 'week', 'month', 'year'];
+
+        if (! in_array($requestedDivision, $allowedDivisions, true)) {
+            $requestedDivision = 'auto';
+        }
+
+        if ($requestedDivision !== 'auto') {
+            return $requestedDivision;
+        }
+
+        return $this->inferDivisionFromDateRange($chartDateRange);
+    }
+
+    private function inferDivisionFromDateRange(?array $chartDateRange): string
+    {
+        if ($chartDateRange === null) {
+            return 'month';
+        }
+
+        try {
+            $start = Carbon::parse($chartDateRange['start'])->startOfDay();
+            $end = Carbon::parse($chartDateRange['end'])->endOfDay();
+            $days = $start->diffInDays($end) + 1;
+
+            if ($days <= 62) {
+                return 'week';
+            }
+
+            if ($days <= 730) {
+                return 'month';
+            }
+
+            return 'year';
+        } catch (\Exception $e) {
+            return 'month';
+        }
+    }
+
+    private function chartPeriodConfig(string $periodDivision): array
+    {
+        return match ($periodDivision) {
+            'week' => [
+                'group_by_period' => 'week',
+                'date_format' => 'o-\\WW',
+                'sql_format' => '%x-W%v',
+                'label' => 'semana',
+            ],
+            'year' => [
+                'group_by_period' => 'year',
+                'date_format' => 'Y',
+                'sql_format' => '%Y',
+                'label' => 'anio',
+            ],
+            default => [
+                'group_by_period' => 'month',
+                'date_format' => 'Y-m',
+                'sql_format' => '%Y-%m',
+                'label' => 'mes',
+            ],
+        };
     }
 
     private function navigation(): array
