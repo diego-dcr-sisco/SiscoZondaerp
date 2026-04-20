@@ -4,7 +4,6 @@
     <style>
         .charts-page-wrapper {
             overflow-x: hidden;
-            --chart-vh-height: 70vh;
         }
 
         .charts-page-wrapper .charts-layout {
@@ -18,40 +17,30 @@
 
         .charts-page-wrapper .chart-panel {
             display: flex;
-            min-width: 0;
         }
 
         .charts-page-wrapper .chart-card {
             width: 100%;
-            min-width: 0;
             overflow: hidden;
         }
 
         .charts-page-wrapper .chart-card .card-body {
-            min-height: var(--chart-vh-height);
+            min-height: 320px;
+            max-height: 72vh;
             overflow: hidden;
         }
 
         .charts-page-wrapper .chart-canvas-wrap {
             position: relative;
             width: 100%;
-            height: var(--chart-vh-height);
-            min-width: 0;
+            height: 62vh;
+            max-height: 62vh;
         }
 
         .charts-page-wrapper .chart-canvas-wrap canvas {
-            display: block;
             max-width: 100% !important;
             width: 100% !important;
             height: 100% !important;
-        }
-
-        .charts-page-wrapper .library-chart-wrap {
-            overflow: hidden;
-        }
-
-        .charts-page-wrapper .library-chart-wrap > canvas {
-            display: block;
         }
 
         .charts-page-wrapper .chart-card .card-body > div {
@@ -78,12 +67,18 @@
                 min-height: auto;
             }
 
+            .charts-page-wrapper .chart-panel {
+                display: block;
+            }
+
             .charts-page-wrapper .filters-column {
                 max-width: none;
             }
 
-            .charts-page-wrapper {
-                --chart-vh-height: 62vh;
+            .charts-page-wrapper .filters-card {
+                position: static;
+                max-height: none;
+                overflow: visible;
             }
 
             .charts-page-wrapper .charts-header {
@@ -92,6 +87,16 @@
 
             .charts-page-wrapper .charts-header h5 {
                 font-size: 1rem;
+            }
+
+            .charts-page-wrapper .chart-card .card-body {
+                min-height: 320px;
+                max-height: 62vh;
+            }
+
+            .charts-page-wrapper .chart-canvas-wrap {
+                height: 52vh;
+                max-height: 52vh;
             }
         }
     </style>
@@ -232,9 +237,7 @@
                                 <i class="bi bi-diagram-3 text-info"></i> Medio de contacto con mayor cantidad
                             </div>
                             <div class="card-body">
-                                <div class="chart-canvas-wrap library-chart-wrap">
-                                    {!! $contactMethodChart->renderHtml() !!}
-                                </div>
+                                {!! $contactMethodChart->renderHtml() !!}
                             </div>
                         </div>
                     @elseif (($chartView ?? 'contact') === 'amounts')
@@ -243,9 +246,7 @@
                                 <i class="bi bi-currency-dollar text-success"></i> Montos facturados ($) por período
                             </div>
                             <div class="card-body">
-                                <div class="chart-canvas-wrap library-chart-wrap">
-                                    {!! $amountsChart->renderHtml() !!}
-                                </div>
+                                {!! $amountsChart->renderHtml() !!}
                             </div>
                         </div>
                     @elseif (($chartView ?? 'contact') === 'clients')
@@ -254,9 +255,7 @@
                                 <i class="bi bi-people text-primary"></i> Clientes ingresados por {{ $periodDivisionLabel ?? 'periodo' }}
                             </div>
                             <div class="card-body">
-                                <div class="chart-canvas-wrap library-chart-wrap">
-                                    {!! $clientsPeriodChart->renderHtml() !!}
-                                </div>
+                                {!! $clientsPeriodChart->renderHtml() !!}
                             </div>
                         </div>
                     @else
@@ -288,37 +287,6 @@
     @endif
 
     <script>
-        const normalizeChartInstances = () => {
-            if (typeof Chart === 'undefined' || !Chart.instances) {
-                return
-            }
-
-            Object.values(Chart.instances).forEach((instance) => {
-                if (!instance || !instance.canvas) {
-                    return
-                }
-
-                instance.options = instance.options || {}
-                instance.options.responsive = true
-                instance.options.maintainAspectRatio = false
-
-                const parent = instance.canvas.parentElement
-                if (parent) {
-                    parent.style.width = '100%'
-                    parent.style.maxWidth = '100%'
-                    parent.style.overflow = 'hidden'
-                }
-
-                instance.canvas.style.width = '100%'
-                instance.canvas.style.maxWidth = '100%'
-                instance.canvas.style.height = '100%'
-                instance.resize()
-            })
-        }
-
-        normalizeChartInstances()
-        window.addEventListener('resize', normalizeChartInstances)
-
         const selectedConversionType = @json($chartType ?? 'bar')
         const conversionCtx = document.getElementById('dailyTrackingConversionChartPage')
         if (conversionCtx) {
@@ -389,8 +357,6 @@
             $('input[name="date_range"]').on('cancel.daterangepicker', function() {
                 $(this).val('');
             });
-
-            normalizeChartInstances()
         });
     </script>
 @endsection
