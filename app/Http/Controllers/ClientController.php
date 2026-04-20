@@ -837,8 +837,20 @@ class ClientController extends Controller
     {
         $disk = $this->getDisk();
         $root_path = $request->input('root_path');
-        $path = $request->input('path');
-        $new_path = $root_path . '/' . $request->input('name');
+        $path = trim($request->input('path'), '/');
+        $new_path = trim($root_path . '/' . $request->input('name'), '/');
+
+        if ($path === $new_path) {
+            $this->logClientFolderChange('client_folder_rename_blocked_same_path', [
+                'path' => $path,
+                'new_path' => $new_path,
+                'disk' => $this->disk_type,
+            ]);
+
+            return back()->withErrors([
+                'name' => 'El nuevo nombre es igual al nombre actual.',
+            ]);
+        }
 
 
         if ($this->diskDirectoryExists($path)) {
