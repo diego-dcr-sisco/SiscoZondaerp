@@ -17,10 +17,12 @@
 
         .charts-page-wrapper .chart-panel {
             display: flex;
+            min-width: 0;
         }
 
         .charts-page-wrapper .chart-card {
             width: 100%;
+            min-width: 0;
             overflow: hidden;
         }
 
@@ -33,12 +35,22 @@
             position: relative;
             width: 100%;
             height: clamp(320px, 58vh, 680px);
+            min-width: 0;
         }
 
         .charts-page-wrapper .chart-canvas-wrap canvas {
+            display: block;
             max-width: 100% !important;
             width: 100% !important;
             height: 100% !important;
+        }
+
+        .charts-page-wrapper .library-chart-wrap {
+            overflow: hidden;
+        }
+
+        .charts-page-wrapper .library-chart-wrap > canvas {
+            display: block;
         }
 
         .charts-page-wrapper .chart-card .card-body > div {
@@ -233,7 +245,9 @@
                                 <i class="bi bi-diagram-3 text-info"></i> Medio de contacto con mayor cantidad
                             </div>
                             <div class="card-body">
-                                {!! $contactMethodChart->renderHtml() !!}
+                                <div class="chart-canvas-wrap library-chart-wrap">
+                                    {!! $contactMethodChart->renderHtml() !!}
+                                </div>
                             </div>
                         </div>
                     @elseif (($chartView ?? 'contact') === 'amounts')
@@ -242,7 +256,9 @@
                                 <i class="bi bi-currency-dollar text-success"></i> Montos facturados ($) por período
                             </div>
                             <div class="card-body">
-                                {!! $amountsChart->renderHtml() !!}
+                                <div class="chart-canvas-wrap library-chart-wrap">
+                                    {!! $amountsChart->renderHtml() !!}
+                                </div>
                             </div>
                         </div>
                     @elseif (($chartView ?? 'contact') === 'clients')
@@ -251,7 +267,9 @@
                                 <i class="bi bi-people text-primary"></i> Clientes ingresados por {{ $periodDivisionLabel ?? 'periodo' }}
                             </div>
                             <div class="card-body">
-                                {!! $clientsPeriodChart->renderHtml() !!}
+                                <div class="chart-canvas-wrap library-chart-wrap">
+                                    {!! $clientsPeriodChart->renderHtml() !!}
+                                </div>
                             </div>
                         </div>
                     @else
@@ -283,6 +301,37 @@
     @endif
 
     <script>
+        const normalizeChartInstances = () => {
+            if (typeof Chart === 'undefined' || !Chart.instances) {
+                return
+            }
+
+            Object.values(Chart.instances).forEach((instance) => {
+                if (!instance || !instance.canvas) {
+                    return
+                }
+
+                instance.options = instance.options || {}
+                instance.options.responsive = true
+                instance.options.maintainAspectRatio = false
+
+                const parent = instance.canvas.parentElement
+                if (parent) {
+                    parent.style.width = '100%'
+                    parent.style.maxWidth = '100%'
+                    parent.style.overflow = 'hidden'
+                }
+
+                instance.canvas.style.width = '100%'
+                instance.canvas.style.maxWidth = '100%'
+                instance.canvas.style.height = '100%'
+                instance.resize()
+            })
+        }
+
+        normalizeChartInstances()
+        window.addEventListener('resize', normalizeChartInstances)
+
         const selectedConversionType = @json($chartType ?? 'bar')
         const conversionCtx = document.getElementById('dailyTrackingConversionChartPage')
         if (conversionCtx) {
@@ -353,6 +402,8 @@
             $('input[name="date_range"]').on('cancel.daterangepicker', function() {
                 $(this).val('');
             });
+
+            normalizeChartInstances()
         });
     </script>
 @endsection
