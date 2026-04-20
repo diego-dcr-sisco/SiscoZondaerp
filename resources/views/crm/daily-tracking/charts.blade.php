@@ -2,101 +2,37 @@
 
 @section('content')
     <style>
-        .charts-page-wrapper {
-            overflow-x: hidden;
-        }
-
-        .charts-page-wrapper .charts-layout {
-            min-height: calc(100vh - 220px);
-        }
-
         .charts-page-wrapper .nav-tabs {
             flex-wrap: wrap;
             row-gap: 0.5rem;
         }
 
-        .charts-page-wrapper .chart-panel {
-            display: flex;
-        }
-
-        .charts-page-wrapper .chart-card {
-            width: 100%;
-            overflow: hidden;
-        }
-
         .charts-page-wrapper .chart-card .card-body {
             min-height: 320px;
-            max-height: 72vh;
-            overflow: hidden;
+            overflow-x: auto;
         }
 
         .charts-page-wrapper .chart-canvas-wrap {
-            position: relative;
-            width: 100%;
-            height: 62vh;
-            max-height: 62vh;
+            height: 320px;
         }
 
         .charts-page-wrapper .chart-canvas-wrap canvas {
             max-width: 100% !important;
             width: 100% !important;
-            height: 100% !important;
-        }
-
-        .charts-page-wrapper .chart-card .card-body > div {
-            max-width: 100%;
-        }
-
-        .charts-page-wrapper .chart-card canvas {
-            max-width: 100% !important;
-        }
-
-        .charts-page-wrapper .filters-column {
-            max-width: 320px;
         }
 
         .charts-page-wrapper .filters-card {
             position: sticky;
             top: 1rem;
-            max-height: calc(100vh - 120px);
-            overflow-y: auto;
         }
 
         @media (max-width: 991.98px) {
-            .charts-page-wrapper .charts-layout {
-                min-height: auto;
-            }
-
-            .charts-page-wrapper .chart-panel {
-                display: block;
-            }
-
-            .charts-page-wrapper .filters-column {
-                max-width: none;
-            }
-
-            .charts-page-wrapper .filters-card {
-                position: static;
-                max-height: none;
-                overflow: visible;
-            }
-
             .charts-page-wrapper .charts-header {
                 gap: 0.75rem;
             }
 
             .charts-page-wrapper .charts-header h5 {
                 font-size: 1rem;
-            }
-
-            .charts-page-wrapper .chart-card .card-body {
-                min-height: 320px;
-                max-height: 62vh;
-            }
-
-            .charts-page-wrapper .chart-canvas-wrap {
-                height: 52vh;
-                max-height: 52vh;
             }
         }
     </style>
@@ -143,8 +79,8 @@
                 </a>
             </div>
 
-            <div class="row g-3 align-items-start charts-layout">
-                <div class="col-12 col-lg-4 col-xl-3 filters-column">
+            <div class="row g-3 align-items-start">
+                <div class="col-12 col-lg-4 col-xl-3">
                     <div class="border p-3 text-dark rounded bg-light filters-card">
                         <form method="GET" action="{{ route('crm.daily-tracking.charts') }}">
                             <div class="row g-2 align-items-end">
@@ -230,7 +166,7 @@
                     </div>
                 </div>
 
-                <div class="col-12 col-lg chart-panel">
+                <div class="col-12 col-lg-8 col-xl-9">
                     @if (($chartView ?? 'contact') === 'contact')
                         <div class="card shadow-sm h-100 chart-card">
                             <div class="card-header bg-white fw-semibold">
