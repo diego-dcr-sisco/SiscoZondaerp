@@ -1324,6 +1324,22 @@ class ClientController extends Controller
             $dirname = basename($source);
             $target = rtrim($destination, '/') . '/' . $dirname;
 
+            if ($source === $target) {
+                $results[$directory] = [
+                    'success' => false,
+                    'message' => 'El directorio origen y destino son iguales'
+                ];
+                $allSuccess = false;
+
+                $this->logClientFolderChange('client_folder_move_blocked_same_path', [
+                    'old_path' => $source,
+                    'new_path' => $target,
+                    'disk' => $this->disk_type,
+                ]);
+
+                continue;
+            }
+
             try {
                 // Verificar si el origen existe
                 if (!$disk->exists($source)) {
@@ -1955,6 +1971,23 @@ class ClientController extends Controller
             // Construir la nueva ruta
             $parentPath = dirname($currentPath);
             $newPath = $parentPath . '/' . $newName;
+            $normalizedCurrentPath = trim($currentPath, '/');
+            $normalizedNewPath = trim($newPath, '/');
+
+            if ($normalizedCurrentPath === $normalizedNewPath) {
+                $this->logClientFolderChange('client_folder_rename_blocked_same_path', [
+                    'path' => $normalizedCurrentPath,
+                    'new_path' => $normalizedNewPath,
+                    'is_mip' => (bool) $isMip,
+                    'disk' => $this->disk_type,
+                    'source' => 'updateDirectoryName',
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El nuevo nombre es igual al nombre actual'
+                ], 422);
+            }
 
             // Verificar si ya existe una carpeta con el nuevo nombre
             if ($this->diskDirectoryExists($newPath)) {
