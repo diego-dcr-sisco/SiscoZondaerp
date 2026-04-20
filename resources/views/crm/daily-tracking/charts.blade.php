@@ -4,6 +4,7 @@
     <style>
         .charts-page-wrapper {
             overflow-x: hidden;
+            --chart-vh-height: 70vh;
         }
 
         .charts-page-wrapper .charts-layout {
@@ -27,14 +28,14 @@
         }
 
         .charts-page-wrapper .chart-card .card-body {
-            min-height: clamp(360px, 62vh, 720px);
+            min-height: var(--chart-vh-height);
             overflow: hidden;
         }
 
         .charts-page-wrapper .chart-canvas-wrap {
             position: relative;
             width: 100%;
-            height: clamp(320px, 58vh, 680px);
+            height: var(--chart-vh-height);
             min-width: 0;
         }
 
@@ -77,18 +78,12 @@
                 min-height: auto;
             }
 
-            .charts-page-wrapper .chart-panel {
-                display: block;
-            }
-
             .charts-page-wrapper .filters-column {
                 max-width: none;
             }
 
-            .charts-page-wrapper .filters-card {
-                position: static;
-                max-height: none;
-                overflow: visible;
+            .charts-page-wrapper {
+                --chart-vh-height: 62vh;
             }
 
             .charts-page-wrapper .charts-header {
@@ -97,14 +92,6 @@
 
             .charts-page-wrapper .charts-header h5 {
                 font-size: 1rem;
-            }
-
-            .charts-page-wrapper .chart-card .card-body {
-                min-height: 320px;
-            }
-
-            .charts-page-wrapper .chart-canvas-wrap {
-                height: 320px;
             }
         }
     </style>
