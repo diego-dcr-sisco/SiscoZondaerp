@@ -43,6 +43,21 @@
                 </ol>
             </nav>
 
+            @if (session('success') || session('warning') || session('error') || session('message'))
+                @php
+                    $flashType = session('success')
+                        ? 'success'
+                        : (session('warning')
+                            ? 'warning'
+                            : (session('error') ? 'danger' : 'info'));
+                    $flashMessage = session('success') ?? session('warning') ?? session('error') ?? session('message');
+                @endphp
+                <div class="alert alert-{{ $flashType }} alert-dismissible fade show" role="alert">
+                    {{ $flashMessage }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <div class="mb-3">
                 @can('write_system_client')
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#directoryModal">
@@ -113,7 +128,7 @@
                                                 </a>
                                                 <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal"
                                                     data-bs-target="#editDirectoryModal"
-                                                    onclick="setRoot('{{ $dir['name'] }}', '{{ $dir['path'] }}')"
+                                                    onclick='setRoot(@json($dir["name"]), @json($dir["path"]))'
                                                     data-bs-toggle="tooltip" data-bs-placement="top" title="Editar carpeta">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
@@ -152,7 +167,7 @@
                                                     </a>
                                                     <button type="button" class="btn btn-secondary btn-sm"
                                                         data-bs-toggle="modal" data-bs-target="#editDirectoryModal"
-                                                        onclick="setRoot('{{ $dir['name'] }}', '{{ $dir['path'] }}')"
+                                                        onclick='setRoot(@json($dir["name"]), @json($dir["path"]))'
                                                         data-bs-toggle="tooltip" data-bs-placement="top" title="Editar carpeta">
                                                         <i class="bi bi-pencil-square"></i>
                                                     </button>
@@ -216,7 +231,7 @@
                                     @can('write_system_client')
                                         <button type="button" class="btn btn-secondary btn-sm" data-bs-toggle="modal"
                                             data-bs-target="#editFileModal"
-                                            onclick="setFilename('{{ $file['name'] }}', '{{ $file['path'] }}')"
+                                            onclick='setFilename(@json($file["name"]), @json($file["path"]))'
                                             data-bs-toggle="tooltip" data-bs-placement="top" title="Editar archivo">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>

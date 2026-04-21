@@ -836,9 +836,15 @@ class ClientController extends Controller
     public function updateDirectory(Request $request)
     {
         $disk = $this->getDisk();
-        $root_path = $request->input('root_path');
-        $path = trim($request->input('path'), '/');
-        $new_path = trim($root_path . '/' . $request->input('name'), '/');
+        $validated = $request->validate([
+            'name' => 'required|string|max:1024',
+            'path' => 'required|string',
+            'root_path' => 'required|string',
+        ]);
+
+        $root_path = trim($validated['root_path'], '/');
+        $path = trim($validated['path'], '/');
+        $new_path = trim($root_path . '/' . trim($validated['name']), '/');
 
         if ($path === $new_path) {
             $this->logClientFolderChange('client_folder_rename_blocked_same_path', [
@@ -847,13 +853,18 @@ class ClientController extends Controller
                 'disk' => $this->disk_type,
             ]);
 
-            return back()->withErrors([
-                'name' => 'El nuevo nombre es igual al nombre actual.',
-            ]);
+            return back()->with('warning', 'El nuevo nombre es igual al nombre actual.');
         }
 
+        if (!$this->diskDirectoryExists($path)) {
+            return back()->with('error', 'La carpeta no existe o ya no está disponible.');
+        }
 
-        if ($this->diskDirectoryExists($path)) {
+        if ($this->diskDirectoryExists($new_path)) {
+            return back()->with('warning', 'Ya existe una carpeta con ese nombre en esta ubicación.');
+        }
+
+        try {
             $disk->move($path, $new_path);
 
             $this->logClientFolderChange('client_folder_renamed', [
@@ -861,9 +872,18 @@ class ClientController extends Controller
                 'new_path' => $new_path,
                 'disk' => $this->disk_type,
             ]);
-        }
 
-        return back();
+            return back()->with('success', 'Carpeta renombrada correctamente.');
+        } catch (\Exception $e) {
+            Log::error('Error renaming directory', [
+                'old_path' => $path,
+                'new_path' => $new_path,
+                'disk' => $this->disk_type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'No fue posible renombrar la carpeta. Intenta nuevamente.');
+        }
     }
 
     public function updateFile(Request $request)
@@ -881,19 +901,31 @@ class ClientController extends Controller
         $newFilename = $validated['name'] . '.' . $validated['extension'];
         $newPath = $validated['root_path'] . '/' . $newFilename;
 
+        if ($oldPath === $newPath) {
+            return back()->with('warning', 'El nuevo nombre es igual al nombre actual.');
+        }
+
         try {
             if (!$this->diskFileExists($oldPath)) {
-                return response()->json(['error' => 'El archivo no existe'], 404);
+                return back()->with('error', 'El archivo no existe o ya no está disponible.');
+            }
+
+            if ($this->diskFileExists($newPath)) {
+                return back()->with('warning', 'Ya existe un archivo con ese nombre en esta ubicación.');
             }
 
             $disk->move($oldPath, $newPath);
-            return back();
+            return back()->with('success', 'Archivo renombrado correctamente.');
 
         } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Error al renombrar el archivo',
-                'message' => $e->getMessage()
-            ], 500);
+            Log::error('Error renaming file', [
+                'old_path' => $oldPath,
+                'new_path' => $newPath,
+                'disk' => $this->disk_type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'No fue posible renombrar el archivo. Intenta nuevamente.');
         }
     }
 
