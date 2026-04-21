@@ -842,8 +842,15 @@ class ClientController extends Controller
             'root_path' => 'required|string',
         ]);
 
-        $root_path = trim($validated['root_path'], '/');
-        $path = trim($validated['path'], '/');
+        $root_path = $this->normalizeStoragePath($validated['root_path'], $this->path);
+        $path = $this->normalizeStoragePath($validated['path'], $this->path);
+
+        // Resolver contra el almacenamiento real para evitar falsos negativos por variaciones en ruta/nombre
+        $resolvedPath = $this->resolveExistingDirectoryPath($path, $this->path);
+        if ($this->diskDirectoryExists($resolvedPath)) {
+            $path = $resolvedPath;
+        }
+
         $new_path = trim($root_path . '/' . trim($validated['name']), '/');
 
         if ($path === $new_path) {
@@ -897,9 +904,10 @@ class ClientController extends Controller
             'root_path' => 'required|string',
         ]);
 
-        $oldPath = rtrim($validated['path'], '/');
+        $oldPath = $this->normalizeStoragePath($validated['path'], $this->path);
+        $rootPath = $this->normalizeStoragePath($validated['root_path'], $this->path);
         $newFilename = $validated['name'] . '.' . $validated['extension'];
-        $newPath = $validated['root_path'] . '/' . $newFilename;
+        $newPath = rtrim($rootPath, '/') . '/' . $newFilename;
 
         if ($oldPath === $newPath) {
             return back()->with('warning', 'El nuevo nombre es igual al nombre actual.');
