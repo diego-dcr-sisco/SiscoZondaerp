@@ -43,7 +43,7 @@
                 </ol>
             </nav>
 
-            @if (session('success') || session('warning') || session('error') || session('message'))
+            {{--@if (session('success') || session('warning') || session('error') || session('message'))
                 @php
                     $flashType = session('success')
                         ? 'success'
@@ -56,7 +56,7 @@
                     {{ $flashMessage }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-            @endif
+            @endif--}}
 
             <div class="mb-3">
                 @can('write_system_client')
