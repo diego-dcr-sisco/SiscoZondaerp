@@ -135,25 +135,42 @@ class DailyTrackingController extends Controller
             $clientsDatasets['industrial'][] = (int) $row->industrial;
         }
 
-        // Conversion rate
+        // Conversion rate grouped by period × customer type
         $conversionRows = $this->buildFilteredQuery($request)
             ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
-            ->selectRaw("SUM(CASE WHEN quoted = 'yes' THEN 1 ELSE 0 END) as quoted_count")
-            ->selectRaw("SUM(CASE WHEN closed = 'yes' THEN 1 ELSE 0 END) as closed_count")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'domestico'  AND quoted = 'yes' THEN 1 ELSE 0 END) as domestico_quoted")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'domestico'  AND closed = 'yes' THEN 1 ELSE 0 END) as domestico_closed")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'comercial'  AND quoted = 'yes' THEN 1 ELSE 0 END) as comercial_quoted")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'comercial'  AND closed = 'yes' THEN 1 ELSE 0 END) as comercial_closed")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' AND quoted = 'yes' THEN 1 ELSE 0 END) as industrial_quoted")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' AND closed = 'yes' THEN 1 ELSE 0 END) as industrial_closed")
             ->whereNotNull('created_at')
             ->groupBy('period')
             ->orderBy('period')
             ->get();
 
-        $conversionLabels = [];
-        $conversionData = [];
+        $conversionPeriods = [];
+        $conversionDatasets = ['domestico' => [], 'comercial' => [], 'industrial' => []];
         foreach ($conversionRows as $row) {
-            $quotedCount = (int) $row->quoted_count;
-            $closedCount = (int) $row->closed_count;
-            $conversionRate = $quotedCount > 0 ? round(($closedCount / $quotedCount) * 100, 2) : 0;
-
-            $conversionLabels[] = (string) $row->period;
-            $conversionData[] = $conversionRate;
+            $conversionPeriods[] = (string) $row->period;
+            
+            // Domestico
+            $domesticoQuoted = (int) $row->domestico_quoted;
+            $domesticoClosed = (int) $row->domestico_closed;
+            $domesticoRate = $domesticoQuoted > 0 ? round(($domesticoClosed / $domesticoQuoted) * 100, 2) : 0;
+            $conversionDatasets['domestico'][] = $domesticoRate;
+            
+            // Comercial
+            $comercialQuoted = (int) $row->comercial_quoted;
+            $comercialClosed = (int) $row->comercial_closed;
+            $comercialRate = $comercialQuoted > 0 ? round(($comercialClosed / $comercialQuoted) * 100, 2) : 0;
+            $conversionDatasets['comercial'][] = $comercialRate;
+            
+            // Industrial
+            $industrialQuoted = (int) $row->industrial_quoted;
+            $industrialClosed = (int) $row->industrial_closed;
+            $industrialRate = $industrialQuoted > 0 ? round(($industrialClosed / $industrialQuoted) * 100, 2) : 0;
+            $conversionDatasets['industrial'][] = $industrialRate;
         }
 
         return view('crm.daily-tracking.charts', array_merge($this->formData(), [
@@ -163,8 +180,8 @@ class DailyTrackingController extends Controller
             'amountsDatasets' => $amountsDatasets,
             'clientsPeriods'  => $clientsPeriods,
             'clientsDatasets' => $clientsDatasets,
-            'conversionLabels' => $conversionLabels,
-            'conversionData'   => $conversionData,
+            'conversionPeriods'  => $conversionPeriods,
+            'conversionDatasets' => $conversionDatasets,
             'chartType'            => $chartType,
             'chartView'            => $chartView,
             'periodDivision'       => $periodDivision,

@@ -204,7 +204,7 @@
                     @else
                         <div class="card shadow-sm h-100 chart-card">
                             <div class="card-header bg-white fw-semibold">
-                                <i class="bi bi-percent text-warning"></i> Tasa de conversión (%)
+                                <i class="bi bi-percent text-warning"></i> Tasa de conversión (%) por {{ $periodDivisionLabel ?? 'periodo' }} y tipo de cliente
                             </div>
                             <div class="card-body">
                                 <div class="chart-canvas-wrap">
@@ -220,10 +220,9 @@
 
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // ── Medios de contacto (grouped bar — always) ────────────────────────
-        const contactCtx = document.getElementById('contactMethodChartCanvas')
+        var contactCtx = document.getElementById('contactMethodChartCanvas')
         if (contactCtx) {
             new Chart(contactCtx, {
                 type: 'bar',
@@ -273,10 +272,10 @@
         }
 
         // ── Montos facturados (bar o line según filtro) ──────────────────────
-        const amountsCtx = document.getElementById('amountsChartCanvas')
+        var amountsCtx = document.getElementById('amountsChartCanvas')
         if (amountsCtx) {
-            const amountsType = @json($chartType ?? 'bar');
-            const isLine = amountsType === 'line';
+            var amountsType = @json($chartType ?? 'bar');
+            var isLine = amountsType === 'line';
             new Chart(amountsCtx, {
                 type: amountsType,
                 data: {
@@ -333,7 +332,7 @@
         }
 
         // ── Clientes por periodo (grouped bar — always) ──────────────────────
-        const clientsCtx = document.getElementById('clientsPeriodChartCanvas')
+        var clientsCtx = document.getElementById('clientsPeriodChartCanvas')
         if (clientsCtx) {
             new Chart(clientsCtx, {
                 type: 'bar',
@@ -375,47 +374,63 @@
             })
         }
 
-        // ── Tasa de conversión ───────────────────────────────────────────────
-        const selectedConversionType = @json($chartType ?? 'bar');
-        const conversionCtx = document.getElementById('dailyTrackingConversionChartPage');
+        // ── Tasa de conversión (bar o line según filtro) ──────────────────────
+        var selectedConversionType = @json($chartType ?? 'bar');
+        var conversionCtx = document.getElementById('dailyTrackingConversionChartPage');
         if (conversionCtx) {
-            const conversionOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: true
-                    }
-                }
-            }
-
-            if (selectedConversionType !== 'pie') {
-                conversionOptions.scales = {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%'
+            var isConversionLine = selectedConversionType === 'line';
+            new Chart(conversionCtx, {
+                type: selectedConversionType,
+                data: {
+                    labels: @json($conversionPeriods),
+                    datasets: [
+                        {
+                            label: 'Doméstico',
+                            data: @json($conversionDatasets['domestico']),
+                            backgroundColor: isConversionLine ? 'rgba(0,188,212,0.2)' : 'rgba(0,188,212,0.8)',
+                            borderColor: '#00BCD4',
+                            borderWidth: 2,
+                            fill: isConversionLine,
+                            tension: 0.3,
+                            pointRadius: isConversionLine ? 4 : 0,
+                        },
+                        {
+                            label: 'Comercial',
+                            data: @json($conversionDatasets['comercial']),
+                            backgroundColor: isConversionLine ? 'rgba(183,68,83,0.2)' : 'rgba(183,68,83,0.8)',
+                            borderColor: '#B74453',
+                            borderWidth: 2,
+                            fill: isConversionLine,
+                            tension: 0.3,
+                            pointRadius: isConversionLine ? 4 : 0,
+                        },
+                        {
+                            label: 'Industrial',
+                            data: @json($conversionDatasets['industrial']),
+                            backgroundColor: isConversionLine ? 'rgba(81,42,135,0.2)' : 'rgba(81,42,135,0.8)',
+                            borderColor: '#512A87',
+                            borderWidth: 2,
+                            fill: isConversionLine,
+                            tension: 0.3,
+                            pointRadius: isConversionLine ? 4 : 0,
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%'
+                                }
                             }
                         }
                     }
                 }
-            }
-
-            new Chart(conversionCtx, {
-                type: selectedConversionType,
-                data: {
-                    labels: @json($conversionLabels),
-                    datasets: [{
-                        label: 'Tasa de conversión (%)',
-                        data: @json($conversionData),
-                        borderColor: '#DD513A',
-                        backgroundColor: 'rgba(221, 81, 58, 0.20)',
-                        borderWidth: 2,
-                        fill: selectedConversionType !== 'pie',
-                    }]
-                },
-                options: conversionOptions
             })
         }
 
