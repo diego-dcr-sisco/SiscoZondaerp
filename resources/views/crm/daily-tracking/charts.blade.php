@@ -234,7 +234,7 @@
 
     <script>
         // ── Medios de contacto (grouped bar — always) ────────────────────────
-        var contactCtx = document.getElementById('contactMethodChartCanvas')
+        var contactCtx = document.getElementById('contactMethodChartCanvas');
         if (contactCtx) {
             new Chart(contactCtx, {
                 type: 'bar',
@@ -280,11 +280,11 @@
                         y: { beginAtZero: true, ticks: { precision: 0 } }
                     }
                 }
-            })
+            });
         }
 
         // ── Montos facturados (bar o line según filtro) ──────────────────────
-        var amountsCtx = document.getElementById('amountsChartCanvas')
+        var amountsCtx = document.getElementById('amountsChartCanvas');
         if (amountsCtx) {
             var amountsType = @json($chartType ?? 'bar');
             var isLine = amountsType === 'line';
@@ -334,17 +334,17 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return '$' + value.toLocaleString('es-MX', { minimumFractionDigits: 0 })
+                                    return '$' + value.toLocaleString('es-MX', { minimumFractionDigits: 0 });
                                 }
                             }
                         }
                     }
                 }
-            })
+            });
         }
 
         // ── Clientes por periodo (grouped bar — always) ──────────────────────
-        var clientsCtx = document.getElementById('clientsPeriodChartCanvas')
+        var clientsCtx = document.getElementById('clientsPeriodChartCanvas');
         if (clientsCtx) {
             new Chart(clientsCtx, {
                 type: 'bar',
@@ -383,25 +383,25 @@
                         y: { beginAtZero: true, ticks: { precision: 0 } }
                     }
                 }
-            })
+            });
         }
 
         // ── Top 10 servicios (bar o line según filtro) ───────────────────────
-        var topServicesCtx = document.getElementById('topServicesChartCanvas')
+        var topServicesCtx = document.getElementById('topServicesChartCanvas');
         if (topServicesCtx) {
-            var topServicesType = @json($chartType ?? 'bar')
+            var topServicesType = @json($chartType ?? 'bar');
             if (topServicesType === 'pie') {
-                topServicesType = 'bar'
+                topServicesType = 'bar';
             }
 
             var baseColors = [
                 '#2563EB', '#16A34A', '#DC2626', '#D97706', '#7C3AED',
                 '#0891B2', '#DB2777', '#4F46E5', '#65A30D', '#EA580C'
-            ]
+            ];
 
-            var serviceDatasets = @json($topServicesDatasets)
+            var serviceDatasets = @json($topServicesDatasets);
             serviceDatasets = serviceDatasets.map(function(dataset, index) {
-                var color = baseColors[index % baseColors.length]
+                var color = baseColors[index % baseColors.length];
                 return {
                     label: dataset.label,
                     data: dataset.data,
@@ -413,8 +413,8 @@
                     fill: topServicesType === 'line',
                     tension: 0.25,
                     pointRadius: topServicesType === 'line' ? 3 : 0,
-                }
-            })
+                };
+            });
 
             new Chart(topServicesCtx, {
                 type: topServicesType,
@@ -430,7 +430,7 @@
                         y: { beginAtZero: true, ticks: { precision: 0 } }
                     }
                 }
-            })
+            });
         }
 
         // ── Tasa de conversión (bar o line según filtro) ──────────────────────
@@ -484,13 +484,13 @@
                             beginAtZero: true,
                             ticks: {
                                 callback: function(value) {
-                                    return value + '%'
+                                    return value + '%';
                                 }
                             }
                         }
                     }
                 }
-            })
+            });
         }
 
         $(document).ready(function() {
