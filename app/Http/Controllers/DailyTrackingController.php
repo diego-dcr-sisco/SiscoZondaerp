@@ -68,80 +68,74 @@ class DailyTrackingController extends Controller
     public function charts(Request $request)
     {
         $chartDateRange = $this->parseDateRange((string) $request->input('date_range', ''));
-        $chartWhereRaw = $this->buildChartWhereRaw($request);
         $chartType = $this->resolveChartType($request);
         $chartView = $this->resolveChartView($request);
         $periodDivision = $this->resolvePeriodDivision($request, $chartDateRange);
         $periodConfig = $this->chartPeriodConfig($periodDivision);
 
-        $contactMethodChart = new LaravelChart([
-            'chart_title' => 'Medio de contacto con mayor cantidad',
-            'report_type' => 'group_by_string',
-            'model' => DailyTracking::class,
-            'group_by_field' => 'contact_method',
-            'aggregate_function' => 'count',
-            'chart_type' => $chartType,
-            'where_raw' => $chartWhereRaw,
-            'chart_color' => '10, 41, 134',
-            'labels' => [
-                'google' => 'Google',
-                'pagina' => 'Pagina web',
-                'llamada' => 'Llamada',
-                'cambaceo' => 'Cambaceo',
-            ],
-        ]);
+        // Contact methods grouped by period × contact method
+        $contactRows = $this->buildFilteredQuery($request)
+            ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
+            ->selectRaw("SUM(CASE WHEN contact_method = 'google'   THEN 1 ELSE 0 END) as google")
+            ->selectRaw("SUM(CASE WHEN contact_method = 'pagina'   THEN 1 ELSE 0 END) as pagina")
+            ->selectRaw("SUM(CASE WHEN contact_method = 'llamada'  THEN 1 ELSE 0 END) as llamada")
+            ->selectRaw("SUM(CASE WHEN contact_method = 'cambaceo' THEN 1 ELSE 0 END) as cambaceo")
+            ->whereNotNull('created_at')
+            ->groupBy('period')
+            ->orderBy('period')
+            ->get();
 
-        $amountsChartOptions = [
-            'chart_title' => 'Montos facturados ($) por periodo',
-            'report_type' => 'group_by_date',
-            'model' => DailyTracking::class,
-            'group_by_field' => 'created_at',
-            'group_by_period' => $periodConfig['group_by_period'],
-            'aggregate_function' => 'sum',
-            'aggregate_field' => 'billed_amount',
-            'chart_type' => $chartType,
-            'where_raw' => $chartWhereRaw,
-            'chart_color' => '183, 68, 83',
-            'date_format' => $periodConfig['date_format'],
-            'continuous_time' => true,
-        ];
-
-        if ($chartDateRange !== null) {
-            $amountsChartOptions['filter_field'] = 'created_at';
-            $amountsChartOptions['range_date_start'] = $chartDateRange['start'];
-            $amountsChartOptions['range_date_end'] = $chartDateRange['end'];
-        } else {
-            $amountsChartOptions['filter_field'] = 'created_at';
-            $amountsChartOptions['filter_period'] = 'year';
+        $contactPeriods = [];
+        $contactDatasets = ['google' => [], 'pagina' => [], 'llamada' => [], 'cambaceo' => []];
+        foreach ($contactRows as $row) {
+            $contactPeriods[] = (string) $row->period;
+            $contactDatasets['google'][]   = (int) $row->google;
+            $contactDatasets['pagina'][]   = (int) $row->pagina;
+            $contactDatasets['llamada'][]  = (int) $row->llamada;
+            $contactDatasets['cambaceo'][] = (int) $row->cambaceo;
         }
 
-        $amountsChart = new LaravelChart($amountsChartOptions);
+        // Billed amounts grouped by period × customer type
+        $amountsRows = $this->buildFilteredQuery($request)
+            ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'domestico'  THEN COALESCE(billed_amount, 0) ELSE 0 END) as domestico")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'comercial'  THEN COALESCE(billed_amount, 0) ELSE 0 END) as comercial")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' THEN COALESCE(billed_amount, 0) ELSE 0 END) as industrial")
+            ->whereNotNull('created_at')
+            ->groupBy('period')
+            ->orderBy('period')
+            ->get();
 
-        $clientsPeriodChartOptions = [
-            'chart_title' => 'Clientes ingresados por ' . $periodConfig['label'],
-            'report_type' => 'group_by_date',
-            'model' => DailyTracking::class,
-            'group_by_field' => 'created_at',
-            'group_by_period' => $periodConfig['group_by_period'],
-            'aggregate_function' => 'count',
-            'chart_type' => $chartType,
-            'where_raw' => $chartWhereRaw,
-            'chart_color' => '81, 42, 135',
-            'date_format' => $periodConfig['date_format'],
-            'continuous_time' => true,
-        ];
-
-        if ($chartDateRange !== null) {
-            $clientsPeriodChartOptions['filter_field'] = 'created_at';
-            $clientsPeriodChartOptions['range_date_start'] = $chartDateRange['start'];
-            $clientsPeriodChartOptions['range_date_end'] = $chartDateRange['end'];
-        } else {
-            $clientsPeriodChartOptions['filter_field'] = 'created_at';
-            $clientsPeriodChartOptions['filter_period'] = 'year';
+        $amountsPeriods = [];
+        $amountsDatasets = ['domestico' => [], 'comercial' => [], 'industrial' => []];
+        foreach ($amountsRows as $row) {
+            $amountsPeriods[] = (string) $row->period;
+            $amountsDatasets['domestico'][]  = round((float) $row->domestico, 2);
+            $amountsDatasets['comercial'][]  = round((float) $row->comercial, 2);
+            $amountsDatasets['industrial'][] = round((float) $row->industrial, 2);
         }
 
-        $clientsPeriodChart = new LaravelChart($clientsPeriodChartOptions);
+        // Clients counted grouped by period × customer type
+        $clientsRows = $this->buildFilteredQuery($request)
+            ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'domestico'  THEN 1 ELSE 0 END) as domestico")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'comercial'  THEN 1 ELSE 0 END) as comercial")
+            ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' THEN 1 ELSE 0 END) as industrial")
+            ->whereNotNull('created_at')
+            ->groupBy('period')
+            ->orderBy('period')
+            ->get();
 
+        $clientsPeriods = [];
+        $clientsDatasets = ['domestico' => [], 'comercial' => [], 'industrial' => []];
+        foreach ($clientsRows as $row) {
+            $clientsPeriods[] = (string) $row->period;
+            $clientsDatasets['domestico'][]  = (int) $row->domestico;
+            $clientsDatasets['comercial'][]  = (int) $row->comercial;
+            $clientsDatasets['industrial'][] = (int) $row->industrial;
+        }
+
+        // Conversion rate
         $conversionRows = $this->buildFilteredQuery($request)
             ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
             ->selectRaw("SUM(CASE WHEN quoted = 'yes' THEN 1 ELSE 0 END) as quoted_count")
@@ -163,15 +157,18 @@ class DailyTrackingController extends Controller
         }
 
         return view('crm.daily-tracking.charts', array_merge($this->formData(), [
-            'contactMethodChart' => $contactMethodChart,
-            'amountsChart' => $amountsChart,
-            'clientsPeriodChart' => $clientsPeriodChart,
+            'contactPeriods'  => $contactPeriods,
+            'contactDatasets' => $contactDatasets,
+            'amountsPeriods'  => $amountsPeriods,
+            'amountsDatasets' => $amountsDatasets,
+            'clientsPeriods'  => $clientsPeriods,
+            'clientsDatasets' => $clientsDatasets,
             'conversionLabels' => $conversionLabels,
-            'conversionData' => $conversionData,
-            'chartType' => $chartType,
-            'chartView' => $chartView,
-            'periodDivision' => $periodDivision,
-            'periodDivisionLabel' => $periodConfig['label'],
+            'conversionData'   => $conversionData,
+            'chartType'            => $chartType,
+            'chartView'            => $chartView,
+            'periodDivision'       => $periodDivision,
+            'periodDivisionLabel'  => $periodConfig['label'],
             'statusOptions' => DailyTrackingStatus::cases(),
         ]));
     }

@@ -98,8 +98,9 @@
                                     <select name="chart_type" class="form-select form-select-sm">
                                         <option value="bar" {{ ($chartType ?? request('chart_type', 'bar')) === 'bar' ? 'selected' : '' }}>Barras</option>
                                         <option value="line" {{ ($chartType ?? request('chart_type', 'bar')) === 'line' ? 'selected' : '' }}>Lineal</option>
-                                        <option value="pie" {{ ($chartType ?? request('chart_type', 'bar')) === 'pie' ? 'selected' : '' }}>Circular</option>
+                                        <option value="pie" {{ ($chartType ?? request('chart_type', 'bar')) === 'pie' ? 'selected' : '' }}>Circular (solo conversión)</option>
                                     </select>
+                                    <small class="text-muted">Solo aplica a Montos y Conversión</small>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label form-label-sm mb-1">Rango de fechas (creación)</label>
@@ -170,28 +171,34 @@
                     @if (($chartView ?? 'contact') === 'contact')
                         <div class="card shadow-sm h-100 chart-card">
                             <div class="card-header bg-white fw-semibold">
-                                <i class="bi bi-diagram-3 text-info"></i> Medio de contacto con mayor cantidad
+                                <i class="bi bi-diagram-3 text-info"></i> Medios de contacto por {{ $periodDivisionLabel ?? 'periodo' }}
                             </div>
                             <div class="card-body">
-                                {!! $contactMethodChart->renderHtml() !!}
+                                <div class="chart-canvas-wrap">
+                                    <canvas id="contactMethodChartCanvas"></canvas>
+                                </div>
                             </div>
                         </div>
                     @elseif (($chartView ?? 'contact') === 'amounts')
                         <div class="card shadow-sm h-100 chart-card">
                             <div class="card-header bg-white fw-semibold">
-                                <i class="bi bi-currency-dollar text-success"></i> Montos facturados ($) por período
+                                <i class="bi bi-currency-dollar text-success"></i> Montos facturados ($) por {{ $periodDivisionLabel ?? 'periodo' }} y tipo de cliente
                             </div>
                             <div class="card-body">
-                                {!! $amountsChart->renderHtml() !!}
+                                <div class="chart-canvas-wrap">
+                                    <canvas id="amountsChartCanvas"></canvas>
+                                </div>
                             </div>
                         </div>
                     @elseif (($chartView ?? 'contact') === 'clients')
                         <div class="card shadow-sm h-100 chart-card">
                             <div class="card-header bg-white fw-semibold">
-                                <i class="bi bi-people text-primary"></i> Clientes ingresados por {{ $periodDivisionLabel ?? 'periodo' }}
+                                <i class="bi bi-people text-primary"></i> Clientes ingresados por {{ $periodDivisionLabel ?? 'periodo' }} y tipo
                             </div>
                             <div class="card-body">
-                                {!! $clientsPeriodChart->renderHtml() !!}
+                                <div class="chart-canvas-wrap">
+                                    <canvas id="clientsPeriodChartCanvas"></canvas>
+                                </div>
                             </div>
                         </div>
                     @else
@@ -213,16 +220,162 @@
 
     </div>
 
-    {!! $contactMethodChart->renderChartJsLibrary() !!}
-    @if (($chartView ?? 'contact') === 'contact')
-        {!! $contactMethodChart->renderJs() !!}
-    @elseif (($chartView ?? 'contact') === 'amounts')
-        {!! $amountsChart->renderJs() !!}
-    @elseif (($chartView ?? 'contact') === 'clients')
-        {!! $clientsPeriodChart->renderJs() !!}
-    @endif
-
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // ── Medios de contacto (grouped bar — always) ────────────────────────
+        const contactCtx = document.getElementById('contactMethodChartCanvas')
+        if (contactCtx) {
+            new Chart(contactCtx, {
+                type: 'bar',
+                data: {
+                    labels: @json($contactPeriods),
+                    datasets: [
+                        {
+                            label: 'Google',
+                            data: @json($contactDatasets['google']),
+                            backgroundColor: 'rgba(66,133,244,0.8)',
+                            borderColor: '#4285F4',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Página web',
+                            data: @json($contactDatasets['pagina']),
+                            backgroundColor: 'rgba(52,168,83,0.8)',
+                            borderColor: '#34A853',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Llamada',
+                            data: @json($contactDatasets['llamada']),
+                            backgroundColor: 'rgba(251,188,5,0.85)',
+                            borderColor: '#FBBC05',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Cambaceo',
+                            data: @json($contactDatasets['cambaceo']),
+                            backgroundColor: 'rgba(234,67,53,0.8)',
+                            borderColor: '#EA4335',
+                            borderWidth: 1,
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true } },
+                    scales: {
+                        x: { stacked: false },
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
+            })
+        }
+
+        // ── Montos facturados (bar o line según filtro) ──────────────────────
+        const amountsCtx = document.getElementById('amountsChartCanvas')
+        if (amountsCtx) {
+            const amountsType = @json($chartType ?? 'bar')
+            const isLine = amountsType === 'line'
+            new Chart(amountsCtx, {
+                type: amountsType,
+                data: {
+                    labels: @json($amountsPeriods),
+                    datasets: [
+                        {
+                            label: 'Doméstico',
+                            data: @json($amountsDatasets['domestico']),
+                            backgroundColor: isLine ? 'rgba(0,188,212,0.2)' : 'rgba(0,188,212,0.8)',
+                            borderColor: '#00BCD4',
+                            borderWidth: 2,
+                            fill: isLine,
+                            tension: 0.3,
+                            pointRadius: isLine ? 4 : 0,
+                        },
+                        {
+                            label: 'Comercial',
+                            data: @json($amountsDatasets['comercial']),
+                            backgroundColor: isLine ? 'rgba(183,68,83,0.2)' : 'rgba(183,68,83,0.8)',
+                            borderColor: '#B74453',
+                            borderWidth: 2,
+                            fill: isLine,
+                            tension: 0.3,
+                            pointRadius: isLine ? 4 : 0,
+                        },
+                        {
+                            label: 'Industrial',
+                            data: @json($amountsDatasets['industrial']),
+                            backgroundColor: isLine ? 'rgba(81,42,135,0.2)' : 'rgba(81,42,135,0.8)',
+                            borderColor: '#512A87',
+                            borderWidth: 2,
+                            fill: isLine,
+                            tension: 0.3,
+                            pointRadius: isLine ? 4 : 0,
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true } },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString('es-MX', { minimumFractionDigits: 0 })
+                                }
+                            }
+                        }
+                    }
+                }
+            })
+        }
+
+        // ── Clientes por periodo (grouped bar — always) ──────────────────────
+        const clientsCtx = document.getElementById('clientsPeriodChartCanvas')
+        if (clientsCtx) {
+            new Chart(clientsCtx, {
+                type: 'bar',
+                data: {
+                    labels: @json($clientsPeriods),
+                    datasets: [
+                        {
+                            label: 'Doméstico',
+                            data: @json($clientsDatasets['domestico']),
+                            backgroundColor: 'rgba(0,188,212,0.8)',
+                            borderColor: '#00BCD4',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Comercial',
+                            data: @json($clientsDatasets['comercial']),
+                            backgroundColor: 'rgba(183,68,83,0.8)',
+                            borderColor: '#B74453',
+                            borderWidth: 1,
+                        },
+                        {
+                            label: 'Industrial',
+                            data: @json($clientsDatasets['industrial']),
+                            backgroundColor: 'rgba(81,42,135,0.8)',
+                            borderColor: '#512A87',
+                            borderWidth: 1,
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true } },
+                    scales: {
+                        x: { stacked: false },
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
+            })
+        }
+
+        // ── Tasa de conversión ───────────────────────────────────────────────
         const selectedConversionType = @json($chartType ?? 'bar')
         const conversionCtx = document.getElementById('dailyTrackingConversionChartPage')
         if (conversionCtx) {
