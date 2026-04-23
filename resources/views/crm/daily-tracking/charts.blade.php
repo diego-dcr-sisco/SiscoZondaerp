@@ -376,8 +376,8 @@
         }
 
         // ── Tasa de conversión ───────────────────────────────────────────────
-        const selectedConversionType = @json($chartType ?? 'bar')
-        const conversionCtx = document.getElementById('dailyTrackingConversionChartPage')
+        const selectedConversionType = @json($chartType ?? 'bar');
+        const conversionCtx = document.getElementById('dailyTrackingConversionChartPage');
         if (conversionCtx) {
             const conversionOptions = {
                 responsive: true,
