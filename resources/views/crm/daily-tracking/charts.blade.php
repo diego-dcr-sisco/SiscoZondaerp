@@ -275,8 +275,8 @@
         // ── Montos facturados (bar o line según filtro) ──────────────────────
         const amountsCtx = document.getElementById('amountsChartCanvas')
         if (amountsCtx) {
-            const amountsType = @json($chartType ?? 'bar')
-            const isLine = amountsType === 'line'
+            const amountsType = @json($chartType ?? 'bar');
+            const isLine = amountsType === 'line';
             new Chart(amountsCtx, {
                 type: amountsType,
                 data: {
