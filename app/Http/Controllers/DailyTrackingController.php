@@ -135,6 +135,65 @@ class DailyTrackingController extends Controller
             $clientsDatasets['industrial'][] = (int) $row->industrial;
         }
 
+        // Top 10 services grouped by period
+        $topServiceIds = $this->buildFilteredQuery($request)
+            ->whereNotNull('service_id')
+            ->selectRaw('service_id, COUNT(*) as total')
+            ->groupBy('service_id')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->pluck('service_id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+
+        $topServicesPeriods = [];
+        $topServicesDatasets = [];
+
+        if (! empty($topServiceIds)) {
+            $topServiceRows = $this->buildFilteredQuery($request)
+                ->whereIn('service_id', $topServiceIds)
+                ->whereNotNull('created_at')
+                ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
+                ->selectRaw('service_id, COUNT(*) as total')
+                ->groupBy('period', 'service_id')
+                ->orderBy('period')
+                ->get();
+
+            $serviceNames = Service::query()
+                ->whereIn('id', $topServiceIds)
+                ->pluck('name', 'id');
+
+            $periodSet = [];
+            $servicePeriodCountMap = [];
+
+            foreach ($topServiceRows as $row) {
+                $period = (string) $row->period;
+                $serviceId = (int) $row->service_id;
+                $periodSet[$period] = true;
+                $servicePeriodCountMap[$serviceId][$period] = (int) $row->total;
+            }
+
+            $topServicesPeriods = array_values(array_keys($periodSet));
+            $periodIndexes = array_flip($topServicesPeriods);
+
+            foreach ($topServiceIds as $serviceId) {
+                $series = array_fill(0, count($topServicesPeriods), 0);
+                $countsByPeriod = $servicePeriodCountMap[$serviceId] ?? [];
+
+                foreach ($countsByPeriod as $period => $count) {
+                    if (array_key_exists($period, $periodIndexes)) {
+                        $series[$periodIndexes[$period]] = (int) $count;
+                    }
+                }
+
+                $topServicesDatasets[] = [
+                    'label' => (string) ($serviceNames[$serviceId] ?? ('Servicio #' . $serviceId)),
+                    'data' => $series,
+                ];
+            }
+        }
+
         // Conversion rate grouped by period × customer type
         $conversionRows = $this->buildFilteredQuery($request)
             ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
@@ -180,6 +239,8 @@ class DailyTrackingController extends Controller
             'amountsDatasets' => $amountsDatasets,
             'clientsPeriods'  => $clientsPeriods,
             'clientsDatasets' => $clientsDatasets,
+            'topServicesPeriods' => $topServicesPeriods,
+            'topServicesDatasets' => $topServicesDatasets,
             'conversionPeriods'  => $conversionPeriods,
             'conversionDatasets' => $conversionDatasets,
             'chartType'            => $chartType,
@@ -606,7 +667,7 @@ class DailyTrackingController extends Controller
     private function resolveChartView(Request $request): string
     {
         $chartView = strtolower((string) $request->input('chart_view', 'contact'));
-        $allowedViews = ['contact', 'amounts', 'clients', 'conversion'];
+        $allowedViews = ['contact', 'amounts', 'clients', 'services', 'conversion'];
 
         return in_array($chartView, $allowedViews, true) ? $chartView : 'contact';
     }

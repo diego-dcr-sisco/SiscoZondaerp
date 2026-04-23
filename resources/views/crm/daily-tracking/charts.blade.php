@@ -90,6 +90,7 @@
                                         <option value="contact" {{ ($chartView ?? request('chart_view', 'contact')) === 'contact' ? 'selected' : '' }}>Medio de contacto</option>
                                         <option value="amounts" {{ ($chartView ?? request('chart_view', 'contact')) === 'amounts' ? 'selected' : '' }}>Montos facturados</option>
                                         <option value="clients" {{ ($chartView ?? request('chart_view', 'contact')) === 'clients' ? 'selected' : '' }}>Clientes por periodo</option>
+                                        <option value="services" {{ ($chartView ?? request('chart_view', 'contact')) === 'services' ? 'selected' : '' }}>Top 10 servicios</option>
                                         <option value="conversion" {{ ($chartView ?? request('chart_view', 'contact')) === 'conversion' ? 'selected' : '' }}>Tasa de conversion</option>
                                     </select>
                                 </div>
@@ -100,7 +101,7 @@
                                         <option value="line" {{ ($chartType ?? request('chart_type', 'bar')) === 'line' ? 'selected' : '' }}>Lineal</option>
                                         <option value="pie" {{ ($chartType ?? request('chart_type', 'bar')) === 'pie' ? 'selected' : '' }}>Circular (solo conversión)</option>
                                     </select>
-                                    <small class="text-muted">Solo aplica a Montos y Conversión</small>
+                                    <small class="text-muted">Solo aplica a Montos, Top servicios y Conversión</small>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label form-label-sm mb-1">Rango de fechas (creación)</label>
@@ -198,6 +199,17 @@
                             <div class="card-body">
                                 <div class="chart-canvas-wrap">
                                     <canvas id="clientsPeriodChartCanvas"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    @elseif (($chartView ?? 'contact') === 'services')
+                        <div class="card shadow-sm h-100 chart-card">
+                            <div class="card-header bg-white fw-semibold">
+                                <i class="bi bi-tools text-dark"></i> Top 10 servicios por {{ $periodDivisionLabel ?? 'periodo' }}
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-canvas-wrap">
+                                    <canvas id="topServicesChartCanvas"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -368,6 +380,53 @@
                     plugins: { legend: { display: true } },
                     scales: {
                         x: { stacked: false },
+                        y: { beginAtZero: true, ticks: { precision: 0 } }
+                    }
+                }
+            })
+        }
+
+        // ── Top 10 servicios (bar o line según filtro) ───────────────────────
+        var topServicesCtx = document.getElementById('topServicesChartCanvas')
+        if (topServicesCtx) {
+            var topServicesType = @json($chartType ?? 'bar')
+            if (topServicesType === 'pie') {
+                topServicesType = 'bar'
+            }
+
+            var baseColors = [
+                '#2563EB', '#16A34A', '#DC2626', '#D97706', '#7C3AED',
+                '#0891B2', '#DB2777', '#4F46E5', '#65A30D', '#EA580C'
+            ]
+
+            var serviceDatasets = @json($topServicesDatasets)
+            serviceDatasets = serviceDatasets.map(function(dataset, index) {
+                var color = baseColors[index % baseColors.length]
+                return {
+                    label: dataset.label,
+                    data: dataset.data,
+                    borderColor: color,
+                    backgroundColor: topServicesType === 'line'
+                        ? color + '33'
+                        : color + 'CC',
+                    borderWidth: 2,
+                    fill: topServicesType === 'line',
+                    tension: 0.25,
+                    pointRadius: topServicesType === 'line' ? 3 : 0,
+                }
+            })
+
+            new Chart(topServicesCtx, {
+                type: topServicesType,
+                data: {
+                    labels: @json($topServicesPeriods),
+                    datasets: serviceDatasets,
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: true } },
+                    scales: {
                         y: { beginAtZero: true, ticks: { precision: 0 } }
                     }
                 }
