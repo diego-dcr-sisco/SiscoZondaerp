@@ -81,8 +81,8 @@
 
             <div class="row g-3 align-items-start">
                 <div class="col-12 col-lg-4 col-xl-3">
-                    <div class="border p-3 text-dark rounded bg-light filters-card">
-                        <form method="GET" action="{{ route('crm.daily-tracking.charts') }}">
+                    <form method="GET" action="{{ route('crm.daily-tracking.charts') }}" class="filters-card d-flex flex-column gap-3">
+                        <div class="border p-3 text-dark rounded bg-light">
                             <div class="row g-2 align-items-end">
                                 <div class="col-12">
                                     <label class="form-label form-label-sm mb-1">Grafica a visualizar</label>
@@ -94,6 +94,11 @@
                                         <option value="conversion" {{ ($chartView ?? request('chart_view', 'contact')) === 'conversion' ? 'selected' : '' }}>Tasa de conversion</option>
                                     </select>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="border p-3 text-dark rounded bg-light">
+                            <div class="row g-2 align-items-end">
                                 <div class="col-12">
                                     <label class="form-label form-label-sm mb-1">Tipo de grafica</label>
                                     <select name="chart_type" class="form-select form-select-sm">
@@ -152,8 +157,8 @@
                                     </a>
                                 </div>
                             </div>
-                        </form>
-                    </div>
+                        </div>
+                    </form>
                 </div>
 
                 <div class="col-12 col-lg-8 col-xl-9">
