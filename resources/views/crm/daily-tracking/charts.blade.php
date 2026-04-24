@@ -139,7 +139,6 @@
                                     <select name="chart_type" class="form-select form-select-sm">
                                         <option value="bar" {{ ($chartType ?? request('chart_type', 'bar')) === 'bar' ? 'selected' : '' }}>Barras</option>
                                         <option value="line" {{ ($chartType ?? request('chart_type', 'bar')) === 'line' ? 'selected' : '' }}>Lineal</option>
-                                        <option value="pie" {{ ($chartType ?? request('chart_type', 'bar')) === 'pie' ? 'selected' : '' }}>Circular (solo conversión)</option>
                                     </select>
                                     <small class="text-muted">Solo aplica a Montos, Top servicios y Conversión</small>
                                 </div>
@@ -391,9 +390,6 @@
         var topServicesCtx = document.getElementById('topServicesChartCanvas');
         if (topServicesCtx) {
             var topServicesType = @json($chartType ?? 'bar');
-            if (topServicesType === 'pie') {
-                topServicesType = 'bar';
-            }
 
             var baseColors = [
                 '#2563EB', '#16A34A', '#DC2626', '#D97706', '#7C3AED',

@@ -664,7 +664,7 @@ class DailyTrackingController extends Controller
     private function resolveChartType(Request $request, string $inputName = 'chart_type', string $default = 'bar'): string
     {
         $chartType = strtolower((string) $request->input($inputName, $default));
-        $allowedTypes = ['bar', 'line', 'pie'];
+        $allowedTypes = ['bar', 'line'];
 
         return in_array($chartType, $allowedTypes, true) ? $chartType : $default;
     }
