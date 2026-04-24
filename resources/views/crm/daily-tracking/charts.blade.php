@@ -110,18 +110,6 @@
                                         readonly>
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label form-label-sm mb-1">Servicio</label>
-                                    <select name="service_id" class="form-select form-select-sm">
-                                        <option value="">Todos</option>
-                                        @foreach ($services as $service)
-                                            <option value="{{ $service->id }}"
-                                                {{ request('service_id') == $service->id ? 'selected' : '' }}>
-                                                {{ $service->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-12">
                                     <label class="form-label form-label-sm mb-1">Estatus</label>
                                     <select name="status" class="form-select form-select-sm">
                                         <option value="">Todos</option>

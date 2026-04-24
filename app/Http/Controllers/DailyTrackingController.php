@@ -88,7 +88,7 @@ class DailyTrackingController extends Controller
         $contactPeriods = [];
         $contactDatasets = ['google' => [], 'pagina' => [], 'llamada' => [], 'cambaceo' => []];
         foreach ($contactRows as $row) {
-            $contactPeriods[] = (string) $row->period;
+            $contactPeriods[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
             $contactDatasets['google'][]   = (int) $row->google;
             $contactDatasets['pagina'][]   = (int) $row->pagina;
             $contactDatasets['llamada'][]  = (int) $row->llamada;
@@ -109,7 +109,7 @@ class DailyTrackingController extends Controller
         $amountsPeriods = [];
         $amountsDatasets = ['domestico' => [], 'comercial' => [], 'industrial' => []];
         foreach ($amountsRows as $row) {
-            $amountsPeriods[] = (string) $row->period;
+            $amountsPeriods[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
             $amountsDatasets['domestico'][]  = round((float) $row->domestico, 2);
             $amountsDatasets['comercial'][]  = round((float) $row->comercial, 2);
             $amountsDatasets['industrial'][] = round((float) $row->industrial, 2);
@@ -129,7 +129,7 @@ class DailyTrackingController extends Controller
         $clientsPeriods = [];
         $clientsDatasets = ['domestico' => [], 'comercial' => [], 'industrial' => []];
         foreach ($clientsRows as $row) {
-            $clientsPeriods[] = (string) $row->period;
+            $clientsPeriods[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
             $clientsDatasets['domestico'][]  = (int) $row->domestico;
             $clientsDatasets['comercial'][]  = (int) $row->comercial;
             $clientsDatasets['industrial'][] = (int) $row->industrial;
@@ -192,6 +192,11 @@ class DailyTrackingController extends Controller
                     'data' => $series,
                 ];
             }
+
+            $topServicesPeriods = array_map(
+                fn (string $period) => $this->formatChartPeriodLabel($period, $periodDivision),
+                $topServicesPeriods
+            );
         }
 
         // Conversion rate grouped by period × customer type
@@ -211,7 +216,7 @@ class DailyTrackingController extends Controller
         $conversionPeriods = [];
         $conversionDatasets = ['domestico' => [], 'comercial' => [], 'industrial' => []];
         foreach ($conversionRows as $row) {
-            $conversionPeriods[] = (string) $row->period;
+            $conversionPeriods[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
             
             // Domestico
             $domesticoQuoted = (int) $row->domestico_quoted;
@@ -735,6 +740,28 @@ class DailyTrackingController extends Controller
                 'label' => 'mes',
             ],
         };
+    }
+
+    private function formatChartPeriodLabel(string $period, string $periodDivision): string
+    {
+        if ($periodDivision !== 'week') {
+            return $period;
+        }
+
+        if (! preg_match('/^(\d{4})-W(\d{1,2})$/', $period, $matches)) {
+            return $period;
+        }
+
+        try {
+            $year = (int) $matches[1];
+            $week = (int) $matches[2];
+            $weekStart = Carbon::now()->setISODate($year, $week)->startOfDay();
+            $weekEnd = $weekStart->copy()->addDays(6)->endOfDay();
+
+            return $weekStart->format('d/m/Y') . ' - ' . $weekEnd->format('d/m/Y');
+        } catch (\Exception $e) {
+            return $period;
+        }
     }
 
     private function navigation(): array
