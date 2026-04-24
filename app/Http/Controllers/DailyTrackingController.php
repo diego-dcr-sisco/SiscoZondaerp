@@ -835,196 +835,397 @@ class DailyTrackingController extends Controller
 
     public function exportCharts(Request $request)
     {
-        // Generate the same charts as in the index method
         $chartDateRange = $this->parseDateRange((string) $request->input('date_range', ''));
-        $chartWhereRaw = $this->buildChartWhereRaw($request);
+        $chartType = $this->resolveChartType($request);
+        $chartView = $this->resolveChartView($request);
+        $periodDivision = $this->resolvePeriodDivision($request, $chartDateRange);
+        $periodConfig = $this->chartPeriodConfig($periodDivision);
 
-        // Chart 1: Contact Methods - obtener datos crudos (como texto plano sin hydration)
-        $contactMethodsRaw = DB::table('daily_trackings')
-            ->whereRaw($chartWhereRaw)
-            ->selectRaw('contact_method, COUNT(*) as count')
-            ->groupBy('contact_method')
-            ->orderByRaw('COUNT(*) DESC')
-            ->get();
-
-        $contactMethodLabels = [
-            'google' => 'Google',
-            'pagina' => 'Pagina web',
-            'llamada' => 'Llamada',
-            'cambaceo' => 'Cambaceo',
+        $seriesColors = [
+            'domestico' => ['border' => '#00BCD4', 'backgroundBar' => 'rgba(0,188,212,0.8)', 'backgroundLine' => 'rgba(0,188,212,0.2)'],
+            'comercial' => ['border' => '#B74453', 'backgroundBar' => 'rgba(183,68,83,0.8)', 'backgroundLine' => 'rgba(183,68,83,0.2)'],
+            'industrial' => ['border' => '#512A87', 'backgroundBar' => 'rgba(81,42,135,0.8)', 'backgroundLine' => 'rgba(81,42,135,0.2)'],
         ];
 
-        // Convertir a formato esperado
-        $contactMethodsData = $contactMethodsRaw->map(function ($item) {
-            return (object) [
-                'contact_method' => $item->contact_method,
-                'count' => $item->count,
+        $chartTitle = '';
+        $chartSubtitle = '';
+        $chartConfig = [];
+        $analytics = [];
+
+        if ($chartView === 'contact') {
+            $rows = $this->buildFilteredQuery($request)
+                ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
+                ->selectRaw("SUM(CASE WHEN contact_method = 'google'   THEN 1 ELSE 0 END) as google")
+                ->selectRaw("SUM(CASE WHEN contact_method = 'pagina'   THEN 1 ELSE 0 END) as pagina")
+                ->selectRaw("SUM(CASE WHEN contact_method = 'llamada'  THEN 1 ELSE 0 END) as llamada")
+                ->selectRaw("SUM(CASE WHEN contact_method = 'cambaceo' THEN 1 ELSE 0 END) as cambaceo")
+                ->whereNotNull('created_at')
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+
+            $labels = [];
+            $google = [];
+            $pagina = [];
+            $llamada = [];
+            $cambaceo = [];
+
+            foreach ($rows as $row) {
+                $labels[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
+                $google[] = (int) $row->google;
+                $pagina[] = (int) $row->pagina;
+                $llamada[] = (int) $row->llamada;
+                $cambaceo[] = (int) $row->cambaceo;
+            }
+
+            $methodTotals = [
+                'Google' => array_sum($google),
+                'Pagina web' => array_sum($pagina),
+                'Llamada' => array_sum($llamada),
+                'Cambaceo' => array_sum($cambaceo),
             ];
-        });
+            arsort($methodTotals);
+            $topMethod = array_key_first($methodTotals);
+            $topMethodValue = $topMethod !== null ? $methodTotals[$topMethod] : 0;
 
-        // Chart 2: Amounts by period - obtener datos crudos
-        $amountsData = DailyTracking::whereRaw($chartWhereRaw)
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period, SUM(billed_amount) as total")
-            ->whereNotNull('billed_amount')
-            ->groupBy('period')
-            ->orderBy('period')
-            ->get();
-
-        // Chart 3: Clients by week - obtener datos crudos
-        $clientsData = DailyTracking::whereRaw($chartWhereRaw)
-            ->selectRaw("DATE_FORMAT(created_at, '%Y') as year, WEEK(created_at) as week, COUNT(*) as count")
-            ->groupByRaw("DATE_FORMAT(created_at, '%Y'), WEEK(created_at)")
-            ->orderByRaw("DATE_FORMAT(created_at, '%Y'), WEEK(created_at)")
-            ->get();
-
-        // Chart 4: Conversion rate
-        $conversionRows = $this->buildFilteredQuery($request)
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as period")
-            ->selectRaw("SUM(CASE WHEN quoted = 'yes' THEN 1 ELSE 0 END) as quoted_count")
-            ->selectRaw("SUM(CASE WHEN closed = 'yes' THEN 1 ELSE 0 END) as closed_count")
-            ->whereNotNull('created_at')
-            ->groupBy('period')
-            ->orderBy('period')
-            ->get();
-
-        $conversionLabels = [];
-        $conversionData = [];
-        $conversionQuotedCounts = [];
-        $conversionClosedCounts = [];
-        foreach ($conversionRows as $row) {
-            $quotedCount = (int) $row->quoted_count;
-            $closedCount = (int) $row->closed_count;
-            $conversionRate = $quotedCount > 0 ? round(($closedCount / $quotedCount) * 100, 2) : 0;
-
-            $conversionLabels[] = (string) $row->period;
-            $conversionData[] = $conversionRate;
-            $conversionQuotedCounts[] = $quotedCount;
-            $conversionClosedCounts[] = $closedCount;
-        }
-
-        $contactChartLabels = $contactMethodsData
-            ->map(fn ($item) => $contactMethodLabels[$item->contact_method] ?? (string) $item->contact_method)
-            ->values()
-            ->toArray();
-        $contactChartValues = $contactMethodsData
-            ->map(fn ($item) => (int) $item->count)
-            ->values()
-            ->toArray();
-
-        $amountChartLabels = $amountsData
-            ->pluck('period')
-            ->map(fn ($period) => (string) $period)
-            ->values()
-            ->toArray();
-        $amountChartValues = $amountsData
-            ->pluck('total')
-            ->map(fn ($value) => round((float) $value, 2))
-            ->values()
-            ->toArray();
-
-        $clientsChartLabels = $clientsData
-            ->map(fn ($item) => sprintf('%s-W%02d', (string) $item->year, (int) $item->week))
-            ->values()
-            ->toArray();
-        $clientsChartValues = $clientsData
-            ->pluck('count')
-            ->map(fn ($value) => (int) $value)
-            ->values()
-            ->toArray();
-
-        $contactChartImage = $this->generateQuickChartImage([
-            'type' => 'bar',
-            'data' => [
-                'labels' => $contactChartLabels,
-                'datasets' => [[
-                    'label' => 'Cantidad',
-                    'data' => $contactChartValues,
-                    'backgroundColor' => 'rgba(10,41,134,0.62)',
-                    'borderColor' => '#0A2986',
-                    'borderWidth' => 1,
-                ]],
-            ],
-            'options' => [
-                'plugins' => ['legend' => ['display' => false]],
-                'scales' => ['y' => ['beginAtZero' => true]],
-            ],
-        ]);
-
-        $amountChartImage = $this->generateQuickChartImage([
-            'type' => 'bar',
-            'data' => [
-                'labels' => $amountChartLabels,
-                'datasets' => [[
-                    'label' => 'Monto facturado',
-                    'data' => $amountChartValues,
-                    'backgroundColor' => 'rgba(183,68,83,0.58)',
-                    'borderColor' => '#B74453',
-                    'borderWidth' => 1,
-                ]],
-            ],
-            'options' => [
-                'plugins' => ['legend' => ['display' => false]],
-                'scales' => ['y' => ['beginAtZero' => true]],
-            ],
-        ]);
-
-        $clientsChartImage = $this->generateQuickChartImage([
-            'type' => 'line',
-            'data' => [
-                'labels' => $clientsChartLabels,
-                'datasets' => [[
-                    'label' => 'Clientes',
-                    'data' => $clientsChartValues,
-                    'borderColor' => '#512A87',
-                    'backgroundColor' => 'rgba(81,42,135,0.20)',
-                    'fill' => true,
-                    'tension' => 0.35,
-                ]],
-            ],
-            'options' => [
-                'plugins' => ['legend' => ['display' => false]],
-                'scales' => ['y' => ['beginAtZero' => true]],
-            ],
-        ]);
-
-        $conversionChartImage = $this->generateQuickChartImage([
-            'type' => 'line',
-            'data' => [
-                'labels' => $conversionLabels,
-                'datasets' => [[
-                    'label' => 'Tasa de conversion (%)',
-                    'data' => $conversionData,
-                    'borderColor' => '#DD513A',
-                    'backgroundColor' => 'rgba(221,81,58,0.22)',
-                    'fill' => true,
-                    'tension' => 0.35,
-                ]],
-            ],
-            'options' => [
-                'plugins' => ['legend' => ['display' => false]],
-                'scales' => [
-                    'y' => [
-                        'beginAtZero' => true,
-                        'max' => 100,
+            $chartTitle = 'Medios de contacto por periodo';
+            $chartSubtitle = 'Analisis de origen de prospectos por division temporal.';
+            $chartConfig = [
+                'type' => 'bar',
+                'data' => [
+                    'labels' => $labels,
+                    'datasets' => [
+                        ['label' => 'Google', 'data' => $google, 'backgroundColor' => 'rgba(66,133,244,0.8)', 'borderColor' => '#4285F4', 'borderWidth' => 1],
+                        ['label' => 'Pagina web', 'data' => $pagina, 'backgroundColor' => 'rgba(52,168,83,0.8)', 'borderColor' => '#34A853', 'borderWidth' => 1],
+                        ['label' => 'Llamada', 'data' => $llamada, 'backgroundColor' => 'rgba(251,188,5,0.85)', 'borderColor' => '#FBBC05', 'borderWidth' => 1],
+                        ['label' => 'Cambaceo', 'data' => $cambaceo, 'backgroundColor' => 'rgba(234,67,53,0.8)', 'borderColor' => '#EA4335', 'borderWidth' => 1],
                     ],
                 ],
-            ],
-        ]);
+                'options' => [
+                    'plugins' => ['legend' => ['display' => true]],
+                    'scales' => ['y' => ['beginAtZero' => true]],
+                ],
+            ];
+
+            $analytics = [
+                ['label' => 'Periodos analizados', 'value' => (string) count($labels)],
+                ['label' => 'Registros totales', 'value' => (string) array_sum($methodTotals)],
+                ['label' => 'Medio principal', 'value' => ($topMethod ?? 'N/A') . ' (' . $topMethodValue . ')'],
+            ];
+        } elseif ($chartView === 'amounts') {
+            $rows = $this->buildFilteredQuery($request)
+                ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'domestico'  THEN COALESCE(billed_amount, 0) ELSE 0 END) as domestico")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'comercial'  THEN COALESCE(billed_amount, 0) ELSE 0 END) as comercial")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' THEN COALESCE(billed_amount, 0) ELSE 0 END) as industrial")
+                ->whereNotNull('created_at')
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+
+            $labels = [];
+            $domestico = [];
+            $comercial = [];
+            $industrial = [];
+            $totalsByPeriod = [];
+
+            foreach ($rows as $row) {
+                $labels[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
+                $d = round((float) $row->domestico, 2);
+                $c = round((float) $row->comercial, 2);
+                $i = round((float) $row->industrial, 2);
+                $domestico[] = $d;
+                $comercial[] = $c;
+                $industrial[] = $i;
+                $totalsByPeriod[] = $d + $c + $i;
+            }
+
+            $chartKind = $chartType === 'line' ? 'line' : 'bar';
+            $maxPeriodAmount = empty($totalsByPeriod) ? 0 : max($totalsByPeriod);
+            $maxPeriodIndex = empty($totalsByPeriod) ? null : array_search($maxPeriodAmount, $totalsByPeriod, true);
+
+            $chartTitle = 'Montos facturados por periodo y tipo de cliente';
+            $chartSubtitle = 'Comparativo de facturacion por segmento de cliente.';
+            $chartConfig = [
+                'type' => $chartKind,
+                'data' => [
+                    'labels' => $labels,
+                    'datasets' => [
+                        ['label' => 'Domestico', 'data' => $domestico, 'backgroundColor' => $chartKind === 'line' ? $seriesColors['domestico']['backgroundLine'] : $seriesColors['domestico']['backgroundBar'], 'borderColor' => $seriesColors['domestico']['border'], 'borderWidth' => 2, 'fill' => $chartKind === 'line', 'tension' => 0.3],
+                        ['label' => 'Comercial', 'data' => $comercial, 'backgroundColor' => $chartKind === 'line' ? $seriesColors['comercial']['backgroundLine'] : $seriesColors['comercial']['backgroundBar'], 'borderColor' => $seriesColors['comercial']['border'], 'borderWidth' => 2, 'fill' => $chartKind === 'line', 'tension' => 0.3],
+                        ['label' => 'Industrial', 'data' => $industrial, 'backgroundColor' => $chartKind === 'line' ? $seriesColors['industrial']['backgroundLine'] : $seriesColors['industrial']['backgroundBar'], 'borderColor' => $seriesColors['industrial']['border'], 'borderWidth' => 2, 'fill' => $chartKind === 'line', 'tension' => 0.3],
+                    ],
+                ],
+                'options' => [
+                    'plugins' => ['legend' => ['display' => true]],
+                    'scales' => ['y' => ['beginAtZero' => true]],
+                ],
+            ];
+
+            $analytics = [
+                ['label' => 'Periodos analizados', 'value' => (string) count($labels)],
+                ['label' => 'Monto total facturado', 'value' => '$' . number_format(array_sum($totalsByPeriod), 2)],
+                ['label' => 'Periodo con mayor facturacion', 'value' => $maxPeriodIndex !== null ? (($labels[$maxPeriodIndex] ?? 'N/A') . ' ($' . number_format($maxPeriodAmount, 2) . ')') : 'N/A'],
+            ];
+        } elseif ($chartView === 'clients') {
+            $rows = $this->buildFilteredQuery($request)
+                ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'domestico'  THEN 1 ELSE 0 END) as domestico")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'comercial'  THEN 1 ELSE 0 END) as comercial")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' THEN 1 ELSE 0 END) as industrial")
+                ->whereNotNull('created_at')
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+
+            $labels = [];
+            $domestico = [];
+            $comercial = [];
+            $industrial = [];
+            $totalsByPeriod = [];
+
+            foreach ($rows as $row) {
+                $labels[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
+                $d = (int) $row->domestico;
+                $c = (int) $row->comercial;
+                $i = (int) $row->industrial;
+                $domestico[] = $d;
+                $comercial[] = $c;
+                $industrial[] = $i;
+                $totalsByPeriod[] = $d + $c + $i;
+            }
+
+            $maxPeriodClients = empty($totalsByPeriod) ? 0 : max($totalsByPeriod);
+            $maxPeriodIndex = empty($totalsByPeriod) ? null : array_search($maxPeriodClients, $totalsByPeriod, true);
+
+            $chartTitle = 'Clientes ingresados por periodo y tipo';
+            $chartSubtitle = 'Comportamiento de captacion por segmento de cliente.';
+            $chartConfig = [
+                'type' => 'bar',
+                'data' => [
+                    'labels' => $labels,
+                    'datasets' => [
+                        ['label' => 'Domestico', 'data' => $domestico, 'backgroundColor' => $seriesColors['domestico']['backgroundBar'], 'borderColor' => $seriesColors['domestico']['border'], 'borderWidth' => 1],
+                        ['label' => 'Comercial', 'data' => $comercial, 'backgroundColor' => $seriesColors['comercial']['backgroundBar'], 'borderColor' => $seriesColors['comercial']['border'], 'borderWidth' => 1],
+                        ['label' => 'Industrial', 'data' => $industrial, 'backgroundColor' => $seriesColors['industrial']['backgroundBar'], 'borderColor' => $seriesColors['industrial']['border'], 'borderWidth' => 1],
+                    ],
+                ],
+                'options' => [
+                    'plugins' => ['legend' => ['display' => true]],
+                    'scales' => ['y' => ['beginAtZero' => true]],
+                ],
+            ];
+
+            $analytics = [
+                ['label' => 'Periodos analizados', 'value' => (string) count($labels)],
+                ['label' => 'Clientes totales', 'value' => (string) array_sum($totalsByPeriod)],
+                ['label' => 'Periodo con mayor captacion', 'value' => $maxPeriodIndex !== null ? (($labels[$maxPeriodIndex] ?? 'N/A') . ' (' . $maxPeriodClients . ')') : 'N/A'],
+            ];
+        } elseif ($chartView === 'services') {
+            $topServiceIds = $this->buildFilteredQuery($request)
+                ->whereNotNull('service_id')
+                ->selectRaw('service_id, COUNT(*) as total')
+                ->groupBy('service_id')
+                ->orderByDesc('total')
+                ->limit(10)
+                ->pluck('service_id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+
+            $periodLabels = [];
+            $datasets = [];
+            $serviceTotals = [];
+
+            if (! empty($topServiceIds)) {
+                $rows = $this->buildFilteredQuery($request)
+                    ->whereIn('service_id', $topServiceIds)
+                    ->whereNotNull('created_at')
+                    ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
+                    ->selectRaw('service_id, COUNT(*) as total')
+                    ->groupBy('period', 'service_id')
+                    ->orderBy('period')
+                    ->get();
+
+                $serviceNames = Service::query()->whereIn('id', $topServiceIds)->pluck('name', 'id');
+                $periodSet = [];
+                $servicePeriodCountMap = [];
+
+                foreach ($rows as $row) {
+                    $period = (string) $row->period;
+                    $serviceId = (int) $row->service_id;
+                    $periodSet[$period] = true;
+                    $servicePeriodCountMap[$serviceId][$period] = (int) $row->total;
+                    $serviceTotals[$serviceId] = ($serviceTotals[$serviceId] ?? 0) + (int) $row->total;
+                }
+
+                $rawPeriods = array_values(array_keys($periodSet));
+                $periodIndexes = array_flip($rawPeriods);
+                $periodLabels = array_map(fn (string $period) => $this->formatChartPeriodLabel($period, $periodDivision), $rawPeriods);
+
+                $baseColors = [
+                    '#2563EB', '#16A34A', '#DC2626', '#D97706', '#7C3AED',
+                    '#0891B2', '#DB2777', '#4F46E5', '#65A30D', '#EA580C',
+                ];
+                $chartKind = $chartType === 'line' ? 'line' : 'bar';
+
+                foreach (array_values($topServiceIds) as $index => $serviceId) {
+                    $series = array_fill(0, count($rawPeriods), 0);
+                    $countsByPeriod = $servicePeriodCountMap[$serviceId] ?? [];
+
+                    foreach ($countsByPeriod as $period => $count) {
+                        if (array_key_exists($period, $periodIndexes)) {
+                            $series[$periodIndexes[$period]] = (int) $count;
+                        }
+                    }
+
+                    $color = $baseColors[$index % count($baseColors)];
+                    $datasets[] = [
+                        'label' => (string) ($serviceNames[$serviceId] ?? ('Servicio #' . $serviceId)),
+                        'data' => $series,
+                        'borderColor' => $color,
+                        'backgroundColor' => $chartKind === 'line' ? $color . '33' : $color . 'CC',
+                        'borderWidth' => 2,
+                        'fill' => $chartKind === 'line',
+                        'tension' => 0.25,
+                    ];
+                }
+
+                $chartConfig = [
+                    'type' => $chartKind,
+                    'data' => [
+                        'labels' => $periodLabels,
+                        'datasets' => $datasets,
+                    ],
+                    'options' => [
+                        'plugins' => ['legend' => ['display' => true]],
+                        'scales' => ['y' => ['beginAtZero' => true]],
+                    ],
+                ];
+            }
+
+            arsort($serviceTotals);
+            $topServiceId = array_key_first($serviceTotals);
+            $topServiceName = $topServiceId !== null
+                ? (string) (Service::query()->where('id', (int) $topServiceId)->value('name') ?? ('Servicio #' . $topServiceId))
+                : 'N/A';
+
+            $chartTitle = 'Top 10 servicios por periodo';
+            $chartSubtitle = 'Servicios con mayor actividad en el rango filtrado.';
+            if (empty($chartConfig)) {
+                $chartConfig = [
+                    'type' => 'bar',
+                    'data' => ['labels' => ['Sin datos'], 'datasets' => [['label' => 'Sin datos', 'data' => [0]]]],
+                    'options' => ['plugins' => ['legend' => ['display' => false]], 'scales' => ['y' => ['beginAtZero' => true]]],
+                ];
+            }
+
+            $analytics = [
+                ['label' => 'Servicios en top', 'value' => (string) count($serviceTotals)],
+                ['label' => 'Interacciones totales (top 10)', 'value' => (string) array_sum($serviceTotals)],
+                ['label' => 'Servicio lider', 'value' => $topServiceName . ' (' . ($topServiceId !== null ? ($serviceTotals[$topServiceId] ?? 0) : 0) . ')'],
+            ];
+        } else {
+            $rows = $this->buildFilteredQuery($request)
+                ->selectRaw("DATE_FORMAT(created_at, '{$periodConfig['sql_format']}') as period")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'domestico'  AND quoted = 'yes' THEN 1 ELSE 0 END) as domestico_quoted")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'domestico'  AND closed = 'yes' THEN 1 ELSE 0 END) as domestico_closed")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'comercial'  AND quoted = 'yes' THEN 1 ELSE 0 END) as comercial_quoted")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'comercial'  AND closed = 'yes' THEN 1 ELSE 0 END) as comercial_closed")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' AND quoted = 'yes' THEN 1 ELSE 0 END) as industrial_quoted")
+                ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' AND closed = 'yes' THEN 1 ELSE 0 END) as industrial_closed")
+                ->whereNotNull('created_at')
+                ->groupBy('period')
+                ->orderBy('period')
+                ->get();
+
+            $labels = [];
+            $domestico = [];
+            $comercial = [];
+            $industrial = [];
+            $promByPeriod = [];
+
+            foreach ($rows as $row) {
+                $labels[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
+
+                $dq = (int) $row->domestico_quoted;
+                $dc = (int) $row->domestico_closed;
+                $cq = (int) $row->comercial_quoted;
+                $cc = (int) $row->comercial_closed;
+                $iq = (int) $row->industrial_quoted;
+                $ic = (int) $row->industrial_closed;
+
+                $dr = $dq > 0 ? round(($dc / $dq) * 100, 2) : 0;
+                $cr = $cq > 0 ? round(($cc / $cq) * 100, 2) : 0;
+                $ir = $iq > 0 ? round(($ic / $iq) * 100, 2) : 0;
+
+                $domestico[] = $dr;
+                $comercial[] = $cr;
+                $industrial[] = $ir;
+                $promByPeriod[] = round(($dr + $cr + $ir) / 3, 2);
+            }
+
+            $chartKind = $chartType === 'line' ? 'line' : 'bar';
+            $maxProm = empty($promByPeriod) ? 0 : max($promByPeriod);
+            $maxPromIndex = empty($promByPeriod) ? null : array_search($maxProm, $promByPeriod, true);
+
+            $chartTitle = 'Tasa de conversion por periodo y tipo de cliente';
+            $chartSubtitle = 'Porcentaje de cierres sobre cotizaciones generadas.';
+            $chartConfig = [
+                'type' => $chartKind,
+                'data' => [
+                    'labels' => $labels,
+                    'datasets' => [
+                        ['label' => 'Domestico (%)', 'data' => $domestico, 'backgroundColor' => $chartKind === 'line' ? $seriesColors['domestico']['backgroundLine'] : $seriesColors['domestico']['backgroundBar'], 'borderColor' => $seriesColors['domestico']['border'], 'borderWidth' => 2, 'fill' => $chartKind === 'line', 'tension' => 0.3],
+                        ['label' => 'Comercial (%)', 'data' => $comercial, 'backgroundColor' => $chartKind === 'line' ? $seriesColors['comercial']['backgroundLine'] : $seriesColors['comercial']['backgroundBar'], 'borderColor' => $seriesColors['comercial']['border'], 'borderWidth' => 2, 'fill' => $chartKind === 'line', 'tension' => 0.3],
+                        ['label' => 'Industrial (%)', 'data' => $industrial, 'backgroundColor' => $chartKind === 'line' ? $seriesColors['industrial']['backgroundLine'] : $seriesColors['industrial']['backgroundBar'], 'borderColor' => $seriesColors['industrial']['border'], 'borderWidth' => 2, 'fill' => $chartKind === 'line', 'tension' => 0.3],
+                    ],
+                ],
+                'options' => [
+                    'plugins' => ['legend' => ['display' => true]],
+                    'scales' => [
+                        'y' => [
+                            'beginAtZero' => true,
+                            'max' => 100,
+                        ],
+                    ],
+                ],
+            ];
+
+            $analytics = [
+                ['label' => 'Periodos analizados', 'value' => (string) count($labels)],
+                ['label' => 'Promedio de conversion', 'value' => number_format(empty($promByPeriod) ? 0 : (array_sum($promByPeriod) / count($promByPeriod)), 2) . '%'],
+                ['label' => 'Mejor periodo (promedio)', 'value' => $maxPromIndex !== null ? (($labels[$maxPromIndex] ?? 'N/A') . ' (' . number_format($maxProm, 2) . '%)') : 'N/A'],
+            ];
+        }
+
+        $viewLabels = [
+            'contact' => 'Medio de contacto',
+            'amounts' => 'Montos facturados',
+            'clients' => 'Clientes por periodo',
+            'services' => 'Top 10 servicios',
+            'conversion' => 'Tasa de conversion',
+        ];
+
+        $divisionLabels = [
+            'week' => 'Semanal',
+            'month' => 'Mensual',
+            'year' => 'Anual',
+        ];
 
         $pdfData = [
-            'contactMethodsData' => $contactMethodsData,
-            'contactMethodLabels' => $contactMethodLabels,
-            'amountsData' => $amountsData,
-            'clientsData' => $clientsData,
-            'conversionLabels' => $conversionLabels,
-            'conversionData' => $conversionData,
-            'conversionQuotedCounts' => $conversionQuotedCounts,
-            'conversionClosedCounts' => $conversionClosedCounts,
-            'dateRange' => $chartDateRange,
-            'contactChartImage' => $contactChartImage,
-            'amountChartImage' => $amountChartImage,
-            'clientsChartImage' => $clientsChartImage,
-            'conversionChartImage' => $conversionChartImage,
+            'generatedAt' => now()->format('d/m/Y H:i'),
+            'chartTitle' => $chartTitle,
+            'chartSubtitle' => $chartSubtitle,
+            'chartImage' => $this->generateQuickChartImage($chartConfig),
+            'analytics' => $analytics,
+            'analysisType' => $viewLabels[$chartView] ?? $chartView,
+            'divisionLabel' => $divisionLabels[$periodDivision] ?? $periodDivision,
+            'chartTypeLabel' => $chartType === 'line' ? 'Lineal' : 'Barras',
+            'statusLabel' => (string) ($request->input('status') ?: 'Todos'),
+            'dateRangeLabel' => $chartDateRange !== null
+                ? Carbon::parse($chartDateRange['start'])->format('d/m/Y') . ' - ' . Carbon::parse($chartDateRange['end'])->format('d/m/Y')
+                : 'Sin rango especificado',
         ];
 
         $pdf = Pdf::loadView('crm.daily-tracking.charts-pdf', $pdfData)->setOptions([

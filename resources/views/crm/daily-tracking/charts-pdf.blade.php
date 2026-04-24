@@ -3,317 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gráficas de Análisis - Reporte</title>
+    <title>Reporte de Analisis</title>
     <style>
-        :root {
-            --deep-space-blue: #012640;
-            --deep-navy: #02265A;
-            --true-cobalt: #0A2986;
-            --indigo-velvet: #512A87;
-            --velvet-purple: #793775;
-            --dusty-mauve: #B74453;
-            --fiery-terracotta: #DD513A;
-            --surface-soft: #f5f7fb;
-            --line-soft: #d6deea;
-            --text-main: #012640;
-            --text-muted: #4d5f78;
-        }
-
         body {
             font-family: Arial, sans-serif;
-            color: var(--text-main);
+            color: #1d2c45;
             margin: 15px;
             line-height: 1.4;
-            font-size: 10px;
+            font-size: 11px;
         }
-        
+
         .header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 3px solid var(--fiery-terracotta);
-            padding-bottom: 10px;
+            margin-bottom: 14px;
+            border-bottom: 2px solid #1f4a87;
+            padding-bottom: 8px;
         }
-        
+
         .header h1 {
             margin: 0;
-            color: var(--deep-space-blue);
+            color: #123a72;
             font-size: 18px;
         }
-        
+
         .header p {
             margin: 3px 0 0 0;
-            color: var(--text-muted);
-            font-size: 9px;
+            color: #4c5f7f;
+            font-size: 10px;
         }
-        
-        .filters-info {
-            background: var(--surface-soft);
-            padding: 8px;
-            margin-bottom: 15px;
-            border-left: 4px solid var(--true-cobalt);
-            font-size: 9px;
-            color: var(--text-muted);
-        }
-        
-        .chart-section {
-            margin-bottom: 20px;
+
+        .meta-box {
+            background: #f4f7fc;
+            border: 1px solid #d6e0ef;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 12px;
             page-break-inside: avoid;
         }
-        
-        .chart-title {
+
+        .meta-title {
             font-size: 12px;
             font-weight: bold;
-            color: var(--deep-space-blue);
-            margin-bottom: 8px;
-            border-bottom: 2px solid var(--dusty-mauve);
+            color: #123a72;
+            margin-bottom: 6px;
+        }
+
+        .meta-grid {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+
+        .meta-grid td {
+            padding: 4px 6px;
+            border-bottom: 1px solid #e3eaf5;
+        }
+
+        .meta-grid td:first-child {
+            width: 35%;
+            color: #4c5f7f;
+            font-weight: bold;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #123a72;
+            margin-bottom: 6px;
+            border-bottom: 2px solid #d85a42;
             padding-bottom: 4px;
         }
-        
-        .chart-container {
+
+        .chart-box {
             background: white;
-            padding: 8px;
-            border: 1px solid var(--line-soft);
+            padding: 10px;
+            border: 1px solid #d6e0ef;
             border-radius: 4px;
+            page-break-inside: avoid;
+            margin-bottom: 14px;
         }
 
         .chart-image {
             width: 100%;
             height: auto;
             display: block;
-            border: 1px solid var(--line-soft);
+            border: 1px solid #d6e0ef;
             border-radius: 4px;
         }
-        
-        table {
+
+        .analytics-box {
+            border: 1px solid #d6e0ef;
+            border-radius: 4px;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+
+        .analytics-box table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9px;
-            margin-bottom: 5px;
+            font-size: 10px;
         }
-        
-        table th {
-            background: var(--deep-navy);
-            color: #ffffff;
-            padding: 5px;
+
+        .analytics-box th {
+            background: #123a72;
+            color: #fff;
+            padding: 7px 8px;
             text-align: left;
-            border-bottom: 2px solid var(--true-cobalt);
-            font-weight: bold;
         }
-        
-        table td {
-            padding: 4px 5px;
-            border-bottom: 1px solid var(--line-soft);
+
+        .analytics-box td {
+            padding: 7px 8px;
+            border-bottom: 1px solid #e3eaf5;
         }
-        
-        table tr:nth-child(even) {
-            background: var(--surface-soft);
+
+        .analytics-box tr:nth-child(even) {
+            background: #f8fbff;
         }
-        
-        .row {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
+
+        .muted {
+            color: #4c5f7f;
         }
-        
-        .col-50 {
-            flex: 1;
-            min-width: 45%;
-        }
-        
+
         .footer {
             text-align: center;
             margin-top: 20px;
             padding-top: 8px;
-            border-top: 1px solid var(--line-soft);
+            border-top: 1px solid #d6e0ef;
             font-size: 8px;
-            color: var(--text-muted);
-        }
-        
-        .text-right {
-            text-align: right;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .highlight {
-            color: var(--velvet-purple);
-            font-weight: bold;
+            color: #4c5f7f;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>Reporte de Gráficas de Análisis</h1>
-        <p>Generado el {{ now()->format('d/m/Y H:i') }}</p>
-    </div>
-    
-    @if($dateRange)
-        <div class="filters-info">
-            <strong>Rango de fechas aplicado:</strong> {{ $dateRange['start'] }} a {{ $dateRange['end'] }}
-        </div>
-    @endif
-    
-    {{-- Chart 1: Contact Methods --}}
-    <div class="chart-section">
-        <div class="chart-title">1) Medio de contacto con mayor cantidad</div>
-        <div class="chart-container">
-            <img src="{{ $contactChartImage }}" alt="Grafica de medio de contacto" class="chart-image">
-        </div>
+        <h1>Reporte de Graficas de Analisis</h1>
+        <p>Generado el {{ $generatedAt }}</p>
     </div>
 
-    {{-- Chart 2 & 3: Side by side --}}
-    <div class="row">
-        <div class="col-50">
-            <div class="chart-section">
-                <div class="chart-title">2) Montos facturados ($) por período</div>
-                <div class="chart-container">
-                    <img src="{{ $amountChartImage }}" alt="Grafica de montos" class="chart-image">
-                </div>
-            </div>
-        </div>
-
-        <div class="col-50">
-            <div class="chart-section">
-                <div class="chart-title">3) Clientes ingresados por semana</div>
-                <div class="chart-container">
-                    <img src="{{ $clientsChartImage }}" alt="Grafica de clientes" class="chart-image">
-                </div>
-            </div>
-        </div>
+    <div class="meta-box">
+        <div class="meta-title">Contexto del analisis exportado</div>
+        <table class="meta-grid">
+            <tr>
+                <td>Que se analiza</td>
+                <td>{{ $analysisType }}</td>
+            </tr>
+            <tr>
+                <td>Division temporal</td>
+                <td>{{ $divisionLabel }}</td>
+            </tr>
+            <tr>
+                <td>Tipo de grafica</td>
+                <td>{{ $chartTypeLabel }}</td>
+            </tr>
+            <tr>
+                <td>Rango de fechas</td>
+                <td>{{ $dateRangeLabel }}</td>
+            </tr>
+            <tr>
+                <td>Estatus aplicado</td>
+                <td>{{ $statusLabel }}</td>
+            </tr>
+        </table>
     </div>
 
-    {{-- Chart 4 Image --}}
-    <div class="chart-section">
-        <div class="chart-title">4) Tasa de Conversión por Período (%)</div>
-        <div class="chart-container">
-            <img src="{{ $conversionChartImage }}" alt="Grafica de conversion" class="chart-image">
-        </div>
+    <div class="section-title">Grafica exportada</div>
+    <div class="chart-box">
+        <p style="margin:0 0 6px 0;"><strong>{{ $chartTitle }}</strong></p>
+        <p class="muted" style="margin:0 0 8px 0;">{{ $chartSubtitle }}</p>
+        <img src="{{ $chartImage }}" alt="Grafica exportada" class="chart-image">
     </div>
 
-    {{-- Tablas de respaldo / detalle --}}
-    <div class="chart-section">
-        <div class="chart-title">Detalle 1) Datos de medio de contacto</div>
-        <div class="chart-container">
-            <table>
-                <thead>
+    <div class="section-title">Resumen y analiticas</div>
+    <div class="analytics-box">
+        <table>
+            <thead>
+                <tr>
+                    <th>Indicador</th>
+                    <th>Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($analytics as $metric)
                     <tr>
-                        <th>Medio de Contacto</th>
-                        <th style="text-align: center;">Cantidad</th>
+                        <td>{{ $metric['label'] }}</td>
+                        <td>{{ $metric['value'] }}</td>
                     </tr>
-                </thead>
-                <tbody>
-                    @forelse($contactMethodsData as $item)
-                        <tr>
-                            <td>{{ $contactMethodLabels[$item->contact_method] ?? $item->contact_method }}</td>
-                            <td class="text-center">{{ $item->count }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="2" class="text-center" style="color: #4d5f78;">Sin datos disponibles</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
-    {{-- Detalle 2 & 3: Side by side --}}
-    <div class="row">
-        <div class="col-50">
-            <div class="chart-section">
-                <div class="chart-title">Detalle 2) Datos de montos facturados</div>
-                <div class="chart-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Período</th>
-                                <th class="text-right">Monto ($)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($amountsData as $item)
-                                <tr>
-                                    <td>{{ $item->period }}</td>
-                                    <td class="text-right">{{ number_format((float)$item->total, 2) }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="2" class="text-center" style="color: #4d5f78;">Sin datos disponibles</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-50">
-            <div class="chart-section">
-                        <div class="chart-title">Detalle 3) Datos de clientes ingresados</div>
-                <div class="chart-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Año</th>
-                                <th class="text-center">Semana</th>
-                                <th class="text-center">Cantidad</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($clientsData as $item)
-                                <tr>
-                                    <td>{{ $item->year }}</td>
-                                    <td class="text-center">{{ $item->week }}</td>
-                                    <td class="text-center">{{ $item->count }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="3" class="text-center" style="color: #4d5f78;">Sin datos disponibles</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    {{-- Chart 4: Conversion Rate (detail table) --}}
-    <div class="chart-section">
-        <div class="chart-title">Detalle 4) Datos de tasa de conversión</div>
-        <div class="chart-container">
-            <table>
-                <thead>
+                @empty
                     <tr>
-                        <th>Período</th>
-                        <th class="text-center">Cotizados</th>
-                        <th class="text-center">Cerrados</th>
-                        <th class="text-center">Tasa (%)</th>
+                        <td colspan="2" class="muted">No hay datos suficientes para generar analiticas.</td>
                     </tr>
-                </thead>
-                <tbody>
-                    @forelse($conversionData as $index => $rate)
-                        <tr>
-                            <td>{{ $conversionLabels[$index] ?? '-' }}</td>
-                            <td class="text-center">{{ $conversionQuotedCounts[$index] ?? '-' }}</td>
-                            <td class="text-center">{{ $conversionClosedCounts[$index] ?? '-' }}</td>
-                            <td class="text-center highlight">{{ $rate }}%</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center" style="color: #4d5f78;">Sin datos disponibles</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                @endforelse
+            </tbody>
+        </table>
     </div>
-    
+
     <div class="footer">
-        <p>Este reporte fue generado automáticamente por el sistema SISCO ZONDA</p>
+        <p>Este reporte fue generado automaticamente por el sistema SISCO ZONDA</p>
     </div>
 </body>
 </html>
