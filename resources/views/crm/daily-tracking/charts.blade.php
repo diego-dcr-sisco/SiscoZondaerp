@@ -85,6 +85,10 @@
                         <div class="border p-3 text-dark rounded bg-light">
                             <div class="row g-2 align-items-end">
                                 <div class="col-12">
+                                    <h6 class="mb-1">Visualizacion</h6>
+                                    <small class="text-muted">Seleccion de grafica y periodo</small>
+                                </div>
+                                <div class="col-12">
                                     <label class="form-label form-label-sm mb-1">Grafica a visualizar</label>
                                     <select name="chart_view" class="form-select form-select-sm">
                                         <option value="contact" {{ ($chartView ?? request('chart_view', 'contact')) === 'contact' ? 'selected' : '' }}>Medio de contacto</option>
@@ -121,11 +125,15 @@
                                         </option>
                                     </select>
                                 </div>
-                            </div>
-                        </div>
 
-                        <div class="border p-3 text-dark rounded bg-light">
-                            <div class="row g-2 align-items-end">
+                                <div class="col-12 my-1">
+                                    <hr class="my-2">
+                                </div>
+
+                                <div class="col-12">
+                                    <h6 class="mb-1">Filtros adicionales</h6>
+                                    <small class="text-muted">Ajustes de tipo y estatus</small>
+                                </div>
                                 <div class="col-12">
                                     <label class="form-label form-label-sm mb-1">Tipo de grafica</label>
                                     <select name="chart_type" class="form-select form-select-sm">
