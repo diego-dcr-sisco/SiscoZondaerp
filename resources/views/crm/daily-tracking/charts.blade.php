@@ -94,37 +94,11 @@
                                         <option value="conversion" {{ ($chartView ?? request('chart_view', 'contact')) === 'conversion' ? 'selected' : '' }}>Tasa de conversion</option>
                                     </select>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="border p-3 text-dark rounded bg-light">
-                            <div class="row g-2 align-items-end">
-                                <div class="col-12">
-                                    <label class="form-label form-label-sm mb-1">Tipo de grafica</label>
-                                    <select name="chart_type" class="form-select form-select-sm">
-                                        <option value="bar" {{ ($chartType ?? request('chart_type', 'bar')) === 'bar' ? 'selected' : '' }}>Barras</option>
-                                        <option value="line" {{ ($chartType ?? request('chart_type', 'bar')) === 'line' ? 'selected' : '' }}>Lineal</option>
-                                        <option value="pie" {{ ($chartType ?? request('chart_type', 'bar')) === 'pie' ? 'selected' : '' }}>Circular (solo conversión)</option>
-                                    </select>
-                                    <small class="text-muted">Solo aplica a Montos, Top servicios y Conversión</small>
-                                </div>
                                 <div class="col-12">
                                     <label class="form-label form-label-sm mb-1">Rango de fechas (creación)</label>
                                     <input type="text" name="date_range" class="form-control form-control-sm"
                                         placeholder="dd/mm/yyyy - dd/mm/yyyy" value="{{ request('date_range') }}" autocomplete="off"
                                         readonly>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label form-label-sm mb-1">Estatus</label>
-                                    <select name="status" class="form-select form-select-sm">
-                                        <option value="">Todos</option>
-                                        @foreach ($statusOptions as $opt)
-                                            <option value="{{ $opt->value }}"
-                                                {{ request('status') == $opt->value ? 'selected' : '' }}>
-                                                {{ $opt->label() }}
-                                            </option>
-                                        @endforeach
-                                    </select>
                                 </div>
                                 <div class="col-12">
                                     <label class="form-label form-label-sm mb-1">Division</label>
@@ -145,6 +119,32 @@
                                             {{ ($periodDivision ?? request('period_division', 'auto')) === 'year' ? 'selected' : '' }}>
                                             Anual
                                         </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="border p-3 text-dark rounded bg-light">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12">
+                                    <label class="form-label form-label-sm mb-1">Tipo de grafica</label>
+                                    <select name="chart_type" class="form-select form-select-sm">
+                                        <option value="bar" {{ ($chartType ?? request('chart_type', 'bar')) === 'bar' ? 'selected' : '' }}>Barras</option>
+                                        <option value="line" {{ ($chartType ?? request('chart_type', 'bar')) === 'line' ? 'selected' : '' }}>Lineal</option>
+                                        <option value="pie" {{ ($chartType ?? request('chart_type', 'bar')) === 'pie' ? 'selected' : '' }}>Circular (solo conversión)</option>
+                                    </select>
+                                    <small class="text-muted">Solo aplica a Montos, Top servicios y Conversión</small>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label form-label-sm mb-1">Estatus</label>
+                                    <select name="status" class="form-select form-select-sm">
+                                        <option value="">Todos</option>
+                                        @foreach ($statusOptions as $opt)
+                                            <option value="{{ $opt->value }}"
+                                                {{ request('status') == $opt->value ? 'selected' : '' }}>
+                                                {{ $opt->label() }}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
 
