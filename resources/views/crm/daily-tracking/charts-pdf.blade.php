@@ -77,6 +77,28 @@
             padding-bottom: 2px;
         }
 
+        .split-layout {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin-bottom: 8px;
+        }
+
+        .split-layout td {
+            vertical-align: top;
+            padding: 0;
+        }
+
+        .split-left {
+            width: 75%;
+            padding-right: 6px !important;
+        }
+
+        .split-right {
+            width: 25%;
+            padding-left: 6px !important;
+        }
+
         .chart-box {
             background: white;
             padding: 7px;
@@ -99,6 +121,7 @@
             border-radius: 4px;
             overflow: hidden;
             page-break-inside: avoid;
+            margin-bottom: 0;
         }
 
         .analytics-box table {
@@ -169,36 +192,43 @@
         </table>
     </div>
 
-    <div class="section-title">Grafica exportada</div>
-    <div class="chart-box">
-        <p style="margin:0 0 4px 0;"><strong>{{ $chartTitle }}</strong></p>
-        <p class="muted" style="margin:0 0 6px 0;">{{ $chartSubtitle }}</p>
-        <img src="{{ $chartImage }}" alt="Grafica exportada" class="chart-image">
-    </div>
-
-    <div class="section-title">Resumen y analiticas</div>
-    <div class="analytics-box">
-        <table>
-            <thead>
-                <tr>
-                    <th>Indicador</th>
-                    <th>Valor</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse($analytics as $metric)
-                    <tr>
-                        <td>{{ $metric['label'] }}</td>
-                        <td>{{ $metric['value'] }}</td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="2" class="muted">No hay datos suficientes para generar analiticas.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+    <table class="split-layout">
+        <tr>
+            <td class="split-left">
+                <div class="section-title">Grafica exportada</div>
+                <div class="chart-box">
+                    <p style="margin:0 0 4px 0;"><strong>{{ $chartTitle }}</strong></p>
+                    <p class="muted" style="margin:0 0 6px 0;">{{ $chartSubtitle }}</p>
+                    <img src="{{ $chartImage }}" alt="Grafica exportada" class="chart-image">
+                </div>
+            </td>
+            <td class="split-right">
+                <div class="section-title">Resumen y analiticas</div>
+                <div class="analytics-box">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Indicador</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($analytics as $metric)
+                                <tr>
+                                    <td>{{ $metric['label'] }}</td>
+                                    <td>{{ $metric['value'] }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="muted">No hay datos suficientes para generar analiticas.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </td>
+        </tr>
+    </table>
 
     <div class="footer">
         <p>Este reporte fue generado automaticamente por el sistema SISCO ZONDA</p>
