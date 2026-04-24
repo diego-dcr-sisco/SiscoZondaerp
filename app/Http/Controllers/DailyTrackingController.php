@@ -1217,7 +1217,7 @@ class DailyTrackingController extends Controller
             'generatedAt' => now()->format('d/m/Y H:i'),
             'chartTitle' => $chartTitle,
             'chartSubtitle' => $chartSubtitle,
-            'chartImage' => $this->generateQuickChartImage($chartConfig),
+            'chartImage' => $this->generateQuickChartImage($chartConfig, 820, 280),
             'analytics' => $analytics,
             'analysisType' => $viewLabels[$chartView] ?? $chartView,
             'divisionLabel' => $divisionLabels[$periodDivision] ?? $periodDivision,
@@ -1237,10 +1237,12 @@ class DailyTrackingController extends Controller
         return $pdf->download('graficas-analisis-' . now()->format('Y-m-d-His') . '.pdf');
     }
 
-    private function generateQuickChartImage(array $config): string
+    private function generateQuickChartImage(array $config, int $width = 900, int $height = 430): string
     {
         $chartConfig = json_encode($config);
-        $url = 'https://quickchart.io/chart?c=' . urlencode((string) $chartConfig) . '&width=900&height=430&devicePixelRatio=2';
+        $width = max(300, $width);
+        $height = max(200, $height);
+        $url = 'https://quickchart.io/chart?c=' . urlencode((string) $chartConfig) . '&width=' . $width . '&height=' . $height . '&devicePixelRatio=2';
 
         try {
             $imageData = file_get_contents($url);

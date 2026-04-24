@@ -5,56 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reporte de Analisis</title>
     <style>
+        @page {
+            margin: 6mm;
+        }
+
         body {
             font-family: Arial, sans-serif;
             color: #1d2c45;
-            margin: 15px;
-            line-height: 1.4;
-            font-size: 11px;
+            margin: 0;
+            line-height: 1.25;
+            font-size: 10px;
         }
 
         .header {
-            margin-bottom: 14px;
+            margin-bottom: 8px;
             border-bottom: 2px solid #1f4a87;
-            padding-bottom: 8px;
+            padding-bottom: 5px;
         }
 
         .header h1 {
             margin: 0;
             color: #123a72;
-            font-size: 18px;
+            font-size: 15px;
         }
 
         .header p {
             margin: 3px 0 0 0;
             color: #4c5f7f;
-            font-size: 10px;
+            font-size: 9px;
         }
 
         .meta-box {
             background: #f4f7fc;
             border: 1px solid #d6e0ef;
             border-radius: 6px;
-            padding: 10px;
-            margin-bottom: 12px;
+            padding: 7px;
+            margin-bottom: 8px;
             page-break-inside: avoid;
         }
 
         .meta-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             color: #123a72;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .meta-grid {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
+            font-size: 9px;
         }
 
         .meta-grid td {
-            padding: 4px 6px;
+            padding: 3px 5px;
             border-bottom: 1px solid #e3eaf5;
         }
 
@@ -65,26 +69,26 @@
         }
 
         .section-title {
-            font-size: 13px;
+            font-size: 11px;
             font-weight: bold;
             color: #123a72;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             border-bottom: 2px solid #d85a42;
-            padding-bottom: 4px;
+            padding-bottom: 2px;
         }
 
         .chart-box {
             background: white;
-            padding: 10px;
+            padding: 7px;
             border: 1px solid #d6e0ef;
             border-radius: 4px;
             page-break-inside: avoid;
-            margin-bottom: 14px;
+            margin-bottom: 8px;
         }
 
         .chart-image {
             width: 100%;
-            height: auto;
+            height: 185px;
             display: block;
             border: 1px solid #d6e0ef;
             border-radius: 4px;
@@ -100,18 +104,18 @@
         .analytics-box table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
+            font-size: 9px;
         }
 
         .analytics-box th {
             background: #123a72;
             color: #fff;
-            padding: 7px 8px;
+            padding: 5px 6px;
             text-align: left;
         }
 
         .analytics-box td {
-            padding: 7px 8px;
+            padding: 5px 6px;
             border-bottom: 1px solid #e3eaf5;
         }
 
@@ -125,8 +129,8 @@
 
         .footer {
             text-align: center;
-            margin-top: 20px;
-            padding-top: 8px;
+            margin-top: 6px;
+            padding-top: 4px;
             border-top: 1px solid #d6e0ef;
             font-size: 8px;
             color: #4c5f7f;
@@ -167,8 +171,8 @@
 
     <div class="section-title">Grafica exportada</div>
     <div class="chart-box">
-        <p style="margin:0 0 6px 0;"><strong>{{ $chartTitle }}</strong></p>
-        <p class="muted" style="margin:0 0 8px 0;">{{ $chartSubtitle }}</p>
+        <p style="margin:0 0 4px 0;"><strong>{{ $chartTitle }}</strong></p>
+        <p class="muted" style="margin:0 0 6px 0;">{{ $chartSubtitle }}</p>
         <img src="{{ $chartImage }}" alt="Grafica exportada" class="chart-image">
     </div>
 
