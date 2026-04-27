@@ -374,7 +374,7 @@ class DailyTrackingController extends Controller
                 $daily_trackings->where('not_responded', false)->count() > 0 ? round(($daily_trackings->where('quoted', 'yes')->count() / $daily_trackings->where('not_responded', false)->count()) * 100, 2) : 0, // % Cotizacion
                 $daily_trackings->where('quoted', 'yes')->count() > 0 ? round(($daily_trackings->where('closed', 'yes')->count() / $daily_trackings
                     ->where('quoted', 'yes')->count()) * 100, 2) : 0, // % Conversion
-                $daily_trackings->where('quoted', 'yes')->count() > 0 ? round(($daily_trackings->where('invoice', 'yes')->count() / $daily_trackings->where('quoted', 'yes')->count()) * 100, 2) : 0, // % Facturacion
+                $daily_trackings->where('invoice', 'yes')->count() > 0 && $daily_trackings->where('billed_amount', '>', 0)->count() > 0 ? round(($daily_trackings->where('invoice', 'yes')->count() / $daily_trackings->where('billed_amount', '>', 0)->count()) * 100, 2) : 0, // % Facturacion
                 $daily_trackings->where('quoted', 'yes')->sum('quoted_amount'), // Monto total cotizado
                 $daily_trackings->where('closed', 'yes')->sum('quoted_amount'), // Monto total cerrado
                 $daily_trackings->where('invoice', 'yes')->sum('billed_amount'), // Monto total facturado
