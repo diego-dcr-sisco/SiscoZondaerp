@@ -341,7 +341,7 @@ class DailyTrackingController extends Controller
             'Total No contestaron',
             'Pendientes de Cotizar',
             'Total Cotizados',
-            'Sin Cotizar',
+            'Sin Cobertura',
             'Total Cerrados',
             '% Contacto',
             '% Cotizacion',
