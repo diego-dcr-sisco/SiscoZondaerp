@@ -278,17 +278,17 @@ class DailyTrackingController extends Controller
                     break;
 
                 case 'week':
-                    // Inicio real: el lunes de la semana ISO, pero no antes del $start
-                    $periodStart = $cursor->copy()->startOfISOWeek();
+                    // Inicio de semana (lunes)
+                    $periodStart = $cursor->copy()->startOfWeek(Carbon::MONDAY);
                     if ($periodStart->lt($start)) {
                         $periodStart = $start->copy();
                     }
-                    // Fin real: el domingo de esa semana, pero no después del $end
-                    $periodEnd = $cursor->copy()->endOfISOWeek();
+                    // Fin de semana (domingo)
+                    $periodEnd = $cursor->copy()->endOfWeek(Carbon::SUNDAY);
                     if ($periodEnd->gt($end)) {
                         $periodEnd = $end->copy();
                     }
-                    $cursor = $cursor->endOfISOWeek()->addDay(); // saltar al lunes siguiente
+                    $cursor = $cursor->endOfWeek(Carbon::SUNDAY)->addDay(); // saltar al lunes siguiente
                     break;
 
                 case 'month':
