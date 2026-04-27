@@ -138,9 +138,9 @@
     <div class="row mb-4">
         <div class="col-6">
             <div class="card shadow">
-                <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
+                <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
                     Orden de servicio
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-order" aria-expanded="true" aria-controls="collapse-order">
+                    <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-order" aria-expanded="true" aria-controls="collapse-order">
                         <i class="bi bi-chevron-up"></i>
                     </button>
                 </div>
@@ -322,8 +322,8 @@
         <div class="row g-3">
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Servicios
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-services" aria-expanded="true" aria-controls="collapse-services">
+                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">Servicios
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-services" aria-expanded="true" aria-controls="collapse-services">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -337,8 +337,8 @@
 
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Dispositivos
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-devices" aria-expanded="true" aria-controls="collapse-devices">
+                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">Dispositivos
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-devices" aria-expanded="true" aria-controls="collapse-devices">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -352,8 +352,8 @@
 
             <div class="col-12 col-lg-8">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Productos
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-products" aria-expanded="true" aria-controls="collapse-products">
+                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">Productos
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-products" aria-expanded="true" aria-controls="collapse-products">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -367,8 +367,8 @@
 
             <div class="col-12 col-lg-4">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Plagas
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-pests" aria-expanded="true" aria-controls="collapse-pests">
+                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">Plagas
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-pests" aria-expanded="true" aria-controls="collapse-pests">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -382,8 +382,8 @@
 
             <div class="col-12 col-lg-6">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Notas
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-notes" aria-expanded="true" aria-controls="collapse-notes">
+                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">Notas
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-notes" aria-expanded="true" aria-controls="collapse-notes">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -397,8 +397,8 @@
 
             <div class="col-12 col-lg-6">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Recomendaciones
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-recommendations" aria-expanded="true" aria-controls="collapse-recommendations">
+                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">Recomendaciones
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-recommendations" aria-expanded="true" aria-controls="collapse-recommendations">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -412,8 +412,8 @@
 
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Evidencias fotográficas
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-evidence" aria-expanded="true" aria-controls="collapse-evidence">
+                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">Evidencias fotográficas
+                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-evidence" aria-expanded="true" aria-controls="collapse-evidence">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
