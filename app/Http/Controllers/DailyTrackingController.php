@@ -331,8 +331,8 @@ class DailyTrackingController extends Controller
 
     public function export(Request $request)
     {
+        $rows = [];
         $dateRanges = $this->splitDateRangeIntoPeriods((string) $request->input('date_range', ''), $request->input('group_by', 'week'));
-        dd($dateRanges);
 
         $baseHeadings = [
             'Periodo',
@@ -356,6 +356,41 @@ class DailyTrackingController extends Controller
             'Industrial',
             'Clientes comerciales nuevos',
         ];
+
+        foreach($dateRanges as $index => $range) {
+            $daily_trackings = DailyTracking::where('created_at', '>=', $range['start'])
+                ->where('created_at', '<=', $range['end'])
+                ->get();
+                
+            $rows[] = [
+                '', // Periodo
+                $range['label'], // Rango de Fechas
+                $daily_trackings->count(), // Total clientes
+                $daily_trackings->where('not_responded', true)->count(), // Total No contestaron
+                $daily_trackings->where('quoted', 'yes')->count(), // Total cotizados
+                $daily_trackings->where('has_not_coverage', true)->count(), // SIN COBERTURA
+                $daily_trackings->where('closed', 'yes')->count(), // Total cerrados
+                $daily_trackings->count() > 0 ? round(($daily_trackings->where('not_responded', false)->count() / $daily_trackings->count()) * 100, 2) : 0, // % Contacto
+                $daily_trackings->where('not_responded', false)->count() > 0 ? round(($daily_trackings->where('quoted', 'yes')->count() / $daily_trackings->where('not_responded', false)->count()) * 100, 2) : 0, // % Cotizacion
+                $daily_trackings->where('quoted', 'yes')->count() > 0 ? round(($daily_trackings->where('closed', 'yes')->count() / $daily_trackings
+                    ->where('quoted', 'yes')->count()) * 100, 2) : 0, // % Conversion
+                $daily_trackings->where('quoted', 'yes')->count() > 0 ? round(($daily_trackings->where('invoice', 'yes')->count() / $daily_trackings                    ->where('quoted', 'yes')->count()) * 100, 2) : 0, // % Facturacion
+                $daily_trackings->where('quoted', 'yes')->sum('quoted_amount'), // Monto total cotizado
+                $daily_trackings->where('closed', 'yes')->sum('quoted_amount'), // Monto total cerrado
+                $daily_trackings->where('invoice', 'yes')->sum('billed_amount'), // Monto total facturado
+                $daily_trackings->where('closed', 'yes')->where('customer_type', 'domestico')->sum('quoted_amount'), // Monto cerrado domestico
+                $daily_trackings->where('closed', 'yes')->count() > 0 ? round($daily_trackings->where('closed', 'yes')->sum('quoted_amount') / $daily_trackings->where('closed', 'yes')->count(), 2) : 0, // Ticket promedio
+                $daily_trackings->where('customer_type', 'domestico')->count(), // Domestico
+                $daily_trackings->where('customer_type', 'comercial')->count(), // Comercial
+                $daily_trackings->where('customer_type', 'industrial')->count(), // Industrial
+                $daily_trackings->where('customer_type', 'comercial')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes comerciales nuevos
+                $daily_trackings->where('customer_type', 'industrial')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes industriales nuevos
+                $daily_trackings->where('customer_type', 'domestico')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes domésticos nuevos
+            ];
+        }
+
+        $export = new DailyTrackingReportExport($baseHeadings, $rows);
+        return $export->download('reporte_seguimiento_diario.xlsx');
     }
 
     public function create()
