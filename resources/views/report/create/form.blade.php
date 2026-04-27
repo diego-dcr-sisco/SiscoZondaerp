@@ -412,7 +412,7 @@
 
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">Evidencias fotográficas
+                    <div class="card-header bg-secondary text-white fw-bold d-flex justify-content-between align-items-center">Evidencias fotográficas
                         <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-evidence" aria-expanded="true" aria-controls="collapse-evidence">
                             <i class="bi bi-chevron-up"></i>
                         </button>
