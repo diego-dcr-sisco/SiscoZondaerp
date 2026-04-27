@@ -297,10 +297,30 @@
                                                     data-next-date="{{ $tracking['next_date'] ?? 'Sin fecha' }}"
                                                     data-customer-phone="{{ $tracking['customer_phone'] ?? '' }}"
                                                     data-status="{{ $tracking['status'] ?? 'active' }}">
-                                                    <!-- El resto del contenido permanece igual -->
+
                                                     <div class="d-flex justify-content-between align-items-start">
-                                                        <!-- ... contenido existente ... -->
+                                                        <div class="flex-grow-1">
+                                                            <p class="mb-1 fw-semibold text-dark">
+                                                                {{ $tracking['customer_name'] ?? 'Cliente' }}
+                                                            </p>
+                                                            @if (!empty($tracking['title']))
+                                                                <p class="mb-1 small text-muted">
+                                                                    <i class="bi bi-card-heading me-1"></i>
+                                                                    {{ $tracking['title'] }}
+                                                                </p>
+                                                            @endif
+                                                            @if (!empty($tracking['next_date']))
+                                                                <p class="mb-0 small text-muted">
+                                                                    <i class="bi bi-calendar3 me-1"></i>
+                                                                    {{ $tracking['next_date'] }}
+                                                                </p>
+                                                            @endif
+                                                        </div>
+                                                        <span class="badge bg-warning text-dark ms-2 flex-shrink-0">
+                                                            <i class="bi bi-clock me-1"></i>Pendiente
+                                                        </span>
                                                     </div>
+
                                                 </div>
                                             @endforeach
                                         @else
