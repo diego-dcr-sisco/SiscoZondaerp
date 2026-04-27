@@ -339,6 +339,7 @@ class DailyTrackingController extends Controller
             'Rango de Fechas',
             'Total clientes',
             'Total No contestaron',
+            'Pendientes de cotizar',
             'Total cotizados',
             'SIN COBERTURA',
             'Total cerrados',
@@ -369,6 +370,7 @@ class DailyTrackingController extends Controller
                 $daily_trackings->where('not_responded', true)->count(), // Total No contestaron
                 $daily_trackings->where('quoted', 'yes')->count(), // Total cotizados
                 $daily_trackings->where('has_not_coverage', true)->count(), // SIN COBERTURA
+                $daily_trackings->where('quoted', 'pending')->count(), // Pendientes de cotizar
                 $daily_trackings->where('closed', 'yes')->count(), // Total cerrados
                 $daily_trackings->count() > 0 ? round(($daily_trackings->where('not_responded', false)->count() / $daily_trackings->count()) * 100, 2) : 0, // % Contacto
                 $daily_trackings->where('not_responded', false)->count() > 0 ? round(($daily_trackings->where('quoted', 'yes')->count() / $daily_trackings->where('not_responded', false)->count()) * 100, 2) : 0, // % Cotizacion
