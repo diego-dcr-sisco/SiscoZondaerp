@@ -251,7 +251,7 @@
             <div class="card shadow">
                 <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
                     Cliente
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-customer" aria-expanded="true" aria-controls="collapse-customer">
+                    <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-customer" aria-expanded="true" aria-controls="collapse-customer">
                         <i class="bi bi-chevron-up"></i>
                     </button>
                 </div>
