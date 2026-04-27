@@ -57,7 +57,7 @@
                             <div class="container-fluid font-small p-3">
 
                                 {{-- Tabs CRM --}}
-                                <ul class="nav nav-tabs mb-3 bg-white p-2 rounded">
+                                <ul class="nav nav-tabs mb-2 bg-white p-2 rounded">
                                     <li class="nav-item">
                                         <a class="nav-link {{ $nav == 'c' ? 'active' : '' }}"
                                             href="{{ route('crm.agenda') }}">
