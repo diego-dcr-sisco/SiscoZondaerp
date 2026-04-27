@@ -12,7 +12,7 @@
 
     $quotedValue = old('quoted', $quotedCurrent ?? 'pending');
     $closedValue = old('closed', $closedCurrent ?? 'pending');
-    $invoiceValue = old('invoice', $invoiceCurrent ?? 'no');
+    $invoiceValue = old('invoice', $invoiceCurrent ?? 'not_applicable');
     $hasCoverage = (bool) old('has_not_coverage', data_get($model, 'has_not_coverage', false));
 @endphp
 
@@ -295,7 +295,7 @@
                 <span class="input-group-text"><i class="bi bi-file-earmark-text-fill"></i></span>
                 <select name="invoice" x-model="invoice" class="form-select form-select-sm @error('invoice') is-invalid @enderror" required>
                     @foreach ($invoiceOptions as $option)
-                        <option value="{{ $option->value }}" @selected(old('invoice', data_get($model, 'invoice.value') ?? data_get($model, 'invoice')) === $option->value)>
+                        <option value="{{ $option->value }}" @selected($invoiceValue === $option->value)>
                             {{ $option->label() }}
                         </option>
                     @endforeach
