@@ -285,7 +285,7 @@ class ExcelImportService
                 $mapped['billed_amount'] = $this->parseAmount($mapped['billed_amount'] ?? null);
                 $mapped['payment_method'] = $this->normalizePaymentMethod($mapped['payment_method'] ?? null);
                 $mapped['invoice'] = $this->normalizeInvoice($mapped['invoice'] ?? null) ?? 'not_applicable';
-                $mapped['responded'] = $this->toBoolean($mapped['responded'] ?? false);
+                $mapped['not_responded'] = $this->toBoolean($mapped['not_responded'] ?? false);
                 $mapped['is_recurrent'] = $this->toBoolean($mapped['is_recurrent'] ?? false);
                 $mapped['has_not_coverage'] = $this->toBoolean($mapped['has_not_coverage'] ?? false);
 
@@ -428,7 +428,7 @@ class ExcelImportService
             'status' => $status,
             'quoted' => 'pending',
             'closed' => 'pending',
-            'responded' => false,
+            'not_responded' => false,
             'is_recurrent' => false,
             'has_not_coverage' => false,
             'notes' => $mappedProspect['close_reason'] ?? null,

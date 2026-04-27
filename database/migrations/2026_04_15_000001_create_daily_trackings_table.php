@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->string('contact_method');
             $table->string('status')->default('survey');
             $table->string('service_type');
-            $table->boolean('responded')->default(false);
+            $table->boolean('not_responded')->default(false);
             $table->string('quoted')->default('pending');
             $table->string('closed')->default('pending');
             $table->boolean('has_not_coverage')->default(false);

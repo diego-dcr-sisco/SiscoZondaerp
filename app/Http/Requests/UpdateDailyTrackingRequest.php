@@ -33,7 +33,7 @@ class UpdateDailyTrackingRequest extends FormRequest
             'address' => ['nullable', 'string'],
             'contact_method' => ['required', new Enum(DailyTrackingContactMethod::class)],
             'status' => ['required', new Enum(DailyTrackingStatus::class)],
-            'responded' => ['nullable', 'boolean'],
+            'not_responded' => ['nullable', 'boolean'],
             'is_recurrent' => ['nullable', 'boolean'],
             'quoted' => ['required', new Enum(DailyTrackingQuoted::class)],
             'closed' => ['required', new Enum(DailyTrackingClosed::class)],
@@ -58,7 +58,7 @@ class UpdateDailyTrackingRequest extends FormRequest
         $serviceTime = $this->input('service_time');
 
         $this->merge([
-            'responded' => $this->boolean('responded'),
+            'not_responded' => $this->boolean('not_responded'),
             'is_recurrent' => $this->boolean('is_recurrent'),
             'has_not_coverage' => $this->boolean('has_not_coverage'),
             'quoted_amount' => $this->input('quoted_amount') !== '' ? $this->input('quoted_amount') : null,
