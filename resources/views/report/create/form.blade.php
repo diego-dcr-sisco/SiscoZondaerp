@@ -140,110 +140,113 @@
             <div class="card shadow">
                 <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
                     Orden de servicio
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-order" aria-expanded="true" aria-controls="collapse-order">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse-order" aria-expanded="true" aria-controls="collapse-order">
                         <i class="bi bi-chevron-up"></i>
                     </button>
                 </div>
                 <div id="collapse-order" class="collapse show">
                     <div class="card-body">
-                    @can('write_order')
-                        <a class="btn btn-link p-0" href="{{ route('order.edit', ['id' => $order->id]) }}">
-                            {{ __('buttons.edit') }} orden
-                        </a>
-                    @endcan
-                    <input type="hidden" class="form-control form-control-sm" id="order-id"
-                        value="{{ $order->id }}">
+                        @can('write_order')
+                            <a class="btn btn-link p-0" href="{{ route('order.edit', ['id' => $order->id]) }}">
+                                {{ __('buttons.edit') }} orden
+                            </a>
+                        @endcan
+                        <input type="hidden" class="form-control form-control-sm" id="order-id"
+                            value="{{ $order->id }}">
 
-                    <div class="row">
-                        <label for="programmed-date"
-                            class="col-sm-4 col-form-label">{{ __('order.data.programmed_date') }}:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <input type="date" class="form-control form-control-sm" id="programmed-date"
-                                value="{{ $order->programmed_date }}">
+                        <div class="row">
+                            <label for="programmed-date"
+                                class="col-sm-4 col-form-label">{{ __('order.data.programmed_date') }}:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <input type="date" class="form-control form-control-sm" id="programmed-date"
+                                    value="{{ $order->programmed_date }}">
+                            </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <label for="completed-date"
-                            class="col-sm-4 col-form-label">{{ __('order.data.completed_date') }}:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <input type="date" class="form-control form-control-sm" id="completed-date"
-                                value="{{ $order->completed_date }}">
+                        <div class="row">
+                            <label for="completed-date"
+                                class="col-sm-4 col-form-label">{{ __('order.data.completed_date') }}:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <input type="date" class="form-control form-control-sm" id="completed-date"
+                                    value="{{ $order->completed_date }}">
+                            </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <label for="start-time" class="col-sm-4 col-form-label">Hora de inicio:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <input type="time" class="form-control form-control-sm" id="start-time"
-                                value="{{ $order->start_time }}">
+                        <div class="row">
+                            <label for="start-time" class="col-sm-4 col-form-label">Hora de inicio:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <input type="time" class="form-control form-control-sm" id="start-time"
+                                    value="{{ $order->start_time }}">
+                            </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <label for="end-time" class="col-sm-4 col-form-label">Hora de fin:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <input type="time" class="form-control form-control-sm" id="end-time"
-                                value="{{ $order->end_time }}">
+                        <div class="row">
+                            <label for="end-time" class="col-sm-4 col-form-label">Hora de fin:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <input type="time" class="form-control form-control-sm" id="end-time"
+                                    value="{{ $order->end_time }}">
+                            </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <label for="order-status" class="col-sm-4 col-form-label">Estado:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <select class="form-select form-select-sm" id="order-status">
-                                @foreach ($order_status as $status)
-                                    <option value="{{ $status->id }}"
-                                        {{ $order->status_id == $status->id ? 'selected' : '' }}>{{ $status->name }}
+                        <div class="row">
+                            <label for="order-status" class="col-sm-4 col-form-label">Estado:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <select class="form-select form-select-sm" id="order-status">
+                                    @foreach ($order_status as $status)
+                                        <option value="{{ $status->id }}"
+                                            {{ $order->status_id == $status->id ? 'selected' : '' }}>
+                                            {{ $status->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <label for="closed-by" class="col-sm-4 col-form-label">Cerrado por (Técnico):</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <select class="form-select form-select-sm" id="closed-by">
+                                    <option value="" {{ $order->closed_by == null ? 'selected' : '' }}>Sin
+                                        técnico
                                     </option>
-                                @endforeach
-                            </select>
+                                    @foreach ($user_technicians as $user)
+                                        <option value="{{ $user->id }}"
+                                            {{ $order->closed_by == $user->id ? 'selected' : '' }}>{{ $user->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <label for="closed-by" class="col-sm-4 col-form-label">Cerrado por (Técnico):</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <select class="form-select form-select-sm" id="closed-by">
-                                <option value="" {{ $order->closed_by == null ? 'selected' : '' }}>Sin técnico
-                                </option>
-                                @foreach ($user_technicians as $user)
-                                    <option value="{{ $user->id }}"
-                                        {{ $order->closed_by == $user->id ? 'selected' : '' }}>{{ $user->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        <div class="row">
+                            <label for="signed-by" class="col-sm-4 col-form-label">Firmado por:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <input type="text" class="form-control form-control-sm" id="signed-by"
+                                    value="{{ $order->signature_name }}">
+                            </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <label for="signed-by" class="col-sm-4 col-form-label">Firmado por:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <input type="text" class="form-control form-control-sm" id="signed-by"
-                                value="{{ $order->signature_name }}">
+                        <div class="row">
+                            <label for="signed-by" class="col-sm-4 col-form-label">Firma:</label>
+                            @php
+                                $signature =
+                                    strpos($order->customer_signature, 'data:image') === 0
+                                        ? $order->customer_signature
+                                        : 'data:image/png;base64,' . $order->customer_signature;
+                            @endphp
+                            <div class="col-sm-4 col-lg-4">
+                                <img id="signature-preview" class="border" style="width: 125px;"
+                                    src="{{ $signature }}" alt="img_firma">
+                                <input type="hidden" id="signature-base64" value="{{ $signature }}">
+                                <input type="hidden" id="signature-changed" value="0">
+                                <input type="hidden" id="signature-original" value="{{ $signature }}">
+                            </div>
                         </div>
+                        <button type="button" class="btn btn-primary btn-sm mt-2" onclick="updateOrder()">
+                            Guardar
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm mt-2" data-order="{{ $order }}"
+                            onclick="openModal(this)">
+                            Cambiar firma
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm mt-2" onclick="deleteSignature()">
+                            Eliminar firma
+                        </button>
                     </div>
-                    <div class="row">
-                        <label for="signed-by" class="col-sm-4 col-form-label">Firma:</label>
-                        @php
-                            $signature =
-                                strpos($order->customer_signature, 'data:image') === 0
-                                    ? $order->customer_signature
-                                    : 'data:image/png;base64,' . $order->customer_signature;
-                        @endphp
-                        <div class="col-sm-4 col-lg-4">
-                            <img id="signature-preview" class="border" style="width: 125px;" src="{{ $signature }}"
-                                alt="img_firma">
-                            <input type="hidden" id="signature-base64" value="{{ $signature }}">
-                            <input type="hidden" id="signature-changed" value="0">
-                            <input type="hidden" id="signature-original" value="{{ $signature }}">
-                        </div>
-                    </div>
-                    <button type="button" class="btn btn-primary btn-sm mt-2" onclick="updateOrder()">
-                        Guardar
-                    </button>
-                    <button type="button" class="btn btn-warning btn-sm mt-2" data-order="{{ $order }}"
-                        onclick="openModal(this)">
-                        Cambiar firma
-                    </button>
-                    <button type="button" class="btn btn-danger btn-sm mt-2" onclick="deleteSignature()">
-                        Eliminar firma
-                    </button>
-                </div>
                 </div>
             </div>
         </div>
@@ -251,68 +254,69 @@
             <div class="card shadow">
                 <div class="card-header bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
                     Cliente
-                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-customer" aria-expanded="true" aria-controls="collapse-customer">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse-customer" aria-expanded="true" aria-controls="collapse-customer">
                         <i class="bi bi-chevron-up"></i>
                     </button>
                 </div>
                 <div id="collapse-customer" class="collapse show">
                     <div class="card-body">
-                    @can('write_customer')
-                        <a href="{{ isset($order->customer) ? route('customer.edit', ['id' => $order->customer->id ?? 0, 'type' => 1, 'section' => 1]) : '#' }}"
-                            class="btn btn-link p-0">
-                            {{ __('buttons.edit') }} cliente
-                        </a>
-                    @endcan
-                    <input type="hidden" class="form-control form-control-sm" id="customer-id"
-                        value="{{ $order->customer_id ?? '-' }}">
+                        @can('write_customer')
+                            <a href="{{ isset($order->customer) ? route('customer.edit', ['id' => $order->customer->id ?? 0, 'type' => 1, 'section' => 1]) : '#' }}"
+                                class="btn btn-link p-0">
+                                {{ __('buttons.edit') }} cliente
+                            </a>
+                        @endcan
+                        <input type="hidden" class="form-control form-control-sm" id="customer-id"
+                            value="{{ $order->customer_id ?? '-' }}">
 
-                    <div class="row">
-                        <label for="customer-name" class="col-sm-4 col-form-label">Nombre:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <input type="text" class="form-control form-control-sm" id="customer-name"
-                                value="{{ isset($order->customer) ? ($order->customer->name ?? '-') : '-' }}">
+                        <div class="row">
+                            <label for="customer-name" class="col-sm-4 col-form-label">Nombre:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <input type="text" class="form-control form-control-sm" id="customer-name"
+                                    value="{{ isset($order->customer) ? $order->customer->name ?? '-' : '-' }}">
+                            </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <label for="customer-address" class="col-sm-4 col-form-label">Dirección:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <input type="text" class="form-control form-control-sm" id="customer-address"
-                                value="{{ isset($order->customer) ? ($order->customer->address ?? '-') : '-' }}">
+                        <div class="row">
+                            <label for="customer-address" class="col-sm-4 col-form-label">Dirección:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <input type="text" class="form-control form-control-sm" id="customer-address"
+                                    value="{{ isset($order->customer) ? $order->customer->address ?? '-' : '-' }}">
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <label for="customer-email" class="col-sm-4 col-form-label">Correo:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <input type="text" class="form-control form-control-sm" id="customer-email"
-                                value="{{ isset($order->customer) ? ($order->customer->email ?? '-') : '-' }}">
+                        <div class="row">
+                            <label for="customer-email" class="col-sm-4 col-form-label">Correo:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <input type="text" class="form-control form-control-sm" id="customer-email"
+                                    value="{{ isset($order->customer) ? $order->customer->email ?? '-' : '-' }}">
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <label for="customer-rfc" class="col-sm-4 col-form-label">RFC:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <input type="text" class="form-control form-control-sm" id="customer-rfc"
-                                value="{{ isset($order->customer) ? ($order->customer->rfc ?? '-') : '-' }}">
+                        <div class="row">
+                            <label for="customer-rfc" class="col-sm-4 col-form-label">RFC:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <input type="text" class="form-control form-control-sm" id="customer-rfc"
+                                    value="{{ isset($order->customer) ? $order->customer->rfc ?? '-' : '-' }}">
+                            </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <label for="customer-time" class="col-sm-4 col-form-label">Tipo de cliente:</label>
-                        <div class="col-sm-4 col-lg-8">
-                            <select class="form-select form-select-sm" id="customer-type" disabled>
-                                @foreach ($service_types as $status)
-                                    <option value="{{ $status->id }}"
-                                        {{ isset($order->customer) && $status->id == ($order->customer->service_type_id ?? 0) ? 'selected' : '' }}>
-                                        {{ $status->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        <div class="row">
+                            <label for="customer-time" class="col-sm-4 col-form-label">Tipo de cliente:</label>
+                            <div class="col-sm-4 col-lg-8">
+                                <select class="form-select form-select-sm" id="customer-type" disabled>
+                                    @foreach ($service_types as $status)
+                                        <option value="{{ $status->id }}"
+                                            {{ isset($order->customer) && $status->id == ($order->customer->service_type_id ?? 0) ? 'selected' : '' }}>
+                                            {{ $status->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
+                        <button type="button" class="btn btn-primary btn-sm mt-2" onclick="updateCustomer()">
+                            Guardar
+                        </button>
                     </div>
-                    <button type="button" class="btn btn-primary btn-sm mt-2" onclick="updateCustomer()">
-                        Guardar
-                    </button>
-                </div>
                 </div>
             </div>
         </div>
@@ -322,8 +326,12 @@
         <div class="row g-3">
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Servicios
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-services" aria-expanded="true" aria-controls="collapse-services">
+                    <div
+                        class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
+                        Servicios
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapse-services" aria-expanded="true"
+                            aria-controls="collapse-services">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -337,8 +345,11 @@
 
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Dispositivos
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-devices" aria-expanded="true" aria-controls="collapse-devices">
+                    <div
+                        class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
+                        Dispositivos
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapse-devices" aria-expanded="true" aria-controls="collapse-devices">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -352,8 +363,12 @@
 
             <div class="col-12 col-lg-8">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Productos
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-products" aria-expanded="true" aria-controls="collapse-products">
+                    <div
+                        class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
+                        Productos
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapse-products" aria-expanded="true"
+                            aria-controls="collapse-products">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -367,8 +382,11 @@
 
             <div class="col-12 col-lg-4">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Plagas
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-pests" aria-expanded="true" aria-controls="collapse-pests">
+                    <div
+                        class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
+                        Plagas
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapse-pests" aria-expanded="true" aria-controls="collapse-pests">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -382,8 +400,11 @@
 
             <div class="col-12 col-lg-6">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Notas
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-notes" aria-expanded="true" aria-controls="collapse-notes">
+                    <div
+                        class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
+                        Notas
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapse-notes" aria-expanded="true" aria-controls="collapse-notes">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -397,8 +418,12 @@
 
             <div class="col-12 col-lg-6">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Recomendaciones
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-recommendations" aria-expanded="true" aria-controls="collapse-recommendations">
+                    <div
+                        class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
+                        Recomendaciones
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapse-recommendations" aria-expanded="true"
+                            aria-controls="collapse-recommendations">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -412,8 +437,12 @@
 
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Evidencias fotográficas
-                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-evidence" aria-expanded="true" aria-controls="collapse-evidence">
+                    <div
+                        class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
+                        Evidencias fotográficas
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#collapse-evidence" aria-expanded="true"
+                            aria-controls="collapse-evidence">
                             <i class="bi bi-chevron-up"></i>
                         </button>
                     </div>
@@ -537,10 +566,22 @@
     window.getRecommendationEditorHtml = getRecommendationEditorHtml;
     window.setRecommendationEditorHtml = setRecommendationEditorHtml;
 
+    // Fuera del document ready
+    var Size = Quill.import('attributors/style/size');
+    Size.whitelist = ['10px', '12px', '14px', '16px', '18px', '24px', '32px'];
+    Quill.register(Size, true);
+
     $(document).ready(function() {
         const quillToolbar = [
+            [{
+                'size': ['10px', '12px', '14px', '16px', '18px', '24px', '32px']
+            }],
             ['bold', 'italic', 'underline', 'strike'],
-            [{ list: 'ordered' }, { list: 'bullet' }],
+            [{
+                list: 'ordered'
+            }, {
+                list: 'bullet'
+            }],
             ['link', 'image'],
             ['clean']
         ];
@@ -569,11 +610,14 @@
         // Toggle collapse icons
         $('.collapse').on('show.bs.collapse', function() {
             const id = $(this).attr('id');
-            $(`button[data-bs-target="#${id}"] i`).removeClass('bi-chevron-down').addClass('bi-chevron-up');
+            $(`button[data-bs-target="#${id}"] i`).removeClass('bi-chevron-down').addClass(
+                'bi-chevron-up');
         });
+
         $('.collapse').on('hide.bs.collapse', function() {
             const id = $(this).attr('id');
-            $(`button[data-bs-target="#${id}"] i`).removeClass('bi-chevron-up').addClass('bi-chevron-down');
+            $(`button[data-bs-target="#${id}"] i`).removeClass('bi-chevron-up').addClass(
+                'bi-chevron-down');
         });
     });
 
@@ -754,7 +798,7 @@
         $('#order-status').on('change', function() {
             const statusId = parseInt($(this).val());
             const approvedBadge = $('#approved-badge');
-            
+
             if (statusId === 5) {
                 approvedBadge.fadeIn();
             } else {
@@ -837,9 +881,9 @@
             setAutosaveStatus(statusSelector, 'is-saving', 'Guardando...');
 
             const rawHtml = getServiceEditorHtml(serviceId);
-            const normalizedHtml = typeof normalizeImageSizesForPdf === 'function'
-                ? normalizeImageSizesForPdf(rawHtml)
-                : rawHtml;
+            const normalizedHtml = typeof normalizeImageSizesForPdf === 'function' ?
+                normalizeImageSizesForPdf(rawHtml) :
+                rawHtml;
 
             const payload = {
                 service_id: parseInt(serviceId, 10),
