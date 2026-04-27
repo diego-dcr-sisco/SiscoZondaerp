@@ -357,11 +357,11 @@ class DailyTrackingController extends Controller
             'Clientes comerciales nuevos',
         ];
 
-        foreach($dateRanges as $index => $range) {
+        foreach ($dateRanges as $index => $range) {
             $daily_trackings = DailyTracking::where('created_at', '>=', $range['start'])
                 ->where('created_at', '<=', $range['end'])
                 ->get();
-                
+
             $rows[] = [
                 '', // Periodo
                 $range['label'], // Rango de Fechas
@@ -374,7 +374,7 @@ class DailyTrackingController extends Controller
                 $daily_trackings->where('not_responded', false)->count() > 0 ? round(($daily_trackings->where('quoted', 'yes')->count() / $daily_trackings->where('not_responded', false)->count()) * 100, 2) : 0, // % Cotizacion
                 $daily_trackings->where('quoted', 'yes')->count() > 0 ? round(($daily_trackings->where('closed', 'yes')->count() / $daily_trackings
                     ->where('quoted', 'yes')->count()) * 100, 2) : 0, // % Conversion
-                $daily_trackings->where('quoted', 'yes')->count() > 0 ? round(($daily_trackings->where('invoice', 'yes')->count() / $daily_trackings                    ->where('quoted', 'yes')->count()) * 100, 2) : 0, // % Facturacion
+                $daily_trackings->where('quoted', 'yes')->count() > 0 ? round(($daily_trackings->where('invoice', 'yes')->count() / $daily_trackings->where('quoted', 'yes')->count()) * 100, 2) : 0, // % Facturacion
                 $daily_trackings->where('quoted', 'yes')->sum('quoted_amount'), // Monto total cotizado
                 $daily_trackings->where('closed', 'yes')->sum('quoted_amount'), // Monto total cerrado
                 $daily_trackings->where('invoice', 'yes')->sum('billed_amount'), // Monto total facturado
@@ -390,7 +390,31 @@ class DailyTrackingController extends Controller
         }
 
         $export = new DailyTrackingReportExport($baseHeadings, $rows);
-        return $export->download('reporte_seguimiento_diario.xlsx');
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Cabeceras en fila 1
+        foreach ($baseHeadings as $index => $heading) {
+            $column = Coordinate::stringFromColumnIndex($index + 1);
+            $sheet->setCellValue($column . '1', $heading);
+        }
+
+        // Filas de datos desde fila 2
+        foreach ($rows as $rowIndex => $row) {
+            foreach ($row as $columnIndex => $value) {
+                $column = Coordinate::stringFromColumnIndex($columnIndex + 1);
+                $sheet->setCellValue($column . ($rowIndex + 2), $value);
+            }
+        }
+
+        $filename = 'reporte_seguimiento_diario_' . now()->format('Ymd_His') . '.xlsx';
+        $writer = new Xlsx($spreadsheet);
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     public function create()
