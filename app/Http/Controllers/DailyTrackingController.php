@@ -364,7 +364,6 @@ class DailyTrackingController extends Controller
                 ->get();
 
             $rows[] = [
-                '', // Periodo
                 $range['label'], // Rango de Fechas
                 $daily_trackings->count(), // Total clientes
                 $daily_trackings->where('not_responded', true)->count(), // Total No contestaron
