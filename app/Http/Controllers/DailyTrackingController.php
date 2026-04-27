@@ -335,7 +335,7 @@ class DailyTrackingController extends Controller
         $dateRanges = $this->splitDateRangeIntoPeriods((string) $request->input('date_range', ''), $request->input('group_by', 'week'));
 
         $baseHeadings = [
-            'Periodo',
+            //'Periodo',
             'Rango de Fechas',
             'Total clientes',
             'Total No contestaron',
@@ -350,6 +350,7 @@ class DailyTrackingController extends Controller
             'Monto total cerrado',
             'Monto total facturado',
             'Monto cerrado domestico',
+            'Monto cerrado comercial',
             'Ticket promedio',
             'Domestico',
             'Comercial',
@@ -379,6 +380,7 @@ class DailyTrackingController extends Controller
                 $daily_trackings->where('closed', 'yes')->sum('quoted_amount'), // Monto total cerrado
                 $daily_trackings->where('invoice', 'yes')->sum('billed_amount'), // Monto total facturado
                 $daily_trackings->where('closed', 'yes')->where('customer_type', 'domestico')->sum('quoted_amount'), // Monto cerrado domestico
+                $daily_trackings->where('closed', 'yes')->where('customer_type', 'comercial')->sum('quoted_amount'), // Monto cerrado comercial
                 $daily_trackings->where('closed', 'yes')->count() > 0 ? round($daily_trackings->where('closed', 'yes')->sum('quoted_amount') / $daily_trackings->where('closed', 'yes')->count(), 2) : 0, // Ticket promedio
                 $daily_trackings->where('customer_type', 'domestico')->count(), // Domestico
                 $daily_trackings->where('customer_type', 'comercial')->count(), // Comercial
