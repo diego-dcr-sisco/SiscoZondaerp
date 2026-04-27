@@ -397,18 +397,30 @@
 
             <div class="col-12 col-lg-6">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold">Recomendaciones</div>
-                    <div class="card-body">
-                        @include('report.create.recommendations')
+                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Recomendaciones
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-recommendations" aria-expanded="true" aria-controls="collapse-recommendations">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div id="collapse-recommendations" class="collapse show">
+                        <div class="card-body">
+                            @include('report.create.recommendations')
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-light text-dark fw-bold">Evidencias fotográficas</div>
-                    <div class="card-body">
-                        @include('report.create.evidence')
+                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Evidencias fotográficas
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-evidence" aria-expanded="true" aria-controls="collapse-evidence">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div id="collapse-evidence" class="collapse show">
+                        <div class="card-body">
+                            @include('report.create.evidence')
+                        </div>
                     </div>
                 </div>
             </div>
@@ -552,6 +564,16 @@
                 const serviceId = $(this).data('service-id');
                 $(document).trigger('quill-editor-change', [autosaveType, serviceId]);
             });
+        });
+
+        // Toggle collapse icons
+        $('.collapse').on('show.bs.collapse', function() {
+            const id = $(this).attr('id');
+            $(`button[data-bs-target="#${id}"] i`).removeClass('bi-chevron-down').addClass('bi-chevron-up');
+        });
+        $('.collapse').on('hide.bs.collapse', function() {
+            const id = $(this).attr('id');
+            $(`button[data-bs-target="#${id}"] i`).removeClass('bi-chevron-up').addClass('bi-chevron-down');
         });
     });
 
