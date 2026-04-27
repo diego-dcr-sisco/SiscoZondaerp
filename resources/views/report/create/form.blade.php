@@ -138,10 +138,14 @@
     <div class="row mb-4">
         <div class="col-6">
             <div class="card shadow">
-                <div class="card-header bg-light text-dark fw-bold ">
+                <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
                     Orden de servicio
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-order" aria-expanded="true" aria-controls="collapse-order">
+                        <i class="bi bi-chevron-up"></i>
+                    </button>
                 </div>
-                <div class="card-body">
+                <div id="collapse-order" class="collapse show">
+                    <div class="card-body">
                     @can('write_order')
                         <a class="btn btn-link p-0" href="{{ route('order.edit', ['id' => $order->id]) }}">
                             {{ __('buttons.edit') }} orden
@@ -240,14 +244,19 @@
                         Eliminar firma
                     </button>
                 </div>
+                </div>
             </div>
         </div>
         <div class="col-6">
             <div class="card shadow">
-                <div class="card-header bg-light text-dark fw-bold">
+                <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">
                     Cliente
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-customer" aria-expanded="true" aria-controls="collapse-customer">
+                        <i class="bi bi-chevron-up"></i>
+                    </button>
                 </div>
-                <div class="card-body">
+                <div id="collapse-customer" class="collapse show">
+                    <div class="card-body">
                     @can('write_customer')
                         <a href="{{ isset($order->customer) ? route('customer.edit', ['id' => $order->customer->id ?? 0, 'type' => 1, 'section' => 1]) : '#' }}"
                             class="btn btn-link p-0">
@@ -304,6 +313,7 @@
                         Guardar
                     </button>
                 </div>
+                </div>
             </div>
         </div>
     </div>
@@ -312,63 +322,105 @@
         <div class="row g-3">
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-light text-dark fw-bold">Servicios</div>
-                    <div class="card-body">
-                        @include('report.create.services')
+                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Servicios
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-services" aria-expanded="true" aria-controls="collapse-services">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div id="collapse-services" class="collapse show">
+                        <div class="card-body">
+                            @include('report.create.services')
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-light text-dark fw-bold">Dispositivos</div>
-                    <div class="card-body">
-                        @include('report.create.devices')
+                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Dispositivos
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-devices" aria-expanded="true" aria-controls="collapse-devices">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div id="collapse-devices" class="collapse show">
+                        <div class="card-body">
+                            @include('report.create.devices')
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-12 col-lg-8">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold">Productos</div>
-                    <div class="card-body">
-                        @include('report.create.products')
+                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Productos
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-products" aria-expanded="true" aria-controls="collapse-products">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div id="collapse-products" class="collapse show">
+                        <div class="card-body">
+                            @include('report.create.products')
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-12 col-lg-4">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold">Plagas</div>
-                    <div class="card-body">
-                        @include('report.create.pests')
+                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Plagas
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-pests" aria-expanded="true" aria-controls="collapse-pests">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div id="collapse-pests" class="collapse show">
+                        <div class="card-body">
+                            @include('report.create.pests')
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-12 col-lg-6">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold">Notas</div>
-                    <div class="card-body">
-                        @include('report.create.notes')
+                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Notas
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-notes" aria-expanded="true" aria-controls="collapse-notes">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div id="collapse-notes" class="collapse show">
+                        <div class="card-body">
+                            @include('report.create.notes')
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-12 col-lg-6">
                 <div class="card shadow h-100">
-                    <div class="card-header bg-light text-dark fw-bold">Recomendaciones</div>
-                    <div class="card-body">
-                        @include('report.create.recommendations')
+                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Recomendaciones
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-recommendations" aria-expanded="true" aria-controls="collapse-recommendations">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div id="collapse-recommendations" class="collapse show">
+                        <div class="card-body">
+                            @include('report.create.recommendations')
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-12">
                 <div class="card shadow">
-                    <div class="card-header bg-light text-dark fw-bold">Evidencias fotográficas</div>
-                    <div class="card-body">
-                        @include('report.create.evidence')
+                    <div class="card-header bg-light text-dark fw-bold d-flex justify-content-between align-items-center">Evidencias fotográficas
+                        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-evidence" aria-expanded="true" aria-controls="collapse-evidence">
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                    </div>
+                    <div id="collapse-evidence" class="collapse show">
+                        <div class="card-body">
+                            @include('report.create.evidence')
+                        </div>
                     </div>
                 </div>
             </div>
@@ -512,6 +564,16 @@
                 const serviceId = $(this).data('service-id');
                 $(document).trigger('quill-editor-change', [autosaveType, serviceId]);
             });
+        });
+
+        // Toggle collapse icons
+        $('.collapse').on('show.bs.collapse', function() {
+            const id = $(this).attr('id');
+            $(`button[data-bs-target="#${id}"] i`).removeClass('bi-chevron-down').addClass('bi-chevron-up');
+        });
+        $('.collapse').on('hide.bs.collapse', function() {
+            const id = $(this).attr('id');
+            $(`button[data-bs-target="#${id}"] i`).removeClass('bi-chevron-up').addClass('bi-chevron-down');
         });
     });
 

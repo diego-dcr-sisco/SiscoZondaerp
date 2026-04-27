@@ -303,7 +303,7 @@ class DailyTrackingController extends Controller
             ->selectRaw("SUM(CASE WHEN customer_type = 'comercial' THEN 1 ELSE 0 END) as commercial")
             ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' THEN 1 ELSE 0 END) as industrial")
             ->selectRaw("SUM(CASE WHEN customer_type = 'comercial' THEN 1 ELSE 0 END) as new_commercial_clients")
-            ->selectRaw("SUM(CASE WHEN invoice = 'yes' THEN 1 ELSE 0 END) as total_invoiced")
+            ->selectRaw("SUM(CASE WHEN closed = 'yes' AND invoice = 'yes' THEN 1 ELSE 0 END) as total_invoiced")
             ->groupBy('period')
             ->orderBy('period')
             ->tap(function ($query) use ($contactMethodConfig) {
@@ -316,6 +316,7 @@ class DailyTrackingController extends Controller
 
         $baseHeadings = [
             'Periodo',
+            'Rango de Fechas',
             'Total clientes',
             'Total contestaron',
             'Total cotizados',
@@ -343,7 +344,7 @@ class DailyTrackingController extends Controller
 
         $headings = array_merge($baseHeadings, $methodHeadings, ['Total facturados']);
 
-        $rows = $reportRows->map(function ($row) use ($selectedContactMethods, $contactMethodConfig) {
+        $rows = $reportRows->map(function ($row) use ($selectedContactMethods, $contactMethodConfig, $groupBy) {
             $totalClients = (int) $row->total_clients;
             $totalResponded = (int) $row->total_responded;
             $totalQuoted = (int) $row->total_quoted;
@@ -355,6 +356,7 @@ class DailyTrackingController extends Controller
 
             $baseData = [
                 (string) $row->period,
+                $this->formatPeriodRange((string) $row->period, $groupBy),
                 $totalClients,
                 $totalResponded,
                 $totalQuoted,
@@ -589,6 +591,82 @@ class DailyTrackingController extends Controller
         }
 
         return number_format(((float) $numerator / (float) $denominator) * 100, 2) . '%';
+    }
+
+    private function formatPeriodRange(string $period, string $groupBy): string
+    {
+        return match ($groupBy) {
+            'day' => $this->formatDayRange($period),
+            'week' => $this->formatWeekRange($period),
+            'month' => $this->formatMonthRange($period),
+            'year' => $this->formatYearRange($period),
+            default => $period,
+        };
+    }
+
+    private function formatDayRange(string $period): string
+    {
+        try {
+            $date = Carbon::createFromFormat('Y-m-d', $period);
+            return $date->format('d/m/Y') . ' - ' . $date->format('d/m/Y');
+        } catch (\Exception $e) {
+            return $period;
+        }
+    }
+
+    private function formatWeekRange(string $period): string
+    {
+        // Period is like "2026-W17"
+        $parts = explode('-W', $period);
+        if (count($parts) !== 2) {
+            return $period;
+        }
+
+        $year = (int) $parts[0];
+        $week = (int) $parts[1];
+
+        try {
+            $date = Carbon::now()->setISODate($year, $week, 1); // Monday of the week
+            $start = $date->format('d/m/Y');
+            $end = $date->addDays(6)->format('d/m/Y'); // Sunday
+            return $start . ' - ' . $end;
+        } catch (\Exception $e) {
+            return $period;
+        }
+    }
+
+    private function formatMonthRange(string $period): string
+    {
+        // Period is like "2026-04"
+        $parts = explode('-', $period);
+        if (count($parts) !== 2) {
+            return $period;
+        }
+
+        $year = (int) $parts[0];
+        $month = (int) $parts[1];
+
+        try {
+            $date = Carbon::createFromDate($year, $month, 1);
+            $start = $date->format('d/m/Y');
+            $end = $date->endOfMonth()->format('d/m/Y');
+            return $start . ' - ' . $end;
+        } catch (\Exception $e) {
+            return $period;
+        }
+    }
+
+    private function formatYearRange(string $period): string
+    {
+        $year = (int) $period;
+
+        try {
+            $start = Carbon::createFromDate($year, 1, 1)->format('d/m/Y');
+            $end = Carbon::createFromDate($year, 12, 31)->format('d/m/Y');
+            return $start . ' - ' . $end;
+        } catch (\Exception $e) {
+            return $period;
+        }
     }
 
     private function contactMethodExportConfig(): array
