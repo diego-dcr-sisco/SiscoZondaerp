@@ -1,6 +1,6 @@
 <table class="table table-bordered table-striped table-sm caption-top">
     <div class="container-fluid p-3">
-        <caption class="border rounded-top p-2 text-dark bg-light caption-top">
+        <caption class="border rounded-top p-2 text-dark bg-white caption-top">
             <form action="{{ route('quality.rotation-plan.search', ['id' => $customer->id]) }}" method="GET">
                 <div class="row g-3 mb-0">
                     <div class="col-lg-4 col-12">

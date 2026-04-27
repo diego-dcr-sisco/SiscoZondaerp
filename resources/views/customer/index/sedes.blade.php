@@ -1,13 +1,12 @@
 @extends('layouts.app')
 @section('content')
+    @include('components.page-header', [
+        'title' => 'SEDES',
+        'icon' => 'bi-building',
+        'actionRoute' => route('customer.create.sede', ['matrix' => 0]),
+        'actionText' => 'Crear sede',
+    ])
     <div class="container-fluid">
-        <div class="py-3">
-            @can('write_customer')
-                <a class="btn btn-primary btn-sm" href="{{ route('customer.create.sede', ['matrix' => 0]) }}">
-                    <i class="bi bi-plus-lg fw-bold"></i> Crear sede
-                </a>
-            @endcan
-        </div>
 
 
         <div class="table-responsive">
@@ -16,7 +15,7 @@
                 @php
                     $offset = ($customers->currentPage() - 1) * $customers->perPage();
                 @endphp
-                <caption class="border rounded-top p-2 text-dark bg-light">
+                <caption class="border rounded-top p-2 text-dark bg-white">
                     <form action="{{ route('customer.search') }}" method="GET">
                         @csrf
                         <input type="hidden" id="customer-type" name="customer_type" value="2">

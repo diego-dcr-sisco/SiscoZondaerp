@@ -1,5 +1,5 @@
 <table class="table table-sm table-bordered table-striped caption-top">
-    <caption class="border rounded-top p-3 text-dark bg-light">
+    <caption class="border rounded-top p-3 text-dark bg-white">
                     <form id="filter-form" action="{{ route('quality.devices', $customer->id) }}" method="GET">
                         <div class="row g-2 mb-0">
                             <!-- Nombre -->

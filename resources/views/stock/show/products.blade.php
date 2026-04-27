@@ -14,7 +14,7 @@
             <div class="m-3">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered table-striped table-sm align-middle caption-top">
-                        <caption class="border rounded-top p-2 text-dark bg-light">
+                        <caption class="border rounded-top p-2 text-dark bg-white">
                             <div class="text-end">
                                 <!-- Botón para exportar a Excel -->
                                 <a href="{{ route('stock.exportStock', ['id' => $warehouse->id]) }}"

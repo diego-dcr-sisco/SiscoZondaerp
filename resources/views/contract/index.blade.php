@@ -25,19 +25,18 @@
         }
 
     @endphp
+    @include('components.page-header', [
+        'title' => 'CONTRATOS',
+        'icon' => 'bi-file-earmark-text',
+        'actionRoute' => route('contract.create'),
+        'actionText' => __('contract.title.create'),
+    ])
     <div class="container-fluid">
-        <div class="py-3">
-            @can('write_order')
-                <a class="btn btn-primary btn-sm" href="{{ route('contract.create') }}">
-                    <i class="bi bi-plus-lg fw-bold"></i> {{ __('contract.title.create') }}
-                </a>
-            @endcan
-        </div>
 
         
         <div class="table-responsive">
             <table class="table table-sm table-bordered table-striped caption-top">
-                <caption class="border rounded-top p-2 text-dark bg-light">
+                <caption class="border rounded-top p-2 text-dark bg-white">
                     <form action="{{ route('contract.search') }}" method="GET">
                         @csrf
                         <div class="row g-3 mb-0">

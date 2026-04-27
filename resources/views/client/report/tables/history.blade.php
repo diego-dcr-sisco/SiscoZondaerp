@@ -11,7 +11,7 @@
 @endif
 
 <table class="table table-bordered text-center caption-top">
-    <caption class="border bg-secondary-subtle p-2 fw-bold text-dark">
+    <caption class="border bg-white p-2 fw-bold text-dark">
         {{ __('order.navbar.history') }}
     </caption>
     <thead>

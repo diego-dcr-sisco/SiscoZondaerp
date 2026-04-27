@@ -1,16 +1,10 @@
 @extends('layouts.app')
 @section('content')
-    <div>
-        <ul class="nav fs-4 border-bottom mb-3">
-            <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="javascript:history.back()"><i
-                        class="bi bi-arrow-left"></i></a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled text-black fw-bold" aria-current="page" href="#"> CREAR SEGUIMIENTO</a>
-            </li>
-        </ul>
-        <div class="container-fluid">
+    @include('components.page-header', [
+        'title' => 'CREAR SEGUIMIENTO',
+        'icon' => 'bi-plus-circle',
+    ])
+    <div class="container-fluid">
             <form class="px-3" action="{{ route('crm.tracking.store') }}" method="POST">
                 @csrf
                 <div class="row">

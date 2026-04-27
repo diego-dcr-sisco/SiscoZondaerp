@@ -12,6 +12,7 @@
                     <input type="text" class="form-control" id="searchRecommendations"
                         placeholder="Buscar recomendaciones...">
                 </div>
+
                 <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                     <table class="table table-hover table-sm">
                         <thead class="sticky-top bg-light">
@@ -21,7 +22,6 @@
                             </tr>
                         </thead>
                         <tbody>
-
                             @foreach ($recommendations as $index => $description)
                                 <tr class="recommendation-item">
                                     <td>
@@ -53,61 +53,76 @@
     </div>
 </div>
 
-<!-- Contenido original modificado -->
-@foreach ($order->services as $service)
-    <div class="card mb-4">
-        <div class="card-header bg-light">
-            <h5 class="card-title mb-0 fw-bold">Servicio - {{ $service->name }}</h5>
-        </div>
-        <div class="card-body">
-            <div class="mb-3">
-                <button type="button" class="btn btn-success btn-sm mb-2 add-recommendation-btn"
-                    data-service-id="{{ $service->id }}">
-                    <i class="bi bi-plus-lg"></i> Agregar Recomendaciones
+<div class="accordion" id="recommendationsAccordion">
+    @foreach ($order->services as $service)
+        <div class="accordion-item mb-2">
+            <h2 class="accordion-header" id="recommendations-heading-{{ $service->id }}">
+                <button class="accordion-button {{ $loop->first ? '' : 'collapsed' }}" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#recommendations-collapse-{{ $service->id }}"
+                    aria-expanded="{{ $loop->first ? 'true' : 'false' }}"
+                    aria-controls="recommendations-collapse-{{ $service->id }}">
+                    Recomendaciones de {{ $service->name }}
                 </button>
+            </h2>
+            <div id="recommendations-collapse-{{ $service->id }}"
+                class="accordion-collapse collapse {{ $loop->first ? 'show' : '' }}"
+                aria-labelledby="recommendations-heading-{{ $service->id }}"
+                data-bs-parent="#recommendationsAccordion">
+                <div class="accordion-body">
+                    <div class="mb-3">
+                        <div id="summary-recs{{ $service->id }}" class="smnote smnote-recommendation"
+                            data-autosave-type="recommendation" data-service-id="{{ $service->id }}" style="height: 300px">
+                            @if ($order->reportRecommendations->where('service_id', $service->id)->first())
+                                {!! $order->reportRecommendations->where('service_id', $service->id)->first()->recommendation_text !!}
+                            @else
+                                @if ($service->prefix == 2)
+                                    <p><strong>ANTES DE LA APLICACIÓN QUÍMICA</strong></p>
+                                    <ol>
+                                        <li>Identificar la plaga a controlar.</li>
+                                        <li>No debe encontrarse personal en el área.</li>
+                                        <li>No debe de haber materia prima expuesta.</li>
+                                        <li>Asegurar que la aplicación no afecte el proceso, producción o a terceros.</li>
+                                    </ol>
+                                    <p><br></p>
+                                    <p><strong>DURANTE DE LA APLICACIÓN QUÍMICA</strong></p>
+                                    <ol>
+                                        <li>En el área solo debe de encontrarse el técnico aplicador</li>
+                                    </ol>
+                                    <p><br></p>
+                                    <p><strong>DESPUÉS DE LA APLICACIÓN QUÍMICA</strong></p>
+                                    <ol>
+                                        <li>Respetar el tiempo de reentrada conforme a la etiqueta del producto a utilizar.</li>
+                                        <li>Realizar recolección de plaga o limpieza necesaria al tipo de área.</li>
+                                    </ol>
+                                @endif
+                            @endif
+                        </div>
+                    </div>
 
-                <button type="button" class="btn btn-secondary btn-sm mb-2 clear-recommendations-btn"
-                    data-service-id="{{ $service->id }}">
-                    <i class="bi bi-arrow-clockwise"></i> Limpiar Recomendaciones
-                </button>
-            </div>
+                    <div class="section-action-bar">
+                        <span id="autosave-status-recommendation-{{ $service->id }}" class="autosave-status">Sin cambios</span>
+                        <div class="section-action-buttons">
+                            <button type="button" class="btn btn-success btn-sm add-recommendation-btn"
+                                data-service-id="{{ $service->id }}">
+                                <i class="bi bi-plus-lg"></i> Agregar
+                            </button>
 
-            <div class="mb-3">
-                <div id="summary-recs{{ $service->id }}" class="smnote">
-                    @if ($order->reportRecommendations->where('service_id', $service->id)->first())
-                        {!! $order->reportRecommendations->where('service_id', $service->id)->first()->recommendation_text !!}
-                    @else
-                        @if ($service->prefix == 2)
-                            <p><strong>ANTES DE LA APLICACIÓN QUÍMICA</strong></p>
-                            <ol>
-                                <li>Identificar la plaga a controlar.</li>
-                                <li>No debe encontrarse personal en el área.</li>
-                                <li>No debe de haber materia prima expuesta.</li>
-                                <li>Asegurar que la aplicación no afecte el proceso, producción o a terceros.</li>
-                            </ol>
-                            <p><br></p>
-                            <p><strong>DURANTE DE LA APLICACIÓN QUÍMICA</strong></p>
-                            <ol>
-                                <li>En el área solo debe de encontrarse el técnico aplicador</li>
-                            </ol>
-                            <p><br></p>
-                            <p><strong>DESPUÉS DE LA APLICACIÓN QUÍMICA</strong></p>
-                            <ol>
-                                <li>Respetar el tiempo de reentrada conforme a la etiqueta del producto a utilizar.</li>
-                                <li>Realizar recolección de plaga o limpieza necesaria al tipo de área.</li>
-                            </ol>
-                        @endif
-                    @endif
+                            <button type="button" class="btn btn-secondary btn-sm clear-recommendations-btn"
+                                data-service-id="{{ $service->id }}">
+                                <i class="bi bi-arrow-clockwise"></i> Limpiar
+                            </button>
+
+                            <button type="button" class="btn btn-primary btn-sm report-save-btn update-recommendations-btn"
+                                data-service-id="{{ $service->id }}">
+                                <i class="bi bi-save"></i> Guardar recomendaciones
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <button type="button" class="btn btn-primary btn-sm mb-2 update-recommendations-btn"
-                data-service-id="{{ $service->id }}">
-                <i class="bi bi-save"></i> Actualizar Recomendaciones
-            </button>
         </div>
-    </div>
-@endforeach
+    @endforeach
+</div>
 
 <input type="hidden" id="recommendations" name="recommendations" />
 
@@ -129,7 +144,22 @@
         min-height: 200px;
         border: 1px solid #dee2e6;
         border-radius: 0.375rem;
-        padding: 10px;
+    }
+
+    .smnote-recommendation .ql-toolbar {
+        border-top-left-radius: 0.375rem;
+        border-top-right-radius: 0.375rem;
+    }
+
+    .smnote-recommendation .ql-container {
+        min-height: 250px;
+        border-bottom-left-radius: 0.375rem;
+        border-bottom-right-radius: 0.375rem;
+        font-size: 0.95rem;
+    }
+
+    .smnote-recommendation .ql-editor {
+        min-height: 250px;
     }
 </style>
 
@@ -138,19 +168,19 @@
         let currentServiceId = null;
         const recommendations = @json($recommendations);
 
-        // Inicializar Summernote en cada textarea
-        /*$('.smnote').each(function() {
-            $(this).summernote({
-                height: 300,
-                toolbar: [
-                    ['style', ['bold', 'italic', 'underline', 'clear']],
-                    ['font', ['strikethrough', 'superscript', 'subscript']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['insert', ['link', 'picture', 'video']],
-                    ['view', ['fullscreen', 'codeview', 'help']]
-                ]
-            });
-        });*/
+        function getRecommendationHtml(serviceId) {
+            if (typeof window.getRecommendationEditorHtml === 'function') {
+                return window.getRecommendationEditorHtml(serviceId);
+            }
+
+            return '';
+        }
+
+        function setRecommendationHtml(serviceId, html) {
+            if (typeof window.setRecommendationEditorHtml === 'function') {
+                window.setRecommendationEditorHtml(serviceId, html || '');
+            }
+        }
 
         // Abrir modal para agregar recomendaciones
         $('.add-recommendation-btn').click(function() {
@@ -176,7 +206,7 @@
             $('.recommendation-checkbox:checked').prop('checked', false);
         });
 
-        // Agregar recomendaciones seleccionadas al Summernote
+        // Agregar recomendaciones seleccionadas al editor
         $('#addSelectedRecommendations').click(function() {
             const selectedIndexes = [];
             $('.recommendation-checkbox:checked').each(function() {
@@ -184,7 +214,7 @@
             });
 
             if (selectedIndexes.length > 0 && currentServiceId) {
-                addRecommendationsToSummernote(currentServiceId, selectedIndexes);
+                addRecommendationsToEditor(currentServiceId, selectedIndexes);
                 $('#recommendationsModal').modal('hide');
                 $('.recommendation-checkbox:checked').prop('checked', false);
                 $('#searchRecommendations').val('');
@@ -206,13 +236,12 @@
         // Actualizar recomendaciones de un servicio específico
         $('.update-recommendations-btn').click(function() {
             const serviceId = $(this).data('service-id');
-            updateRecommendations(serviceId);
+            updateRecommendations(serviceId, false);
         });
 
-        // Función para agregar recomendaciones al Summernote
-        function addRecommendationsToSummernote(serviceId, indexes) {
-            const summernoteElement = $(`#summary-recs${serviceId}`);
-            let currentContent = summernoteElement.summernote('code');
+        // Función para agregar recomendaciones al editor
+        function addRecommendationsToEditor(serviceId, indexes) {
+            let currentContent = getRecommendationHtml(serviceId);
 
             // Crear el HTML de las nuevas recomendaciones
             let newRecommendationsHTML = '';
@@ -236,7 +265,7 @@
                     if (customList.length > 0) {
                         // Agregar al final de la lista existente
                         customList.append(newRecommendationsHTML);
-                        summernoteElement.summernote('code', tempDiv.html());
+                        setRecommendationHtml(serviceId, tempDiv.html());
                     }
                 } else {
                     // Crear nueva sección
@@ -247,38 +276,15 @@
                         ${newRecommendationsHTML}
                     </ol>
                 `;
-                    summernoteElement.summernote('code', currentContent + additionalSection);
+                    setRecommendationHtml(serviceId, currentContent + additionalSection);
                 }
 
                 updateHiddenField();
             }
         }
 
-        // Función para limpiar recomendaciones del Summernote - CORREGIDA
         function clearServiceRecommendations(serviceId) {
-            const summernoteElement = $(`#summary-recs${serviceId}`);
-            let currentContent = summernoteElement.summernote('code');
-
-            // Crear un elemento temporal para manipular el HTML
-            const tempDiv = $('<div>').html(currentContent);
-
-            // Remover la sección de recomendaciones adicionales
-            tempDiv.find('#custom-recommendations').closest('p').prev('p')
-                .remove(); // Remover <p><br></p> anterior
-            tempDiv.find('#custom-recommendations').closest('p').remove(); // Remover el párrafo del título
-            tempDiv.find('#custom-recommendations').remove(); // Remover la lista
-
-            // Actualizar el contenido de Summernote
-            summernoteElement.summernote('code', tempDiv.html());
-            updateHiddenField();
-
-            console.log('Recomendaciones limpiadas para el servicio:', serviceId);
-        }
-
-        // Función alternativa más robusta para limpiar recomendaciones
-        function clearServiceRecommendations(serviceId) {
-            const summernoteElement = $(`#summary-recs${serviceId}`);
-            let currentContent = summernoteElement.summernote('code');
+            let currentContent = getRecommendationHtml(serviceId);
 
             // Usar una expresión regular más precisa para remover la sección completa
             const cleanedContent = currentContent.replace(
@@ -299,9 +305,9 @@
                     recommendationsSection.next('ol').remove();
                 }
 
-                summernoteElement.summernote('code', tempDiv.html());
+                setRecommendationHtml(serviceId, tempDiv.html());
             } else {
-                summernoteElement.summernote('code', cleanedContent);
+                setRecommendationHtml(serviceId, cleanedContent);
             }
 
             updateHiddenField();
@@ -311,11 +317,10 @@
         function updateHiddenField() {
             const allRecommendations = [];
 
-            $('.card').each(function() {
-                const serviceId = $(this).find('.add-recommendation-btn').data('service-id');
+            $('.smnote-recommendation').each(function() {
+                const serviceId = $(this).data('service-id');
                 if (serviceId) {
-                    const summernoteElement = $(`#summary-recs${serviceId}`);
-                    const content = summernoteElement.summernote('code');
+                    const content = getRecommendationHtml(serviceId);
 
                     // Extraer las recomendaciones adicionales del contenido
                     const tempDiv = $('<div>').html(content);
@@ -337,21 +342,20 @@
             console.log('Recomendaciones guardadas:', allRecommendations);
         }
 
-        // Actualizar el campo hidden cuando cambie el contenido de Summernote
-        $('.smnote').on('summernote.change', function() {
-            updateHiddenField();
-        });
+        updateHiddenField();
 
         // Función para actualizar recomendaciones en el servidor
-        function updateRecommendations(serviceId) {
-            const summernoteElement = $(`#summary-recs${serviceId}`);
-            const recommendationsHtml = summernoteElement.summernote('code');
+        function updateRecommendations(serviceId, silent = false) {
+            const recommendationsHtml = getRecommendationHtml(serviceId);
+            const statusEl = $(`#autosave-status-recommendation-${serviceId}`);
 
             const recommendations = {
                 service_id: parseInt(serviceId),
                 text: recommendationsHtml,
                 order_id: parseInt($('#order-id').val()),
             };
+
+            statusEl.removeClass('is-saved is-error').addClass('is-saving').text('Guardando...');
 
             const csrfToken = $('meta[name="csrf-token"]').attr('content');
 
@@ -380,13 +384,20 @@
                 contentType: false,
                 success: function(response) {
                     if (response.success) {
-                        alert('Recomendaciones actualizadas correctamente!');
+                        statusEl.removeClass('is-saving is-error').addClass('is-saved').text('Guardado');
+                        if (!silent) {
+                            alert('Recomendaciones actualizadas correctamente!');
+                        }
                     } else {
-                        alert('Error al actualizar las recomendaciones: ' + response.message);
+                        statusEl.removeClass('is-saving is-saved').addClass('is-error').text('Error al guardar');
+                        if (!silent) {
+                            alert('Error al actualizar las recomendaciones: ' + response.message);
+                        }
                     }
                 },
                 error: function(xhr, status, error) {
                     let errorMsg = 'Error al actualizar las recomendaciones';
+                    statusEl.removeClass('is-saving is-saved').addClass('is-error').text('Error al guardar');
 
                     if (xhr.status === 403) {
                         errorMsg =
@@ -399,7 +410,9 @@
                         errorMsg += ': ' + error;
                     }
 
-                    alert(errorMsg);
+                    if (!silent) {
+                        alert(errorMsg);
+                    }
                 },
                 complete: function() {
                     // Ocultar spinner si existe la función

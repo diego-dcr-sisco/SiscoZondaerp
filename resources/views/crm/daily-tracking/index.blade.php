@@ -50,6 +50,10 @@
                                 }
                             </style>
 
+                            @include('components.page-header', [
+                                'title' => 'ACTIVIDADES DIARIAS',
+                                'icon' => 'bi-clock-history',
+                            ])
                             <div class="container-fluid font-small p-3">
 
                                 {{-- Tabs CRM --}}

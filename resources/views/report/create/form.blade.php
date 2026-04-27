@@ -107,10 +107,18 @@
         text-align: center;
     }
 
-    .note-editor .note-editable,
-    .note-editor .note-editable p {
+    .smnote .ql-editor,
+    .smnote .ql-editor p {
         font-size: 11pt !important;
         font-family: inherit;
+    }
+
+    .smnote .ql-container {
+        min-height: 250px;
+    }
+
+    .smnote .ql-editor {
+        min-height: 250px;
     }
 </style>
 
@@ -130,7 +138,7 @@
     <div class="row mb-4">
         <div class="col-6">
             <div class="card shadow">
-                <div class="card-header">
+                <div class="card-header bg-light text-dark fw-bold ">
                     Orden de servicio
                 </div>
                 <div class="card-body">
@@ -236,7 +244,7 @@
         </div>
         <div class="col-6">
             <div class="card shadow">
-                <div class="card-header">
+                <div class="card-header bg-light text-dark fw-bold">
                     Cliente
                 </div>
                 <div class="card-body">
@@ -300,103 +308,78 @@
         </div>
     </div>
 
-    <div class="accordion shadow mb-3" id="accordionReview">
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapseServices" aria-expanded="true" aria-controls="collapseServices">
-                    Servicios (Tratamientos)
-                </button>
-            </h2>
-            <div id="collapseServices" class="accordion-collapse collapse show" data-bs-parent="#accordionReview">
-                <div class="accordion-body">
-                    @include('report.create.services')
+    <div class="mb-3">
+        <div class="row g-3">
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-light text-dark fw-bold">Servicios</div>
+                    <div class="card-body">
+                        @include('report.create.services')
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapseDevices" aria-expanded="false" aria-controls="collapseDevices">
-                    Dispositivos
-                </button>
-            </h2>
-            <div id="collapseDevices" class="accordion-collapse collapse" data-bs-parent="#accordionReview">
-                <div class="accordion-body">
-                    @include('report.create.devices')
+
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-light text-dark fw-bold">Dispositivos</div>
+                    <div class="card-body">
+                        @include('report.create.devices')
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapseProducts" aria-expanded="false" aria-controls="collapseProducts">
-                    Productos
-                </button>
-            </h2>
-            <div id="collapseProducts" class="accordion-collapse collapse" data-bs-parent="#accordionReview">
-                <div class="accordion-body">
-                    @include('report.create.products')
+
+            <div class="col-12 col-lg-8">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-light text-dark fw-bold">Productos</div>
+                    <div class="card-body">
+                        @include('report.create.products')
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapsePests" aria-expanded="true" aria-controls="collapsePests">
-                    Plagas atacadas (Aplicación química)
-                </button>
-            </h2>
-            <div id="collapsePests" class="accordion-collapse collapse" data-bs-parent="#accordionReview">
-                <div class="accordion-body">
-                    @include('report.create.pests')
+
+            <div class="col-12 col-lg-4">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-light text-dark fw-bold">Plagas</div>
+                    <div class="card-body">
+                        @include('report.create.pests')
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapseNotes" aria-expanded="false" aria-controls="collapseNotes">
-                    Notas del cliente
-                </button>
-            </h2>
-            <div id="collapseNotes" class="accordion-collapse collapse" data-bs-parent="#accordionReview">
-                <div class="accordion-body">
-                    @include('report.create.notes')
+
+            <div class="col-12 col-lg-6">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-light text-dark fw-bold">Notas</div>
+                    <div class="card-body">
+                        @include('report.create.notes')
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapseEvidence" aria-expanded="false" aria-controls="collapseEvidence">
-                    Evidencia fotográfica
-                </button>
-            </h2>
-            <div id="collapseEvidence" class="accordion-collapse collapse" data-bs-parent="#accordionReview">
-                <div class="accordion-body">
-                    @include('report.create.evidence')
+
+            <div class="col-12 col-lg-6">
+                <div class="card shadow h-100">
+                    <div class="card-header bg-light text-dark fw-bold">Recomendaciones</div>
+                    <div class="card-body">
+                        @include('report.create.recommendations')
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="accordion-item">
-            <h2 class="accordion-header">
-                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                    data-bs-target="#collapseRecoms" aria-expanded="false" aria-controls="collapseRecoms">
-                    Recomendaciones
-                </button>
-            </h2>
-            <div id="collapseRecoms" class="accordion-collapse collapse" data-bs-parent="#accordionReview">
-                <div class="accordion-body">
-                    @include('report.create.recommendations')
+
+            <div class="col-12">
+                <div class="card shadow">
+                    <div class="card-header bg-light text-dark fw-bold">Evidencias fotográficas</div>
+                    <div class="card-body">
+                        @include('report.create.evidence')
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary my-3" id="generate-report-btn">
-        {{ __('buttons.generate') }}
-    </button>
+    <div class="report-generate-bar">
+        <button type="submit" class="btn btn-dark report-save-btn" id="generate-report-btn">
+            <i class="bi bi-file-earmark-pdf"></i> {{ __('buttons.generate') }}
+        </button>
+    </div>
     </div>
 </form>
 
@@ -456,281 +439,203 @@
     }
 
 
-    /*$(document).ready(function() {
-        $('.smnote').summernote({
-            height: 250,
-            lang: 'es-ES',
-            toolbar: [
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['insert', ['table', 'link']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['height', ['height']],
-                ['font', ['fontsize']],
-            ],
-            fontSize: ['8', '10', '12', '14', '16'],
-            lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
+    window.reportQuillEditors = window.reportQuillEditors || {};
 
-            callbacks: {
-                onPaste: function(e) {
-                    var thisNote = $(this);
-                    var updatePaste = function() {
-                        // Get the current HTML code FROM the Summernote editor
-                        var original = thisNote.summernote('code');
-                        var cleaned = cleanPaste(original);
-                        // Set the cleaned code BACK to the editor
-                        thisNote.summernote('code', cleaned);
-                    };
-                    // Wait for Summernote to process the paste
-                    setTimeout(updatePaste, 10);
-                },
+    function getEditorById(editorId) {
+        return window.reportQuillEditors[editorId] || null;
+    }
+
+    function getEditorHtmlById(editorId) {
+        const quill = getEditorById(editorId);
+
+        if (!quill) {
+            return '';
+        }
+
+        const html = quill.root.innerHTML;
+        return html === '<p><br></p>' ? '' : html;
+    }
+
+    function setEditorHtmlById(editorId, html) {
+        const quill = getEditorById(editorId);
+
+        if (!quill) {
+            return;
+        }
+
+        quill.clipboard.dangerouslyPasteHTML(html || '');
+    }
+
+    function getServiceEditorHtml(serviceId) {
+        return getEditorHtmlById(`service${serviceId}-text`);
+    }
+
+    function getNotesEditorHtml() {
+        return getEditorHtmlById('order-notes');
+    }
+
+    function getRecommendationEditorHtml(serviceId) {
+        return getEditorHtmlById(`summary-recs${serviceId}`);
+    }
+
+    function setRecommendationEditorHtml(serviceId, html) {
+        setEditorHtmlById(`summary-recs${serviceId}`, html);
+    }
+
+    window.getRecommendationEditorHtml = getRecommendationEditorHtml;
+    window.setRecommendationEditorHtml = setRecommendationEditorHtml;
+
+    $(document).ready(function() {
+        const quillToolbar = [
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            ['link', 'image'],
+            ['clean']
+        ];
+
+        $('.smnote').each(function() {
+            if (!this.id || window.reportQuillEditors[this.id]) {
+                return;
             }
 
+            const quill = new Quill(this, {
+                theme: 'snow',
+                modules: {
+                    toolbar: quillToolbar
+                }
+            });
+
+            window.reportQuillEditors[this.id] = quill;
+
+            quill.on('text-change', () => {
+                const autosaveType = $(this).data('autosave-type');
+                const serviceId = $(this).data('service-id');
+                $(document).trigger('quill-editor-change', [autosaveType, serviceId]);
+            });
         });
     });
-*/
-    $(document).ready(function() {
-        function forceFontSize(note, size = 11) {
-            const editable = note.next('.note-editor')
-                .find('.note-editable');
 
-            editable.css('font-size', size + 'pt');
-            note.summernote('fontSize', size);
-        }
+    function updateDescription(service_id) {
+        const rawHtml = getServiceEditorHtml(service_id);
+        const normalizedHtml = normalizeImageSizesForPdf(rawHtml);
 
-        function normalizeFontSize(html) {
-            html = html.replace(/font-size\s*:\s*[^;"]+;?/gi, '');
-            html = html.replace(/<span[^>]*>(.*?)<\/span>/gi, '$1');
-            return html;
-        }
-
-        function normalizeHtmlFromSummernote(html) {
-            if (!html) return '';
-
-            // 1. Decodificar entidades rotas (&nbsp;, &lt, etc.)
-            const textarea = document.createElement('textarea');
-            textarea.innerHTML = html;
-            html = textarea.value;
-
-            // 2. Eliminar caracteres invisibles (Word, BOM)
-            html = html.replace(/[\u0000-\u001F\u007F\u00A0\u200B-\u200F\uFEFF]/g, ' ');
-
-            // 3. Eliminar estilos y clases
-            html = html.replace(/\s*style="[^"]*"/gi, '');
-            html = html.replace(/\s*class="[^"]*"/gi, '');
-
-            // 4. Eliminar spans SIN romper texto
-            html = html.replace(/<\/?span[^>]*>/gi, '');
-
-            // 5. Quitar espacios antes de signos
-            html = html.replace(/\s+([,.!?;:])/g, '$1');
-
-            // 6. Asegurar espacio después de </b> </strong> </em>
-            html = html.replace(/<\/(b|strong|em|i)>(\S)/gi, '</$1> $2');
-
-            // 7. Compactar espacios múltiples
-            html = html.replace(/\s{2,}/g, ' ');
-
-            return html.trim();
-        }
-
-        function hasWordGarbage(html) {
-            const patterns = [
-                /&nbsp;/i,
-                /<span[^>]*>/i,
-                /mso-/i,
-                /font-family/i,
-                /font-size/i,
-                /[\u200B-\u200F\uFEFF]/, // caracteres invisibles
-                /[“”‘’]/, // comillas Word
-                /&[a-zA-Z]{1,6}(?!;)/ // entidades rotas (&ea &lt etc)
-            ];
-
-            return patterns.some(regex => regex.test(html));
-        }
-
-
-        let summernoteConfig = {
-            height: 250,
-            lang: 'es-ES',
-            fontSize: ['8', '10', '11', '12', '14', '16'],
-            lineHeights: ['0.5', '1', '1.5', '2'],
-            fontSizeUnit: 'pt',
-            toolbar: [
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['font', ['fontsize', 'fontname']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['height', ['height']],
-                ['insert', ['table', 'link', 'picture']],
-            ],
-            buttons: {
-                imageSizeCustom: function(context) {
-                    const ui = $.summernote.ui;
-
-                    return ui.button({
-                        contents: '<span class="note-icon-magic"></span>',
-                        tooltip: 'Tamaño personalizado',
-                        click: function() {
-                            const editable = context.layoutInfo.editable;
-                            const target = editable.data('target');
-
-                            if (!target || target[0].tagName !== 'IMG') {
-                                return;
-                            }
-
-                            const currentWidth = parseInt(target.css('width'), 10) ||
-                                parseInt(target.attr('width'), 10) || 100;
-
-                            const input = prompt(
-                                'Ingresa el ancho de la imagen (en px). Ejemplo: 320',
-                                currentWidth
-                            );
-
-                            if (input === null) {
-                                return;
-                            }
-
-                            const width = parseInt(input, 10);
-                            if (Number.isNaN(width) || width <= 0) {
-                                alert('Ingresa un valor valido mayor a 0.');
-                                return;
-                            }
-
-                            target.css({
-                                width: width + 'px',
-                                height: 'auto',
-                                maxWidth: '100%'
-                            });
-                            target.attr('width', width);
-                        }
-                    }).render();
-                }
-            },
-            popover: {
-                image: [
-                    ['imagesize', ['resizeFull', 'resizeHalf', 'resizeQuarter', 'imageSizeCustom']],
-                    ['float', ['floatLeft', 'floatRight', 'floatNone']],
-                    ['remove', ['removeMedia']]
-                ]
-            },
-            
-            // Configuración para imágenes en base64
-            maximumImageFileSize: 2048000, // 2MB en bytes (será convertido a base64)
-            
-            callbacks: {
-                onInit: function() {
-                    forceFontSize($(this), 11);
-                },
-
-                /*onPaste: function() {
-                    const note = $(this);
-
-                    setTimeout(() => {
-                        let content = note.summernote('code');
-
-                        if (hasWordGarbage(content)) {
-                            alert(
-                                '⚠️ El texto pegado contiene formato de Word.\n\n' +
-                                'Puede causar:\n' +
-                                '• Espacios extra\n' +
-                                '• Caracteres raros\n' +
-                                '• Problemas en el PDF\n\n' +
-                                'Recomendación:\n' +
-                                'Pegue como texto plano (Ctrl + Shift + V).'
-                            );
-                        }
-
-                        content = normalizeHtmlFromSummernote(content);
-                        note.summernote('code', content);
-                    }, 0);
-                },*/
-
-
-                onPaste: function(e) {
-                    e.preventDefault();
-
-                    let clipboardData = (e.originalEvent || e).clipboardData;
-                    let text = clipboardData.getData('text/html') || clipboardData.getData(
-                    'text/plain');
-
-                    // 🚨 Detectar basura de Word
-                    const wordRegex = /class="?Mso|style="[^"]*mso-|<!--\[if|<\/?o:|<\/?w:/i;
-                    const weirdChars = /[\u00A0\u200B\uFEFF]/g;
-
-                    if (wordRegex.test(text) || weirdChars.test(text)) {
-                        alert(
-                                '⚠️ El texto pegado contiene formato de Word.\n\n' +
-                                'Puede causar:\n' +
-                                '• Espacios extra\n' +
-                                '• Caracteres raros\n' +
-                                '• Problemas con el tamaño de letra\n' +
-                                '• Mal diseño en el PDF\n\n' +
-                                'Recomendación:\n' +
-                                'Pegue como texto plano (Ctrl + Shift + V).'
-                            );
-                    }
-
-                    // 🔥 LIMPIEZA REAL
-                    text = text
-                        // quitar caracteres invisibles
-                        .replace(/[\u00A0\u200B\uFEFF]/g, ' ')
-                        // quitar basura Word
-                        .replace(/class="?Mso.*?"/gi, '')
-                        .replace(/style="[^"]*"/gi, '')
-                        // arreglar <b>
-                        .replace(/\s*<b>\s*/gi, '<b>')
-                        .replace(/\s*<\/b>\s*/gi, '</b> ')
-                        // evitar </b>pegado
-                        .replace(/<\/b>(\S)/gi, '</b> $1')
-                        // compactar espacios
-                        .replace(/\s{2,}/g, ' ')
-                        .trim();
-
-                    // Insertar limpio
-                    document.execCommand('insertHTML', false, text);
-                }
-
-                /*onChange: function(contents) {
-                    const note = $(this);
-
-                    if (contents === '<p><br></p>' || contents === '') {
-                        setTimeout(() => forceFontSize(note, 11), 0);
-                    }
-                },*/
-
-                /*onKeydown: function() {
-                    const note = $(this);
-                    setTimeout(() => forceFontSize(note, 11), 0);
-                }*/
-            }
+        var description = {
+            service_id: parseInt(service_id),
+            text: normalizedHtml,
+            can_propagate: $(`#service${service_id}-can-propagate`).is(':checked'),
+            order_id: parseInt($('#order-id').val()),
         };
 
-        function initializeSummernote() {
-            if ($('.smnote').data('summernote')) {
-                $('.smnote').summernote('destroy');
-            }
-            $('.smnote').summernote(summernoteConfig);
+        var csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+        if (!csrfToken) {
+            alert('Error: No se encontró el token CSRF. Por favor, recarga la página.');
+            return;
         }
 
-        initializeSummernote();
-    });
+        var new_formdata = new FormData();
+        new_formdata.append('description', JSON.stringify(description));
+        new_formdata.append('_token', csrfToken);
 
-    function cleanPaste(html) {
-        // Elimina etiquetas no deseadas
-        html = html.replace(/<(script|style|iframe)[^>]*>.*?<\/\1>/gmi, '');
+        showSpinner();
 
-        // Elimina atributos de estilo
-        html = html.replace(/(<[^>]+) style=".*?"/gi, '$1');
+        $.ajax({
+            type: 'POST',
+            url: '/report/description/update',
+            data: new_formdata,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    alert('Descripción actualizada!');
+                } else {
+                    alert('Error al actualizar la descripción: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                var errorMsg = 'Error al actualizar la descripción';
 
-        // Elimina clases
-        html = html.replace(/(<[^>]+) class=".*?"/gi, '$1');
+                if (xhr.status === 403) {
+                    errorMsg =
+                        'Error 403: Acceso denegado. Tu sesión puede haber expirado. Por favor, recarga la página.';
+                } else if (xhr.status === 419) {
+                    errorMsg = 'Error 419: Token CSRF expirado. Por favor, recarga la página.';
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                } else {
+                    errorMsg += ': ' + error;
+                }
 
-        // Elimina otros atributos no deseados
-        html = html.replace(/(<[^>]+) [a-z\-]+=".*?"/gi, '$1');
+                alert(errorMsg);
+            },
+            complete: function() {
+                hideSpinner();
+            }
+        });
+    }
 
-        // Convierte divs y spans a párrafos cuando sea apropiado
-        html = html.replace(/<(\/)?(div|span)>/g, '<$1p>');
+    function updateNotes() {
+        var notesHtml = getNotesEditorHtml();
+        notesHtml = compressBase64Images(notesHtml);
 
-        return html;
+        var notes = {
+            text: notesHtml,
+            order_id: parseInt($('#order-id').val()),
+        };
+
+        var csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+        if (!csrfToken) {
+            alert('Error: No se encontró el token CSRF. Por favor, recarga la página.');
+            return;
+        }
+
+        var new_formdata = new FormData();
+        new_formdata.append('notes', JSON.stringify(notes));
+        new_formdata.append('_token', csrfToken);
+
+        showSpinner();
+
+        $.ajax({
+            type: 'POST',
+            url: '/report/notes/update',
+            data: new_formdata,
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+            },
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    $('#notes').val(notes.text);
+                    alert('Notas actualizada!');
+                } else {
+                    alert('Error al actualizar las notas: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                var errorMsg = 'Error al actualizar las notas';
+
+                if (xhr.status === 403) {
+                    errorMsg =
+                        'Error 403: Acceso denegado. Tu sesión puede haber expirado. Por favor, recarga la página.';
+                } else if (xhr.status === 419) {
+                    errorMsg = 'Error 419: Token CSRF expirado. Por favor, recarga la página.';
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMsg = xhr.responseJSON.message;
+                } else {
+                    errorMsg += ': ' + error;
+                }
+
+                alert(errorMsg);
+            },
+            complete: function() {
+                hideSpinner();
+            }
+        });
     }
 
     $(document).ready(function() {
@@ -754,7 +659,7 @@
             services.forEach(service => {
                 console.log($(`#service${service.id}-text`).val());
                 summaryData[service.id] = {
-                    recs: $(`#summary-recs${service.id}`).summernote('code'),
+                    recs: getRecommendationEditorHtml(service.id),
                 };
             });
 
@@ -795,4 +700,180 @@
             }
         });
     });
+</script>
+
+<script>
+    (function() {
+        const autosaveTimers = {};
+        const autosaveDelayMs = 1400;
+        let autosaveReady = false;
+
+        setTimeout(function() {
+            autosaveReady = true;
+        }, 2500);
+
+        function setAutosaveStatus(scope, state, text) {
+            const statusEl = $(scope);
+            if (!statusEl.length) {
+                return;
+            }
+
+            statusEl.removeClass('is-saving is-saved is-error');
+            if (state) {
+                statusEl.addClass(state);
+            }
+            if (text) {
+                statusEl.text(text);
+            }
+        }
+
+        function postSilent(url, payloadKey, payload, onSuccess, onError) {
+            const csrfToken = $('meta[name="csrf-token"]').attr('content');
+            if (!csrfToken) {
+                if (typeof onError === 'function') {
+                    onError('No se encontró el token CSRF');
+                }
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append(payloadKey, JSON.stringify(payload));
+            formData.append('_token', csrfToken);
+
+            $.ajax({
+                type: 'POST',
+                url: url,
+                data: formData,
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response && response.success) {
+                        if (typeof onSuccess === 'function') {
+                            onSuccess(response);
+                        }
+                    } else if (typeof onError === 'function') {
+                        onError((response && response.message) || 'Error de guardado');
+                    }
+                },
+                error: function(xhr) {
+                    let msg = 'Error de guardado';
+                    if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    if (typeof onError === 'function') {
+                        onError(msg);
+                    }
+                },
+            });
+        }
+
+        function autosaveServiceDescription(serviceId) {
+            const statusSelector = `#autosave-status-service-${serviceId}`;
+            setAutosaveStatus(statusSelector, 'is-saving', 'Guardando...');
+
+            const rawHtml = getServiceEditorHtml(serviceId);
+            const normalizedHtml = typeof normalizeImageSizesForPdf === 'function'
+                ? normalizeImageSizesForPdf(rawHtml)
+                : rawHtml;
+
+            const payload = {
+                service_id: parseInt(serviceId, 10),
+                text: normalizedHtml,
+                can_propagate: $(`#service${serviceId}-can-propagate`).is(':checked'),
+                order_id: parseInt($('#order-id').val(), 10),
+            };
+
+            postSilent('/report/description/update', 'description', payload,
+                function() {
+                    setAutosaveStatus(statusSelector, 'is-saved', 'Guardado automático');
+                },
+                function() {
+                    setAutosaveStatus(statusSelector, 'is-error', 'Error al guardar');
+                }
+            );
+        }
+
+        function autosaveNotes() {
+            const statusSelector = '#autosave-status-notes';
+            setAutosaveStatus(statusSelector, 'is-saving', 'Guardando...');
+
+            let notesHtml = getNotesEditorHtml();
+            if (typeof compressBase64Images === 'function') {
+                notesHtml = compressBase64Images(notesHtml);
+            }
+
+            const payload = {
+                text: notesHtml,
+                order_id: parseInt($('#order-id').val(), 10),
+            };
+
+            postSilent('/report/notes/update', 'notes', payload,
+                function() {
+                    $('#notes').val(notesHtml);
+                    setAutosaveStatus(statusSelector, 'is-saved', 'Guardado automático');
+                },
+                function() {
+                    setAutosaveStatus(statusSelector, 'is-error', 'Error al guardar');
+                }
+            );
+        }
+
+        function autosaveRecommendations(serviceId) {
+            const statusSelector = `#autosave-status-recommendation-${serviceId}`;
+            setAutosaveStatus(statusSelector, 'is-saving', 'Guardando...');
+
+            const recommendationsHtml = getRecommendationEditorHtml(serviceId);
+            const payload = {
+                service_id: parseInt(serviceId, 10),
+                text: recommendationsHtml,
+                order_id: parseInt($('#order-id').val(), 10),
+            };
+
+            postSilent('/report/recommendations/update', 'recommendations', payload,
+                function() {
+                    setAutosaveStatus(statusSelector, 'is-saved', 'Guardado automático');
+                },
+                function() {
+                    setAutosaveStatus(statusSelector, 'is-error', 'Error al guardar');
+                }
+            );
+        }
+
+        function queueAutosave(key, callback) {
+            clearTimeout(autosaveTimers[key]);
+            autosaveTimers[key] = setTimeout(callback, autosaveDelayMs);
+        }
+
+        $(document).on('quill-editor-change', function(event, autosaveType, serviceId) {
+            if (!autosaveReady) {
+                return;
+            }
+
+            if (autosaveType === 'notes') {
+                setAutosaveStatus('#autosave-status-notes', '', 'Cambios pendientes...');
+                queueAutosave('notes', autosaveNotes);
+                return;
+            }
+
+            if (autosaveType === 'service' && serviceId) {
+                const statusSelector = `#autosave-status-service-${serviceId}`;
+                setAutosaveStatus(statusSelector, '', 'Cambios pendientes...');
+                queueAutosave(`service-${serviceId}`, function() {
+                    autosaveServiceDescription(serviceId);
+                });
+                return;
+            }
+
+            if (autosaveType === 'recommendation' && serviceId) {
+                const statusSelector = `#autosave-status-recommendation-${serviceId}`;
+                setAutosaveStatus(statusSelector, '', 'Cambios pendientes...');
+                queueAutosave(`recommendation-${serviceId}`, function() {
+                    autosaveRecommendations(serviceId);
+                });
+            }
+        });
+    })();
 </script>

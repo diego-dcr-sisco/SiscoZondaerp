@@ -1,23 +1,10 @@
 @extends('layouts.app')
 @section('content')
+    @include('components.page-header', [
+        'title' => 'GRÁFICOS DE INCIDENTES',
+        'icon' => 'bi-graph-up',
+    ])
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center justify-content-between border-bottom ps-4 p-2">
-            <div class="d-flex align-items-center">
-                <!-- <a href="{{ route('order.index') }}" class="text-decoration-none pe-3">
-                                                                <i class="bi bi-arrow-left fs-4"></i>
-                                                            </a> -->
-                <a href="#" onclick="window.history.back(); return false;" class="text-decoration-none pe-3">
-                    <i class="bi bi-arrow-left fs-4"></i>
-                </a>
-                <span class="text-black fw-bold fs-4">
-                    Consultar Grafico
-                </span>
-            </div>
-            <div class="pe-4">
-                <button class="btn btn-dark btn-sm" id="generateReportBtn" onclick="exportAllChartsToPDF()">
-                    <span id="btnContent">
-                        <i class="bi bi-file-pdf-fill"></i> Generar Reporte
-                    </span>
                     <span id="btnLoading" style="display: none;">
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
                         Generando reporte...

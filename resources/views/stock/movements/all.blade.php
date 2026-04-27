@@ -8,7 +8,7 @@
         </div>
         <div class="m-3">
             <table class="table table-bordered table-hover table-sm align-middle caption-top">
-                <caption class="border rounded-top p-2 text-dark bg-light">
+                <caption class="border rounded-top p-2 text-dark bg-white">
                     <form action="{{ route('stock.movements.all' ) }}" method="GET">
                         @csrf
                         <div class="row">

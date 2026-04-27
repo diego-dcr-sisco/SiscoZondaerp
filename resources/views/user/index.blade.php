@@ -1,17 +1,16 @@
     @extends('layouts.app')
     @section('content')
+        @include('components.page-header', [
+            'title' => 'USUARIOS',
+            'icon' => 'bi-people',
+            'actionRoute' => route('user.create'),
+            'actionText' => __('user.title.create'),
+        ])
         <div class="container-fluid">
-            <div class="py-3">
-                @can('write_user')
-                    <a class="btn btn-primary btn-sm" href="{{ route('user.create') }}">
-                        <i class="bi bi-plus-lg fw-bold"></i> {{ __('user.title.create') }}
-                    </a>
-                @endcan
-            </div>
 
             <div class="table-responsive">
                 <table class="table table-sm table-bordered table-striped caption-top">
-                    <caption class="border rounded-top p-2 text-dark bg-light">
+                    <caption class="border rounded-top p-2 text-dark bg-white">
                         <form action="{{ route('user.search') }}" method="GET">
                             @csrf
                             <div class="row g-3 mb-0">

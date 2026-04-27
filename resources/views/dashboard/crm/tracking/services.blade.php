@@ -7,17 +7,11 @@
             'canceled' => 'Cancelado',
         ];
     @endphp
-
+    @include('components.page-header', [
+        'title' => 'ANALÍTICAS DE CLIENTE POR SERVICIOS',
+        'icon' => 'bi-bar-chart-line',
+    ])
     <div class="pb-2">
-        <ul class="nav fs-4 border-bottom mb-3">
-            <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="javascript:history.back()"><i
-                        class="bi bi-arrow-left"></i></a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link disabled text-black fw-bold" aria-current="page" href="#">ANALITICAS DE CLIENTE POR
-                    SERVICIOS </a>
-            </li>
         </ul>
 
         <div class="container-fluid">

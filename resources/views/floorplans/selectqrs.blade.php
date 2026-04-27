@@ -1,19 +1,14 @@
 @extends('layouts.app')
 @section('content')
+    @include('components.page-header', [
+        'title' => 'SELECCIÓN DE QR - PLANO ' . $floorplan->filename,
+        'icon' => 'bi-qr-code',
+    ])
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="#" onclick="history.back(); return false;"
-                class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                PLANO <span class="fs-5 fw-bold bg-warning p-1 rounded">{{ $floorplan->filename }}</span>
-            </span>
-        </div>
         <div class="m-3">
             <div class="table-responsive">
                 <table class="table table-bordered table-striped table-sm caption-top">
-                    <caption class="border rounded-top p-2 text-dark bg-light">
+                    <caption class="border rounded-top p-2 text-dark bg-white">
                         <form action="{{ route('floorplan.search.qr', ['id' => $floorplan->id]) }}" method="POST">
                             @csrf
                             <div class="row g-3 mb-0">

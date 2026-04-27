@@ -17,7 +17,7 @@
 
             <div class="table-responsive">
                 <table class="table table-bordered table-striped table-sm caption-top">
-                    <caption class="border rounded-top p-2 text-dark bg-light">
+                    <caption class="border rounded-top p-2 text-dark bg-white">
                         <form action="{{ route('invoices.customers') }}" method="GET">
                             @csrf
                             <div class="row g-3 mb-0">

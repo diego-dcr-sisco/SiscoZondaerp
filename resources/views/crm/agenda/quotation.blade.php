@@ -74,6 +74,10 @@
             font-size: 1.1em;
         }
     </style>
+    @include('components.page-header', [
+        'title' => 'COTIZACIONES',
+        'icon' => 'bi-receipt',
+    ])
     <div class="container-fluid font-small p-3">
         <ul class="nav nav-tabs mb-3">
             <li class="nav-item">

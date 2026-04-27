@@ -1,26 +1,10 @@
 @extends('layouts.app')
 @section('content')
+    @include('components.page-header', [
+        'title' => 'ESTADÍSTICAS DEL DISPOSITIVO ' . ($device->code ?? ''),
+        'icon' => 'bi-bar-chart-line',
+    ])
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center justify-content-between border-bottom ps-4 p-2">
-            <div class="d-flex align-items-center">
-                <a href="{{ route('floorplan.devices', ['id' => $device->floorplan_id, 'version' => $device->version]) }}"
-                    class="text-decoration-none pe-3">
-                    <i class="bi bi-arrow-left fs-4"></i>
-                </a>
-                <span class="text-black fw-bold fs-4">Estadísticas del dispositivo {{ $device->code ?? '' }}</span>
-            </div>
-            <div class="pe-4">
-                <button class="btn btn-dark btn-sm" id="generateReportBtn" onclick="exportAllChartsToPDF()">
-                    <span id="btnContent">
-                        <i class="bi bi-file-pdf-fill"></i> Generar Reporte
-                    </span>
-                    <span id="btnLoading" style="display: none;">
-                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                        Generando reporte...
-                    </span>
-                </button>
-            </div>
-        </div>
         <div class="row m-3">
             <div class="col-12">
                 <div class="border rounded shadow p-3">

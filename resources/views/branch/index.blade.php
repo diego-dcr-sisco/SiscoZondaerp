@@ -4,7 +4,7 @@
     $offset = ($branches->currentPage() - 1) * $branches->perPage();
 @endphp
     <div class="container-fluid p-0">
-        <div class="d-flex flex-wrap align-items-center justify-content-between border-bottom px-4 py-3 mb-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between border-bottom px-4 py-3 mb-3 bg-white">
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-diagram-3 fs-4 text-primary"></i>
                 <span class="text-black fw-bold fs-4 mb-0">SUCURSALES</span>

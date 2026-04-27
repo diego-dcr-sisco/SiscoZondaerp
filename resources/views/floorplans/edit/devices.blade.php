@@ -26,16 +26,11 @@
         $pointNames = [];
         $productNames = [];
     @endphp
+    @include('components.page-header', [
+        'title' => 'PLANO ' . $floorplan->filename,
+        'icon' => 'bi-map',
+    ])
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('customer.show.sede.floorplans', ['id' => $floorplan->customer_id]) }}"
-                class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                PLANO <span class="fs-5 fw-bold bg-warning p-1 rounded">{{ $floorplan->filename }}</span>
-            </span>
-        </div>
 
         @if (!$floorplan->service)
             <div class="alert alert-danger alert-dismissible fade show m-2" role="alert">

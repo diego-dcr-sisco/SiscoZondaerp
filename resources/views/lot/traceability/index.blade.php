@@ -11,7 +11,7 @@
     </div>
     <div class="table-responsive">
         <table class="table table-bordered table-striped table-sm">
-            <caption class="border rounded-top p-2 text-dark bg-light caption-top">
+            <caption class="border rounded-top p-2 text-dark bg-white caption-top">
                 <form action="{{ route('order.search') }}" method="GET">
                     @csrf
                     <div class="row g-3 mb-0">

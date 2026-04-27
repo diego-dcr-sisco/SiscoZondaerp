@@ -370,7 +370,7 @@
         <!-- Tabla de Resultados -->
         <div class="table-responsive table-scroll-container">
             <table class="table table-bordered table-striped table-sm">
-                <caption class="caption-top bg-light border px-2">
+                <caption class="caption-top bg-white border px-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <!-- Simbología de colores -->
                         <div class="d-flex align-items-center gap-3 flex-wrap">

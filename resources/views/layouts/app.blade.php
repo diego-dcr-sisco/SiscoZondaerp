@@ -20,6 +20,17 @@
 
     <!-- CDN -->
     @include('links.cdn')
+
+    <style>
+        body {
+            background-color: #f4f6f9;
+        }
+
+        .border.rounded.shadow,
+        .border.rounded.shadow-sm {
+            background-color: #fff;
+        }
+    </style>
 </head>
 
 <body class="m-0 d-flex flex-column" style="height: 100vh;">

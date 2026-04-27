@@ -1,5 +1,5 @@
 <table class="table table-sm table-bordered table-striped caption-top">
-                <caption class ="border rounded-top p-2 text-dark bg-light">
+                <caption class ="border rounded-top p-2 text-dark bg-white">
                     <form action="{{ route('quality.search') }}" method="GET">
                             @csrf
                             <div class="row g-3 mb-0">

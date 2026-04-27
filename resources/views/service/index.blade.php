@@ -3,18 +3,17 @@
 @php
     $offset = ($services->currentPage() - 1) * $services->perPage();
 @endphp
+    @include('components.page-header', [
+        'title' => 'SERVICIOS',
+        'icon' => 'bi-gear',
+        'actionRoute' => route('service.create'),
+        'actionText' => __('service.button.create'),
+    ])
     <div class="container-fluid">
-        <div class="py-3">
-            @can('write_customer')
-                <a class="btn btn-primary btn-sm" href="{{ route('service.create') }}">
-                    <i class="bi bi-plus-lg fw-bold"></i> {{ __('service.button.create') }}
-                </a>
-            @endcan
-        </div>
 
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-sm">
-                <caption class="border rounded-top p-2 text-dark bg-light caption-top">
+                <caption class="border rounded-top p-2 text-dark bg-white caption-top">
                     <form action="{{ route('service.search') }}" method="GET">
                         @csrf
                         <div class="row g-3 mb-0">

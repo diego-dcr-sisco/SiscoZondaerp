@@ -1,5 +1,5 @@
 <table class="table table-bordered table-striped table-hover table-sm mb-0 align-middle">
-    <caption class="px-3 py-2 text-dark bg-light border-bottom caption-top">
+    <caption class="px-3 py-2 text-dark bg-white border-bottom caption-top">
         Lista de sucursales registradas
     </caption>
     <thead>

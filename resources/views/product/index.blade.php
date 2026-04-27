@@ -1,22 +1,16 @@
 @extends('layouts.app')
 @section('content')
+    @include('components.page-header', [
+        'title' => 'PRODUCTOS',
+        'icon' => 'bi-box-seam',
+        'actionRoute' => route('product.create'),
+        'actionText' => 'Crear producto',
+    ])
     <div class="container-fluid">
-        <div class="d-flex align-items-center border-bottom p-2">
-            <span class="text-black fw-bold fs-4">
-                PRODUCTOS
-            </span>
-        </div>
-        <div class="py-3">
-            @can('write_product')
-                <a class="btn btn-primary btn-sm" href="{{ route('product.create') }}">
-                    <i class="bi bi-plus-lg fw-bold"></i> Crear producto 
-                </a>
-            @endcan
-        </div>
-        
+
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-sm">
-                <caption class="border rounded-top p-2 text-dark bg-light caption-top">
+                <caption class="border rounded-top p-2 text-dark bg-white caption-top">
                     <form action="{{ route('product.index') }}" method="GET">
                         @csrf
                         <div class="row g-3 mb-0">

@@ -20,7 +20,7 @@
                 </div>
             </div>
             <table class="table table-bordered table-striped table-sm caption-top">
-                <caption class="border rounded-top p-2 text-dark bg-light">
+                <caption class="border rounded-top p-2 text-dark bg-white">
                     <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
                         data-bs-target="#trackingModal"><i class="bi bi-calendar-fill"></i> Programar fecha(s)</button>
                 </caption>
