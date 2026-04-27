@@ -357,6 +357,8 @@
                                                 <th>Cotizado</th>
                                                 <th>Cerrado</th>
                                                 <th>Monto</th>
+                                                <th>Facturado</th>
+                                                <th>Monto Facturado</th>
                                                 <th>Fecha servicio</th>
                                                 <th>Creado</th>
                                                 <th></th>
@@ -396,6 +398,15 @@
                                                     <td>{{ $quotedLabel }}</td>
                                                     <td>{{ $closedLabel }}</td>
                                                     <td>{{ $amount ? '$' . number_format((float) $amount, 2) : '-' }}</td>
+                                                    <td>
+                                                        @php
+                                                            $invoiceValue = $item->invoice?->value ?? $item->invoice;
+                                                            $invoiceBadgeClass = $invoiceValue === 'yes' ? 'text-bg-success' : ($invoiceValue === 'no' ? 'text-bg-danger' : 'text-bg-secondary');
+                                                            $invoiceLabel = $item->invoice?->label() ?? $invoiceValue ?? '-';
+                                                        @endphp
+                                                        <span class="badge {{ $invoiceBadgeClass }}">{{ $invoiceLabel }}</span>
+                                                    </td>
+                                                    <td>{{ $item->billed_amount ? '$' . number_format((float) $item->billed_amount, 2) : '-' }}</td>
                                                     <td>{{ optional($item->service_date)->format('d/m/Y') ?? '-' }}</td>
                                                     <td>{{ optional($item->created_at)->format('d/m/Y H:i') ?? '-' }}</td>
                                                     <td class="py-2 px-2">
