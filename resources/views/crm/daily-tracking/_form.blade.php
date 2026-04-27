@@ -12,7 +12,7 @@
 
     $quotedValue = old('quoted', $quotedCurrent ?? 'pending');
     $closedValue = old('closed', $closedCurrent ?? 'pending');
-    $invoiceValue = old('invoice', $invoiceCurrent ?? 'not_applicable');
+    $invoiceValue = old('invoice', $invoiceCurrent ?? 'no');
     $hasCoverage = (bool) old('has_not_coverage', data_get($model, 'has_not_coverage', false));
 @endphp
 
@@ -259,6 +259,19 @@
             @enderror
         </div>
 
+        <div class="col-md-4" x-show="quoted === 'yes'">
+            <label class="form-label fw-semibold mb-1">Monto cotizado</label>
+            <div class="input-group input-group-sm">
+                <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                <input type="number" step="0.01" min="0" name="quoted_amount"
+                    class="form-control form-control-sm @error('quoted_amount') is-invalid @enderror"
+                    value="{{ old('quoted_amount', data_get($model, 'quoted_amount')) }}">
+            </div>
+            @error('quoted_amount')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+
         <div class="col-md-4">
             <label class="form-label fw-semibold mb-1">Cerrado *</label>
             <div class="input-group input-group-sm">
@@ -276,15 +289,19 @@
             @enderror
         </div>
 
-        <div class="col-md-4" x-show="quoted === 'yes'">
-            <label class="form-label fw-semibold mb-1">Monto cotizado</label>
+        <div class="col-md-4">
+            <label class="form-label fw-semibold mb-1">Facturado *</label>
             <div class="input-group input-group-sm">
-                <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
-                <input type="number" step="0.01" min="0" name="quoted_amount"
-                    class="form-control form-control-sm @error('quoted_amount') is-invalid @enderror"
-                    value="{{ old('quoted_amount', data_get($model, 'quoted_amount')) }}">
+                <span class="input-group-text"><i class="bi bi-file-earmark-text-fill"></i></span>
+                <select name="invoice" x-model="invoice" class="form-select form-select-sm @error('invoice') is-invalid @enderror" required>
+                    @foreach ($invoiceOptions as $option)
+                        <option value="{{ $option->value }}" @selected(old('invoice', data_get($model, 'invoice.value') ?? data_get($model, 'invoice')) === $option->value)>
+                            {{ $option->label() }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
-            @error('quoted_amount')
+            @error('invoice')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
@@ -316,23 +333,6 @@
                 </select>
             </div>
             @error('payment_method')
-                <div class="invalid-feedback">{{ $message }}</div>
-            @enderror
-        </div>
-
-        <div class="col-md-4">
-            <label class="form-label fw-semibold mb-1">Factura *</label>
-            <div class="input-group input-group-sm">
-                <span class="input-group-text"><i class="bi bi-file-earmark-text-fill"></i></span>
-                <select name="invoice" x-model="invoice" class="form-select form-select-sm @error('invoice') is-invalid @enderror" required>
-                    @foreach ($invoiceOptions as $option)
-                        <option value="{{ $option->value }}" @selected(old('invoice', data_get($model, 'invoice.value') ?? data_get($model, 'invoice')) === $option->value)>
-                            {{ $option->label() }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-            @error('invoice')
                 <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
