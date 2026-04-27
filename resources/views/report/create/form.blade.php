@@ -568,13 +568,14 @@
 
     // Fuera del document ready
     var Size = Quill.import('attributors/style/size');
-    Size.whitelist = ['10px', '12px', '14px', '16px', '18px', '24px', '32px'];
+    Size.whitelist = ['small', 'large', 'huge'];
     Quill.register(Size, true);
+
 
     $(document).ready(function() {
         const quillToolbar = [
             [{
-                'size': ['10px', '12px', '14px', '16px', '18px', '24px', '32px']
+                'size': ['small', false, 'large', 'huge']
             }],
             ['bold', 'italic', 'underline', 'strike'],
             [{
