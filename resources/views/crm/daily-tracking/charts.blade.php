@@ -82,7 +82,7 @@
             <div class="row g-3 align-items-start">
                 <div class="col-12 col-lg-4 col-xl-3">
                     <form method="GET" action="{{ route('crm.daily-tracking.charts') }}" class="filters-card d-flex flex-column gap-3">
-                        <div class="border p-3 text-dark rounded bg-light">
+                        <div class="border p-3 text-dark rounded bg-white shadow-sm">
                             <div class="row g-2 align-items-end">
                                 <div class="col-12">
                                     <h6 class="mb-1">Visualizacion</h6>
