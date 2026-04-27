@@ -354,7 +354,7 @@ class DailyTrackingController extends Controller
             'Domestico',
             'Comercial',
             'Industrial',
-            'Clientes comerciales nuevos',
+            //'Clientes comerciales nuevos',
         ];
 
         foreach ($dateRanges as $index => $range) {
@@ -383,9 +383,9 @@ class DailyTrackingController extends Controller
                 $daily_trackings->where('customer_type', 'domestico')->count(), // Domestico
                 $daily_trackings->where('customer_type', 'comercial')->count(), // Comercial
                 $daily_trackings->where('customer_type', 'industrial')->count(), // Industrial
-                $daily_trackings->where('customer_type', 'comercial')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes comerciales nuevos
-                $daily_trackings->where('customer_type', 'industrial')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes industriales nuevos
-                $daily_trackings->where('customer_type', 'domestico')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes domésticos nuevos
+                //$daily_trackings->where('customer_type', 'comercial')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes comerciales nuevos
+                //$daily_trackings->where('customer_type', 'industrial')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes industriales nuevos
+                //$daily_trackings->where('customer_type', 'domestico')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes domésticos nuevos
             ];
         }
 
