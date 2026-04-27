@@ -13,7 +13,7 @@
     $quotedValue = old('quoted', $quotedCurrent ?? 'pending');
     $closedValue = old('closed', $closedCurrent ?? 'pending');
     $invoiceValue = old('invoice', $invoiceCurrent ?? 'not_applicable');
-    $hasCoverage = (bool) old('has_coverage', data_get($model, 'has_coverage', false));
+    $hasCoverage = (bool) old('has_not_coverage', data_get($model, 'has_not_coverage', false));
 @endphp
 
 <style>
@@ -202,11 +202,11 @@
         </div>
 
         <div class="col-md-3">
-            <input type="hidden" name="has_coverage" value="0">
+            <input type="hidden" name="has_not_coverage" value="0">
             <div class="form-check form-switch mt-2">
-                <input class="form-check-input" type="checkbox" id="has_coverage" name="has_coverage" value="1"
-                    @checked(old('has_coverage', data_get($model, 'has_coverage'))) x-model="hasCoverage">
-                <label class="form-check-label" for="has_coverage">Tiene cobertura</label>
+                <input class="form-check-input" type="checkbox" id="has_not_coverage" name="has_not_coverage" value="1"
+                    @checked(old('has_not_coverage', data_get($model, 'has_not_coverage'))) x-model="hasCoverage">
+                <label class="form-check-label" for="has_not_coverage">Sin cobertura</label>
             </div>
         </div>
 

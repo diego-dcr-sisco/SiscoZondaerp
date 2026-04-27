@@ -22,7 +22,7 @@ return new class extends Migration {
             $table->boolean('responded')->default(false);
             $table->string('quoted')->default('pending');
             $table->string('closed')->default('pending');
-            $table->boolean('has_coverage')->default(false);
+            $table->boolean('has_not_coverage')->default(false);
             $table->decimal('quoted_amount', 12, 2)->nullable();
             $table->decimal('billed_amount', 12, 2)->nullable();
             $table->string('payment_method')->nullable();

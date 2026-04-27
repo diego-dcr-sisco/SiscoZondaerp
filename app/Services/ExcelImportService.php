@@ -209,7 +209,7 @@ class ExcelImportService
             'is_recurrent' => 'is_recurrent',
             'quoted' => 'quoted',
             'closed' => 'closed',
-            'has_coverage' => 'has_coverage',
+            'has_not_coverage' => 'has_not_coverage',
             'quoted_amount' => 'quoted_amount',
             'billed_amount' => 'billed_amount',
             'payment_method' => 'payment_method',
@@ -247,7 +247,7 @@ class ExcelImportService
             'observaciones' => 'notes',
             'hora' => 'service_time',
             'domicilio' => 'address',
-            'concenso' => 'has_coverage',
+            'concenso' => 'has_not_coverage',
             'factura' => 'invoice',
             'metodo_pago' => 'payment_method',
         ];
@@ -287,7 +287,7 @@ class ExcelImportService
                 $mapped['invoice'] = $this->normalizeInvoice($mapped['invoice'] ?? null) ?? 'not_applicable';
                 $mapped['responded'] = $this->toBoolean($mapped['responded'] ?? false);
                 $mapped['is_recurrent'] = $this->toBoolean($mapped['is_recurrent'] ?? false);
-                $mapped['has_coverage'] = $this->toBoolean($mapped['has_coverage'] ?? false);
+                $mapped['has_not_coverage'] = $this->toBoolean($mapped['has_not_coverage'] ?? false);
 
                 if (empty($mapped['contact_method'])) {
                     $mapped['contact_method'] = 'llamada';
@@ -430,7 +430,7 @@ class ExcelImportService
             'closed' => 'pending',
             'responded' => false,
             'is_recurrent' => false,
-            'has_coverage' => false,
+            'has_not_coverage' => false,
             'notes' => $mappedProspect['close_reason'] ?? null,
         ];
 

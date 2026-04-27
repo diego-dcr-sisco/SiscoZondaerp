@@ -1069,7 +1069,7 @@
                                         }))
                                     }
 
-                                    const hasCoverage = form.querySelector('[name="has_coverage"][type="checkbox"]')
+                                    const hasCoverage = form.querySelector('[name="has_not_coverage"][type="checkbox"]')
                                     if (hasCoverage) {
                                         hasCoverage.checked = true
                                         hasCoverage.dispatchEvent(new Event('change', {

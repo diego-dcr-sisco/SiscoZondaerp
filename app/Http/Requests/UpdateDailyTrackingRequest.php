@@ -37,7 +37,7 @@ class UpdateDailyTrackingRequest extends FormRequest
             'is_recurrent' => ['nullable', 'boolean'],
             'quoted' => ['required', new Enum(DailyTrackingQuoted::class)],
             'closed' => ['required', new Enum(DailyTrackingClosed::class)],
-            'has_coverage' => ['nullable', 'boolean'],
+            'has_not_coverage' => ['nullable', 'boolean'],
             'quoted_amount' => ['nullable', 'decimal:0,2'],
             'billed_amount' => ['nullable', 'decimal:0,2'],
             'payment_method' => ['nullable', new Enum(DailyTrackingPaymentMethod::class)],
@@ -60,7 +60,7 @@ class UpdateDailyTrackingRequest extends FormRequest
         $this->merge([
             'responded' => $this->boolean('responded'),
             'is_recurrent' => $this->boolean('is_recurrent'),
-            'has_coverage' => $this->boolean('has_coverage'),
+            'has_not_coverage' => $this->boolean('has_not_coverage'),
             'quoted_amount' => $this->input('quoted_amount') !== '' ? $this->input('quoted_amount') : null,
             'billed_amount' => $this->input('billed_amount') !== '' ? $this->input('billed_amount') : null,
             'payment_method' => $this->input('payment_method') !== '' ? $this->input('payment_method') : null,

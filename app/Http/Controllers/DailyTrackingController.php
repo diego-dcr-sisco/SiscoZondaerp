@@ -293,7 +293,7 @@ class DailyTrackingController extends Controller
             ->selectRaw('COUNT(*) as total_clients')
             ->selectRaw("SUM(CASE WHEN responded = 1 THEN 1 ELSE 0 END) as total_responded")
             ->selectRaw("SUM(CASE WHEN quoted = 'yes' THEN 1 ELSE 0 END) as total_quoted")
-            ->selectRaw("SUM(CASE WHEN has_coverage = 0 THEN 1 ELSE 0 END) as no_coverage")
+            ->selectRaw("SUM(CASE WHEN has_not_coverage = 1 THEN 1 ELSE 0 END) as no_coverage")
             ->selectRaw("SUM(CASE WHEN closed = 'yes' THEN 1 ELSE 0 END) as total_closed")
             ->selectRaw('SUM(COALESCE(quoted_amount, 0)) as total_quoted_amount')
             ->selectRaw("SUM(CASE WHEN closed = 'yes' THEN COALESCE(billed_amount, 0) ELSE 0 END) as total_closed_amount")
@@ -303,7 +303,7 @@ class DailyTrackingController extends Controller
             ->selectRaw("SUM(CASE WHEN customer_type = 'comercial' THEN 1 ELSE 0 END) as commercial")
             ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' THEN 1 ELSE 0 END) as industrial")
             ->selectRaw("SUM(CASE WHEN customer_type = 'comercial' THEN 1 ELSE 0 END) as new_commercial_clients")
-            ->selectRaw("SUM(CASE WHEN closed = 'yes' AND invoice = 'yes' THEN 1 ELSE 0 END) as total_invoiced")
+            ->selectRaw("SUM(CASE WHEN closed = 'yes' AND invoice = 'yes' AND COALESCE(billed_amount, 0) > 0 THEN 1 ELSE 0 END) as total_invoiced")
             ->groupBy('period')
             ->orderBy('period')
             ->tap(function ($query) use ($contactMethodConfig) {

@@ -107,8 +107,8 @@ class DailyTrackingImport implements
         'se_cotizo'                   => 'quoted',
         'cotizo'                      => 'quoted',
         'se_cerro_el_servicio'        => 'closed',
-        'tiene_cobertura'             => 'has_coverage',
-        'cobertura'                   => 'has_coverage',
+        'tiene_cobertura'             => 'has_not_coverage',
+        'cobertura'                   => 'has_not_coverage',
         'monto_cotizado'              => 'quoted_amount',
         'monto_facturado'             => 'billed_amount',
         // payment_method — se normaliza a mayúsculas para WithValidation
@@ -271,7 +271,7 @@ class DailyTrackingImport implements
         $normalized['is_recurrent'] = $this->toBool($normalized['is_recurrent'] ?? null);
         $normalized['quoted']       = $this->toBool($normalized['quoted'] ?? null);
         $normalized['closed']       = $this->toBool($normalized['closed'] ?? null);
-        $normalized['has_coverage'] = $this->toBool($normalized['has_coverage'] ?? null);
+        $normalized['has_not_coverage'] = $this->toBool($normalized['has_not_coverage'] ?? null);
 
         // Decimals (limpia $, comas de miles)
         $normalized['quoted_amount'] = $this->toDecimal($normalized['quoted_amount'] ?? null);
@@ -337,8 +337,8 @@ class DailyTrackingImport implements
         $isRecurrent = $m['is_recurrent']
             || DailyTracking::where('customer_name', $m['customer_name'])->exists();
 
-        // ── Regla: has_coverage — desde estado si no vino del Excel ───────────
-        $hasCoverage = $m['has_coverage'] || $this->deriveCoverage($state);
+        // ── Regla: has_not_coverage — desde estado si no vino del Excel ───────────
+        $hasCoverage = $m['has_not_coverage'] || $this->deriveCoverage($state);
 
         // ── Regla: quote_sent_date — si cotizó y no hay fecha: service_date -2d
         $quoteSentDate = $m['quote_sent_date'];
@@ -378,7 +378,7 @@ class DailyTrackingImport implements
             'is_recurrent'      => $isRecurrent,
             'quoted'            => $quotedEnum,
             'closed'            => $closedEnum,
-            'has_coverage'      => $hasCoverage,
+            'has_not_coverage'      => $hasCoverage,
             'quoted_amount'     => $m['quoted_amount'],
             'billed_amount'     => $m['billed_amount'],
             'payment_method'    => $paymentMethodEnum,
@@ -442,7 +442,7 @@ class DailyTrackingImport implements
             'is_recurrent'      => ['nullable', 'boolean'],
             'quoted'            => ['nullable', 'boolean'],
             'closed'            => ['nullable', 'boolean'],
-            'has_coverage'      => ['nullable', 'boolean'],
+            'has_not_coverage'      => ['nullable', 'boolean'],
         ];
     }
 
@@ -565,7 +565,7 @@ class DailyTrackingImport implements
     }
 
     /**
-     * Deriva has_coverage verificando si el estado está en la lista cubierta.
+     * Deriva has_not_coverage verificando si el estado está en la lista cubierta.
      */
     private function deriveCoverage(?string $state): bool
     {
