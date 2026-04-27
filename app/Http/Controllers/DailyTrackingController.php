@@ -38,13 +38,13 @@ class DailyTrackingController extends Controller
     {
         $navigation = $this->navigation();
         $perPage = (int) $request->integer('per_page', 15);
-        if (! in_array($perPage, [15, 25, 50, 100], true)) {
+        if (!in_array($perPage, [15, 25, 50, 100], true)) {
             $perPage = 15;
         }
 
         $sortableColumns = ['service_date', 'customer_name', 'status', 'created_at'];
         $sort = $request->get('sort', 'created_at');
-        if (! in_array($sort, $sortableColumns, true)) {
+        if (!in_array($sort, $sortableColumns, true)) {
             $sort = 'created_at';
         }
 
@@ -89,9 +89,9 @@ class DailyTrackingController extends Controller
         $contactDatasets = ['google' => [], 'pagina' => [], 'llamada' => [], 'cambaceo' => []];
         foreach ($contactRows as $row) {
             $contactPeriods[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
-            $contactDatasets['google'][]   = (int) $row->google;
-            $contactDatasets['pagina'][]   = (int) $row->pagina;
-            $contactDatasets['llamada'][]  = (int) $row->llamada;
+            $contactDatasets['google'][] = (int) $row->google;
+            $contactDatasets['pagina'][] = (int) $row->pagina;
+            $contactDatasets['llamada'][] = (int) $row->llamada;
             $contactDatasets['cambaceo'][] = (int) $row->cambaceo;
         }
 
@@ -110,8 +110,8 @@ class DailyTrackingController extends Controller
         $amountsDatasets = ['domestico' => [], 'comercial' => [], 'industrial' => []];
         foreach ($amountsRows as $row) {
             $amountsPeriods[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
-            $amountsDatasets['domestico'][]  = round((float) $row->domestico, 2);
-            $amountsDatasets['comercial'][]  = round((float) $row->comercial, 2);
+            $amountsDatasets['domestico'][] = round((float) $row->domestico, 2);
+            $amountsDatasets['comercial'][] = round((float) $row->comercial, 2);
             $amountsDatasets['industrial'][] = round((float) $row->industrial, 2);
         }
 
@@ -130,8 +130,8 @@ class DailyTrackingController extends Controller
         $clientsDatasets = ['domestico' => [], 'comercial' => [], 'industrial' => []];
         foreach ($clientsRows as $row) {
             $clientsPeriods[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
-            $clientsDatasets['domestico'][]  = (int) $row->domestico;
-            $clientsDatasets['comercial'][]  = (int) $row->comercial;
+            $clientsDatasets['domestico'][] = (int) $row->domestico;
+            $clientsDatasets['comercial'][] = (int) $row->comercial;
             $clientsDatasets['industrial'][] = (int) $row->industrial;
         }
 
@@ -143,14 +143,14 @@ class DailyTrackingController extends Controller
             ->orderByDesc('total')
             ->limit(10)
             ->pluck('service_id')
-            ->map(fn ($id) => (int) $id)
+            ->map(fn($id) => (int) $id)
             ->values()
             ->all();
 
         $topServicesPeriods = [];
         $topServicesDatasets = [];
 
-        if (! empty($topServiceIds)) {
+        if (!empty($topServiceIds)) {
             $topServiceRows = $this->buildFilteredQuery($request)
                 ->whereIn('service_id', $topServiceIds)
                 ->whereNotNull('created_at')
@@ -194,7 +194,7 @@ class DailyTrackingController extends Controller
             }
 
             $topServicesPeriods = array_map(
-                fn (string $period) => $this->formatChartPeriodLabel($period, $periodDivision),
+                fn(string $period) => $this->formatChartPeriodLabel($period, $periodDivision),
                 $topServicesPeriods
             );
         }
@@ -217,19 +217,19 @@ class DailyTrackingController extends Controller
         $conversionDatasets = ['domestico' => [], 'comercial' => [], 'industrial' => []];
         foreach ($conversionRows as $row) {
             $conversionPeriods[] = $this->formatChartPeriodLabel((string) $row->period, $periodDivision);
-            
+
             // Domestico
             $domesticoQuoted = (int) $row->domestico_quoted;
             $domesticoClosed = (int) $row->domestico_closed;
             $domesticoRate = $domesticoQuoted > 0 ? round(($domesticoClosed / $domesticoQuoted) * 100, 2) : 0;
             $conversionDatasets['domestico'][] = $domesticoRate;
-            
+
             // Comercial
             $comercialQuoted = (int) $row->comercial_quoted;
             $comercialClosed = (int) $row->comercial_closed;
             $comercialRate = $comercialQuoted > 0 ? round(($comercialClosed / $comercialQuoted) * 100, 2) : 0;
             $conversionDatasets['comercial'][] = $comercialRate;
-            
+
             // Industrial
             $industrialQuoted = (int) $row->industrial_quoted;
             $industrialClosed = (int) $row->industrial_closed;
@@ -238,28 +238,102 @@ class DailyTrackingController extends Controller
         }
 
         return view('crm.daily-tracking.charts', array_merge($this->formData(), [
-            'contactPeriods'  => $contactPeriods,
+            'contactPeriods' => $contactPeriods,
             'contactDatasets' => $contactDatasets,
-            'amountsPeriods'  => $amountsPeriods,
+            'amountsPeriods' => $amountsPeriods,
             'amountsDatasets' => $amountsDatasets,
-            'clientsPeriods'  => $clientsPeriods,
+            'clientsPeriods' => $clientsPeriods,
             'clientsDatasets' => $clientsDatasets,
             'topServicesPeriods' => $topServicesPeriods,
             'topServicesDatasets' => $topServicesDatasets,
-            'conversionPeriods'  => $conversionPeriods,
+            'conversionPeriods' => $conversionPeriods,
             'conversionDatasets' => $conversionDatasets,
-            'chartType'            => $chartType,
-            'chartView'            => $chartView,
-            'periodDivision'       => $periodDivision,
-            'periodDivisionLabel'  => $periodConfig['label'],
+            'chartType' => $chartType,
+            'chartView' => $chartView,
+            'periodDivision' => $periodDivision,
+            'periodDivisionLabel' => $periodConfig['label'],
             'statusOptions' => DailyTrackingStatus::cases(),
         ]));
     }
 
+    private function splitDateRangeIntoPeriods(string $dateRange, string $groupBy): array
+    {
+        $parts = explode(' - ', $dateRange);
+        if (count($parts) !== 2) {
+            return [];
+        }
+
+        $start = Carbon::createFromFormat('d/m/Y', trim($parts[0]))->startOfDay();
+        $end = Carbon::createFromFormat('d/m/Y', trim($parts[1]))->endOfDay();
+
+        $periods = [];
+        $cursor = $start->copy();
+
+        while ($cursor->lte($end)) {
+            switch ($groupBy) {
+                case 'day':
+                    $periodStart = $cursor->copy();
+                    $periodEnd = $cursor->copy()->endOfDay();
+                    $cursor->addDay();
+                    break;
+
+                case 'week':
+                    // Inicio real: el lunes de la semana ISO, pero no antes del $start
+                    $periodStart = $cursor->copy()->startOfISOWeek();
+                    if ($periodStart->lt($start)) {
+                        $periodStart = $start->copy();
+                    }
+                    // Fin real: el domingo de esa semana, pero no después del $end
+                    $periodEnd = $cursor->copy()->endOfISOWeek();
+                    if ($periodEnd->gt($end)) {
+                        $periodEnd = $end->copy();
+                    }
+                    $cursor = $cursor->endOfISOWeek()->addDay(); // saltar al lunes siguiente
+                    break;
+
+                case 'month':
+                    $periodStart = $cursor->copy()->startOfMonth();
+                    if ($periodStart->lt($start)) {
+                        $periodStart = $start->copy();
+                    }
+                    $periodEnd = $cursor->copy()->endOfMonth();
+                    if ($periodEnd->gt($end)) {
+                        $periodEnd = $end->copy();
+                    }
+                    $cursor = $cursor->endOfMonth()->addDay();
+                    break;
+
+                case 'year':
+                    $periodStart = $cursor->copy()->startOfYear();
+                    if ($periodStart->lt($start)) {
+                        $periodStart = $start->copy();
+                    }
+                    $periodEnd = $cursor->copy()->endOfYear();
+                    if ($periodEnd->gt($end)) {
+                        $periodEnd = $end->copy();
+                    }
+                    $cursor = $cursor->endOfYear()->addDay();
+                    break;
+
+                default:
+                    break 2;
+            }
+
+            $periods[] = [
+                'label' => $periodStart->format('d/m/Y') . ' - ' . $periodEnd->format('d/m/Y'),
+                'start' => $periodStart->toDateString(), // "2026-04-01" para queries
+                'end' => $periodEnd->toDateString(),   // "2026-04-05"
+            ];
+        }
+
+        return $periods;
+    }
+
     public function export(Request $request)
     {
-        dd($request->all());
-        
+        $dateRanges = $this->splitDateRangeIntoPeriods((string) $request->input('date_range', ''), $request->input('group_by', 'week'));
+        dd($dateRanges);
+
         $baseHeadings = [
             'Periodo',
             'Rango de Fechas',
@@ -309,7 +383,7 @@ class DailyTrackingController extends Controller
     {
         $dailyTracking->load([
             'service:id,name',
-            'logs' => fn ($query) => $query->latest(),
+            'logs' => fn($query) => $query->latest(),
         ]);
 
         return view('crm.daily-tracking.show', [
@@ -425,7 +499,7 @@ class DailyTrackingController extends Controller
 
         if ($request->filled('contact_methods')) {
             $contactMethods = array_values(array_filter((array) $request->input('contact_methods')));
-            if (! empty($contactMethods)) {
+            if (!empty($contactMethods)) {
                 $query->whereIn('contact_method', $contactMethods);
             }
         }
@@ -632,7 +706,7 @@ class DailyTrackingController extends Controller
         $requestedDivision = strtolower((string) $request->input('period_division', 'auto'));
         $allowedDivisions = ['auto', 'week', 'month', 'year'];
 
-        if (! in_array($requestedDivision, $allowedDivisions, true)) {
+        if (!in_array($requestedDivision, $allowedDivisions, true)) {
             $requestedDivision = 'auto';
         }
 
@@ -698,7 +772,7 @@ class DailyTrackingController extends Controller
             return $period;
         }
 
-        if (! preg_match('/^(\d{4})-W(\d{1,2})$/', $period, $matches)) {
+        if (!preg_match('/^(\d{4})-W(\d{1,2})$/', $period, $matches)) {
             return $period;
         }
 
@@ -979,7 +1053,7 @@ class DailyTrackingController extends Controller
                 ->orderByDesc('total')
                 ->limit(10)
                 ->pluck('service_id')
-                ->map(fn ($id) => (int) $id)
+                ->map(fn($id) => (int) $id)
                 ->values()
                 ->all();
 
@@ -987,7 +1061,7 @@ class DailyTrackingController extends Controller
             $datasets = [];
             $serviceTotals = [];
 
-            if (! empty($topServiceIds)) {
+            if (!empty($topServiceIds)) {
                 $rows = $this->buildFilteredQuery($request)
                     ->whereIn('service_id', $topServiceIds)
                     ->whereNotNull('created_at')
@@ -1011,11 +1085,19 @@ class DailyTrackingController extends Controller
 
                 $rawPeriods = array_values(array_keys($periodSet));
                 $periodIndexes = array_flip($rawPeriods);
-                $periodLabels = array_map(fn (string $period) => $this->formatChartPeriodLabel($period, $periodDivision), $rawPeriods);
+                $periodLabels = array_map(fn(string $period) => $this->formatChartPeriodLabel($period, $periodDivision), $rawPeriods);
 
                 $baseColors = [
-                    '#2563EB', '#16A34A', '#DC2626', '#D97706', '#7C3AED',
-                    '#0891B2', '#DB2777', '#4F46E5', '#65A30D', '#EA580C',
+                    '#2563EB',
+                    '#16A34A',
+                    '#DC2626',
+                    '#D97706',
+                    '#7C3AED',
+                    '#0891B2',
+                    '#DB2777',
+                    '#4F46E5',
+                    '#65A30D',
+                    '#EA580C',
                 ];
                 $chartKind = $chartType === 'line' ? 'line' : 'bar';
 
