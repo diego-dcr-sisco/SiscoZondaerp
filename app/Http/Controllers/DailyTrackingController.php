@@ -291,7 +291,7 @@ class DailyTrackingController extends Controller
         $reportRows = $this->buildFilteredQuery($request)
             ->select(DB::raw("DATE_FORMAT(created_at, '{$groupFormat}') as period"))
             ->selectRaw('COUNT(*) as total_clients')
-            ->selectRaw("SUM(CASE WHEN responded = 1 THEN 1 ELSE 0 END) as total_responded")
+            ->selectRaw("SUM(CASE WHEN not_responded = 1 THEN 1 ELSE 0 END) as total_not_responded")
             ->selectRaw("SUM(CASE WHEN quoted = 'yes' THEN 1 ELSE 0 END) as total_quoted")
             ->selectRaw("SUM(CASE WHEN has_not_coverage = 1 THEN 1 ELSE 0 END) as no_coverage")
             ->selectRaw("SUM(CASE WHEN closed = 'yes' THEN 1 ELSE 0 END) as total_closed")
@@ -318,7 +318,7 @@ class DailyTrackingController extends Controller
             'Periodo',
             'Rango de Fechas',
             'Total clientes',
-            'Total contestaron',
+            'Total No contestaron',
             'Total cotizados',
             'SIN COBERTURA',
             'Total cerrados',
