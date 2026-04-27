@@ -289,7 +289,7 @@ class DailyTrackingController extends Controller
         };
 
         $reportRows = $this->buildFilteredQuery($request)
-            ->select(DB::raw("DATE_FORMAT(service_date, '{$groupFormat}') as period"))
+            ->select(DB::raw("DATE_FORMAT(created_at, '{$groupFormat}') as period"))
             ->selectRaw('COUNT(*) as total_clients')
             ->selectRaw("SUM(CASE WHEN responded = 1 THEN 1 ELSE 0 END) as total_responded")
             ->selectRaw("SUM(CASE WHEN quoted = 'yes' THEN 1 ELSE 0 END) as total_quoted")
