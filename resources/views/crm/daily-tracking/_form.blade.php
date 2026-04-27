@@ -197,7 +197,7 @@
             <div class="form-check form-switch mt-2">
                 <input class="form-check-input" type="checkbox" id="responded" name="responded" value="1"
                     @checked(old('responded', data_get($model, 'responded')))>
-                <label class="form-check-label" for="responded">Respondio</label>
+                <label class="form-check-label" for="responded">No Respondio</label>
             </div>
         </div>
 
