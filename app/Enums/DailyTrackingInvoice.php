@@ -11,8 +11,8 @@ enum DailyTrackingInvoice: string
     public function label(): string
     {
         return match ($this) {
-            self::YES => 'Si',
             self::NO => 'No',
+            self::YES => 'Si',
             self::NOT_APPLICABLE => 'No aplica',
         };
     }

@@ -12,7 +12,7 @@
 
     $quotedValue = old('quoted', $quotedCurrent ?? 'pending');
     $closedValue = old('closed', $closedCurrent ?? 'pending');
-    $invoiceValue = old('invoice', $invoiceCurrent ?? 'not_applicable');
+    $invoiceValue = old('invoice', $invoiceCurrent ?? 'no');
     $hasCoverage = (bool) old('has_not_coverage', data_get($model, 'has_not_coverage', false));
 @endphp
 
