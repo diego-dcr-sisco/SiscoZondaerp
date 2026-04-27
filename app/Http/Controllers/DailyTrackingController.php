@@ -258,62 +258,8 @@ class DailyTrackingController extends Controller
 
     public function export(Request $request)
     {
-        $contactMethodConfig = $this->contactMethodExportConfig();
-        $allowedContactMethods = array_keys($contactMethodConfig);
-
-        $request->validate([
-            'group_by' => ['required', 'in:day,week,month,year'],
-            'from' => ['nullable', 'date'],
-            'to' => ['nullable', 'date', 'after_or_equal:from'],
-            'date_range' => ['nullable', 'string'],
-            'contact_methods' => ['nullable', 'array'],
-            'contact_methods.*' => ['in:' . implode(',', $allowedContactMethods)],
-        ]);
-
-        $selectedContactMethods = array_values(array_filter(
-            (array) $request->input('contact_methods', []),
-            fn ($method) => in_array($method, $allowedContactMethods, true)
-        ));
-
-        if (empty($selectedContactMethods)) {
-            $selectedContactMethods = $allowedContactMethods;
-        }
-
-        $groupBy = (string) $request->get('group_by', 'month');
-        $groupFormat = match ($groupBy) {
-            'day' => '%Y-%m-%d',
-            'week' => '%x-W%v',
-            'month' => '%Y-%m',
-            'year' => '%Y',
-            default => '%Y-%m',
-        };
-
-        $reportRows = $this->buildFilteredQuery($request)
-            ->select(DB::raw("DATE_FORMAT(created_at, '{$groupFormat}') as period"))
-            ->selectRaw('COUNT(*) as total_clients')
-            ->selectRaw("SUM(CASE WHEN not_responded = 1 THEN 1 ELSE 0 END) as total_not_responded")
-            ->selectRaw("SUM(CASE WHEN quoted = 'yes' THEN 1 ELSE 0 END) as total_quoted")
-            ->selectRaw("SUM(CASE WHEN has_not_coverage = 1 THEN 1 ELSE 0 END) as no_coverage")
-            ->selectRaw("SUM(CASE WHEN closed = 'yes' THEN 1 ELSE 0 END) as total_closed")
-            ->selectRaw('SUM(COALESCE(quoted_amount, 0)) as total_quoted_amount')
-            ->selectRaw("SUM(CASE WHEN closed = 'yes' THEN COALESCE(billed_amount, 0) ELSE 0 END) as total_closed_amount")
-            ->selectRaw('SUM(COALESCE(billed_amount, 0)) as total_billed_amount')
-            ->selectRaw("SUM(CASE WHEN customer_type = 'domestico' AND closed = 'yes' THEN COALESCE(billed_amount, 0) ELSE 0 END) as domestic_closed_amount")
-            ->selectRaw("SUM(CASE WHEN customer_type = 'domestico' THEN 1 ELSE 0 END) as domestic")
-            ->selectRaw("SUM(CASE WHEN customer_type = 'comercial' THEN 1 ELSE 0 END) as commercial")
-            ->selectRaw("SUM(CASE WHEN customer_type = 'industrial' THEN 1 ELSE 0 END) as industrial")
-            ->selectRaw("SUM(CASE WHEN customer_type = 'comercial' THEN 1 ELSE 0 END) as new_commercial_clients")
-            ->selectRaw("SUM(CASE WHEN closed = 'yes' AND invoice = 'yes' AND COALESCE(billed_amount, 0) > 0 THEN 1 ELSE 0 END) as total_invoiced")
-            ->groupBy('period')
-            ->orderBy('period')
-            ->tap(function ($query) use ($contactMethodConfig) {
-                foreach ($contactMethodConfig as $methodValue => $meta) {
-                    $alias = $meta['alias'];
-                    $query->selectRaw("SUM(CASE WHEN contact_method = '{$methodValue}' THEN 1 ELSE 0 END) as {$alias}");
-                }
-            })
-            ->get();
-
+        dd($request->all());
+        
         $baseHeadings = [
             'Periodo',
             'Rango de Fechas',
@@ -336,80 +282,6 @@ class DailyTrackingController extends Controller
             'Industrial',
             'Clientes comerciales nuevos',
         ];
-
-        $methodHeadings = array_map(
-            fn ($method) => $contactMethodConfig[$method]['label'],
-            $selectedContactMethods
-        );
-
-        $headings = array_merge($baseHeadings, $methodHeadings, ['Total facturados']);
-
-        $rows = $reportRows->map(function ($row) use ($selectedContactMethods, $contactMethodConfig, $groupBy) {
-            $totalClients = (int) $row->total_clients;
-            $totalResponded = (int) $row->total_responded;
-            $totalQuoted = (int) $row->total_quoted;
-            $totalClosed = (int) $row->total_closed;
-            $totalInvoiced = (int) $row->total_invoiced;
-            $totalClosedAmount = (float) $row->total_closed_amount;
-
-            $averageTicket = $totalClosed > 0 ? ($totalClosedAmount / $totalClosed) : 0;
-
-            $baseData = [
-                (string) $row->period,
-                $this->formatPeriodRange((string) $row->period, $groupBy),
-                $totalClients,
-                $totalResponded,
-                $totalQuoted,
-                (int) $row->no_coverage,
-                $totalClosed,
-                $this->percentage($totalResponded, $totalClients),
-                $this->percentage($totalQuoted, $totalResponded),
-                $this->percentage($totalClosed, $totalQuoted),
-                $this->percentage($totalInvoiced, $totalClosed),
-                round((float) $row->total_quoted_amount, 2),
-                round($totalClosedAmount, 2),
-                round((float) $row->total_billed_amount, 2),
-                round((float) $row->domestic_closed_amount, 2),
-                round($averageTicket, 2),
-                (int) $row->domestic,
-                (int) $row->commercial,
-                (int) $row->industrial,
-                (int) $row->new_commercial_clients,
-            ];
-
-            $methodData = array_map(function ($method) use ($row, $contactMethodConfig) {
-                $alias = $contactMethodConfig[$method]['alias'];
-                return (int) ($row->{$alias} ?? 0);
-            }, $selectedContactMethods);
-
-            return array_merge($baseData, $methodData, [$totalInvoiced]);
-        })->toArray();
-
-        $filename = 'daily_tracking_report_' . now()->format('Ymd_His') . '.xlsx';
-
-        $export = new DailyTrackingReportExport($rows, $headings);
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        foreach ($export->headings() as $index => $heading) {
-            $column = Coordinate::stringFromColumnIndex($index + 1);
-            $sheet->setCellValue($column . '1', $heading);
-        }
-
-        foreach ($export->rows() as $rowIndex => $row) {
-            foreach ($row as $columnIndex => $value) {
-                $column = Coordinate::stringFromColumnIndex($columnIndex + 1);
-                $sheet->setCellValue($column . ($rowIndex + 2), $value);
-            }
-        }
-
-        $writer = new Xlsx($spreadsheet);
-
-        return response()->streamDownload(function () use ($writer) {
-            $writer->save('php://output');
-        }, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ]);
     }
 
     public function create()
