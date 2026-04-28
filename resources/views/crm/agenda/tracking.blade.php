@@ -255,9 +255,8 @@
                                          class="btn btn-secondary"
                                          onclick="return confirm('📅 EDITAR Seguimiento\n\n¿Deseas reprogramar esta actividad?')"
                                          data-bs-toggle="tooltip" data-bs-placement="top"
-                                         data-bs-custom-class="custom-tooltip" data-bs-title="Editar seguimiento"
-                                         style="font-size: 0.95rem;">
-                                         <i class="bi bi-pencil-square"></i> Editar
+                                         data-bs-custom-class="custom-tooltip" data-bs-title="Editar seguimiento">
+                                         <i class="bi bi-pencil-square"></i>
                                      </a>
                                      @if ($tracking->status != 'canceled')
                                          <a href="{{ route('crm.tracking.complete', ['id' => $tracking->id]) }}"
