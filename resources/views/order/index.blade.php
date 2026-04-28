@@ -200,8 +200,9 @@
                                 value="{{ request('direction', 'ASC') }}" readonly>
 
                             <!-- Botones -->
-                            <div class="col-lg-12 d-flex justify-content-end m-0 mt-3">
-                                <button type="submit" class="btn btn-primary btn-sm me-2">
+                            <!-- Botones -->
+                            <div class="col-lg-2 d-flex align-items-end gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm">
                                     <i class="bi bi-funnel-fill"></i> Filtrar
                                 </button>
                                 <a href="{{ route('order.index') }}" class="btn btn-secondary btn-sm">
