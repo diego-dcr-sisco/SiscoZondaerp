@@ -74,7 +74,7 @@
         @include('order.modals.technicians')
         @include('order.modals.signature')
 
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             @php
                 $offset = ($orders->currentPage() - 1) * $orders->perPage();
             @endphp
@@ -153,7 +153,8 @@
                                     <option value="">Todos</option>
                                     <option value="MIP" {{ request('order_type') == 'MIP' ? 'selected' : '' }}>MIP
                                     </option>
-                                    <option value="Seguimiento" {{ request('order_type') == 'Seguimiento' ? 'selected' : '' }}>
+                                    <option value="Seguimiento"
+                                        {{ request('order_type') == 'Seguimiento' ? 'selected' : '' }}>
                                         Seguimiento</option>
                                 </select>
                             </div>
@@ -163,9 +164,11 @@
                                 <label for="signature_status" class="form-label">Estado de Firma</label>
                                 <select class="form-select form-select-sm" id="signature_status" name="signature_status">
                                     <option value="">Todos</option>
-                                    <option value="signed" {{ request('signature_status') == 'signed' ? 'selected' : '' }}>
+                                    <option value="signed"
+                                        {{ request('signature_status') == 'signed' ? 'selected' : '' }}>
                                         Firmadas</option>
-                                    <option value="unsigned" {{ request('signature_status') == 'unsigned' ? 'selected' : '' }}>
+                                    <option value="unsigned"
+                                        {{ request('signature_status') == 'unsigned' ? 'selected' : '' }}>
                                         No Firmadas</option>
                                 </select>
                             </div>
@@ -174,9 +177,11 @@
                             <div class="col-lg-1">
                                 <label for="signature_status" class="form-label">Dirección</label>
                                 <select class="form-select form-select-sm" id="direction_select" name="direction_select">
-                                    <option value="ASC" {{ request('direction', 'ASC') == 'ASC' ? 'selected' : '' }}>ASC
+                                    <option value="ASC" {{ request('direction', 'ASC') == 'ASC' ? 'selected' : '' }}>
+                                        ASC
                                     </option>
-                                    <option value="DESC" {{ request('direction', 'ASC') == 'DESC' ? 'selected' : '' }}>DESC
+                                    <option value="DESC" {{ request('direction', 'ASC') == 'DESC' ? 'selected' : '' }}>
+                                        DESC
                                     </option>
                                 </select>
                             </div>
@@ -191,8 +196,8 @@
                                 </select>
                             </div>
 
-                            <input type="hidden" id="direction" name="direction" value="{{ request('direction', 'ASC') }}"
-                                readonly>
+                            <input type="hidden" id="direction" name="direction"
+                                value="{{ request('direction', 'ASC') }}" readonly>
 
                             <!-- Botones -->
                             <div class="col-lg-12 d-flex justify-content-end m-0 mt-3">
@@ -445,7 +450,7 @@
                         alert(response.message);
                         // Redirigir a la URL de descarga
                         window.location.href = response.download_url;
-                        
+
                         // Eliminar los archivos temporales después de la descarga
                         setTimeout(function() {
                             $.ajax({
