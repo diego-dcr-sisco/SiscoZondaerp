@@ -335,8 +335,6 @@ class DailyTrackingController extends Controller
         $dateRanges = $this->splitDateRangeIntoPeriods((string) $request->input('date_range', ''), $request->input('group_by', 'week'));
         $contactMethods = request('contact_methods', []);
 
-        dd($contactMethods);
-
         $baseHeadings = [
             //'Periodo',
             'Rango de Fechas',
@@ -365,6 +363,7 @@ class DailyTrackingController extends Controller
         foreach ($dateRanges as $index => $range) {
             $daily_trackings = DailyTracking::where('created_at', '>=', $range['start'])
                 ->where('created_at', '<=', $range['end'])
+                ->whereIn('contact_method', $contactMethods) // Filtrar por métodos de contacto seleccionados
                 ->get();
 
             $rows[] = [
