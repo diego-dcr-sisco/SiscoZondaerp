@@ -333,7 +333,8 @@ class DailyTrackingController extends Controller
     {
         $rows = [];
         $dateRanges = $this->splitDateRangeIntoPeriods((string) $request->input('date_range', ''), $request->input('group_by', 'week'));
-
+        dd($request->all());
+        
         $baseHeadings = [
             //'Periodo',
             'Rango de Fechas',
