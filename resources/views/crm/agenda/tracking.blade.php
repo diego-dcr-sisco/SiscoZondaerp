@@ -260,29 +260,29 @@
                                      </a>
                                      @if ($tracking->status != 'canceled')
                                          <a href="{{ route('crm.tracking.complete', ['id' => $tracking->id]) }}"
-                                             class="btn btn-success px-3 py-2"
+                                             class="btn btn-success"
                                              onclick="return confirm('✅ COMPLETAR Seguimiento\n\n¿Deseas completar esta actividad?')"
                                              data-bs-toggle="tooltip" data-bs-placement="top"
                                              data-bs-custom-class="custom-tooltip" data-bs-title="Completar seguimiento"
                                              style="font-size: 0.95rem;">
-                                             <i class="bi bi-check-lg"></i> Completar
+                                             <i class="bi bi-check-lg"></i>
                                          </a>
                                          <a href="{{ route('crm.tracking.cancel', ['id' => $tracking->id]) }}"
-                                             class="btn btn-danger px-3 py-2"
+                                             class="btn btn-danger"
                                              onclick="return confirm('❌ CANCELAR de Seguimiento\n\n¿Deseas cancelar esta actividad?')"
                                              data-bs-toggle="tooltip" data-bs-placement="top"
                                              data-bs-custom-class="custom-tooltip" data-bs-title="Cancelar seguimiento"
                                              style="font-size: 0.95rem;">
-                                             <i class="bi bi-x-lg"></i> Cancelar
+                                             <i class="bi bi-x-lg"></i>
                                          </a>
                                      @endif
                                      <a href="{{ route('crm.tracking.destroy', ['id' => $tracking->id]) }}"
-                                         class="btn btn-outline-danger px-3 py-2"
+                                         class="btn btn-outline-danger"
                                          onclick="return confirm('ELIMINAR Seguimiento\n\n¿Deseas eliminar esta actividad?')"
                                          data-bs-toggle="tooltip" data-bs-placement="top"
                                          data-bs-custom-class="custom-tooltip" data-bs-title="Eliminar seguimiento"
                                          style="font-size: 0.95rem;">
-                                         <i class="bi bi-trash-fill"></i> Eliminar
+                                         <i class="bi bi-trash-fill"></i>
                                      </a>
                                  </div>
                              </td>
