@@ -82,7 +82,7 @@
             <table class="table table-bordered table-striped table-sm">
                 <caption class="border rounded-top p-2 text-dark bg-white caption-top">
                     <form id="filter-form" action="{{ route('order.filter') }}" method="GET">
-                        <div class="row g-2 mb-0">
+                        <div class="row g-2 mb-0 p-2">
                             <!-- Cliente -->
                             <div class="col-lg-1">
                                 <label for="customer" class="form-label">No. Reporte</label>
@@ -200,11 +200,11 @@
                                 value="{{ request('direction', 'ASC') }}" readonly>
 
                             <!-- Botones -->
-                            <div class="col-lg-3 d-flex align-items-end gap-2">
-                                <button type="submit" class="btn btn-primary btn-sm">
+                            <div class="col-lg-2 d-flex align-items-end gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm w-50">
                                     <i class="bi bi-funnel-fill"></i> Filtrar
                                 </button>
-                                <a href="{{ route('order.index') }}" class="btn btn-secondary btn-sm">
+                                <a href="{{ route('order.index') }}" class="btn btn-secondary btn-sm w-50">
                                     <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                                 </a>
                             </div>
