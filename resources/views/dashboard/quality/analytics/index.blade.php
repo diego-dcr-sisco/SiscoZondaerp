@@ -48,7 +48,7 @@
                             <div class="collapse show" id="ordersSummary">
                                 <div class="card-body">
                                     <h6 class="card-subtitle mb-3 text-muted">Últimas Órdenes Modificadas</h6>
-                                    <div class="table-responsive">
+                                    <div style="overflow-x: auto; width: 100%;">
                                         <table class="table table-hover">
                                             <thead>
                                                 <tr>
@@ -280,7 +280,7 @@
                             </div>
                             <div class="collapse show" id="approvedOrders">
                                 <div class="card-body">
-                                    <div class="table-responsive">
+                                    <div style="overflow-x: auto; width: 100%;">
                                         <table class="table table-striped">
                                             <thead>
                                                 <tr>

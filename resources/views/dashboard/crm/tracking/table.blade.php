@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('content')
     <div class="container-fluid p-3">
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             <table class="table table-striped table-bordered table-sm caption-top">
                 <caption class="border rounded-top p-2 fw-bold text-dark bg-white">
                     @include('dashboard.crm.tracking.search')

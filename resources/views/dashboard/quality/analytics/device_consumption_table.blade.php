@@ -26,7 +26,7 @@
 </form>
 
 <!-- Consumption Table -->
-<div class="table-responsive">
+<div style="overflow-x: auto; width: 100%;">
     @if(isset($consumptionData['consumption']))
         @if($consumptionData['consumption']['error'] ?? false)
             <div class="alert alert-danger">

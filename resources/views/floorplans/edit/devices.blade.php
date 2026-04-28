@@ -182,7 +182,7 @@
 
                 <div class="border rounded shadow p-3 mb-3">
                     <div class="fw-bold mb-2 fs-5">Simbologia</div>
-                    <div class="table-responsive">
+                    <div style="overflow-x: auto; width: 100%;">
                         <table class="table table-bordered table-sm table-striped">
                             <thead>
                                 <tr>

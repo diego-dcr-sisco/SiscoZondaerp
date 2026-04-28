@@ -40,7 +40,7 @@
         <!-- Cronograma -->
         <div class="card">
             <div class="card-body p-0">
-                <div class="table-responsive">
+                <div style="overflow-x: auto; width: 100%;">
                     <table class="table table-sm align-middle mb-0">
                         <thead class="bg-light">
                             <tr>

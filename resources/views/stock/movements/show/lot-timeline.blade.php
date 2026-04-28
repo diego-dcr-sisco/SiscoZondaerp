@@ -47,7 +47,7 @@
                     <h5 class="mb-0">Movimientos</h5>
                 </div>
                 <div class="card-body fs-6">
-                    <div class="table-responsive">
+                    <div style="overflow-x: auto; width: 100%;">
                         <table class="table table-striped table-hover">
                             <thead class="text-center">
                                 <tr>

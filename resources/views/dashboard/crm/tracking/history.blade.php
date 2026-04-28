@@ -28,7 +28,7 @@
             <a href="{{ route('crm.tracking.create', ['customerId' => 0, 'serviceId' => 0]) }}" class="btn btn-primary btn-sm">Nuevo seguimiento</a>
         </div>
 
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             <table class="table table-sm table-bordered">
                 <thead>
                     <tr>

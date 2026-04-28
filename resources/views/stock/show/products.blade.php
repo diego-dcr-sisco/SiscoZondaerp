@@ -12,7 +12,7 @@
                 </span>
             </div>
             <div class="m-3">
-                <div class="table-responsive">
+                <div style="overflow-x: auto; width: 100%;">
                     <table class="table table-hover table-bordered table-striped table-sm align-middle caption-top">
                         <caption class="border rounded-top p-2 text-dark bg-white">
                             <div class="text-end">

@@ -40,7 +40,7 @@
         </div>
         
 
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             <table class="table table-bordered table-striped table-sm align-middle caption-top">
                 <caption class="border rounded-top p-2 text-dark bg-white">
                     <form action="{{ route('lot.index') }}" method="GET">

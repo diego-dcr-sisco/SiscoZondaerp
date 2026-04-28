@@ -44,7 +44,7 @@
                         </div>
                     </div>
 
-                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <div style="overflow-x: auto; width: 100%;" style="max-height: 300px; overflow-y: auto;">
                         <table class="table table-sm table-striped">
                             <thead class="sticky-top bg-light">
                                 <tr>

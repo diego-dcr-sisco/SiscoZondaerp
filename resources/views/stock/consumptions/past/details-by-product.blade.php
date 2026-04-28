@@ -32,7 +32,7 @@
 
                     <div class="card-body">
                         @if (!empty($details) && count($details) > 0)
-                            <div class="table-responsive">
+                            <div style="overflow-x: auto; width: 100%;">
                                 <table class="table table-hover table-bordered" id="consumption-table">
                                     <thead class="table-light">
                                         <tr>

@@ -191,7 +191,7 @@
                         <div class="row">
                             <h5 class="fw-bold mb-3">Conceptos de la Factura</h5>
                             <div class="col-12">
-                                <div class="table-responsive">
+                                <div style="overflow-x: auto; width: 100%;">
                                     <table class="table table-sm table-striped">
                                         <thead>
                                             <tr>

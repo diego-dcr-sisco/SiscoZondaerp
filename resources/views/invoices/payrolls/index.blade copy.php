@@ -73,7 +73,7 @@
             <!-- Tabla de nóminas -->
             <div class="card shadow-sm">
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <div style="overflow-x: auto; width: 100%;">
                         <table class="table table-hover table-striped mb-0" id="payrollsTable">
                             <thead class="table-dark">
                                 <tr>

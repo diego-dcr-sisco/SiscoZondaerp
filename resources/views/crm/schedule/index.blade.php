@@ -11,7 +11,7 @@
                 </div>
 
                 @include('messages.alert')
-                <div class="table-responsive">
+                <div style="overflow-x: auto; width: 100%;">
                     @include('crm.schedule.tables.customers')
                 </div>
             </div>

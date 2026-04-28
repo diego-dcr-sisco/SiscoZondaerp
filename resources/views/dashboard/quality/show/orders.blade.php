@@ -19,7 +19,7 @@
 
         <div class="container-fluid">
             @include('messages.alert')
-            <div class="table-responsive">
+            <div style="overflow-x: auto; width: 100%;">
                 @include('order.tables.index')
             </div>
             {{ $orders->links('pagination::bootstrap-5') }}

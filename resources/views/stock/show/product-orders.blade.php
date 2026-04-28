@@ -10,7 +10,7 @@
                             class="bi bi-arrow-left m-3"></i></a>
                     <h1 class="col-auto fs-2 fw-bold m-0"> Lista de productos por orden </h1>
                 </div>
-                <div class="table-responsive">
+                <div style="overflow-x: auto; width: 100%;">
                     @include('stock.tables.technician-order')
                 </div>
             </div>

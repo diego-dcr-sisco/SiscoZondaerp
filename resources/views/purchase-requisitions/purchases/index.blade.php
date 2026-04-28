@@ -25,7 +25,7 @@
                 </div>
 
                 
-                <div class="table-responsive">
+                <div style="overflow-x: auto; width: 100%;">
                     @include('purchase-requisitions.purchases.tables.index')
                 </div>
                 {{ $purchaseRequisitions->links('pagination::bootstrap-5') }}

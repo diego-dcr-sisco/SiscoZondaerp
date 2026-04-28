@@ -66,7 +66,7 @@
                 <div class="fw-bold mb-2 fs-5">Productos</div>
 
                 @if ($movement->hasWarehouseProducts($movement->warehouse_id))
-                    <div class="table-responsive">
+                    <div style="overflow-x: auto; width: 100%;">
                         <table class="table table-striped table-bordered table-sm">
                             <thead>
                                 <tr>
@@ -97,7 +97,7 @@
                 @endif
 
                 @if ($movement->hasWarehouseProducts($movement->destination_warehouse_id))
-                    <div class="table-responsive">
+                    <div style="overflow-x: auto; width: 100%;">
                         <table class="table table-striped table-bordered table-sm">
                             <thead>
                                 <tr>

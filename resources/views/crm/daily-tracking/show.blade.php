@@ -58,7 +58,7 @@
 
         <div class="card shadow-sm">
             <div class="card-header">Historial de cambios (status, quoted, closed)</div>
-            <div class="table-responsive">
+            <div style="overflow-x: auto; width: 100%;">
                 <table class="table table-sm table-striped mb-0">
                     <thead>
                         <tr>

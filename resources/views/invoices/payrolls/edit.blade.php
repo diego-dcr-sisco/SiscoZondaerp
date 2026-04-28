@@ -278,7 +278,7 @@
                                 </button>
                             </div>
                             <div class="col-lg-12">
-                                <div class="table-responsive">
+                                <div style="overflow-x: auto; width: 100%;">
                                     <table class="table table-bordered table-hover" id="perceptionsTable">
                                         <thead class="table-light">
                                             <tr>
@@ -312,7 +312,7 @@
                                 </button>
                             </div>
                             <div class="col-lg-12">
-                                <div class="table-responsive">
+                                <div style="overflow-x: auto; width: 100%;">
                                     <table class="table table-bordered table-hover" id="deductionsTable">
                                         <thead class="table-light">
                                             <tr>
@@ -344,7 +344,7 @@
                                 </button>
                             </div>
                             <div class="col-lg-12">
-                                <div class="table-responsive">
+                                <div style="overflow-x: auto; width: 100%;">
                                     <table class="table table-bordered table-hover" id="otherPaymentsTable">
                                         <thead class="table-light">
                                             <tr>

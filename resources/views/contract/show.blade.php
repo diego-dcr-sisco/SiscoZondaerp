@@ -36,7 +36,7 @@
         </div>
         <div class="m-3">
             @include('messages.alert')
-            <div class="table-responsive">
+            <div style="overflow-x: auto; width: 100%;">
                 @include('contract.tables.orders')
             </div>
             {{ $orders->links('pagination::bootstrap-5') }}

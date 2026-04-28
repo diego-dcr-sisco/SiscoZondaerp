@@ -49,7 +49,7 @@
                 </div>
                 
                 
-                <div class="table-responsive">
+                <div style="overflow-x: auto; width: 100%;">
                     @include('purchase-requisitions.suppliers.tables.index')
                 </div>
                 {{ $suppliers->links('pagination::bootstrap-5') }}

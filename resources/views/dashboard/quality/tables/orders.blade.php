@@ -3,7 +3,7 @@
         @include('order.modals.signature')
         @include('order.modals.technicians')
 
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             @php
                 $offset = ($orders->currentPage() - 1) * $orders->perPage();
             @endphp

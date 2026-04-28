@@ -39,7 +39,7 @@
                     </div>
                 </div>
 
-                {{-- <div class="table-responsive">
+                {{-- <div style="overflow-x: auto; width: 100%;">
                     @include('purchase-requisitions.consumption.tables.index')
                 </div>
                 {{ $consumptions->links('pagination::bootstrap-5') }}

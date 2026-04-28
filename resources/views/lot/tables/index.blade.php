@@ -24,7 +24,7 @@
     </div>
     
 
-    <div class="table-responsive">
+    <div style="overflow-x: auto; width: 100%;">
         <table class="table table-hover table-bordered table-striped align-middle mb-0">
             <thead>
                 <tr>

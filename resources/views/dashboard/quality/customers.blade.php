@@ -14,7 +14,7 @@
         <div class="row border-bottom mb-3">
             <h4 class="">Clientes Industriales/Plantas</h4>
         </div>
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             @include('dashboard.quality.tables.customers')
         </div>
         @include('messages.alert')

@@ -7,7 +7,7 @@
             'actionText' => __('customer.title.create'),
         ])
     <div class="container-fluid">
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             <!-- Tabla de clientes -->
             <table class="table table-sm table-bordered table-striped">
                 @php

@@ -1,4 +1,4 @@
-<div class="table-responsive">
+<div style="overflow-x: auto; width: 100%;">
     <table class="table table-hover" id="consumption-table">
         <thead class="table-light">
             <tr>

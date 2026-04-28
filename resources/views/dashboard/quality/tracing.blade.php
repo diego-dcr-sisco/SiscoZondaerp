@@ -28,7 +28,7 @@
         </div>
 
         @include('messages.alert')
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             @include('dashboard.quality.tables.tracing')
         </div>
         {{ $control_customers->links('pagination::bootstrap-5') }}

@@ -52,7 +52,7 @@
                             <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
                                 data-bs-target="#exQuestionModal"><i class="bi bi-plus-lg"></i> Existente</button>
                         </div>
-                        <div class="table-responsive">
+                        <div style="overflow-x: auto; width: 100%;">
                             <table class="table table-bordered table-striped table-sm">
                                 <thead>
                                     <tr>

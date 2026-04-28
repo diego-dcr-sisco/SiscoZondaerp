@@ -15,7 +15,7 @@
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
                     data-bs-target="#areaCreateModal">Agregar area</button>
             </div>
-            <div class="table-responsive">
+            <div style="overflow-x: auto; width: 100%;">
                 <table class="table table-sm table-bordered table-striped">
                     <thead>
                         <tr>

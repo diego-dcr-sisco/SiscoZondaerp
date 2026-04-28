@@ -18,7 +18,7 @@
                     </a>
                 @endcan
             </div>
-            <div class="table-responsive">
+            <div style="overflow-x: auto; width: 100%;">
                 <!-- Tabla de clientes -->
                 <table class="table table-sm table-bordered table-striped caption-top">
                     <caption class="border rounded-top p-2 text-dark bg-white">

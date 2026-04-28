@@ -9,7 +9,7 @@
                     <a href="{{ route('stock.index') }}" class="col-auto btn-primary p-0 fs-3"><i class="bi bi-arrow-left m-3"></i></a>
                     <h1 class="col-auto fs-2 fw-bold m-0"> Lista de movimientos [ {{ $warehouse->name }} ] </h1>
                 </div>
-                <div class="table-responsive">
+                <div style="overflow-x: auto; width: 100%;">
                     @if ($type == 1)
                         @include('stock.tables.movements')
                     @else

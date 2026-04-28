@@ -13,7 +13,7 @@
         </ul>
 
         @include('messages.alert')
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             @include('dashboard.quality.tables.customers')
         </div>
     </div>

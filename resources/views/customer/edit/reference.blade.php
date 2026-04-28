@@ -3,7 +3,7 @@
         onclick="resetForm()"> Crear
         referencia</button>
 </div>
-<div class="table-responsive">
+<div style="overflow-x: auto; width: 100%;">
     <table class="table text-center table-bordered table-striped">
         <thead>
             <tr>

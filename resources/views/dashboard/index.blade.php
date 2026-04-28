@@ -416,7 +416,7 @@
                             id="count-trackings">{{ $count_trackings }}</span>
                     </div>
 
-                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <div style="overflow-x: auto; width: 100%;" style="max-height: 500px; overflow-y: auto;">
                         <table class="table table-sm table-striped table-hover table-sm caption-top">
                             <caption class="border rounded-top p-2 text-dark bg-white sticky-top">
                                 <span class="fw-bold">Seguimientos del mes</span>

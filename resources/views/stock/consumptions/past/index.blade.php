@@ -17,7 +17,7 @@
 
                     <div class="card-body">
                         @if (!empty($consumptions) && count($consumptions) > 0)
-                            <div class="table-responsive">
+                            <div style="overflow-x: auto; width: 100%;">
                                 @include('stock.consumptions.tables.consumption')
                             </div>
                         @else

@@ -23,7 +23,7 @@
             </div> --}}
         </div>
         @include('messages.alert')
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             @include('rotation-plan.tables.index')
         </div>
         {{ $rotation_plans->links('pagination::bootstrap-5') }}

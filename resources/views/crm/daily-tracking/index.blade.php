@@ -269,7 +269,7 @@
                                 @endif
 
                                 {{-- Tabla --}}
-                                <div class="table-responsive">
+                                <div style="overflow-x: auto; width: 100%;">
                                     <table class="table table-bordered table-sm">
                                         <caption class="caption-top bg-white p-3 border rounded mb-0">
                                             <form method="GET" action="{{ route('crm.daily-tracking.index') }}">

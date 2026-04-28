@@ -45,7 +45,7 @@
 
         <div class="row">
             <h5 class="fw-bold pb-1">Productos</h5>
-            <div class="table-responsive">
+            <div style="overflow-x: auto; width: 100%;">
             <table class="table table-bordered table-striped text-center" id="added-products">
                 <thead class="table-light">
                 <tr>

@@ -15,7 +15,7 @@
             </div>
         
         @include('messages.alert')
-        <div class="table-responsive">
+        <div style="overflow-x: auto; width: 100%;">
             @include('dashboard.quality.zone.table')
         </div>
         {{ $zones->links('pagination::bootstrap-5') }}

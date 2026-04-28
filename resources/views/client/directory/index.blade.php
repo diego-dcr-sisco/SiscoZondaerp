@@ -78,7 +78,7 @@
                     </button>
                 @endcan
             </div>
-            <div class="table-responsive">
+            <div style="overflow-x: auto; width: 100%;">
                 <table class="table table-sm table-hover align-middle">
                     <tbody>
                         @foreach ($data['mip_directories'] as $dir)

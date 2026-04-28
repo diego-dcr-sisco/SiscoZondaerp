@@ -196,7 +196,7 @@
              </form>
          </div>
 
-         <div class="table-responsive">
+         <div style="overflow-x: auto; width: 100%;">
              <table class="table table-bordered table-sm">
                  <thead>
                      <tr>

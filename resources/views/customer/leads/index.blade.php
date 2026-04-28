@@ -23,7 +23,7 @@
 
                 
 
-                <div class="table-responsive" style="font-size: 85%">
+                <div style="overflow-x: auto; width: 100%;" style="font-size: 85%">
                     <table class="table table-bordered table-striped">
                         <thead>
                             <tr>
