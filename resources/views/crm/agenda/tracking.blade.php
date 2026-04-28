@@ -252,7 +252,7 @@
                              <td class="py-3 px-2">
                                  <div class="d-flex gap-2 align-items-center justify-content-center flex-wrap">
                                      <a href="{{ route('crm.tracking.edit', ['id' => $tracking->id]) }}"
-                                         class="btn btn-secondary"
+                                         class="btn btn-secondary btn-sm"
                                          onclick="return confirm('📅 EDITAR Seguimiento\n\n¿Deseas reprogramar esta actividad?')"
                                          data-bs-toggle="tooltip" data-bs-placement="top"
                                          data-bs-custom-class="custom-tooltip" data-bs-title="Editar seguimiento">
