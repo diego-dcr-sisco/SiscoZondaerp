@@ -104,7 +104,7 @@
                             </div>
 
                             <!-- Rango de Fechas -->
-                            <div class="col-lg-2">
+                            <div class="col-lg-3">
                                 <label for="date_range" class="form-label">Rango de Fechas</label>
                                 <input type="text" class="form-control form-control-sm date-range-picker" id="date-range"
                                     name="date_range" value="{{ request('date_range') }}" placeholder="Selecciona un rango"
@@ -119,7 +119,7 @@
                             </div>
 
                             <!-- Estado -->
-                            <div class="col-lg-2">
+                            <div class="col-lg-1"->
                                 <label for="status" class="form-label">Estado</label>
                                 <select class="form-select form-select-sm" id="status" name="status">
                                     <option value="">Todos</option>
@@ -200,8 +200,7 @@
                                 value="{{ request('direction', 'ASC') }}" readonly>
 
                             <!-- Botones -->
-                            <!-- Botones -->
-                            <div class="col-lg-2 d-flex align-items-end gap-2">
+                            <div class="col-lg-3 d-flex align-items-end gap-2">
                                 <button type="submit" class="btn btn-primary btn-sm">
                                     <i class="bi bi-funnel-fill"></i> Filtrar
                                 </button>
