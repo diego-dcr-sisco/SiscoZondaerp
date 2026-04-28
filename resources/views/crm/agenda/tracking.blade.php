@@ -210,7 +210,7 @@
                          <th>Rango</th>
                          <th>Estado</th>
                          <th>Creado por</th>
-                         <th></th>
+                         <th class="col-2"></th>
                      </tr>
                  </thead>
                  <tbody>
