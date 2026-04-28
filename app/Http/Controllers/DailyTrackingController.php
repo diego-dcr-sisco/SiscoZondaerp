@@ -339,10 +339,10 @@ class DailyTrackingController extends Controller
             //'Periodo',
             'Rango de Fechas',
             'Total Clientes',
-            'Total No contestaron',
-            'Pendientes de Cotizar',
             'Total Cotizados',
-            'Sin Cobertura',
+            'Total No Cotizados',
+            'Total No Contestaron',
+            'Total Sin Cobertura',
             'Total Cerrados',
             '% Contacto',
             '% Cotizacion',
@@ -353,12 +353,13 @@ class DailyTrackingController extends Controller
             'Monto Total Facturado',
             'Monto Cerrado Domestico',
             'Monto Cerrado Comercial',
-            'Ticket Promedio',
-            'Domestico',
-            'Comercial',
-            'Industrial',
+            //'Ticket Promedio',
+            'Clientes Domestico',
+            'Clientes Comercial',
             //'Clientes comerciales nuevos',
         ];
+
+        $baseHeadings = array_merge($baseHeadings, $contactMethods); // Agregar métodos de contacto seleccionados como columnas al final
 
         foreach ($dateRanges as $index => $range) {
             $daily_trackings = DailyTracking::where('created_at', '>=', $range['start'])
@@ -366,12 +367,12 @@ class DailyTrackingController extends Controller
                 ->whereIn('contact_method', $contactMethods) // Filtrar por métodos de contacto seleccionados
                 ->get();
 
-            $rows[] = [
+            $rows[$index] = [
                 $range['label'], // Rango de Fechas
                 $daily_trackings->count(), // Total clientes
-                $daily_trackings->where('not_responded', true)->count(), // Total No contestaron
-                $daily_trackings->where('quoted', 'pending')->count(), // Pendientes de cotizar
                 $daily_trackings->where('quoted', 'yes')->count(), // Total cotizados
+                $daily_trackings->where('quoted', 'pending')->count(), // Pendientes de cotizar
+                $daily_trackings->where('not_responded', true)->count(), // Total No contestaron
                 $daily_trackings->where('has_not_coverage', true)->count(), // SIN COBERTURA
                 $daily_trackings->where('closed', 'yes')->count(), // Total cerrados
                 $daily_trackings->count() > 0 ? round(($daily_trackings->where('not_responded', false)->count() / $daily_trackings->count()) * 100, 2) : 0, // % Contacto
@@ -384,14 +385,17 @@ class DailyTrackingController extends Controller
                 $daily_trackings->where('invoice', 'yes')->sum('billed_amount'), // Monto total facturado
                 $daily_trackings->where('closed', 'yes')->where('customer_type', 'domestico')->sum('quoted_amount'), // Monto cerrado domestico
                 $daily_trackings->where('closed', 'yes')->where('customer_type', 'comercial')->sum('quoted_amount'), // Monto cerrado comercial
-                $daily_trackings->where('closed', 'yes')->count() > 0 ? round($daily_trackings->where('closed', 'yes')->sum('quoted_amount') / $daily_trackings->where('closed', 'yes')->count(), 2) : 0, // Ticket promedio
                 $daily_trackings->where('customer_type', 'domestico')->count(), // Domestico
                 $daily_trackings->where('customer_type', 'comercial')->count(), // Comercial
-                $daily_trackings->where('customer_type', 'industrial')->count(), // Industrial
+                //$daily_trackings->where('customer_type', 'industrial')->count(), // Industrial
                 //$daily_trackings->where('customer_type', 'comercial')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes comerciales nuevos
                 //$daily_trackings->where('customer_type', 'industrial')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes industriales nuevos
                 //$daily_trackings->where('customer_type', 'domestico')->where('created_at', '>=', Carbon::now()->subDays(30))->count(), // Clientes domésticos nuevos
             ];
+
+            foreach ($contactMethods as $method) {
+                $rows[$index][] = $daily_trackings->where('contact_method', $method)->count(); // Agregar conteo por método de contacto
+            }
         }
 
         $export = new DailyTrackingReportExport($baseHeadings, $rows);
