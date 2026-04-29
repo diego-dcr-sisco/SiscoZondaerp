@@ -42,8 +42,11 @@
                         <div class="row g-3 mb-0">
                             <div class="col-lg-4 col-12">
                                 <label for="customer" class="form-label">Cliente</label>
-                                <input type="text" class="form-control form-control-sm" id="customer" name="customer"
-                                    value="{{ request('customer') }}" placeholder="Buscar nombre">
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control form-control-sm" id="customer"
+                                        name="customer" value="{{ request('customer') }}" placeholder="Buscar nombre">
+                                </div>
                             </div>
 
                             <div class="col-lg-4 col-12">
