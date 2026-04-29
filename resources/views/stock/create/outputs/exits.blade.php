@@ -73,7 +73,7 @@
                         producto</button>
                 </div>
                 <div class="table-responsive-container">
-                    <div style="overflow-x: auto; width: 100%;">
+                    <div class="overflow-auto w-100">
                         <table class="table table-striped table-bordered table-sm">
                             <thead>
                                 <tr>

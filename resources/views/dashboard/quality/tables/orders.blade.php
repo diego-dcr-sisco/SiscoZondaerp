@@ -3,7 +3,7 @@
         @include('order.modals.signature')
         @include('order.modals.technicians')
 
-        <div style="overflow-x: auto; width: 100%;">
+        <div class="overflow-auto w-100">
             @php
                 $offset = ($orders->currentPage() - 1) * $orders->perPage();
             @endphp

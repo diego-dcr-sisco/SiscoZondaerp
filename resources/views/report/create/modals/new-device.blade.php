@@ -44,7 +44,7 @@
                         </div>
                     </div>
 
-                    <div style="overflow-x: auto; width: 100%;" style="max-height: 300px; overflow-y: auto;">
+                    <div class="overflow-x-auto overflow-y-auto w-full" style="max-height: 300px;">
                         <table class="table table-sm table-striped">
                             <thead class="sticky-top bg-light">
                                 <tr>

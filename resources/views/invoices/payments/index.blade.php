@@ -23,7 +23,7 @@
 
 
         <!-- Tabla de facturas -->
-        <div style="overflow-x: auto; width: 100%;">
+        <div class="overflow-auto w-100">
             <table class="table table-bordered table-sm caption-top">
                 <caption class="border rounded-top p-2 text-dark bg-white">
                     <form action="{{ route('invoices.credit-notes.index') }}" method="GET">

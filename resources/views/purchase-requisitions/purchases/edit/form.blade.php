@@ -95,7 +95,7 @@
                 </div>
 
 
-                <div style="overflow-x: auto; width: 100%;">
+                <div class="overflow-auto w-100">
                     <table class="table table-bordered table-striped text-center" id='added-products'>
                         <thead>
                             <tr>

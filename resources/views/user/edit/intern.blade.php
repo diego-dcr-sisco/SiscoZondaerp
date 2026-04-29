@@ -303,7 +303,7 @@
                             data-bs-target="#filesModal" data-bs-config='{"backdrop":"static"}'>Agregar archivo</button>
                         <button type="button" class="btn btn-warning btn-sm mb-3" data-bs-toggle="modal"
                             data-bs-target="#filesModalAdd" data-bs-config='{"backdrop":true}'>Crear archivo</button>
-                        <div style="overflow-x: auto; width: 100%;">
+                        <div class="overflow-auto w-100">
                             <table class="table table-sm table-striped">
                                 <thead>
                                     <tr>

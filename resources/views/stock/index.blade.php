@@ -35,7 +35,7 @@
                     placeholder="Buscar almacén por nombre...">
             </div>
         </div>
-        <div style="overflow-x: auto; width: 100%;">
+        <div class="overflow-auto w-100">
             <table class="table table-hover table-bordered table-striped table-sm align-middle">
                 <thead>
                     <tr>

@@ -9,7 +9,7 @@
     <div class="container-fluid">
 
 
-        <div style="overflow-x: auto; width: 100%;">
+        <div class="overflow-auto w-100">
             <!-- Tabla de clientes -->
             <table class="table table-sm table-bordered table-striped caption-top">
                 @php

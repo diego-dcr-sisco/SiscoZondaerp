@@ -9,7 +9,7 @@
             </a>
             <h1 class="col-auto fs-2 fw-bold m-0">{{ $lot->registration_number }}</h1>
     </div>
-    <div style="overflow-x: auto; width: 100%;">
+    <div class="overflow-auto w-100">
         <table class="table table-bordered table-striped table-sm">
             <caption class="border rounded-top p-2 text-dark bg-white caption-top">
                 <form action="{{ route('order.search') }}" method="GET">

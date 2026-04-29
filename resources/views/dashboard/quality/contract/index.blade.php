@@ -15,7 +15,7 @@
         </div>
         <div class="row">
             @include('messages.alert')
-            <div style="overflow-x: auto; width: 100%;">
+            <div class="overflow-auto w-100">
                 @include('dashboard.quality.contract.table')
             </div>
             {{ $contracts->links('pagination::bootstrap-5') }}

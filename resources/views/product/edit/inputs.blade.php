@@ -32,7 +32,7 @@
                     <i class="bi bi-plus-lg"></i> Agregar insumo </button>
             </div>
             
-            <div style="overflow-x: auto; width: 100%;">
+            <div class="overflow-auto w-100">
                 <table class="table table-sm table-bordered table-striped">
                     <thead>
                         <tr>

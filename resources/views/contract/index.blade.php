@@ -33,8 +33,8 @@
     ])
     <div class="container-fluid">
 
-        
-        <div style="overflow-x: auto; width: 100%;">
+
+        <div class="overflow-auto w-100">
             <table class="table table-sm table-bordered table-striped caption-top">
                 <caption class="border rounded-top p-2 text-dark bg-white">
                     <form action="{{ route('contract.search') }}" method="GET">
@@ -47,41 +47,52 @@
                             </div>
 
                             <div class="col-lg-4 col-12">
-                                <label for="date_range" class="form-label">Periodo (Fecha)</label>
-                                <input type="text" class="form-control form-control-sm date-range-picker" id="date-range"
-                                    name="date_range" value="{{ request('date_range') }}" placeholder="Selecciona un rango"
-                                    autocomplete="off">
+                                <label for="date_range" class="form-label">Rango de fechas (Periodo)</label>
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i class="bi bi-calendar"></i></span>
+                                    <input type="text" class="form-control form-control-sm date-range-picker"
+                                        id="date-range" name="date_range" value="{{ request('date_range') }}"
+                                        placeholder="Selecciona un rango" autocomplete="off">
+                                </div>
                             </div>
 
-                            <div class="col-auto">
-                                <label for="signature_status" class="form-label">Dirección</label>
-                                <select class="form-select form-select-sm" id="direction" name="direction">
-                                    <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>DESC
-                                    </option>
-                                    <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="col-auto">
-                                <label for="order_type" class="form-label">Total</label>
-                                <select class="form-select form-select-sm" id="size" name="size">
-                                    <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
-                                    <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
-                                    <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
-                                    <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
-                                    <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
-                                </select>
+                            <div class="col-lg-2">
+                                <label for="signature_status" class="form-label">Ordenar / Mostrar</label>
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text" id="basic-addon1"><i
+                                            class="bi bi-arrow-down-up"></i></span>
+                                    <select class="form-select form-select-sm" id="direction" name="direction">
+                                        <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
+                                            DESC
+                                        </option>
+                                        <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
+                                        </option>
+                                    </select>
+                                    <span class="input-group-text" id="basic-addon1"><i class="bi bi-list-ol"></i></span>
+                                    <select class="form-select form-select-sm" id="size" name="size">
+                                        <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
+                                        <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
+                                        <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100
+                                        </option>
+                                        <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200
+                                        </option>
+                                        <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
 
                             <!-- Botones -->
-                            <div class="col-lg-12 d-flex justify-content-end m-0">
-                                <button type="submit" class="btn btn-primary btn-sm me-2">
-                                    <i class="bi bi-funnel-fill"></i> Filtrar
-                                </button>
-                                <a href="{{ route('contract.index') }}" class="btn btn-secondary btn-sm">
-                                    <i class="bi bi-arrow-counterclockwise"></i> Limpiar
-                                </a>
+                            <div class="col-lg-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm w-50">
+                                        <i class="bi bi-funnel-fill"></i> Filtrar
+                                    </button>
+                                    <a href="{{ route('contract.index') }}" class="btn btn-secondary btn-sm w-50">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </form>
@@ -123,8 +134,7 @@
                                     @php
                                         $results = compareDateWithToday($contract->enddate);
                                     @endphp
-                                    <span
-                                        class="fw-bold {{ $results[0] }}">
+                                    <span class="fw-bold {{ $results[0] }}">
                                         {{ $results[1] }}
                                     </span>
                                 </span>
@@ -137,10 +147,10 @@
                                     </a>
 
                                     <a class="btn btn-primary btn-sm"
-                                    href="{{ route('contract.show', ['id' => $contract->id, 'section' => 1]) }}"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Ordenes de servicio">
-                                    <i class="bi bi-nut-fill"></i>
-                                </a>
+                                        href="{{ route('contract.show', ['id' => $contract->id, 'section' => 1]) }}"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Ordenes de servicio">
+                                        <i class="bi bi-nut-fill"></i>
+                                    </a>
 
                                     <a class="btn btn-success btn-sm"
                                         href="{{ route('contract.renew', ['id' => $contract->id]) }}" data-bs-toggle="tooltip"
@@ -156,8 +166,8 @@
                                         href="{{ route('quality.opportunity-area', ['id' => $contract->customer->id]) }}">
                                         <i class="bi bi-lightbulb-fill"></i>
                                     </a> --}}
-                                    <a href="{{ route('contract.calendar.pdf', $contract->id) }}" class="btn btn-dark btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="Calendario PDF">
+                                    <a href="{{ route('contract.calendar.pdf', $contract->id) }}" class="btn btn-dark btn-sm"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Calendario PDF">
                                         <i class="bi bi-file-pdf-fill"></i>
                                     </a>
                                     <a href="{{ route('contract.destroy', ['id' => $contract->id]) }}"

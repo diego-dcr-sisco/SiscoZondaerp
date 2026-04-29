@@ -48,7 +48,7 @@
                 <div class="col-lg-6 col-12">
                     <div class="border rounded shadow p-3 mb-3">
                         <div class="fw-bold mb-2 fs-5">Usuarios ligados a la sede</div>
-                        <div style="overflow-x: auto; width: 100%;">
+                        <div class="overflow-auto w-100">
                             <table class="table table-sm table-striped">
                                 <thead>
                                     <tr>

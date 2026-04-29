@@ -10,7 +10,7 @@
         </div>
 
         
-        <div style="overflow-x: auto; width: 100%;">
+        <div class="overflow-auto w-100">
             <table class="table table-sm table-bordered table-striped caption-top">
                 <caption class="border rounded-top p-2 text-dark bg-white">
                     {{-- <form action="{{ route('user.search') }}" method="GET">

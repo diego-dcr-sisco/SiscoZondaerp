@@ -20,7 +20,7 @@
 </div>
 
 <!-- Tabla para las evidencias -->
-<div id="evidence-container" style="overflow-x: auto; width: 100%;" style="display: none;">
+<div id="evidence-container" class="overflow-auto w-100" style="display: none;">
     <table class="table table-hover table-sm table-bordered">
         <thead class="table-light">
             <tr>

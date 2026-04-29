@@ -156,7 +156,7 @@
                     </div>
                 @endif
 
-                <div style="overflow-x: auto; width: 100%;">
+                <div class="overflow-auto w-100">
                     <table class="table table-sm table-bordered table-striped" id="graphics-table">
                         <thead>
                             <tr>

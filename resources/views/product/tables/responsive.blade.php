@@ -1,4 +1,4 @@
-<div style="overflow-x: auto; width: 100%;">
+<div class="overflow-auto w-100">
     <table class="table table-hover table-bordered table-striped align-middle mb-4">
         <thead class="table-light sticky-top">
             <tr>

@@ -367,14 +367,17 @@
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-lg-2 d-flex align-items-end gap-2">
-                                                        <button type="submit" class="btn btn-primary btn-sm">
-                                                            <i class="bi bi-funnel-fill"></i> Buscar
-                                                        </button>
-                                                        <a href="{{ route('crm.daily-tracking.index') }}"
-                                                            class="btn btn-secondary btn-sm">
-                                                            <i class="bi bi-x-circle"></i> Limpiar
-                                                        </a>
+                                                    <div class="col-lg-2">
+                                                        <label class="form-label">&nbsp;</label>
+                                                        <div class="d-flex gap-2">
+                                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                                <i class="bi bi-funnel-fill"></i> Buscar
+                                                            </button>
+                                                            <a href="{{ route('crm.daily-tracking.index') }}"
+                                                                class="btn btn-secondary btn-sm">
+                                                                <i class="bi bi-x-circle"></i> Limpiar
+                                                            </a>
+                                                        </div>
                                                     </div>
 
                                                 </div>

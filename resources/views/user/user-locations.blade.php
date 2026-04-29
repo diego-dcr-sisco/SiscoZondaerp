@@ -92,7 +92,7 @@
 
                 <!-- Tabla -->
                 <div class="col-12 col-lg-6 mb-3">
-                    <div style="overflow-x: auto; width: 100%;">
+                    <div class="overflow-auto w-100">
                         <table class="table table-sm table-hover table-bordered mb-0">
                             <thead class="table-light">
                                 <tr>

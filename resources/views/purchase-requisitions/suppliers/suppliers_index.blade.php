@@ -49,7 +49,7 @@
                 </div>
                 
                 
-                <div style="overflow-x: auto; width: 100%;">
+                <div class="overflow-auto w-100">
                     @include('purchase-requisitions.suppliers.tables.index')
                 </div>
                 {{ $suppliers->links('pagination::bootstrap-5') }}

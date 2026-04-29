@@ -40,13 +40,13 @@
     <div class="container-fluid p-3">
 
         <div class="d-flex mb-3">
-            <div class="mb-3">
+            {{-- <div class="mb-3">
                 @can('write_order')
                     <a class="btn btn-primary btn-sm me-2" href="{{ route('order.create') }}">
                         <i class="bi bi-plus-lg fw-bold"></i> {{ __('order.title.create') }}
                     </a>
                 @endcan
-            </div>
+            </div>--}}
 
             <div class="dropdown">
                 <button class="btn btn-success btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
@@ -74,7 +74,7 @@
         @include('order.modals.technicians')
         @include('order.modals.signature')
 
-        <div style="overflow-x: auto; width: 100%;">
+        <div class="overflow-auto w-100">
             @php
                 $offset = ($orders->currentPage() - 1) * $orders->perPage();
             @endphp
@@ -200,13 +200,16 @@
                                 value="{{ request('direction', 'ASC') }}" readonly>
 
                             <!-- Botones -->
-                            <div class="col-lg-2 d-flex align-items-end gap-2">
-                                <button type="submit" class="btn btn-primary btn-sm w-50">
-                                    <i class="bi bi-funnel-fill"></i> Filtrar
-                                </button>
-                                <a href="{{ route('order.index') }}" class="btn btn-secondary btn-sm w-50">
-                                    <i class="bi bi-arrow-counterclockwise"></i> Limpiar
-                                </a>
+                            <div class="col-lg-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                                        <i class="bi bi-funnel-fill"></i> Filtrar
+                                    </button>
+                                    <a href="{{ route('order.index') }}" class="btn btn-secondary btn-sm flex-fill">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </form>

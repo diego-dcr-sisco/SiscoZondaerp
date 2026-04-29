@@ -42,22 +42,25 @@
                             value="{{ request('date_range') }}" placeholder="Selecciona un rango">
                     </div>
 
-            <div class="col-lg-3 d-flex align-items-end justify-content-end gap-2">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-filter"></i> Filtrar
-                </button>
+            <div class="col-lg-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        <i class="bi bi-filter"></i> Filtrar
+                    </button>
 
-                @if (isset($consumptions) && count($consumptions) > 0)
-                    <a href="{{ route('consumptions.export', [
-                        'start_date' => request('start_date', now()->subMonth()->format('Y-m-d')),
-                        'end_date' => request('end_date', now()->format('Y-m-d')),
-                        'customer_id' => request('customer_id', ''),
-                        'product_id' => request('product_id', ''),
-                    ]) }}"
-                        class="btn btn-success">
-                        <i class="bi bi-file-excel"></i> Generar Excel
-                    </a>
-                @endif
+                    @if (isset($consumptions) && count($consumptions) > 0)
+                        <a href="{{ route('consumptions.export', [
+                            'start_date' => request('start_date', now()->subMonth()->format('Y-m-d')),
+                            'end_date' => request('end_date', now()->format('Y-m-d')),
+                            'customer_id' => request('customer_id', ''),
+                            'product_id' => request('product_id', ''),
+                        ]) }}"
+                            class="btn btn-success flex-fill">
+                            <i class="bi bi-file-excel"></i> Generar Excel
+                        </a>
+                    @endif
+                </div>
             </div>
         </form>
     </div>

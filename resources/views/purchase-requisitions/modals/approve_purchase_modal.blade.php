@@ -16,7 +16,7 @@
                     @csrf
                     @method('PUT')
                     <div class="modal-body">
-                        <div style="overflow-x: auto; width: 100%;">
+                        <div class="overflow-auto w-100">
                             <table class="table table-bordered">
                                 <thead>
                                     <tr>

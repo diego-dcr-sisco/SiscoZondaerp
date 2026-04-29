@@ -75,7 +75,7 @@
     <div class="border rounded shadow p-3 mb-3">
         <div class="fw-bold mb-0 fs-5">Cliente</div>
         <div id="selected-customer-container" class="row mt-4">
-            <div style="overflow-x: auto; width: 100%;">
+            <div class="overflow-auto w-100">
                 <table class="table table-bordered table-hover table-sm">
                     <thead class="table-success">
                         <tr>

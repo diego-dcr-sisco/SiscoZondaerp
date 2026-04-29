@@ -20,21 +20,24 @@
                 </div>
             </div>
 
-            <div class="col-lg-4 d-flex align-items-end justify-content-end">
-                <button type="submit" class="btn btn-primary mx-1">
-                    <i class="bi bi-search"></i> Filtrar
-                </button>
+            <div class="col-lg-4">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-fill">
+                        <i class="bi bi-search"></i> Filtrar
+                    </button>
 
-                @if (isset($details) && count($details) > 0)
-                    <a href="{{ route('consumption.product.export', [
-                        'product_id' => $product->id,
-                        'start_date' => request('start_date', now()->subMonth()->format('Y-m-d')),
-                        'end_date' => request('end_date', now()->format('Y-m-d')),
-                    ]) }}"
-                        class="btn btn-success mx-1">
-                        <i class="bi bi-file-excel"></i> Exportar a Excel
-                    </a>
-                @endif
+                    @if (isset($details) && count($details) > 0)
+                        <a href="{{ route('consumption.product.export', [
+                            'product_id' => $product->id,
+                            'start_date' => request('start_date', now()->subMonth()->format('Y-m-d')),
+                            'end_date' => request('end_date', now()->format('Y-m-d')),
+                        ]) }}"
+                            class="btn btn-success flex-fill">
+                            <i class="bi bi-file-excel"></i> Exportar a Excel
+                        </a>
+                    @endif
+                </div>
             </div>
         </form>
     </div>

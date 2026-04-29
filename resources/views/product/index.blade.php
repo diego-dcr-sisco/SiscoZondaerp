@@ -8,7 +8,7 @@
     ])
     <div class="container-fluid">
 
-        <div style="overflow-x: auto; width: 100%;">
+        <div class="overflow-auto w-100">
             <table class="table table-bordered table-striped table-sm">
                 <caption class="border rounded-top p-2 text-dark bg-white caption-top">
                     <form action="{{ route('product.index') }}" method="GET">

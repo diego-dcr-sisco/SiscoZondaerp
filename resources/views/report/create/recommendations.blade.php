@@ -13,7 +13,7 @@
                         placeholder="Buscar recomendaciones...">
                 </div>
 
-                <div style="overflow-x: auto; width: 100%;" style="max-height: 400px; overflow-y: auto;">
+                <div class="overflow-x-auto overflow-y-auto w-full" style="max-height: 400px;">
                     <table class="table table-hover table-sm">
                         <thead class="sticky-top bg-light">
                             <tr>

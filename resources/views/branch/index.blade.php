@@ -18,7 +18,7 @@
         <div class="px-3">
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-0">
-                    <div style="overflow-x: auto; width: 100%;">
+                    <div class="overflow-auto w-100">
                         @include('branch.tables.index')
                     </div>
                 </div>

@@ -8,7 +8,7 @@
             <h1 class="col-auto fs-2 fw-bold m-0"> Lista de movimientos [ {{ $warehouse->name }} ] </h1>
         </div>
         <div class="row justify-content-center">
-            <div style="overflow-x: auto; width: 100%;">
+            <div class="overflow-auto w-100">
                 <table class="table text-center table-bordered table-striped">
                     <thead>
                         <tr>

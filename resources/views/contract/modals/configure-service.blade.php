@@ -492,7 +492,7 @@
                         <div id="ordersCollapse${configId}" class="accordion-collapse collapse show" data-bs-parent="#accordionOrders">
                             <div class="accordion-body">
                                 <h6 class="mb-2 fw-bold">Órdenes de servicio</h6>
-                                <div style="overflow-x: auto; width: 100%;">
+                                <div class="overflow-auto w-100">
                                     <table class="table table-sm table-striped">
                                         <thead>
                                             <tr>

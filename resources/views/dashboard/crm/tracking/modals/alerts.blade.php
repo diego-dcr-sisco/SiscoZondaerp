@@ -14,7 +14,7 @@
                 </div>
                 <div id="pendientesContent" style="display: none;">
                     <p>Total de pendientes: <span id="pendientesCount" class="text-danger">0</span></p>
-                    <div style="overflow-x: auto; width: 100%;">
+                    <div class="overflow-auto w-100">
                         
                     </div>
                 </div>

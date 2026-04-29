@@ -185,7 +185,7 @@
                     </a>
                 </div>
 
-                <div style="overflow-x: auto; width: 100%;">
+                <div class="overflow-auto w-100">
                     <table class="table table-sm table-hover align-middle">
                         <thead class="table-light">
                             <tr>

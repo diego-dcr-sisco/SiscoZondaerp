@@ -10,7 +10,7 @@
                 <div class="border rounded shadow p-3">
                     <h5 class="fw-bold">Últimas 10 revisiones</h5>
                     @if (isset($reviews) && $reviews->count())
-                        <div style="overflow-x: auto; width: 100%;">
+                        <div class="overflow-auto w-100">
                             <table class="table table-sm table-striped">
                                 <thead>
                                     <tr>

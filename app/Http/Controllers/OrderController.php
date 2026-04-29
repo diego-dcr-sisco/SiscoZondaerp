@@ -681,139 +681,139 @@ class OrderController extends Controller
                 'technicians_count' => count($selected_technicians ?? [])
             ]);
 
-        if ($request->missing('technicians')) {
-            $error = 'No se ha seleccionado un técnico.';
-            return back();
-        }
+            if ($request->missing('technicians')) {
+                $error = 'No se ha seleccionado un técnico.';
+                return back();
+            }
 
-        // Guardar el pedido
-        $order->fill($request->all());
-        if ($request->status_id == 1) {
-            $order->closed_by = null;
-        }
-        $order->updated_at = now();
-        $order->save();
+            // Guardar el pedido
+            $order->fill($request->all());
+            if ($request->status_id == 1) {
+                $order->closed_by = null;
+            }
+            $order->updated_at = now();
+            $order->save();
 
-        foreach ($selected_services as $service_data) {
-            $os = OrderService::updateOrCreate([
-                'order_id' => $order->id,
-                'service_id' => $service_data->service_id,
-            ], [
-                'updated_at' => now(),
-            ]);
-
-            $updated_services[] = $os->id;
-
-            $ps = PropagateService::updateOrCreate(
-                [
+            foreach ($selected_services as $service_data) {
+                $os = OrderService::updateOrCreate([
                     'order_id' => $order->id,
                     'service_id' => $service_data->service_id,
-                    'contract_id' => $service_data->contract_id ?? null,
-                    'setting_id' => $service_data->setting_id ?? null,
-                ],
-                [
-                    'text' => $service_data->description ?? null,
+                ], [
                     'updated_at' => now(),
-                ]
-            );
+                ]);
 
-            $updated_propagations[] = $ps->id;
-        }
+                $updated_services[] = $os->id;
 
-        $inactive_users = User::where('status_id', '>=', 3)->pluck('id');
+                $ps = PropagateService::updateOrCreate(
+                    [
+                        'order_id' => $order->id,
+                        'service_id' => $service_data->service_id,
+                        'contract_id' => $service_data->contract_id ?? null,
+                        'setting_id' => $service_data->setting_id ?? null,
+                    ],
+                    [
+                        'text' => $service_data->description ?? null,
+                        'updated_at' => now(),
+                    ]
+                );
 
-        $inactive_tech_ids = Technician::whereIn('user_id', $inactive_users)
-            ->pluck('id')
-            ->toArray();
-
-        /*foreach ($selected_technicians as $technicianId) {
-            $ot = OrderTechnician::updateOrCreate(
-                [
-                    'technician_id' => $technicianId,
-                    'order_id' => $order->id,
-                ],
-                [
-                    'updated_at' => now(),
-                ]
-            );
-
-            $updated_techncians[] = $ot->id;
-        }*/
-
-        $inactive_users = User::where('status_id', '>=', 3)->pluck('id');
-
-        $inactive_tech_ids = Technician::whereIn('user_id', $inactive_users)
-            ->pluck('id')
-            ->toArray();
-
-        foreach ($selected_technicians as $technicianId) {
-            if (in_array($technicianId, $inactive_tech_ids)) {
-                continue;
+                $updated_propagations[] = $ps->id;
             }
 
-            $ot = OrderTechnician::updateOrCreate(
-                [
-                    'technician_id' => $technicianId,
-                    'order_id' => $order->id,
-                ],
-                [
-                    'updated_at' => now(),
-                ]
-            );
+            $inactive_users = User::where('status_id', '>=', 3)->pluck('id');
 
-            $updated_techncians[] = $ot->id;
-        }
+            $inactive_tech_ids = Technician::whereIn('user_id', $inactive_users)
+                ->pluck('id')
+                ->toArray();
 
-        OrderService::where('order_id', $order->id)->whereNotIn('id', $updated_services)->delete();
-        OrderTechnician::where('order_id', $order->id)->whereNotIn('id', $updated_techncians)->delete();
-        PropagateService::where('order_id', $order->id)->whereNotIn('id', $updated_propagations)->delete();
+            /*foreach ($selected_technicians as $technicianId) {
+                $ot = OrderTechnician::updateOrCreate(
+                    [
+                        'technician_id' => $technicianId,
+                        'order_id' => $order->id,
+                    ],
+                    [
+                        'updated_at' => now(),
+                    ]
+                );
 
-        if ($request->replicate_execution) {
-            $services = $order->services();
-            $orders = Order::where('customer_id', $order->customer_id)
-                ->whereIn('id', OrderService::whereIn('service_id', $services->pluck('service.id'))->pluck('order_id'))
-                ->where('status_id', 1)
-                ->get();
-            foreach ($orders as $ord) {
-                $ord->execution = $order->execution;
-                $ord->save();
+                $updated_techncians[] = $ot->id;
+            }*/
+
+            $inactive_users = User::where('status_id', '>=', 3)->pluck('id');
+
+            $inactive_tech_ids = Technician::whereIn('user_id', $inactive_users)
+                ->pluck('id')
+                ->toArray();
+
+            foreach ($selected_technicians as $technicianId) {
+                if (in_array($technicianId, $inactive_tech_ids)) {
+                    continue;
+                }
+
+                $ot = OrderTechnician::updateOrCreate(
+                    [
+                        'technician_id' => $technicianId,
+                        'order_id' => $order->id,
+                    ],
+                    [
+                        'updated_at' => now(),
+                    ]
+                );
+
+                $updated_techncians[] = $ot->id;
             }
-        }
 
-        if ($request->replicate_areas) {
-            $services = $order->services();
-            $orders = Order::where('customer_id', $order->customer_id)
-                ->whereIn('id', OrderService::whereIn('service_id', $services->pluck('service.id'))->pluck('order_id'))
-                ->where('status_id', 1)
-                ->get();
+            OrderService::where('order_id', $order->id)->whereNotIn('id', $updated_services)->delete();
+            OrderTechnician::where('order_id', $order->id)->whereNotIn('id', $updated_techncians)->delete();
+            PropagateService::where('order_id', $order->id)->whereNotIn('id', $updated_propagations)->delete();
 
-            foreach ($orders as $ord) {
-                $ord->areas = $order->areas;
-                $ord->save();
+            if ($request->replicate_execution) {
+                $services = $order->services();
+                $orders = Order::where('customer_id', $order->customer_id)
+                    ->whereIn('id', OrderService::whereIn('service_id', $services->pluck('service.id'))->pluck('order_id'))
+                    ->where('status_id', 1)
+                    ->get();
+                foreach ($orders as $ord) {
+                    $ord->execution = $order->execution;
+                    $ord->save();
+                }
             }
-        }
 
-        if ($request->replicate_comments) {
-            $services = $order->services();
-            $orders = Order::where('customer_id', $order->customer_id)
-                ->whereIn('id', OrderService::whereIn('service_id', $services->pluck('service.id'))->pluck('order_id'))
-                ->where('status_id', 1)
-                ->get();
+            if ($request->replicate_areas) {
+                $services = $order->services();
+                $orders = Order::where('customer_id', $order->customer_id)
+                    ->whereIn('id', OrderService::whereIn('service_id', $services->pluck('service.id'))->pluck('order_id'))
+                    ->where('status_id', 1)
+                    ->get();
 
-            foreach ($orders as $ord) {
-                $ord->additional_comments = $order->additional_comments;
-                $ord->save();
+                foreach ($orders as $ord) {
+                    $ord->areas = $order->areas;
+                    $ord->save();
+                }
             }
-        }
 
-        /*if ($order->technicians()->count() == 1 && $request->status_id != 1) {
-            $order->update(['closed_by' => $order->technicians()->first()->user_id]);
-        }*/
+            if ($request->replicate_comments) {
+                $services = $order->services();
+                $orders = Order::where('customer_id', $order->customer_id)
+                    ->whereIn('id', OrderService::whereIn('service_id', $services->pluck('service.id'))->pluck('order_id'))
+                    ->where('status_id', 1)
+                    ->get();
+
+                foreach ($orders as $ord) {
+                    $ord->additional_comments = $order->additional_comments;
+                    $ord->save();
+                }
+            }
+
+            /*if ($order->technicians()->count() == 1 && $request->status_id != 1) {
+                $order->update(['closed_by' => $order->technicians()->first()->user_id]);
+            }*/
 
             Log::info("OrderController@update - Actualización completada exitosamente", ['order_id' => $id]);
-            
+
             return back()->with('success', 'Orden actualizada correctamente');
-            
+
         } catch (\Exception $e) {
             Log::error("OrderController@update - Error durante actualización", [
                 'order_id' => $id,
@@ -822,7 +822,7 @@ class OrderController extends Controller
                 'file' => $e->getFile(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return back()->withErrors(['error' => 'Error al actualizar la orden: ' . $e->getMessage()]);
         }
     }
@@ -945,9 +945,13 @@ class OrderController extends Controller
 
         if ($request->filled('signature_status')) {
             if ($request->input('signature_status') == 'signed') {
-                $query->whereNotNull('customer_signature');
+                $query->whereNotNull('customer_signature')
+                    ->where('customer_signature', 'NOT LIKE', 'data:image/png;base64,');
             } elseif ($request->input('signature_status') == 'unsigned') {
-                $query->whereNull('customer_signature');
+                $query->where(function ($q) {
+                    $q->whereNull('customer_signature')
+                        ->orWhere('customer_signature', 'LIKE', 'data:image/png;base64,');
+                });
             }
         }
 
