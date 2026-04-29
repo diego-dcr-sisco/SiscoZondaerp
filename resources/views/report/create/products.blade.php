@@ -4,11 +4,12 @@
             onclick="cleanForm()"><i class="bi bi-plus-lg"></i> {{ __('buttons.add') }} Producto </button>
     </div>
     <div class="col-12">
-        <table class="table table-bordered table-striped table-sm">
-            <thead>
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Producto</th>
+        <div class="overflow-x-auto w-full">
+            <table class="table table-bordered table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Producto</th>
                     <th scope="col">Servicio usado</th>
                     <th scope="col">Método de aplicación</th>
                     <th scope="col">Cantidad usada</th>
@@ -51,6 +52,7 @@
                     </tr>
                 @endforeach
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
 </div>

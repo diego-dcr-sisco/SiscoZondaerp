@@ -1,10 +1,11 @@
 <div class="row">
     <div class="col-12">
-        <table class="table table-bordered table-striped text-center">
-            <thead>
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Plaga</th>
+        <div class="overflow-x-auto w-full">
+            <table class="table table-bordered table-striped text-center">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Plaga</th>
                     <th scope="col">Categoría</th>
                     <th scope="col">Cantidad encontrada</th>
                 </tr>
@@ -19,6 +20,7 @@
                     </tr>
                 @endforeach
             </tbody>
-        </table>
+            </table>
+        </div>
     </div>
 </div>

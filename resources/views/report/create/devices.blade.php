@@ -20,12 +20,13 @@
         @endif
     </div>
 
-    <table class="table table-sm table-striped table-hover">
-        <thead class="table-secondary border">
-            <tr>
-                <th scope="col"># (Número)</th>
-                <th scope="col">Código</th>
-                <th scope="col">Nombre</th>
+    <div class="overflow-x-auto w-full">
+        <table class="table table-sm table-striped table-hover">
+            <thead class="table-secondary border">
+                <tr>
+                    <th scope="col"># (Número)</th>
+                    <th scope="col">Código</th>
+                    <th scope="col">Nombre</th>
                 <th scope="col">Plano</th>
                 <th scope="col">Zona</th>
                 <th scope="col">Plaga(s)</th>
@@ -221,7 +222,8 @@
                 </tr>
             @endif
         </tbody>
-    </table>
+        </table>
+    </div>
 @endforeach
 
 
