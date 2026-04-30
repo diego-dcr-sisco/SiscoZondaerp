@@ -7,87 +7,118 @@
             'actionText' => __('user.title.create'),
         ])
         <div class="container-fluid">
-
             <div class="overflow-auto w-100">
                 <table class="table table-sm table-bordered table-striped caption-top">
                     <caption class="border rounded-top p-2 text-dark bg-white">
                         <form action="{{ route('user.search') }}" method="GET">
                             @csrf
-                            <div class="row g-3 mb-0">
-                                <div class="col-lg-4 col-12">
-                                    <label for="customer" class="form-label">Nombre</label>
-                                    <input type="text" class="form-control form-control-sm" id="name" name="name"
-                                        value="{{ request('name') }}" placeholder="Buscar nombre">
+                            <div class="row g-3 mb-3">
+                                <div class="col-lg-2 col-12">
+                                    <label for="name" class="form-label">Nombre</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                        <input type="text" class="form-control" id="name" name="name"
+                                            value="{{ request('name') }}" placeholder="Buscar nombre">
+                                    </div>
                                 </div>
 
-                                <div class="col-lg-4 col-12">
-                                    <label for="date_range" class="form-label">Usuario</label>
-                                    <input type="text" class="form-control form-control-sm" id="username"
-                                        name="username" value="{{ request('username') }}" placeholder="Buscar usuario">
+                                {{-- Usuario --}}
+                                <div class="col-lg-2 col-12">
+                                    <label for="username" class="form-label">Usuario</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-at"></i></span>
+                                        <input type="text" class="form-control" id="username" name="username"
+                                            value="{{ request('username') }}" placeholder="Buscar usuario">
+                                    </div>
                                 </div>
 
-                                <div class="col-lg-4 col-12">
-                                    <label for="time" class="form-label">Correo</label>
-                                    <input type="text" class="form-control form-control-sm" id="email" name="email"
-                                        value="{{ request('email') }}" placeholder="Buscar correo">
+                                {{-- Correo --}}
+                                <div class="col-lg-2 col-12">
+                                    <label for="email" class="form-label">Correo</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+                                        <input type="text" class="form-control" id="email" name="email"
+                                            value="{{ request('email') }}" placeholder="Buscar correo">
+                                    </div>
                                 </div>
 
-                                <div class="col-auto">
-                                    <label for="service" class="form-label">Rol</label>
-                                    <select class="form-select form-select-sm" id="role" name="role"
-                                        value="{{ request('role') }}">
-                                        <option value="">Todos</option>
-                                        @foreach ($roles as $role)
-                                            <option value="{{ $role->id }}"
-                                                {{ request('role') == $role->id ? 'selected' : '' }}>{{ $role->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                {{-- Rol --}}
+                                <div class="col-lg-2">
+                                    <label for="role" class="form-label">Rol</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-shield-check"></i></span>
+                                        <select class="form-select" id="role" name="role">
+                                            <option value="">Todos</option>
+                                            @foreach ($roles as $role)
+                                                <option value="{{ $role->id }}"
+                                                    {{ request('role') == $role->id ? 'selected' : '' }}>
+                                                    {{ $role->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
 
-                                <div class="col-auto">
+                                {{-- Departamento --}}
+                                <div class="col-lg-2">
                                     <label for="wk_dept" class="form-label">Departamento</label>
-                                    <select class="form-select form-select-sm" id="wk_dept" name="wk_dept"
-                                        value="{{ request('role') }}">
-                                        <option value="">Todos</option>
-                                        @foreach ($wk_depts as $wk)
-                                            <option value="{{ $wk->id }}"
-                                                {{ request('wk_dept') == $wk->id ? 'selected' : '' }}>{{ $wk->name }}
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-building"></i></span>
+                                        <select class="form-select" id="wk_dept" name="wk_dept">
+                                            <option value="">Todos</option>
+                                            @foreach ($wk_depts as $wk)
+                                                <option value="{{ $wk->id }}"
+                                                    {{ request('wk_dept') == $wk->id ? 'selected' : '' }}>
+                                                    {{ $wk->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-2">
+                                    <label for="signature_status" class="form-label">Ordenar / Mostrar</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text" id="basic-addon1"><i
+                                                class="bi bi-arrow-down-up"></i></span>
+                                        <select class="form-select form-select-sm" id="direction" name="direction">
+                                            <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
+                                                DESC
                                             </option>
-                                        @endforeach
-                                    </select>
+                                            <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>
+                                                ASC
+                                            </option>
+                                        </select>
+                                        <span class="input-group-text" id="basic-addon1"><i
+                                                class="bi bi-list-ol"></i></span>
+                                        <select class="form-select form-select-sm" id="size" name="size">
+                                            <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25
+                                            </option>
+                                            <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50
+                                            </option>
+                                            <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100
+                                            </option>
+                                            <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200
+                                            </option>
+                                            <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500
+                                            </option>
+                                        </select>
+                                    </div>
                                 </div>
-
-                                <div class="col-auto">
-                                    <label for="signature_status" class="form-label">Dirección</label>
-                                    <select class="form-select form-select-sm" id="direction" name="direction">
-                                        <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>DESC
-                                        </option>
-                                        <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <div class="col-auto">
-                                    <label for="order_type" class="form-label">Total</label>
-                                    <select class="form-select form-select-sm" id="size" name="size">
-                                        <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
-                                        <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
-                                        <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
-                                        <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
-                                        <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
-                                    </select>
-                                </div>
-
-                                <!-- Botones -->
-                                <div class="col-lg-12 d-flex justify-content-end m-0">
-                                    <button type="submit" class="btn btn-primary btn-sm me-2">
+                            </div>
+                            <div class="row justify-content-end g-3 mb-0">
+                                <div class="col-lg-1 col-6">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">
                                         <i class="bi bi-funnel-fill"></i> Filtrar
                                     </button>
                                 </div>
+                                <div class="col-lg-1 col-6">
+                                    <a href="{{ route('user.search') }}" class="btn btn-secondary btn-sm w-100">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                                    </a>
+                                </div>
                             </div>
                         </form>
-
                     </caption>
                     <thead>
                         <tr>

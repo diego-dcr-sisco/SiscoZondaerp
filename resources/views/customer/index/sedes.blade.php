@@ -19,69 +19,95 @@
                     <form action="{{ route('customer.search') }}" method="GET">
                         @csrf
                         <input type="hidden" id="customer-type" name="customer_type" value="2">
-                        <div class="row g-3 mb-0">
-                            <div class="col-lg-4">
-                                <label for="customer" class="form-label">Nombre</label>
-                                <input type="text" class="form-control form-control-sm" id="name" name="name"
-                                    value="{{ request('name') }}" placeholder="Buscar nombre">
+                        <div class="row g-3 mb-3">
+                            {{-- Nombre --}}
+                            <div class="col-lg-2">
+                                <label for="name" class="form-label">Nombre</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                    <input type="text" class="form-control" id="name" name="name"
+                                        value="{{ request('name') }}" placeholder="Buscar nombre">
+                                </div>
                             </div>
+                            {{-- Código --}}
                             <div class="col-lg-2">
                                 <label for="code" class="form-label">Código</label>
-                                <input type="text" class="form-control form-control-sm" id="code" name="code"
-                                    value="{{ request('code') }}" placeholder="Buscar por código (#)">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-hash"></i></span>
+                                    <input type="text" class="form-control" id="code" name="code"
+                                        value="{{ request('code') }}" placeholder="Buscar código">
+                                </div>
                             </div>
+
+                            {{-- Tipo --}}
                             <div class="col-lg-2">
-                                <label for="date_range" class="form-label">Tipo</label>
-                                <select class="form-select form-select-sm" name="service_type">
-                                    <option value="">Todos</option>
-                                    @foreach ($service_types as $service_type)
-                                        <option value="{{ $service_type->id }}"
-                                            {{ request('service_type') == $service_type->id ? 'selected' : '' }}>
-                                            {{ $service_type->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <label for="service_type" class="form-label">Tipo</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-tag-fill"></i></span>
+                                    <select class="form-select" id="service_type" name="service_type">
+                                        <option value="">Todos</option>
+                                        @foreach ($service_types as $service_type)
+                                            <option value="{{ $service_type->id }}"
+                                                {{ request('service_type') == $service_type->id ? 'selected' : '' }}>
+                                                {{ $service_type->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            </div>
+
+                            {{-- Categoría --}}
+                            <div class="col-lg-2">
+                                <label for="category" class="form-label">Categoría</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-grid-fill"></i></span>
+                                    <select class="form-select" id="category" name="category">
+                                        @foreach ($categories as $key => $category)
+                                            <option value="{{ $key }}"
+                                                {{ request('category') == $key || $key == 1 ? 'selected' : '' }}>
+                                                {{ $category }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
 
                             <div class="col-lg-2">
-                                <label for="time" class="form-label">Categoría</label>
-                                <select class="form-select form-select-sm" name="category">
-                                    @foreach ($categories as $key => $category)
-                                        <option value="{{ $key }}"
-                                            {{ request('category') == $key || $key == 2 ? 'selected' : '' }}>
-                                            {{ $category }}
+                                <label for="signature_status" class="form-label">Ordenar / Mostrar</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text" id="basic-addon1"><i
+                                            class="bi bi-arrow-down-up"></i></span>
+                                    <select class="form-select form-select-sm" id="direction" name="direction">
+                                        <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
+                                            DESC
                                         </option>
-                                    @endforeach
-                                </select>
+                                        <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
+                                        </option>
+                                    </select>
+                                    <span class="input-group-text" id="basic-addon1"><i class="bi bi-list-ol"></i></span>
+                                    <select class="form-select form-select-sm" id="size" name="size">
+                                        <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
+                                        <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
+                                        <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100
+                                        </option>
+                                        <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200
+                                        </option>
+                                        <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
-
-                            <div class="col-lg-1">
-                                <label for="signature_status" class="form-label">Dirección</label>
-                                <select class="form-select form-select-sm" id="direction" name="direction">
-                                    <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
-                                        DESC
-                                    </option>
-                                    <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="col-lg-1">
-                                <label for="order_type" class="form-label">Total</label>
-                                <select class="form-select form-select-sm" id="size" name="size">
-                                    <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
-                                    <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
-                                    <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
-                                    <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
-                                    <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
-                                </select>
-                            </div>
-
-                            <!-- Botones -->
-                            <div class="col-lg-12 d-flex justify-content-end">
-                                <button type="submit" class="btn btn-primary btn-sm">
+                        </div>
+                        <div class="row justify-content-end g-3 mb-0">
+                            <div class="col-lg-1 col-6">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
                                     <i class="bi bi-funnel-fill"></i> Filtrar
                                 </button>
+                            </div>
+                            <div class="col-lg-1 col-6">
+                                <a href="{{ route('user.search') }}" class="btn btn-secondary btn-sm w-100">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                                </a>
                             </div>
                         </div>
                     </form>
@@ -132,10 +158,10 @@
                                     </a>
 
                                     <a href="{{ route('customer.graphics', ['id' => $customer->id]) }}"
-                                            class="btn btn-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                            data-bs-title="Estadisticas">
-                                            <i class="bi bi-bar-chart-fill"></i>
-                                        </a>
+                                        class="btn btn-primary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
+                                        data-bs-title="Estadisticas">
+                                        <i class="bi bi-bar-chart-fill"></i>
+                                    </a>
 
                                     <a href="{{ route('customer.edit.sede', ['id' => $customer->id]) }}"
                                         class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
