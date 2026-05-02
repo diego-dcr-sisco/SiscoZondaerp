@@ -1720,11 +1720,17 @@ class ReportController extends Controller
             }
 
             if ($can_propagate) {
-                $orders = Order::where('contract_id', $order->contract_id)
-                    //->where('setting_id', $order->setting_id)
-                    ->where('setting_id', $order->setting_id ?? null)
-                    ->where('status_id', 1)
-                    ->get();
+                $orderQuery = Order::where('contract_id', $order->contract_id)
+                    ->where('status_id', 1);
+                
+                // Manejo correcto de setting_id NULL en SQL
+                if ($order->setting_id) {
+                    $orderQuery->where('setting_id', $order->setting_id);
+                } else {
+                    $orderQuery->whereNull('setting_id');
+                }
+                
+                $orders = $orderQuery->get();
 
                 foreach ($orders as $ord) {
                     PropagateService::updateOrCreate(

@@ -2,7 +2,7 @@
 @section('content')
     @include('components.page-header', [
         'title' => 'PUNTOS DE CONTROL',
-        'icon' => 'bi-journal-check',
+        'icon' => 'bi-geo-fill',
         'actionRoute' => route('point.create'),
         'actionText' => 'Crear punto de control',
     ])

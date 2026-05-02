@@ -70,7 +70,7 @@
 
                         <button class="btn btn-primary btn-sm mb-1" data-bs-toggle="modal" data-bs-target="#trackingModal"
                             data-customer="{{ $customer }}" onclick="setCustomer(this)">
-                            <i class="bi bi-hand-index-fill"></i> {{ __('buttons.tracking') }}
+                            <i class="bi bi-geo-fill"></i> {{ __('buttons.tracking') }}
                         </button>
 
                         @if ($type == 0)

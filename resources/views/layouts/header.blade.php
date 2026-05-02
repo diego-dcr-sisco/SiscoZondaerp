@@ -242,7 +242,7 @@
                                             class="bi bi-calendar-fill"></i>
                                         Contratos</a></li>
                                 <li><a class="dropdown-item text-light" href="{{ route('point.index') }}"><i
-                                            class="bi bi-hand-index-fill"></i>
+                                            class="bi bi-geo-fill"></i>
                                         Puntos de control</a></li>
                             </ul>
                         </li>
