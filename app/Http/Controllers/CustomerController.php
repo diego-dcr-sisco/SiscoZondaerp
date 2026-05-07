@@ -43,6 +43,7 @@ use Carbon\Carbon;
 use File;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -1185,6 +1186,29 @@ class CustomerController extends Controller
                 $startDate->startOfDay(),
                 $endDate->endOfDay(),
             ]);
+        }
+
+        // Filtro por recurrente
+        if ($request->filled('recurrent')) {
+            $recurrent = $request->input('recurrent');
+
+            $orderCount = "(SELECT COUNT(*) FROM `order` AS `o` WHERE `o`.`customer_id` = `customer`.`id`)";
+            $sedesOrderCount = "(SELECT COUNT(*) FROM `order` AS `o` INNER JOIN `customer` AS `s` ON `o`.`customer_id` = `s`.`id` WHERE `s`.`general_sedes` = `customer`.`id`)";
+            $hasSedes = "(SELECT COUNT(*) FROM `customer` AS `s` WHERE `s`.`general_sedes` = `customer`.`id`)";
+
+            if ($recurrent === '1') {
+                $query->whereRaw("(
+                    (`customer`.`general_sedes` != 0 AND {$orderCount} >= 2)
+                    OR (`customer`.`general_sedes` = 0 AND {$hasSedes} > 0 AND {$sedesOrderCount} >= 2)
+                    OR (`customer`.`general_sedes` = 0 AND {$hasSedes} = 0 AND {$orderCount} >= 2)
+                )");
+            } elseif ($recurrent === '0') {
+                $query->whereRaw("(
+                    (`customer`.`general_sedes` != 0 AND {$orderCount} < 2)
+                    OR (`customer`.`general_sedes` = 0 AND {$hasSedes} > 0 AND {$sedesOrderCount} < 2)
+                    OR (`customer`.`general_sedes` = 0 AND {$hasSedes} = 0 AND {$orderCount} < 2)
+                )");
+            }
         }
 
         // Ordenar y paginar

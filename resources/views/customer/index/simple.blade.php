@@ -55,6 +55,19 @@
                                 </div>
                             </div>
 
+                            {{-- Recurrente --}}
+                            <div class="col-lg-2">
+                                <label for="recurrent" class="form-label">Recurrente</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-arrow-repeat"></i></span>
+                                    <select class="form-select" id="recurrent" name="recurrent">
+                                        <option value="">Todos</option>
+                                        <option value="1" {{ request('recurrent') === '1' ? 'selected' : '' }}>Si</option>
+                                        <option value="0" {{ request('recurrent') === '0' ? 'selected' : '' }}>No</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             {{-- Categoría --}}
                             <div class="col-lg-2">
                                 <label for="category" class="form-label">Categoría</label>
