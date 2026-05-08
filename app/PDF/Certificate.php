@@ -596,6 +596,27 @@ class Certificate
         foreach ($services as $service) {
             $recs = OrderRecommendation::where('order_id', $this->order_id)->where('service_id', $service->id)->get();
 
+            if($service->prefix == 2) {
+                $this->data['recommendations'] .= 
+                '<p><strong>ANTES DE LA APLICACIÓN QUÍMICA</strong></p>
+                <ol>
+                    <li>Identificar la plaga a controlar.</li>
+                    <li>No debe encontrarse personal en el área.</li>
+                    <li>No debe de haber materia prima expuesta.</li>
+                    <li>Asegurar que la aplicación no afecte el proceso, producción o a terceros.</li>
+                </ol>
+                <br>
+                <p><strong>DURANTE DE LA APLICACIÓN QUÍMICA</strong></p>
+                <ol>
+                    <li>En el área solo debe de encontrarse el técnico aplicador</li>
+                </ol>
+                <br>
+                <p><strong>DESPUÉS DE LA APLICACIÓN QUÍMICA</strong></p>
+                <ol>
+                    <li>Respetar el tiempo de reentrada conforme a la etiqueta del producto a utilizar.</li>
+                    <li>Realizar recolección de plaga o limpieza necesaria al tipo de área.</li>
+                </ol>';
+            }
             if ($this->isValidRecommendation($recs)) {
                 foreach ($recs as $rec) {
                     $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";
