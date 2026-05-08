@@ -46,19 +46,19 @@ class Certificate
 
     function addBase64Prefix($base64String)
     {
-        $prefix = 'data:image/png;base64,';        
+        $prefix = 'data:image/png;base64,';
         if ($base64String === null || trim($base64String) === '') {
             return null;
         }
-        
+
         $base64String = trim($base64String);
         if ($base64String === $prefix || $base64String === 'data:image/png;base64,' || $base64String === 'data:image/jpeg;base64,') {
             return null;
-        }    
-            
+        }
+
         if (strpos($base64String, 'data:image') === 0) {
             return $base64String;
-        }        
+        }
         return $prefix . $base64String;
     }
 
@@ -140,7 +140,7 @@ class Certificate
         if (trim($html) === '') {
             return '';
         }
-        
+
         $html = str_replace('&nbsp;', '||NBSP_PRESERVE||', $html);
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $html = str_replace('||NBSP_PRESERVE||', '&nbsp;', $html);
@@ -194,7 +194,7 @@ class Certificate
             'notes' => $this->order->notes ?? $this->order->technical_observations . '<br>' . $this->order->comments,
         ];
 
-        }
+    }
 
     public function branch()
     {
@@ -423,10 +423,10 @@ class Certificate
             $is_checked = $device_state ? ($device_state->is_checked || $device_state->is_scanned) : false;
             $has_products = $device->deviceProducts->count() > 0;
             $has_pests = $device->devicePests->count() > 0;
-            $has_answers = $device->incidents->filter(function($incident) {
+            $has_answers = $device->incidents->filter(function ($incident) {
                 return !empty($incident->answer);
             })->count() > 0;
-            
+
             return $is_checked || $has_products || $has_pests || $has_answers;
         });
 
@@ -462,7 +462,7 @@ class Certificate
                         ->pluck('question_id')
                         ->unique()
                         ->toArray();
-                    
+
                     $questions = $questions->whereIn('id', $answered_question_ids);
                 }
 
@@ -596,9 +596,9 @@ class Certificate
         foreach ($services as $service) {
             $recs = OrderRecommendation::where('order_id', $this->order_id)->where('service_id', $service->id)->get();
 
-            if($service->prefix == 2) {
-                $this->data['recommendations'] .= 
-                '<p><strong>ANTES DE LA APLICACIÓN QUÍMICA</strong></p>
+            if ($service->prefix == 2) {
+                $this->data['recommendations'] .=
+                    '<p><strong>ANTES DE LA APLICACIÓN QUÍMICA</strong></p>
                 <ol>
                     <li>Identificar la plaga a controlar.</li>
                     <li>No debe encontrarse personal en el área.</li>
@@ -616,13 +616,14 @@ class Certificate
                     <li>Respetar el tiempo de reentrada conforme a la etiqueta del producto a utilizar.</li>
                     <li>Realizar recolección de plaga o limpieza necesaria al tipo de área.</li>
                 </ol>';
-            }
-            if ($this->isValidRecommendation($recs)) {
-                foreach ($recs as $rec) {
-                    $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";
-                }
             } else {
-                $this->data['recommendations'] = 'Sin recomendaciones';
+                if ($this->isValidRecommendation($recs)) {
+                    foreach ($recs as $rec) {
+                        $this->data['recommendations'] .= $rec->recommendation_text ?? '' . "<br>";
+                    }
+                } else {
+                    $this->data['recommendations'] = 'Sin recomendaciones';
+                }
             }
         }
     }
