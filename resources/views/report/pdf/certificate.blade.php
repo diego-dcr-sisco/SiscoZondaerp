@@ -174,7 +174,7 @@
         }
 
         .signature-cell {
-            width: 50%;
+            width: 33%;
             padding: 15px 10px;
             vertical-align: bottom;
             /* Solo para debug (puedes quitarlo después) */
