@@ -944,29 +944,6 @@ Route::prefix('purchase-requisition')
         Route::get('/exportExcel', [PurchaseRequisitionController::class, 'exportExcel'])->name('export');
     });
 
-// Rutas para consumo de producto por planta
-// Route::prefix('consumption')
-//     ->name('consumption.')
-//     ->middleware('auth')
-//     ->group(function () {
-//         Route::get('/', [PurchaseRequisitionController::class, 'indexConsumption'])->name('index');
-//         Route::get('/create', [ProductController::class, 'createConsumption'])->name('create');
-//         Route::post('/store', [ProductController::class, 'storeConsumption'])->name('store');           
-
-//         // Rutas para consumos totales pasados 
-//         Route::get('/consumptions', [ProductController::class, 'showConsumptions'])->name('show.past');
-//         Route::get('/consumptions/filter', [ProductController::class, 'getPastConsumptions'])->name('past.filter');
-//         Route::get('/filtered', [ProductController::class, 'showFilteredConsumptions'])->name('show.filtered');
-//         Route::get('/total/export', [ProductController::class, 'exportTotalConsumption'])->name('total.export');
-
-//         //Rutas para consumo de cliente especifico 
-//         Route::get('/customer/search', [ProductController::class, 'searchCustomerConsumption'])->name('customer.search');
-
-//         //rutas para consumo de producto 
-//         Route::get('product/detail/{id}', [ProductController::class, 'showProductConsumptionDetail'])->name('product.detail');
-//         Route::get('/product/{product_id}/export', [ProductController::class, 'exportProductConsumption'])->name('product.export');
-//     });
-
 // Rutas para zonas de clientes (customer_zones)
 Route::prefix('comercial-zones')
     ->name('comercial-zones.')
