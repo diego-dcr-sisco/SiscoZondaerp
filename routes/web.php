@@ -977,7 +977,7 @@ Route::prefix('consumptions')
         Route::put('/update/{id}', [ConsumptionController::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [ConsumptionController::class, 'destroy'])->name('destroy');
         Route::delete('/destroy-group', [ConsumptionController::class, 'destroyGroup'])->name('destroy-group');
-        //Route::get('/export', [ConsumptionController::class, 'export'])->name('export');
+        Route::get('/export', [ConsumptionController::class, 'export'])->name('export');
 
         // Ruta para consumos totales pasados
         Route::get('/', [ConsumptionController::class, 'index'])->name('index');
