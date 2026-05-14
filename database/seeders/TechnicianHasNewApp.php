@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\User;
 use App\Models\UserLocation;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -14,12 +15,11 @@ class TechnicianHasNewApp extends Seeder
     public function run(): void
     {
 
-        $user_location = UserLocation::select('user_id', 'created_at')
-            ->groupBy('user_id')
-            ->get();
+        $user_location_ids = UserLocation::select('user_id')->get()->unique();
+        $users = User::whereIn('id', $user_location_ids)->get();
 
-        foreach ($user_location as $i => $location) {
-            echo "| Nombre: $location->user->name | Actualizado: $location->created_at |" . PHP_EOL;
+        foreach ($users as $i => $user) {
+            echo "| Nombre: $user->name |" . PHP_EOL;
         }
     }
 }
