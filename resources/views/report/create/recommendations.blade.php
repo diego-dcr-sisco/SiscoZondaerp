@@ -73,10 +73,8 @@
                         <div id="summary-recs{{ $service->id }}" class="smnote smnote-recommendation"
                             data-autosave-type="recommendation" data-service-id="{{ $service->id }}" style="height: 300px">
                             @if ($order->hasRecommendations($service->id))
-                                {{ 'Hola esto es una prueba' }}
                                 {!! $order->reportRecommendations->where('service_id', $service->id)->first()->recommendation_text !!}
                             @else
-                            {{ 'Hola esto es una prueba2' }}
                                 @if ($service->prefix == 2)
                                     <p><strong>ANTES DE LA APLICACIÓN QUÍMICA</strong></p>
                                     <ol>
