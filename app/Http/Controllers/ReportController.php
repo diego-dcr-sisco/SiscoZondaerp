@@ -678,7 +678,7 @@ class ReportController extends Controller
         $order_products = OrderProduct::where('order_id', $order->id)->get();
 
 
-        if ($devices_products->isNotEmpty() && $order_products->isEmpty()) {
+        /*if ($devices_products->isNotEmpty() && $order_products->isEmpty()) {
             // Agrupar DeviceProduct por product_id y lot_id
             $grouped_devices = $devices_products->groupBy(function ($item) {
                 return $item->product_id . '_' . ($item->lot_id ?? 'null');
@@ -720,7 +720,7 @@ class ReportController extends Controller
                     ]);
                 }
             }
-        }
+        }*/
 
         return view('report.create', compact(
             'order',
