@@ -526,6 +526,20 @@ class ClientController extends Controller
         $uploadedFiles = [];
         $skippedFiles = [];
         $errors = [];
+        $existingFilenames = [];
+
+        try {
+            foreach ($this->diskListContents($file_path, false) as $item) {
+                if ($item->isFile()) {
+                    $existingFilenames[basename($item->path())] = true;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning("No se pudo listar la carpeta antes de subir archivos: " . $e->getMessage(), [
+                'path' => $file_path,
+                'disk' => $this->disk_type,
+            ]);
+        }
 
         foreach ($files as $file) {
             if (!$file->isValid()) {
@@ -544,26 +558,27 @@ class ClientController extends Controller
 
             try {
                 // Verificar si el archivo ya existe
-                if ($this->diskFileExists($fullPath)) {
+                if (isset($existingFilenames[$filename])) {
                     // Obtener timestamp para nombre único
                     $timestamp = time();
                     $pathInfo = pathinfo($filename);
                     $extension = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';
                     $basename = $pathInfo['filename'];
+                    $counter = 0;
 
                     // Crear nuevo nombre con timestamp
-                    $filename = $basename . '_' . $timestamp . $extension;
-                    $fullPath = $file_path . '/' . $filename;
+                    do {
+                        $suffix = $counter === 0 ? $timestamp : $timestamp . '_' . $counter;
+                        $filename = $basename . '_' . $suffix . $extension;
+                        $counter++;
+                    } while (isset($existingFilenames[$filename]));
 
-                    // Verificar nuevamente (por si acaso)
-                    if ($this->diskFileExists($fullPath)) {
-                        $skippedFiles[] = $originalFilename . ' (ya existe)';
-                        continue;
-                    }
+                    $fullPath = $file_path . '/' . $filename;
                 }
 
                 // Subir el archivo
                 $this->diskWrite($fullPath, file_get_contents($file->getRealPath()));
+                $existingFilenames[$filename] = true;
                 $uploadedFiles[] = $filename;
 
             } catch (\Exception $e) {
