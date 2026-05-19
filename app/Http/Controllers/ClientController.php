@@ -284,6 +284,71 @@ class ClientController extends Controller
         return $data;
     }
 
+    private function directoryPathVariants(string $path): array
+    {
+        $normalizedPath = trim(str_replace('\\', '/', rawurldecode($path)), '/');
+
+        return array_values(array_unique([
+            $path,
+            $normalizedPath,
+            Str::finish($normalizedPath, '/'),
+        ]));
+    }
+
+    private function buildDirectoryViewState(User $user, array $paths): array
+    {
+        $isAdminDepartment = in_array($user->work_department_id, [1, 7]);
+        $permissionPaths = $user->directories->pluck('path')->all();
+        $permissionPathSet = array_fill_keys($permissionPaths, true);
+
+        $pathVariantsByPath = [];
+        $allPathVariants = [];
+
+        foreach ($paths as $path) {
+            $pathVariantsByPath[$path] = $this->directoryPathVariants($path);
+            $allPathVariants = array_merge($allPathVariants, $pathVariantsByPath[$path]);
+        }
+
+        $managementRows = empty($allPathVariants)
+            ? collect()
+            : DirectoryManagement::whereIn('path', array_values(array_unique($allPathVariants)))->get();
+
+        $directoryVisibility = [];
+        $directoryAccess = [];
+        $directoryPermissionExact = [];
+
+        foreach ($paths as $path) {
+            $variants = $pathVariantsByPath[$path];
+            $matches = $managementRows->whereIn('path', $variants);
+            $dirManagement = $matches->firstWhere('user_id', $user->id);
+
+            if (!$dirManagement && $isAdminDepartment) {
+                $dirManagement = $matches->firstWhere('is_visible', false) ?? $matches->first();
+            }
+
+            $directoryVisibility[$path] = $dirManagement ? (bool) $dirManagement->is_visible : true;
+            $directoryPermissionExact[$path] = isset($permissionPathSet[$path]);
+            $directoryAccess[$path] = $directoryPermissionExact[$path] || $this->pathIsInsideAnyDirectory($path, $permissionPaths);
+        }
+
+        return [$isAdminDepartment, $directoryVisibility, $directoryAccess, $directoryPermissionExact];
+    }
+
+    private function pathIsInsideAnyDirectory(string $pathToCheck, array $permissionPaths): bool
+    {
+        $normalizedPath = Str::finish($pathToCheck, '/');
+
+        foreach ($permissionPaths as $permissionPath) {
+            $normalizedBase = Str::finish($permissionPath, '/');
+
+            if (Str::startsWith($normalizedPath, $normalizedBase)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function getPermissions($dirs)
     {
         $permissions = [];
@@ -395,11 +460,18 @@ class ClientController extends Controller
         sort($local_files);
 
         $links = $this->getBreadcrumb($path);
-        $user = User::find(Auth::id());
+        $user = User::with('directories')->find(Auth::id());
 
         if ($this->diskDirectoryExists($dir_name)) {
             [$mip_dirs, $mip_files] = $this->listDirectoryContentsByType($dir_name);
         }
+
+        [
+            $isAdminDepartment,
+            $directoryVisibility,
+            $directoryAccess,
+            $directoryPermissionExact,
+        ] = $this->buildDirectoryViewState($user, array_merge($local_dirs, $mip_dirs));
 
         $data = [
             'root_path' => $path,
@@ -409,7 +481,16 @@ class ClientController extends Controller
             'mip_files' => $this->localClientSystemFormat($mip_files)
         ];
 
-        return view('client.directory.index', compact('data', 'links', 'user', 'navigation'));
+        return view('client.directory.index', compact(
+            'data',
+            'links',
+            'user',
+            'navigation',
+            'isAdminDepartment',
+            'directoryVisibility',
+            'directoryAccess',
+            'directoryPermissionExact'
+        ));
     }
 
     public function mip(string $path)

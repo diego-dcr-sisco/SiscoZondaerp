@@ -82,7 +82,7 @@
                 <table class="table table-sm table-hover align-middle">
                     <tbody>
                         @foreach ($data['mip_directories'] as $dir)
-                            @if ($user->hasDirectory($dir['path']) || in_array($user->work_department_id, [1, 7]))
+                            @if (($directoryPermissionExact[$dir['path']] ?? false) || $isAdminDepartment)
                                 <tr>
                                     <td class="w-75">
                                         <a href="{{ route('client.system.index', ['path' => $dir['path']]) }}"
@@ -100,8 +100,7 @@
 
                         @foreach ($data['directories'] as $dir)
                             @php
-                                $isAdminDepartment = in_array($user->work_department_id, [1, 7]);
-                                $isVisible = $user->dirManagement($dir['path']);
+                                $isVisible = $directoryVisibility[$dir['path']] ?? true;
                             @endphp
                             @if ($isAdminDepartment)
                                 <tr class="{{ $isVisible ? '' : 'table-secondary' }}">
@@ -152,7 +151,7 @@
                                     </td>
                                 </tr>
                             @else
-                                @if (($user->hasDirectory($dir['path']) || $user->hasPathInside($dir['path'])) && $isVisible)
+                                @if (($directoryAccess[$dir['path']] ?? false) && $isVisible)
                                     <tr>
                                         <td class="w-75">
                                             <a href="{{ route('client.system.index', ['path' => $dir['path']]) }}"
