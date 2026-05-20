@@ -979,8 +979,6 @@ Route::prefix('consumptions')
         Route::delete('/destroy-group', [ConsumptionController::class, 'destroyGroup'])->name('destroy-group');
         Route::get('/export', [ConsumptionController::class, 'export'])->name('export');
 
-        // Ruta para consumos totales pasados
-        Route::get('/', [ConsumptionController::class, 'index'])->name('index');
         //Rutas para filtrado de consumos pasados  
         Route::get('/filter', [ConsumptionController::class, 'getConsumptionsFiltered'])->name('consumptions.filter');
         Route::get('/total/export', [ConsumptionController::class, 'exportTotalConsumption'])->name('total.export');
@@ -1001,7 +999,7 @@ Route::prefix('consumptions')
 
         // AJAX routes
         Route::get('/customers-by-zone', [ConsumptionController::class, 'getCustomersByZone'])->name('customers-by-zone');
-        Route::post('/export', [ConsumptionController::class, 'exportConsumptions'])->name('export');
+        Route::post('/export', [ConsumptionController::class, 'exportConsumptions'])->name('export.post');
     });
 
 // Rutas para los provedores (supplier)

@@ -27,11 +27,11 @@ Route::post('/v14/report/pestcontrol', [AppController::class, 'setPestControlV14
 
 Route::post('/optyareas/store', [AppController::class, 'setOpportunityAreas']);
 
-Route::get('/refresh-new-customers', [GraphicController::class, 'refreshNewCustomers'])->name('crm.chart.customers');
-Route::get('/refresh-new-customers-by-year', [GraphicController::class, 'refreshNewCustomersByYear'])->name('crm.chart.customersByYear');
-Route::get('/refresh-leads', [GraphicController::class, 'refreshLeadsDataset'])->name('crm.chart.monthlyLeads');
+Route::get('/refresh-new-customers', [GraphicController::class, 'refreshNewCustomers'])->name('api.crm.chart.customers');
+Route::get('/refresh-new-customers-by-year', [GraphicController::class, 'refreshNewCustomersByYear'])->name('api.crm.chart.customersByYear');
+Route::get('/refresh-leads', [GraphicController::class, 'refreshLeadsDataset'])->name('api.crm.chart.monthlyLeads');
 Route::get('/refresh-monthlyServices', [GraphicController::class, 'refreshMonthlyServices'])->name('api.crm.chart.monthlyServices');
-Route::get('/refresh-service-orders', [GraphicController::class, 'refreshServiceOrders'])->name('crm.chart.serviceOrders');
+Route::get('/refresh-service-orders', [GraphicController::class, 'refreshServiceOrders'])->name('api.crm.chart.serviceOrders');
 
 Route::get('/lots', [LotController::class, 'getLotsByProduct']);
 
@@ -42,5 +42,4 @@ Route::post('/device/update-location', [AppController::class, 'updateDeviceLocat
 
 // Incluir rutas de ubicación GPS
 require __DIR__.'/api_locations.php';
-
 
