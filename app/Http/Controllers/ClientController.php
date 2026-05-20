@@ -23,6 +23,7 @@ use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use League\Flysystem\FilesystemOperator;
 
 class ClientController extends Controller
@@ -274,11 +275,31 @@ class ClientController extends Controller
 
     private function cachedListDirectoryContentsByType(string $path): array
     {
-        return Cache::remember(
-            $this->directoryListingCacheKey($path),
-            now()->addSeconds($this->directoryCacheSeconds),
-            fn() => $this->listDirectoryContentsByType($path)
-        );
+        $cacheKey = $this->directoryListingCacheKey($path);
+        $cachedListing = Cache::get($cacheKey);
+
+        if ($cachedListing !== null) {
+            return $cachedListing;
+        }
+
+        $lock = Cache::lock($cacheKey . ':lock', 15);
+
+        try {
+            return $lock->block(8, function () use ($cacheKey, $path) {
+                return Cache::remember(
+                    $cacheKey,
+                    now()->addSeconds($this->directoryCacheSeconds),
+                    fn() => $this->listDirectoryContentsByType($path)
+                );
+            });
+        } catch (LockTimeoutException $e) {
+            Log::warning('Client directory listing lock timeout.', [
+                'path' => $path,
+                'disk' => $this->disk_type,
+            ]);
+
+            return [[], []];
+        }
     }
 
     private function forgetDirectoryListingCache(string ...$paths): void
