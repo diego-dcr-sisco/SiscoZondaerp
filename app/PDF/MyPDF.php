@@ -480,7 +480,9 @@ class MyPDF extends TCPDF
     public function Products()
     {
         $headers = ['Materia activa', 'No Registro', 'Plazo seguridad', 'Método de aplicación', 'Dosificación', 'Consumo', 'Lote'];
-        $order_products = OrderProduct::where('order_id', $this->orderId)->get();
+        $order_products = OrderProduct::with(['product.metric', 'metric', 'appMethod', 'lot'])
+            ->where('order_id', $this->orderId)
+            ->get();
         $step = 10;
         $startX = $this->GetX();
         $y = $this->GetY();
@@ -596,7 +598,7 @@ class MyPDF extends TCPDF
     public function Devices()
     {
         $headers = ['Zona', 'Código', 'Producto y consumo'];
-        $order = Order::find($this->orderId);
+        $order = Order::with(['customer:id,name', 'services:id'])->find($this->orderId);
         $services = $order->services;
         $floorplans = FloorPlans::where('customer_id', $order->customer->id)
             ->whereIn('service_id', $services->pluck('id')->toArray())
@@ -632,26 +634,40 @@ class MyPDF extends TCPDF
                 if (!$version)
                     continue;
 
-                $devices = $floorplan->devices($version)->orderBy('itemnumber', 'asc')->get();
+                $devices = $floorplan->devices($version)
+                    ->with([
+                        'applicationArea:id,name',
+                        'controlPoint:id,name,code',
+                        'deviceProducts' => function ($query) {
+                            $query->where('order_id', $this->orderId)
+                                ->with('product.metric');
+                        },
+                        'devicePests' => function ($query) {
+                            $query->where('order_id', $this->orderId)
+                                ->with('pest:id,name');
+                        },
+                        'incidents' => function ($query) {
+                            $query->where('order_id', $this->orderId);
+                        },
+                        'deviceStates' => function ($query) {
+                            $query->where('order_id', $this->orderId);
+                        },
+                    ])
+                    ->orderBy('itemnumber', 'asc')
+                    ->get();
                 
                 // Filtrar solo dispositivos revisados
                 // Incluir dispositivos que tengan is_checked, productos, plagas o respuestas
                 // (estos son los dispositivos que estaban revisados al momento de aprobar o en proceso)
-                $order = Order::find($this->orderId);
                 $devices = $devices->filter(function ($device) use ($order) {
-                    $device_state = $device->states($this->orderId)->first();
+                    $device_state = $device->deviceStates->first();
                     $is_checked = $device_state ? ($device_state->is_checked || $device_state->is_scanned) : false;
-                    $has_products = DeviceProduct::where('device_id', $device->id)
-                        ->where('order_id', $this->orderId)
-                        ->exists();
-                    $has_pests = DevicePest::where('device_id', $device->id)
-                        ->where('order_id', $this->orderId)
-                        ->exists();
-                    $has_answers = OrderIncidents::where('device_id', $device->id)
-                        ->where('order_id', $this->orderId)
+                    $has_products = $device->deviceProducts->isNotEmpty();
+                    $has_pests = $device->devicePests->isNotEmpty();
+                    $has_answers = $device->incidents
                         ->whereNotNull('answer')
                         ->where('answer', '!=', '')
-                        ->exists();
+                        ->isNotEmpty();
                     
                     return $is_checked || $has_products || $has_pests || $has_answers;
                 });
@@ -671,7 +687,7 @@ class MyPDF extends TCPDF
                 $this->Ln(2);
 
                 $control_types = array_unique($devices->pluck('type_control_point_id')->toArray());
-                $points = ControlPoint::whereIn('id', $control_types)->get();
+                $points = ControlPoint::with('questions')->whereIn('id', $control_types)->get();
 
                 foreach ($points as $point) {
                     $step = 10; // Reduced step for minimal row height
@@ -682,19 +698,20 @@ class MyPDF extends TCPDF
                         $update_headers = $headers;
                     }
 
-                    $questions = $point->questions()->get();
+                    $questions = $point->questions;
                     
                     // Si el reporte está aprobado, filtrar solo preguntas con al menos una respuesta
                     if ($order && $order->status_id == 5) {
-                        $device_ids = $devices->where('type_control_point_id', $point->id)->pluck('id')->toArray();
-                        $answered_question_ids = OrderIncidents::where('order_id', $this->orderId)
-                            ->whereIn('device_id', $device_ids)
-                            ->whereNotNull('answer')
-                            ->where('answer', '!=', '')
-                            ->pluck('question_id')
-                            ->unique()
-                            ->toArray();
-                        
+                        $answered_question_ids = $devices
+                            ->where('type_control_point_id', $point->id)
+                            ->flatMap(function ($device) {
+                                return $device->incidents
+                                    ->whereNotNull('answer')
+                                    ->where('answer', '!=', '')
+                                    ->pluck('question_id');
+                            })
+                            ->unique();
+
                         $questions = $questions->whereIn('id', $answered_question_ids);
                     }
                     
@@ -756,18 +773,14 @@ class MyPDF extends TCPDF
                         // Procesar datos del dispositivo
                         $reviews = [];
                         $product_name = '';
-                        $pest_reviews = DevicePest::where('device_id', $device->id)
-                            ->where('order_id', $this->orderId)
-                            ->get();
+                        $pest_reviews = $device->devicePests;
 
                         foreach ($pest_reviews as $pest_review) {
                             $reviews[] = "({$pest_review->total}) {$pest_review->pest->name}";
                         }
 
-                        $device_state = $device->states($this->orderId);
-                        $product_device = DeviceProduct::where('device_id', $device->id)
-                            ->where('order_id', $this->orderId)
-                            ->first();
+                        $device_state = $device->deviceStates->first();
+                        $product_device = $device->deviceProducts->first();
 
                         // Procesamiento consistente de datos
                         $product_name = $product_device
@@ -776,6 +789,8 @@ class MyPDF extends TCPDF
                             : '-';
 
                         $text = !empty($reviews) ? implode(', ', $reviews) : '-';
+                        $pest_text = $text !== '-' ? $text : null;
+                        $incidentsByQuestion = $device->incidents->keyBy('question_id');
 
                         // Calcular altura necesaria para el texto más largo (product_name o text)
                         $longestText = (strlen($product_name) > strlen($text)) ? $product_name : $text;
@@ -816,17 +831,13 @@ class MyPDF extends TCPDF
 
                         // inicio de preguntas de dispositivos        
                         foreach ($questions as $question) {
-                            $incident = OrderIncidents::where('order_id', $this->orderId)
-                                ->where('device_id', $device->id)
-                                ->where('question_id', $question->id)
-                                ->first();
+                            $incident = $incidentsByQuestion->get($question->id);
                                 
                              if (!$observation) {
-                                $observation = OrderIncidents::where('order_id', $this->orderId)
-                                    ->where('device_id', $device->id)
+                                $observation = $device->incidents
                                     ->whereIn('question_id', [33, 34, 35])
                                     ->first()
-                                    ->answer ?? null;
+                                    ?->answer;
                             }
 
                             $answer = $incident ? $incident->answer : null;

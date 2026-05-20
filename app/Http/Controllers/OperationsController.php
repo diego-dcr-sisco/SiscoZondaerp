@@ -10,6 +10,7 @@ use App\Models\Technician;
 use App\Models\User;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 
 class OperationsController extends Controller
 {
@@ -68,8 +69,8 @@ class OperationsController extends Controller
         $orders->appends($request->except('page'));
 
         // Obtener distribución por planta (según filtros, no por paginación)
-        $queryForBranches = Order::with(['customer.branch'])
-            ->where('status_id', 1);
+        $queryForBranches = Order::query()
+            ->where('order.status_id', 1);
 
         // Aplicar los mismos filtros
         if ($request->filled('start_date')) {
@@ -96,21 +97,17 @@ class OperationsController extends Controller
             }
         }
 
-        // Obtener las órdenes completas y agrupar por planta
-        $ordersByBranch = $queryForBranches->get()
-            ->groupBy(function ($order) {
-                return $order->customer && $order->customer->branch 
-                    ? $order->customer->branch->name 
-                    : 'Sin Planta';
-            })
-            ->map(function ($orders) {
-                return $orders->count();
-            })
-            ->sortDesc();
+        $ordersByBranch = $queryForBranches
+            ->leftJoin('customer', 'order.customer_id', '=', 'customer.id')
+            ->leftJoin('branch', 'customer.branch_id', '=', 'branch.id')
+            ->selectRaw('COALESCE(branch.name, "Sin Planta") as branch_name, COUNT(*) as total')
+            ->groupBy('branch_name')
+            ->orderByDesc('total')
+            ->pluck('total', 'branch_name');
 
         // Obtener distribución por cliente (según filtros, no por paginación)
-        $queryForCustomers = Order::with(['customer'])
-            ->where('status_id', 1);
+        $queryForCustomers = Order::query()
+            ->where('order.status_id', 1);
 
         // Aplicar los mismos filtros
         if ($request->filled('start_date')) {
@@ -137,17 +134,12 @@ class OperationsController extends Controller
             }
         }
 
-        // Obtener las órdenes completas y agrupar por cliente
-        $ordersByCustomer = $queryForCustomers->get()
-            ->groupBy(function ($order) {
-                return $order->customer 
-                    ? $order->customer->name 
-                    : 'Sin Cliente';
-            })
-            ->map(function ($orders) {
-                return $orders->count();
-            })
-            ->sortDesc();
+        $ordersByCustomer = $queryForCustomers
+            ->leftJoin('customer', 'order.customer_id', '=', 'customer.id')
+            ->selectRaw('COALESCE(customer.name, "Sin Cliente") as customer_name, COUNT(*) as total')
+            ->groupBy('customer_name')
+            ->orderByDesc('total')
+            ->pluck('total', 'customer_name');
 
         return view('dashboard.operations.index', compact('orders', 'technicians', 'ordersByBranch', 'ordersByCustomer'));
     }

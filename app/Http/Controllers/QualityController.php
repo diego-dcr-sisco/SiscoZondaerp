@@ -540,9 +540,14 @@ class QualityController extends Controller
             }, explode(' - ', $date));
             $startDate = $startDate->format('Y-m-d');
             $endDate = $endDate->format('Y-m-d');
-            $orders = Order::whereBetween('programmed_date', [$startDate, $endDate])->get();
-            $order_technicias = OrderTechnician::whereIn('order_id', $orders->pluck('id'))->get();
-            $technicians = User::whereIn('id', Technician::whereIn('id', $order_technicias->pluck('technician_id'))->get()->pluck('user_id'))->get();
+            $technicians = User::select('user.id', 'user.name')
+                ->join('technician', 'technician.user_id', '=', 'user.id')
+                ->join('order_technician', 'order_technician.technician_id', '=', 'technician.id')
+                ->join('order', 'order.id', '=', 'order_technician.order_id')
+                ->whereBetween('order.programmed_date', [$startDate, $endDate])
+                ->distinct()
+                ->orderBy('user.name')
+                ->get();
         }
 
         $data = [
@@ -598,42 +603,72 @@ class QualityController extends Controller
     public function devices(string $id, Request $request)
     {
         $customer = Customer::find($id);
-        $floorplans = FloorPlans::where('customer_id', $customer->id)->get();
+        $floorplans = FloorPlans::with('versions:id,floorplan_id,version')
+            ->where('customer_id', $customer->id)
+            ->get(['id', 'customer_id', 'filename']);
         $filterName = $request->input('name');
         $filterCode = $request->input('code');
 
         $deviceSummary = [];
-        foreach ($floorplans as $floorplan) {
-            $last_version = $floorplan->versions()->latest('version')->value('version');
-            $devices = $floorplan->devices($last_version)->get();
-            foreach ($devices as $device) {
-                // filtros
-            $matchesName = empty($filterName) || stripos($device->controlPoint->name, $filterName) !== false;
-            $matchesCode = empty($filterCode) || stripos($device->controlPoint->code, $filterCode) !== false;
-            
-            if (!$matchesName || !$matchesCode) {
-                continue; // Saltar dispositivo si no cumple con los filtros
+
+        $versionsByFloorplan = $floorplans
+            ->mapWithKeys(fn ($floorplan) => [$floorplan->id => $floorplan->versions->first()?->version])
+            ->filter();
+
+        $devices = collect();
+
+        if ($versionsByFloorplan->isNotEmpty()) {
+            $devicesQuery = Device::with([
+                'controlPoint:id,name,code',
+                'applicationArea:id,name',
+                'floorplan:id,filename',
+            ])
+                ->where(function ($query) use ($versionsByFloorplan) {
+                    foreach ($versionsByFloorplan as $floorplanId => $version) {
+                        $query->orWhere(function ($q) use ($floorplanId, $version) {
+                            $q->where('floorplan_id', $floorplanId)
+                                ->where('version', $version);
+                        });
+                    }
+                });
+
+            if ($filterName) {
+                $devicesQuery->whereHas('controlPoint', fn ($q) => $q->where('name', 'LIKE', $filterName . '%'));
             }
-                $deviceId = $device->controlPoint->id;
-                if (!isset($deviceSummary[$deviceId])) {
-                    $deviceSummary[$deviceId] = [
-                        'id' => $deviceId,
-                        'name' => $device->controlPoint->name,
-                        'count' => 0,
-                        'code' => $device->controlPoint->code,
-                        'floorplans' => [],
-                        'zones' => [],
-                    ];
-                }
-                $deviceSummary[$deviceId]['count']++;
 
-                if (!in_array($device->applicationArea->name, $deviceSummary[$deviceId]['zones'])) {
-                    $deviceSummary[$deviceId]['zones'][] = $device->applicationArea->name;
-                }
+            if ($filterCode) {
+                $devicesQuery->whereHas('controlPoint', fn ($q) => $q->where('code', 'LIKE', $filterCode . '%'));
+            }
 
-                if (!in_array($floorplan->filename, $deviceSummary[$deviceId]['floorplans'])) {
-                    $deviceSummary[$deviceId]['floorplans'][] = $floorplan->filename;
-                }
+            $devices = $devicesQuery->get();
+        }
+
+        foreach ($devices as $device) {
+            if (!$device->controlPoint) {
+                continue;
+            }
+
+            $deviceId = $device->controlPoint->id;
+            if (!isset($deviceSummary[$deviceId])) {
+                $deviceSummary[$deviceId] = [
+                    'id' => $deviceId,
+                    'name' => $device->controlPoint->name,
+                    'count' => 0,
+                    'code' => $device->controlPoint->code,
+                    'floorplans' => [],
+                    'zones' => [],
+                ];
+            }
+            $deviceSummary[$deviceId]['count']++;
+
+            $zoneName = $device->applicationArea->name ?? null;
+            if ($zoneName && !in_array($zoneName, $deviceSummary[$deviceId]['zones'])) {
+                $deviceSummary[$deviceId]['zones'][] = $zoneName;
+            }
+
+            $floorplanName = $device->floorplan->filename ?? null;
+            if ($floorplanName && !in_array($floorplanName, $deviceSummary[$deviceId]['floorplans'])) {
+                $deviceSummary[$deviceId]['floorplans'][] = $floorplanName;
             }
         }
         $navigation = [
@@ -659,7 +694,7 @@ class QualityController extends Controller
         $orders = [];
 
         if (!empty($request->search)) {
-            $searchTerm = '%' . $request->search . '%';
+            $searchTerm = $request->search . '%';
             $customerIDs = Customer::where('name', 'LIKE', $searchTerm)->pluck('id');
             $orders = Order::whereIn('customer_id', $customerIDs)->pluck('id');
             // orWhere()
@@ -685,17 +720,12 @@ class QualityController extends Controller
             $orders = [];
             return response()->json(['orders' => $orders, 'technicianSelected' => $technicianSelected]);
         }
-        $orders = $orders->get();
-
-        foreach ($orders as $order) {
-            foreach ($order->technicians as $technician) {
-                $id_technician = $technician->id;
-                if (!isset($technicianSelected[$id_technician])) {
-                    $technicianSelected[$id_technician] = $id_technician;
-                }
-            }
-        }
-        $technicianSelected = array_values($technicianSelected);
+        $orders = $orders->with('technicians:id')->get();
+        $technicianSelected = $orders
+            ->flatMap(fn ($order) => $order->technicians->pluck('id'))
+            ->unique()
+            ->values()
+            ->all();
         return response()->json(['orders' => $orders, 'technicianSelected' => $technicianSelected]);
     }
 

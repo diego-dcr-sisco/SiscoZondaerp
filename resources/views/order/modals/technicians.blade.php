@@ -49,13 +49,23 @@
 </div>
 
 <script>
+    let searchingTechnicians = false;
+    let assigningTechnicians = false;
+
     function searchTechnicianByInterval() {
+        if (searchingTechnicians) {
+            return;
+        }
+
         var form_data = new FormData();
         var csrfToken = $('meta[name="csrf-token"]').attr("content");
         var date_range = $('#date-range-technician').val();
         var customer_range = $('#customer-range').val();
         form_data.append('date', date_range);
         form_data.append('customer_id', customer_range);
+
+        searchingTechnicians = true;
+        $('#search-technicians').prop('disabled', true);
 
         $.ajax({
             url: "{{ route('order.search.technician') }}",
@@ -88,11 +98,19 @@
             },
             error: function(xhr, status, error) {
                 //console.error('Error al obtener técnicos:', error);
+            },
+            complete: function() {
+                searchingTechnicians = false;
+                $('#search-technicians').prop('disabled', false);
             }
         });
     }
 
     function assignTechnicians() {
+        if (assigningTechnicians) {
+            return;
+        }
+
         var form_data = new FormData();
         var assigned_technicians = [];
 
@@ -107,6 +125,8 @@
         form_data.append('orders', JSON.stringify(order_ids));
 
         showSpinner();
+        assigningTechnicians = true;
+        $('#technicianModal .modal-footer .btn-primary').prop('disabled', true);
 
         $.ajax({
             url: "{{ route('order.assign.technicians') }}",
@@ -130,6 +150,8 @@
                 //console.error('Error al asignar técnicos:', error);
             },
             complete: function() {
+                assigningTechnicians = false;
+                $('#technicianModal .modal-footer .btn-primary').prop('disabled', false);
                 hideSpinner();
             },
         });

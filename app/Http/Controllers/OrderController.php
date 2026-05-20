@@ -25,6 +25,7 @@ use Google\Service\Dfareporting\Resource\Orders;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -77,25 +78,33 @@ class OrderController extends Controller
     public function index(): View
     {
         $orders = Order::with([
-                'customer',
-                'services',
-                'status',
-                'closeUser',
-                'technicians',
+                'customer:id,name',
+                'services:id,name',
+                'status:id,name',
+                'closeUser:id,name',
+                'technicians.user:id,name',
             ])
             ->orderByRaw("CAST(SUBSTRING_INDEX(`order`.`folio`, '-', -1) AS UNSIGNED) ASC")
             ->orderBy('programmed_date')
-            /*->orderBy(
+            ->orderBy(
                 Customer::select('name')
                     ->whereColumn('customer.id', 'order.customer_id'),
                 'ASC'
-            )*/
+            )
             ->paginate($this->size);
 
-        $order_status = OrderStatus::all();
+        $order_status = Cache::remember('catalog.order_status.all', now()->addHour(), function () {
+            return OrderStatus::all();
+        });
         $size = $this->size;
 
-        $customer_ranges = Customer::where('general_sedes', '!=', 0)->orWhere('service_type_id', 1)->orderBy('name', 'asc')->get();
+        $customer_ranges = Cache::remember('orders.customer_ranges', now()->addMinutes(15), function () {
+            return Customer::select('id', 'name')
+                ->where('general_sedes', '!=', 0)
+                ->orWhere('service_type_id', 1)
+                ->orderBy('name', 'asc')
+                ->get();
+        });
         $navigation = $this->navigation;
 
         $technicians = Technician::with('user')
@@ -305,12 +314,22 @@ class OrderController extends Controller
         $status = $request->input('status');
         $size = $request->input('size');
 
-        $orders = Order::where('status_id', $status);
+        $orders = Order::with([
+            'customer:id,name',
+            'services:id,name',
+            'status:id,name',
+            'closeUser:id,name',
+            'technicians.user:id,name',
+        ]);
+
+        if ($status) {
+            $orders->where('status_id', $status);
+        }
 
         if ($customer) {
-            $searchTerm = '%' . $customer . '%';
-            $customerIds = Customer::where('name', 'LIKE', $searchTerm)->get()->pluck('id');
-            $orders = $orders->whereIn('customer_id', $customerIds);
+            $orders->whereHas('customer', function ($query) use ($customer) {
+                $query->where('name', 'LIKE', $customer . '%');
+            });
         }
 
         if ($time) {
@@ -327,14 +346,15 @@ class OrderController extends Controller
         }
 
         if ($service) {
-            $serviceName = '%' . $service . '%';
-            $serviceIds = Service::where('name', 'LIKE', $serviceName)->get()->pluck('id');
-            $orderIds = OrderService::whereIn('service_id', $serviceIds)->get()->pluck('order_id');
-            $orders = $orders->whereIn('id', $orderIds);
+            $orders->whereHas('services', function ($query) use ($service) {
+                $query->where('service.name', 'LIKE', $service . '%');
+            });
         }
 
         $size = $size ?? $this->size;
-        $order_status = OrderStatus::all();
+        $order_status = Cache::remember('catalog.order_status.all', now()->addHour(), function () {
+            return OrderStatus::all();
+        });
         $orders = $orders/*->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")*/->orderBy('programmed_date')->paginate($size)->appends([
             'customer' => $customer,
             'date' => $date,
@@ -391,21 +411,32 @@ class OrderController extends Controller
             $request->validate([
                 'search_service_input' => 'required|string',
             ]);
-            $serviceIdsArray = Service::where('name', 'like', '%' . $request->input('search_service_input') . '%')->pluck('id');
+            $serviceIdsArray = Service::where('name', 'like', $request->input('search_service_input') . '%')
+                ->limit(25)
+                ->pluck('id');
         }
 
-        $services = Service::whereIn('id', $serviceIdsArray)->get();
-        $pests = [];
-        $app_methods = [];
-        $service_types = [];
-        $business_lines = [];
+        $services = Service::with([
+                'pests',
+                'appMethods',
+                'serviceType:id,name',
+                'businessLine:id,name',
+            ])
+            ->whereIn('id', $serviceIdsArray)
+            ->limit(25)
+            ->get();
 
-        foreach ($services as $service) {
-            $pests[] = $service->pests()->pluck('name');
-            $app_methods[] = $service->appMethods()->pluck('name');
-            $service_types[] = $service->serviceType()->pluck('name');
-            $business_lines[] = $service->businessLine()->pluck('name');
-        }
+        $pests = $services->map(fn ($service) => $service->pests->pluck('name')->values());
+        $app_methods = $services->map(fn ($service) => $service->appMethods->pluck('name')->values());
+        $service_types = $services->map(fn ($service) => optional($service->serviceType)->name);
+        $business_lines = $services->map(fn ($service) => optional($service->businessLine)->name);
+
+        $pest_categories = Cache::remember('catalog.pest_categories.all', now()->addHour(), function () {
+            return PestCategory::all();
+        });
+        $application_methods = Cache::remember('catalog.application_methods.all', now()->addHour(), function () {
+            return ApplicationMethod::all();
+        });
 
         return response()->json([
             'services' => $services,
@@ -413,8 +444,8 @@ class OrderController extends Controller
             'app_methods' => $app_methods,
             'service_types' => $service_types,
             'business_lines' => $business_lines,
-            'pest_categories' => PestCategory::all(),
-            'application_methods' => ApplicationMethod::all(),
+            'pest_categories' => $pest_categories,
+            'application_methods' => $application_methods,
             'show' => count($serviceIdsArray) > 0 ? true : false,
         ]);
     }
@@ -428,7 +459,10 @@ class OrderController extends Controller
 
         if ($customer_ids) {
             $customer_ids = json_decode($customer_ids);
-            $customers = Customer::whereIn('id', $customer_ids)->get();
+            $customers = Customer::with('serviceType:id,name')
+                ->select('id', 'code', 'name', 'address', 'service_type_id')
+                ->whereIn('id', $customer_ids)
+                ->get();
 
             return response()->json([
                 'customers' => $customers->map(function ($customer) {
@@ -444,23 +478,28 @@ class OrderController extends Controller
         }
 
         // Consulta para sedes (manteniendo condiciones originales)
-        $sedesQuery = Customer::where('service_type_id', '!=', 1)
+        $sedesQuery = Customer::with('serviceType:id,name')
+            ->select('id', 'code', 'name', 'address', 'phone', 'service_type_id', 'general_sedes')
+            ->where('service_type_id', '!=', 1)
             ->where('general_sedes', '!=', 0)
-            ->when($name, fn($q) => $q->where('name', 'like', "%$name%"))
-            ->when($phone, fn($q) => $q->where('phone', 'like', "%$phone%"))
-            ->when($address, fn($q) => $q->where('address', 'like', "%$address%"));
+            ->when($name, fn($q) => $q->where('name', 'like', "$name%"))
+            ->when($phone, fn($q) => $q->where('phone', 'like', "$phone%"))
+            ->when($address, fn($q) => $q->where('address', 'like', "$address%"));
 
-        $matrixs = $sedesQuery->get()->pluck('general_sedes');
+        $sedes = $sedesQuery->limit(50)->get();
+        $matrixs = $sedes->pluck('general_sedes');
 
         // Consulta para clientes principales (manteniendo condiciones originales)
-        $customersQuery = Customer::where('status', '!=', 0)
+        $customersQuery = Customer::with('serviceType:id,name')
+            ->select('id', 'code', 'name', 'address', 'phone', 'service_type_id')
+            ->where('status', '!=', 0)
             //->where('service_type_id', 1)
-            ->when($name, fn($q) => $q->where('name', 'like', "%$name%"))
-            ->when($phone, fn($q) => $q->where('phone', 'like', "%$phone%"))
-            ->when($address, fn($q) => $q->where('address', 'like', "%$address%"))
+            ->when($name, fn($q) => $q->where('name', 'like', "$name%"))
+            ->when($phone, fn($q) => $q->where('phone', 'like', "$phone%"))
+            ->when($address, fn($q) => $q->where('address', 'like', "$address%"))
             ->whereNotIn('id', $matrixs);
 
-        $results = $customersQuery->get()->merge($sedesQuery->get());
+        $results = $customersQuery->limit(50)->get()->merge($sedes);
 
         return response()->json([
             'customers' => $results->map(function ($customer) {
