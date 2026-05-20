@@ -8,7 +8,7 @@
     --light-bg: #f8f9fa;
     --border-radius: 15px;
     --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
+    --transition: none;
 }
 
 /* Modal principal */
@@ -33,12 +33,10 @@
     color: var(--danger-color);
     /* filter: invert(1) grayscale(100%) brightness(200%); */
     opacity: 0.8;
-    transition: var(--transition);
 }
 
 .warehouse-modal .btn-close-red:hover {
     opacity: 1;
-    transform: scale(1.1);
 }
 
 /* Cuerpo del modal */
@@ -80,7 +78,6 @@
     border-radius: 8px;
     padding: 0.5rem 1rem;
     font-size: 0.8rem;
-    transition: var(--transition);
 }
 
 .warehouse-modal .form-control:focus,
@@ -119,7 +116,6 @@
     margin-top: 0.1em;
     border: 2px solid #dee2e6;
     border-radius: 4px;
-    transition: var(--transition);
 }
 
 .warehouse-modal .form-check-input:checked {
@@ -179,7 +175,6 @@
     padding: 0.5rem 1rem;
     font-weight: 600;
     border-radius: 6px;
-    transition: var(--transition);
     border: none;
 }
 
@@ -190,8 +185,6 @@
 
 .warehouse-modal .btn-primary:hover {
     background-color: var(--primary-color);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
 }
 
 .warehouse-modal .btn-danger {
@@ -201,13 +194,11 @@
 
 .warehouse-modal .btn-danger:hover {
     background-color: var(--danger-color);
-    transform: translateY(-1px);
 }
 
 .warehouse-modal .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none !important;
 }
 
 /* Notificaciones */
@@ -219,18 +210,6 @@
     min-width: 300px;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    animation: slideInRight 0.3s ease-out;
-}
-
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
 }
 
 /* Estados de carga */
@@ -275,23 +254,6 @@
     }
 }
 
-/* Animaciones adicionales */
-.warehouse-modal .fade-in {
-    animation: fadeIn 0.3s ease-in;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Efectos hover para elementos interactivos */
 .warehouse-modal .form-control:hover,
 .warehouse-modal .form-select:hover {
     border-color: #adb5bd;
@@ -333,4 +295,4 @@
     content: ' *';
     color: var(--danger-color);
     font-weight: bold;
-} 
+}

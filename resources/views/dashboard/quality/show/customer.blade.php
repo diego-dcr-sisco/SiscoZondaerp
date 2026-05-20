@@ -192,12 +192,7 @@
         </div>
 
     <style>
-        .hover-effect {
-            transition: all 0.2s ease;
-        }
         .hover-effect:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
             background-color: #f8f9fa !important;
         }
         .badge {
@@ -208,14 +203,6 @@
     </style>
         <script>
             var technician_to_change = [];
-
-            $(document).ready(function() {
-                $(".card").hover(function() {
-                    $(this).addClass("animate__animated animate__pulse");
-                }, function() {
-                    $(this).removeClass("animate__animated animate__pulse");
-                });
-            });
 
             function submitForm() {
                 $('#technicians').val(

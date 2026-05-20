@@ -281,8 +281,8 @@
     </style>
 
     <div class="container-fluid py-5">
-        <!-- Encabezado con animación -->
-        <div class="text-center mb-5 animate__animated animate__fadeIn">
+        <!-- Encabezado -->
+        <div class="text-center mb-5">
             <h1 class="display-4 fw-bold text-dark mb-3">BIENVENIDO A ZONDA</h1>
             <p class="lead text-muted">Sistema para el Manejo Integral de Plagas (SMIP)</p>
         </div>
@@ -408,7 +408,7 @@
         </div>
 
         <!-- Tabla con animación secuencial -->
-        {{--<div class="row justify-content-md-center table-card animate__animated animate__fadeIn">
+        {{--<div class="row justify-content-md-center table-card">
             <div class="col-lg-9">
                 <div class="border rounded shadow p-3 mb-3">
                     <div class="fw-bold mb-3">

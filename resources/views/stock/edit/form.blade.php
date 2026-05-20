@@ -223,14 +223,6 @@
         height: 1.25rem;
     }
     
-    .card {
-        transition: all 0.3s ease;
-    }
-    
-    .card:hover {
-        transform: translateY(-1px);
-    }
-    
     .form-control:focus,
     .form-select:focus {
         border-color: #0d6efd;
@@ -380,19 +372,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     }
     
-    // Animaciones para las tarjetas de configuración
-    const configCards = document.querySelectorAll('.card.bg-light');
-    configCards.forEach(card => {
-        const switchInput = card.querySelector('.form-check-input');
-        if (switchInput) {
-            switchInput.addEventListener('change', function() {
-                card.style.transform = 'scale(1.02)';
-                setTimeout(() => {
-                    card.style.transform = 'scale(1)';
-                }, 150);
-            });
-        }
-    });
 });
 
 // Función legacy para compatibilidad (si es necesaria)

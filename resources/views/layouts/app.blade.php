@@ -31,6 +31,19 @@
             background-color: #fff;
         }
 
+        *,
+        *::before,
+        *::after {
+            scroll-behavior: auto !important;
+            transition: none !important;
+        }
+
+        *:not(.spinner-border):not(.spinner-grow),
+        *:not(.spinner-border):not(.spinner-grow)::before,
+        *:not(.spinner-border):not(.spinner-grow)::after {
+            animation: none !important;
+        }
+
         /* ── Desktop: sidebar siempre visible ── */
         @media (min-width: 768px) {
             #sidebar {
@@ -52,7 +65,6 @@
                 min-width: 120px !important;
                 height: 100vh !important;
                 z-index: 1050;
-                transition: left 0.3s ease;
                 overflow-y: auto;
             }
 

@@ -48,14 +48,4 @@
 
         </div>
     </div>
-
-    <script>
-        $(document).ready(function() {
-            $(".card").hover(function() {
-                $(this).addClass("animate__animated animate__pulse");
-            }, function() {
-                $(this).removeClass("animate__animated animate__pulse");
-            });
-        });
-    </script>
 @endsection

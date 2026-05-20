@@ -173,7 +173,7 @@
 
                     <div class="card-body p-4 pt-5">
                         @if ($errors->any())
-                            <div class="alert alert-danger alert-dismissible fade show animate__animated animate__shakeX" role="alert">
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
                                 @foreach ($errors->all() as $error)
                                     <span>{{ $error }}</span>
                                 @endforeach

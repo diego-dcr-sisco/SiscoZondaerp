@@ -106,15 +106,11 @@
     letter-spacing: 0.5px;
 }
 .table tbody tr {
-    transition: all 0.2s ease;
-    animation: fadeInUp 0.3s ease forwards;
     position: relative;
     z-index: 0;
 }
 .table tbody tr:hover {
     background-color: rgba(0, 123, 255, 0.05) !important;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 .empty-state {
     padding: 3rem 1rem;
@@ -137,26 +133,11 @@
         padding: 0.25rem 0.5rem;
     }
 }
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 </style>
 
 <script>
-    // Animación de entrada para las filas y tooltips
+    // Inicializar tooltips de Bootstrap
     document.addEventListener('DOMContentLoaded', function() {
-        const rows = document.querySelectorAll('.product-row');
-        rows.forEach((row, index) => {
-            row.style.animationDelay = `${index * 0.05}s`;
-        });
-        // Inicializar tooltips de Bootstrap
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);

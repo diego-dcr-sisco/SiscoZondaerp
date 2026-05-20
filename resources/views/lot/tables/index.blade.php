@@ -204,14 +204,8 @@
         letter-spacing: 0.5px;
     }
 
-    .table tbody tr {
-        transition: all 0.2s ease;
-    }
-
     .table tbody tr:hover {
         background-color: rgba(0, 123, 255, 0.05) !important;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
     /* Estados de lotes */
@@ -283,31 +277,12 @@
         }
     }
 
-    /* Animaciones */
-    .table tbody tr {
-        animation: fadeInUp 0.3s ease forwards;
-    }
-
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* Hover effects */
     .warehouse-info:hover,
     .stock-info:hover,
     .remaining-stock:hover,
     .expiration-info:hover,
     .period-info:hover {
-        transform: scale(1.02);
-        transition: transform 0.2s ease;
+        background-color: rgba(0, 0, 0, 0.03);
     }
 </style>
 
@@ -368,12 +343,6 @@
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
         var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-
-        // Animación de entrada para las filas
-        const rows = document.querySelectorAll('.lot-row');
-        rows.forEach((row, index) => {
-            row.style.animationDelay = `${index * 0.05}s`;
         });
 
         // Contador de lotes por estado

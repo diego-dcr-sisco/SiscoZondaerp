@@ -21,6 +21,7 @@ use App\Models\DatabaseLog;
 use Carbon\Carbon;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use League\Flysystem\FilesystemOperator;
 
@@ -33,6 +34,7 @@ class ClientController extends Controller
     private $disk_type = 'google'; // Cambiar a 'google' o 'public' según necesites
 
     private $size = 50;
+    private int $directoryCacheSeconds = 30;
 
     private function isGoogleAuthError(string $message): bool
     {
@@ -111,6 +113,15 @@ class ClientController extends Controller
     private function diskDirectoryExists(string $path): bool
     {
         return $this->getDiskDriver()->directoryExists($path);
+    }
+
+    private function cachedDiskDirectoryExists(string $path): bool
+    {
+        return Cache::remember(
+            'client_directory_exists:' . $this->disk_type . ':' . sha1(trim($path, '/')),
+            now()->addSeconds($this->directoryCacheSeconds),
+            fn() => $this->diskDirectoryExists($path)
+        );
     }
 
     private function diskFileExists(string $path): bool
@@ -254,6 +265,30 @@ class ClientController extends Controller
         }
 
         return [$directories, $files];
+    }
+
+    private function directoryListingCacheKey(string $path): string
+    {
+        return 'client_directory_listing:' . $this->disk_type . ':' . sha1(trim($path, '/'));
+    }
+
+    private function cachedListDirectoryContentsByType(string $path): array
+    {
+        return Cache::remember(
+            $this->directoryListingCacheKey($path),
+            now()->addSeconds($this->directoryCacheSeconds),
+            fn() => $this->listDirectoryContentsByType($path)
+        );
+    }
+
+    private function forgetDirectoryListingCache(string ...$paths): void
+    {
+        foreach ($paths as $path) {
+            if ($path !== '') {
+                Cache::forget($this->directoryListingCacheKey($path));
+                Cache::forget('client_directory_exists:' . $this->disk_type . ':' . sha1(trim($path, '/')));
+            }
+        }
     }
 
     // Método para listar archivos (compatible con Flysystem v3)
@@ -454,7 +489,7 @@ class ClientController extends Controller
         $mip_dirs = $mip_files = [];
         $dir_name = $this->mip_path . basename($path);
 
-        [$local_dirs, $local_files] = $this->listDirectoryContentsByType($path);
+        [$local_dirs, $local_files] = $this->cachedListDirectoryContentsByType($path);
 
         sort($local_dirs);
         sort($local_files);
@@ -462,8 +497,8 @@ class ClientController extends Controller
         $links = $this->getBreadcrumb($path);
         $user = User::with('directories')->find(Auth::id());
 
-        if ($this->diskDirectoryExists($dir_name)) {
-            [$mip_dirs, $mip_files] = $this->listDirectoryContentsByType($dir_name);
+        if ($this->cachedDiskDirectoryExists($dir_name)) {
+            [$mip_dirs, $mip_files] = $this->cachedListDirectoryContentsByType($dir_name);
         }
 
         [
@@ -604,6 +639,10 @@ class ClientController extends Controller
         }
         if (!empty($errors)) {
             return redirect()->back()->withErrors(['file' => implode(', ', $errors)]);
+        }
+
+        if (!empty($uploadedFiles)) {
+            $this->forgetDirectoryListingCache($file_path);
         }
 
         return back()->with('success', implode('. ', $messages));
@@ -1952,6 +1991,8 @@ class ClientController extends Controller
                     'is_mip' => (bool) $isMip,
                     'disk' => $this->disk_type,
                 ]);
+
+                $this->forgetDirectoryListingCache($parentPath ?: $basePath);
 
                 return back()->with('success', 'Carpeta "' . $folderName . '" creada exitosamente');
 
