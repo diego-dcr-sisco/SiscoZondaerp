@@ -74,7 +74,7 @@ class OrderController extends Controller
 
     public function index(): View
     {
-        /*$orders = Order::join('customer', 'order.customer_id', '=', 'customer.id')
+        $orders = Order::join('customer', 'order.customer_id', '=', 'customer.id')
             ->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")
             ->orderBy('programmed_date')
             ->orderBy('customer.name', 'ASC')
@@ -88,7 +88,7 @@ class OrderController extends Controller
             ])
             ->paginate($this->size);
 
-        $order_status = OrderStatus::all();
+        /*$order_status = OrderStatus::all();
         $size = $this->size;
 
         $customer_ranges = Customer::where('general_sedes', '!=', 0)->orWhere('service_type_id', 1)->orderBy('name', 'asc')->get();
@@ -113,7 +113,7 @@ class OrderController extends Controller
             )
         );*/
 
-        dd('holi');
+        dd($orders);
     }
 
     public function create(): View
