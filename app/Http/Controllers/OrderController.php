@@ -74,7 +74,7 @@ class OrderController extends Controller
 
     public function index(): View
     {
-        $orders = Order::join('customer', 'order.customer_id', '=', 'customer.id')
+        $orders = []/*Order::join('customer', 'order.customer_id', '=', 'customer.id')
             ->orderByRaw("CAST(SUBSTRING_INDEX(folio, '-', -1) AS UNSIGNED) ASC")
             ->orderBy('programmed_date')
             ->orderBy('customer.name', 'ASC')
@@ -86,7 +86,7 @@ class OrderController extends Controller
                 'closeUser:id,name',
                 'technicians.user:id,name',
             ])
-            ->paginate($this->size);
+            ->paginate($this->size);*/
 
         $order_status = OrderStatus::all();
         $size = $this->size;
