@@ -109,7 +109,17 @@ class Order extends Model
 
     public function services()
     {
-        return $this->hasManyThrough(
+        return $this->belongsToMany(
+            Service::class,
+            'order_service',
+            'order_id',
+            'service_id'
+        );
+    }
+
+    public function service()
+    {
+        return $this->hasOneThrough(
             Service::class,
             OrderService::class,
             'order_id',

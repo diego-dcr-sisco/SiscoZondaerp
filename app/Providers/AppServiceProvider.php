@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 
 
 use Illuminate\Support\Facades\Storage;
+use GuzzleHttp\Client as GuzzleClient;
 use League\Flysystem\Filesystem;
 use Masbug\Flysystem\GoogleDriveAdapter;
 use Google\Client as GoogleClient;
@@ -50,6 +51,11 @@ class AppServiceProvider extends ServiceProvider
 
         Storage::extend('google', function ($app, $config) {
             $client = new GoogleClient();
+            $client->setHttpClient(new GuzzleClient([
+                'connect_timeout' => 10,
+                'timeout' => 30,
+                'read_timeout' => 30,
+            ]));
             
             // Configuración OAuth 2.0
             $client->setClientId($config['clientId']);

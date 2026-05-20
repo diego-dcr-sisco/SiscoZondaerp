@@ -84,6 +84,7 @@ class GoogleDriveController extends Controller
 
 namespace App\Http\Controllers;
 
+use GuzzleHttp\Client as GuzzleClient;
 use Google\Client as GoogleClient;
 use Google\Service\Drive;
 use Illuminate\Http\Request;
@@ -121,6 +122,11 @@ class GoogleDriveController extends Controller
     protected function getClient()
     {
         $client = new GoogleClient();
+        $client->setHttpClient(new GuzzleClient([
+            'connect_timeout' => 10,
+            'timeout' => 30,
+            'read_timeout' => 30,
+        ]));
         $client->setClientId(config('filesystems.disks.google.clientId'));
         $client->setClientSecret(config('filesystems.disks.google.clientSecret'));
         $client->setRedirectUri(route('google.drive.callback'));
@@ -140,6 +146,11 @@ class GoogleDriveController extends Controller
     public function redirectToGoogle()
     {
         $client = new GoogleClient();
+        $client->setHttpClient(new GuzzleClient([
+            'connect_timeout' => 10,
+            'timeout' => 30,
+            'read_timeout' => 30,
+        ]));
         $client->setClientId(config('filesystems.disks.google.clientId'));
         $client->setClientSecret(config('filesystems.disks.google.clientSecret'));
         $client->setRedirectUri(route('google.drive.callback'));
@@ -154,6 +165,11 @@ class GoogleDriveController extends Controller
     public function handleGoogleCallback(Request $request)
     {
         $client = new GoogleClient();
+        $client->setHttpClient(new GuzzleClient([
+            'connect_timeout' => 10,
+            'timeout' => 30,
+            'read_timeout' => 30,
+        ]));
         $client->setClientId(config('filesystems.disks.google.clientId'));
         $client->setClientSecret(config('filesystems.disks.google.clientSecret'));
         $client->setRedirectUri(route('google.drive.callback'));

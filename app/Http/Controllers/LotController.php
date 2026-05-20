@@ -175,7 +175,7 @@ class LotController extends Controller
 
     public function getTraceability($id){
 
-        $orders = OrderProduct::with(['order', 'service', 'product', 'metric', 'appMethod', 'lot'])
+        $orders = OrderProduct::with(['order.customer', 'service', 'product', 'metric', 'appMethod', 'lot'])
                 ->where('lot_id', $id)
                 ->get();
         $lot = Lot::find($id);

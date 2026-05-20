@@ -308,6 +308,14 @@ class AppController extends Controller
 		$data = $request->all();
 
 		try {
+			foreach (['order_id', 'start_time', 'end_time', 'completed_date', 'user_id'] as $field) {
+				if (empty($data[$field])) {
+					return response()->json([
+						'error' => "El campo {$field} es obligatorio.",
+					], 422);
+				}
+			}
+
 			$order = Order::find($data['order_id']);
 			if ($order && $order->status_id == 1) {
 				$order->start_time = Carbon::parse($data['start_time'])->format('H:i:s') ?? null;

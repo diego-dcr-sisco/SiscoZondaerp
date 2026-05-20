@@ -76,24 +76,21 @@ class OrderController extends Controller
 
     public function index(): View
     {
-        /*$orders = Order::with([
-                'customer:id,name',
-                'services:id,name',
-                'status:id,name',
-                'closeUser:id,name',
-                'technicians.user:id,name',
+        $orders = Order::with([
+                'customer',
+                'services',
+                'status',
+                'closeUser',
+                'technicians',
             ])
             ->orderByRaw("CAST(SUBSTRING_INDEX(`order`.`folio`, '-', -1) AS UNSIGNED) ASC")
             ->orderBy('programmed_date')
-            ->orderBy(
+            /*->orderBy(
                 Customer::select('name')
                     ->whereColumn('customer.id', 'order.customer_id'),
                 'ASC'
-            )
-            ->paginate($this->size);*/
-
-        $orders = Order::with('customer', 'services', 'status', 'closeUser', 'technicians')->orderByRaw("CAST(SUBSTRING_INDEX(`order`.`folio`, '-', -1) AS UNSIGNED) ASC")
-            ->orderBy('programmed_date')->paginate($this->size);
+            )*/
+            ->paginate($this->size);
 
         $order_status = OrderStatus::all();
         $size = $this->size;
@@ -160,36 +157,50 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
-        $selected_services = json_decode($request->input('services'));
-        $selected_technicians = json_decode($request->input('technicians'));
+        $validated = $request->validate([
+            'customer_id' => ['required', 'exists:customer,id'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
+            'programmed_date' => ['required', 'date'],
+            'services' => ['required', 'json'],
+            'technicians' => ['required', 'json'],
+            'contract_id' => ['nullable', 'integer'],
+            'execution' => ['nullable', 'string'],
+            'areas' => ['nullable', 'string'],
+            'additional_comments' => ['nullable', 'string'],
+            'price' => ['nullable', 'numeric'],
+        ]);
 
-        if (!$request->input('customer_id')) {
-            return back();
-        }
+        $selected_services = json_decode($validated['services']);
+        $selected_technicians = json_decode($validated['technicians']);
 
         if (empty($selected_services)) {
-            return back();
+            return back()->withErrors([
+                'services' => 'Selecciona al menos un servicio.',
+            ])->withInput();
         }
 
         if (empty($selected_technicians)) {
-            return back();
+            return back()->withErrors([
+                'technicians' => 'Selecciona al menos un técnico.',
+            ])->withInput();
         }
 
-        $customer = Customer::find($request->input('customer_id'));
+        $customer = Customer::findOrFail($validated['customer_id']);
         $count_orders = Order::where('customer_id', $customer->id)->count();
 
         $order = new Order();
         $order->administrative_id = Administrative::where('user_id', $user = Auth::user()->id)->first()->id;
         $order->customer_id = $customer->id;
-        $order->start_time = $request->input('start_time');
-        $order->end_time = $request->input('end_time');
-        $order->programmed_date = $request->input('programmed_date');
+        $order->start_time = $validated['start_time'];
+        $order->end_time = $validated['end_time'] ?? null;
+        $order->programmed_date = $validated['programmed_date'];
         $order->status_id = 1;
-        $order->contract_id = $request->input('contract_id') != 0 ? $request->input('contract_id') : null;
-        $order->execution = $request->input('execution');
-        $order->areas = $request->input('areas');
-        $order->additional_comments = $request->input('additional_comments');
-        $order->price = $request->input('price');
+        $order->contract_id = ($validated['contract_id'] ?? 0) != 0 ? $validated['contract_id'] : null;
+        $order->execution = $validated['execution'] ?? null;
+        $order->areas = $validated['areas'] ?? null;
+        $order->additional_comments = $validated['additional_comments'] ?? null;
+        $order->price = $validated['price'] ?? null;
         $order->folio = $customer->code . '.' . ($order->contract_id ? ('MIP' . $order->contract_id) : 'SEG') . '-' . ++$count_orders;
         $order->created_at = now();
         $order->save();

@@ -1694,7 +1694,9 @@ class CustomerController extends Controller
         }
 
         // Opción 1: Cargar servicios y luego asegurar unicidad
-        $orders = $order_query->with(['services:service.id,service.name'])->get();
+        $orders = $order_query->with(['services' => function ($query) {
+            $query->select('service.id', 'service.name');
+        }])->get();
 
         // Si necesitas una colección única de todos los servicios
         /*$uniqueServices = $orders->flatMap->services->unique('id');
