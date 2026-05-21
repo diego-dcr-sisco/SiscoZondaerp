@@ -771,10 +771,10 @@
             success: function(response) {
                 console.log(response);
                 if (response.success) {
-                    alert("✅ Autorevisión guardada correctamente\n\n" +
+                    alert((response.message || 'Autorevisión enviada a segundo plano') + "\n\n" +
                         `• Puntos de control: ${data.control_points.length}\n` +
                         `• Hora: ${new Date().toLocaleTimeString()}`);
-                    location.reload();
+                    $('#autoreviewModal').modal('hide');
                 }
             },
             error: function(xhr) {

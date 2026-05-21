@@ -640,7 +640,6 @@
 
                 pest_row_query.empty();
                 product_row_query.empty();
-                tbody.empty();
 
                 // Actualizar la UI
                 $.each(pests, function(index, p) {
@@ -661,8 +660,11 @@
                 `);
                 });
 
-                $.each(response.order_products, function(i, op) {
-                    const row = `
+                if (response.order_products) {
+                    tbody.empty();
+
+                    $.each(response.order_products, function(i, op) {
+                        const row = `
                 <tr>
                     <th scope="row">${i + 1}</th>
                     <td>${op.product?.name || '-'}</td>
@@ -688,8 +690,9 @@
                     </td>
                 </tr>
             `;
-                    tbody.append(row);
-                });
+                        tbody.append(row);
+                    });
+                }
 
                 // 1. Actualizar copy_devices con los nuevos datos
                 const updatedDevice = updateDeviceDataInCopyDevices(formattedData);
@@ -702,8 +705,8 @@
 
                 $('#reviewModal').modal('hide');
 
-                alert("✅ Revisión guardada correctamente\n\n" +
-                    `• Hora: ${new Date().toLocaleTimeString()}`);
+                alert((response.message || 'Revisión enviada correctamente') + "\n\n" +
+                    `Hora: ${new Date().toLocaleTimeString()}`);
             },
             error: function(xhr) {
                 markDeviceAsReviewed(currentDeviceId, false);

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\ContractService;
 use App\Models\EvidencePhoto;
 use App\Models\FloorplanArea;
+use App\Jobs\AutoReviewJob;
+use App\Jobs\SetIncidentJob;
 use App\Models\WarehouseOrder;
 use App\Models\Warehouse;
 use App\Models\DevicePest;
@@ -62,6 +64,7 @@ use Illuminate\Support\Facades\File;
 use App\Models\Technician;
 use App\PDF\Certificate;
 use App\Models\Customer;
+use App\Services\ReportStockService;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rules\In;
@@ -140,153 +143,24 @@ class ReportController extends Controller
     {
         try {
             $autoreview_data = json_decode($request->input('autoreview_data'), true);
-            $order = Order::find($orderId);
 
-            foreach ($autoreview_data['control_points'] as $controlPoint) {
-                // Acceder a los datos de cada control point
-                $controlPointId = $controlPoint['control_point_id'];
-                $answers = $controlPoint['answers'];
-                $products = $controlPoint['products'];
-                $pests = $controlPoint['pests'];
-                $devices = $controlPoint['devices'];
-                $observations = $controlPoint['observations'];
-                $clear = $controlPoint['clear'];
-                $questions = $controlPoint['questions'];
-
-                $products_data = [];
-
-                if ($clear['questions']) {
-                    OrderIncidents::where('order_id', $order->id)->whereIn('device_id', $devices)->delete();
-                }
-
-                if ($clear['products']) {
-                    DeviceProduct::where('order_id', $order->id)->whereIn('device_id', $devices)->delete();
-                }
-
-                if ($clear['pests']) {
-                    DevicePest::where('order_id', $order->id)->whereIn('device_id', $devices)->delete();
-                }
-
-                // Procesar cada elemento
-                foreach ($devices as $deviceId) {
-                    $updated_incidents = [];
-                    $updated_products = [];
-                    $updated_pests = [];
-                    $updated_questions = [];
-
-                    foreach ($answers as $questionId => $answer) {
-                        if (in_array($questionId, $questions)) {
-                            $oi = OrderIncidents::updateOrCreate(
-                                [
-                                    'order_id' => $order->id,
-                                    'question_id' => $questionId,
-                                    'device_id' => $deviceId,
-                                ],
-                                [
-                                    'answer' => $answer
-                                ]
-                            );
-
-                            $updated_questions[] = $questionId;
-                            $updated_incidents[] = $oi->id;
-                        }
-                    }
-
-                    foreach ($products as $product) {
-                        $productId = $product['product_id'];
-                        $amount = $product['amount'];
-                        $lotId = $product['lot_id'];
-                        $method_id = $product['application_method_id'];
-
-                        $dp = DeviceProduct::updateOrCreate(
-                            [
-                                'order_id' => $order->id,
-                                'device_id' => $deviceId,
-                                'product_id' => $productId,
-                            ],
-                            [
-                                'application_method_id' => $method_id != "" ? $method_id : null,
-                                'lot_id' => $lotId != "" ? $lotId : null,
-                                'quantity' => $amount != "" ? $amount : 0,
-                                'possible_lot' => null
-                            ]
-                        );
-
-                        $updated_products[] = $dp->id;
-                    }
-
-                    foreach ($pests as $pest) {
-                        $pestId = $pest['pest_id'];
-                        $count = $pest['count'];
-
-                        $dp = DevicePest::updateOrCreate(
-                            [
-                                'order_id' => $orderId,
-                                'device_id' => $deviceId,
-                                'pest_id' => $pestId,
-                            ],
-                            [
-                                'total' => $count,
-                            ]
-                        );
-
-                        $updated_pests[] = $dp->id;
-                    }
-
-                    $ds = DeviceStates::updateOrCreate(
-                        [
-                            'order_id' => $order->id,
-                            'device_id' => $deviceId
-                        ],
-                        [
-                            'is_checked' => true,
-                        ]
-                    );
-
-                    if ($clear['observations']) {
-                        $ds->observations = null;
-                        $ds->save();
-                    } else {
-                        if ($observations != "") {
-                            $ds->observations = $observations;
-                            $ds->save();
-                        }
-                    }
-
-                    OrderIncidents::where('order_id', $order->id)->where('device_id', $deviceId)->where('question_id', $updated_questions)->whereNotIn('id', $updated_incidents)->delete();
-                    //DeviceProduct::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_products)->delete();
-                    //DevicePest::where('order_id', $order->id)->where('device_id', $deviceId)->whereNotIn('id', $updated_pests)->delete();
-                }
+            if (!is_array($autoreview_data) || !isset($autoreview_data['control_points'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Datos de autoreview inválidos.',
+                ], 422);
             }
 
-            $dps = DeviceProduct::where('order_id', $order->id)->get();
-            $groupedProducts = $dps->groupBy('product_id');
-
-            foreach ($groupedProducts as $product_id => $products) {
-                $service = $order->services()->first();
-                $totalAmount = $products->sum('quantity');
-                $firstProduct = $products->first();
-                $products_data[] = [
-                    'product_id' => $product_id,
-                    'service_id' => $service->id ?? null,
-                    'lot_id' => $firstProduct->lot_id ?? null,
-                    'metric_id' => $firstProduct?->metric_id,
-                    'app_method_id' => $firstProduct->application_method_id,
-                    'amount' => $totalAmount,
-                ];
-            }
+            Order::findOrFail($orderId);
 
             $user = Auth::user();
-            $technician = $order->closed_by ? Technician::where('user_id', $order->closed_by)->first() : null;
-            $this->handleStock($order, $products_data, $technician, $user);
-            //$this->handleStock($order, $products_data, $technician, $user);
-
+            AutoReviewJob::dispatch($orderId, $autoreview_data, $user->id);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Autorevisión guardada correctamente',
-                'data' => $autoreview_data,
-            ]);
+                'queued' => true,
+                'message' => 'El proceso de autoreview fue enviado a segundo plano.',
+            ], 202);
         } catch (\Exception $e) {
             Log::error('Error en autoreview: ' . $e->getMessage());
             return response()->json([
@@ -298,109 +172,7 @@ class ReportController extends Controller
 
     private function handleStock($order, $products_data, $technician, $user)
     {
-        $updated_products = [];
-        $updated_lots = [];
-        $updated_order_products = [];
-        $updated_wos = [];
-
-        $warehouse = $technician ? Warehouse::where('technician_id', $technician->id)->first() : null;
-        $productIds = collect($products_data)->pluck('product_id')->filter()->unique()->values();
-        $products = ProductCatalog::whereIn('id', $productIds)->get()->keyBy('id');
-        $wm = null;
-
-        if ($warehouse && count($products_data) > 0) {
-            $wm = WarehouseMovement::updateOrCreate(
-                [
-                    'warehouse_id' => $warehouse->id,
-                    'destination_warehouse_id' => null,
-                    'movement_id' => 8,
-                    'observations' => 'Movimiento realizado en la order #' . $order->folio . ' | ID: ' . $order->id,
-                ],
-                [
-                    'user_id' => $user->id,
-                    'date' => now(),
-                    'time' => now(),
-                    'updated_at' => now()
-                ]
-            );
-        }
-
-        foreach ($products_data as $product_data) {
-            $mult_factor = 1;
-            $product = $products->get($product_data['product_id']);
-
-            if (!$product) {
-                continue;
-            }
-
-            $op = OrderProduct::updateOrCreate([
-                'order_id' => $order->id,
-                'service_id' => $product_data['service_id'],
-                'product_id' => $product->id,
-                'application_method_id' => $product_data['app_method_id'] ?? null,
-                'lot_id' => $product_data['lot_id'] ?? null,
-            ], [
-                'metric_id' => $product_data['metric_id'] ?? $product->metric_id ?? null,
-                'amount' => $product_data['amount'],
-                'dosage' => $product_data['dosage'] ?? $product->dosage ?? null,
-            ]);
-
-            $updated_order_products[] = $op->id;
-
-            if ($product->id == 4 && $product_data['metric_id'] == 5) {
-                $mult_factor = 1000;
-            }
-
-            if ($product->id == 2 && $product_data['metric_id'] == 3) {
-                $mult_factor = 1000;
-            }
-
-            if ($product->id == 1 && $product_data['metric_id'] == 2) {
-                $mult_factor = 1000;
-            }
-
-            if ($warehouse && $wm) {
-                $mp = MovementProduct::updateOrCreate([
-                    'warehouse_movement_id' => $wm->id,
-                    'movement_id' => 8,
-                    'warehouse_id' => $warehouse->id,
-                    'product_id' => $product->id,
-
-                ], [
-                    'lot_id' => $product_data['lot_id'] ?? null,
-                    'amount' => $product_data['amount'] * $mult_factor,
-                ]);
-
-                $updated_products[] = $mp->product_id;
-                $updated_lots[] = $mp->lot_id;
-            }
-
-            $wo = WarehouseOrder::updateOrCreate([
-                'movement_id' => 8,
-                'order_id' => $order->id,
-                'user_id' => $user->id,
-                'product_id' => $product_data['product_id'],
-            ], [
-                'warehouse_id' => $warehouse->id ?? null,
-                'warehouse_movement_id' => $wm->id ?? null,
-                'lot_id' => $product_data['lot_id'] ?? null,
-                'amount' => $product_data['amount'] * $mult_factor,
-            ]);
-
-            $updated_wos[] = $wo->id;
-        }
-
-        if ($wm && (count($updated_products) > 0 || count($updated_lots) > 0)) {
-            MovementProduct::where('warehouse_movement_id', $wm->id)
-                ->where('warehouse_id', $warehouse->id)
-                ->where('movement_id', 8)
-                ->whereNotIn('product_id', $updated_products)
-                ->whereNotIn('lot_id', $updated_lots)
-                ->delete();
-        }
-
-        OrderProduct::where('order_id', $order->id)->whereNotIn('id', $updated_order_products)->delete();
-        WarehouseOrder::where('order_id', $order->id)->whereNotIn('id', $updated_wos)->delete();
+        app(ReportStockService::class)->sync($order, $products_data, $technician, $user);
     }
 
     private function getDevicesByVersion($order_id, $version = null)
@@ -755,156 +527,25 @@ class ReportController extends Controller
     {
         try {
             $review = json_decode($request->input('review'), true);
-            $order = Order::findOrFail($orderId);
 
-            DB::beginTransaction();
-
-            $device_id = $review['device_id'];
-            $questions = $review['questions'];
-            $pests = $review['pests'];
-            $products = $review['products'];
-            $observations = $review['states']['observations'] ?? null;
-
-            $products_data = [];
-            $now = now();
-
-            OrderIncidents::where('order_id', $order->id)
-                ->where('device_id', $device_id)
-                ->delete();
-
-            $incidentRows = collect($questions)->keyBy('id')->values()->map(function ($question) use ($order, $device_id, $now) {
-                return [
-                    'order_id' => $order->id,
-                    'question_id' => $question['id'],
-                    'device_id' => $device_id,
-                    'answer' => $question['answer'],
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            })->toArray();
-
-            if (!empty($incidentRows)) {
-                OrderIncidents::insert($incidentRows);
+            if (!is_array($review) || !isset($review['device_id'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Datos de revisión inválidos.',
+                ], 422);
             }
 
-            DevicePest::where('order_id', $order->id)
-                ->where('device_id', $device_id)
-                ->delete();
-
-            $pestRows = collect($pests)->keyBy('id')->values()->map(function ($pest) use ($order, $device_id, $now) {
-                return [
-                    'order_id' => $order->id,
-                    'device_id' => $device_id,
-                    'pest_id' => $pest['id'],
-                    'total' => $pest['quantity'],
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            })->toArray();
-
-            if (!empty($pestRows)) {
-                DevicePest::insert($pestRows);
-            }
-
-            DeviceProduct::where('order_id', $order->id)
-                ->where('device_id', $device_id)
-                ->delete();
-
-            $productRows = collect($products)->keyBy('id')->values()->map(function ($product) use ($order, $device_id, $now) {
-                return [
-                    'order_id' => $order->id,
-                    'device_id' => $device_id,
-                    'product_id' => $product['id'],
-                    'application_method_id' => $product['application_method_id'],
-                    'lot_id' => $product['lot_id'],
-                    'quantity' => $product['quantity'] ?? 0,
-                    'possible_lot' => null,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            })->toArray();
-
-            if (!empty($productRows)) {
-                DeviceProduct::insert($productRows);
-            }
-
-            DeviceStates::updateOrCreate(
-                [
-                    'order_id' => $order->id,
-                    'device_id' => $device_id
-                ],
-                [
-                    'is_checked' => true,
-                    'observations' => $observations,
-                ]
-            );
-
-            $serviceId = $order->services()->value('service.id');
-            $groupedProducts = DeviceProduct::where('order_id', $order->id)
-                ->select([
-                    'product_id',
-                    DB::raw('MIN(lot_id) as lot_id'),
-                    DB::raw('MIN(application_method_id) as application_method_id'),
-                    DB::raw('SUM(quantity) as amount'),
-                ])
-                ->groupBy('product_id')
-                ->get();
-
-            foreach ($groupedProducts as $product) {
-                $products_data[] = [
-                    'product_id' => $product->product_id,
-                    'service_id' => $serviceId,
-                    'lot_id' => $product->lot_id,
-                    'metric_id' => null,
-                    'app_method_id' => $product->application_method_id,
-                    'amount' => $product->amount,
-                ];
-            }
+            Order::findOrFail($orderId);
 
             $user = Auth::user();
-            $technician = $order->closed_by ? Technician::where('user_id', $order->closed_by)->first() : null;
-            $this->handleStock($order, $products_data, $technician, $user);
-
-            $order_products = OrderProduct::with(['product', 'service', 'appMethod', 'lot', 'metric'])
-                ->where('order_id', $order->id)
-                ->get();
-
-            DB::commit();
+            SetIncidentJob::dispatch($orderId, $review, $user->id);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Incidentes actualizados correctamente.',
+                'queued' => true,
+                'message' => 'La revisión del dispositivo fue enviada a segundo plano.',
                 'data' => $review,
-                'order_products' => $order_products->map(function ($p) {
-                    return [
-                        'id' => $p->id,
-                        'product' => [
-                            'id' => $p->product_id,
-                            'name' => $p->product->name
-                        ],
-                        'service' => [
-                            'id' => $p->service_id ?? null,
-                            'name' => $p->service->name ?? '-'
-                        ],
-                        'application_method' => [
-                            'id' => $p->application_method_id ?? null,
-                            'name' => $p->appMethod->name ?? '-'
-                        ],
-                        'lot' => [
-                            'id' => $p->lot_id ?? null,
-                            'name' => $p->lot->registration_number ?? '-'
-                        ],
-                        'metric' => [
-                            'id' => $p->metric_id,
-                            'value' => $p->metric->value ?? null
-                        ],
-                        'amount' => $p->amount,
-                        'dosage' => $p->dosage,
-                        'possible_lot' => $p->possible_lot,
-                        'data' => $p
-                    ];
-                })
-            ], 200);
+            ], 202);
 
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -920,7 +561,6 @@ class ReportController extends Controller
             ], 422);
 
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error("Error en setIncident - Order: {$orderId}: " . $e->getMessage());
             return response()->json([
                 'success' => false,
