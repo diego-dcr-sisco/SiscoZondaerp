@@ -76,8 +76,6 @@ class ReportController extends Controller
 
     private $file_answers_path = 'datas/json/answers.json';
     private $bulkPrint_path = 'bulk_print/';
-    private const AUTOREVIEW_QUEUE_DEVICE_LIMIT = 10;
-    private const AUTOREVIEW_QUEUE_OPERATION_LIMIT = 1000;
     private const INCIDENT_QUEUE_OPERATION_LIMIT = 25;
 
 
@@ -157,17 +155,6 @@ class ReportController extends Controller
             Order::findOrFail($orderId);
 
             $user = Auth::user();
-
-            if ($this->shouldQueueAutoReview($autoreview_data)) {
-                AutoReviewJob::dispatch($orderId, $autoreview_data, $user->id);
-
-                return response()->json([
-                    'success' => true,
-                    'queued' => true,
-                    'message' => 'La autorevisión es pesada y fue enviada a segundo plano.',
-                ], 202);
-            }
-
             (new AutoReviewJob($orderId, $autoreview_data, $user->id))
                 ->handle(app(ReportStockService::class));
 
@@ -184,26 +171,6 @@ class ReportController extends Controller
                 'message' => 'Error al procesar la autorevisión: ' . $e->getMessage()
             ], 500);
         }
-    }
-
-    private function shouldQueueAutoReview(array $autoreviewData): bool
-    {
-        $deviceCount = 0;
-        $operationCount = 0;
-
-        foreach (($autoreviewData['control_points'] ?? []) as $controlPoint) {
-            $devices = $controlPoint['devices'] ?? [];
-            $questions = $controlPoint['questions'] ?? [];
-            $products = $controlPoint['products'] ?? [];
-            $pests = $controlPoint['pests'] ?? [];
-            $currentDevices = count($devices);
-
-            $deviceCount += $currentDevices;
-            $operationCount += $currentDevices * (count($questions) + count($products) + count($pests) + 1);
-        }
-
-        return $deviceCount > self::AUTOREVIEW_QUEUE_DEVICE_LIMIT
-            || $operationCount > self::AUTOREVIEW_QUEUE_OPERATION_LIMIT;
     }
 
     private function shouldQueueIncident(array $review): bool
