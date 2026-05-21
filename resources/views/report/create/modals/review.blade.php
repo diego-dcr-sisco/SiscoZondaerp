@@ -497,6 +497,13 @@
     document.getElementById('save-review-btn').addEventListener('click', () => {
         if (!currentDeviceId || !currentServiceId) return;
 
+        const saveReviewButton = document.getElementById('save-review-btn');
+        if (saveReviewButton.disabled) return;
+
+        saveReviewButton.disabled = true;
+        saveReviewButton.dataset.originalText = saveReviewButton.innerHTML;
+        saveReviewButton.innerHTML = 'Guardando...';
+
         // Recopilar plagas
         document.querySelectorAll('#modal-pests-container > .border.rounded').forEach(item => {
             const pestId = item.querySelector('.remove-pest').dataset.pestId;
@@ -707,6 +714,8 @@
             },
             complete: function() {
                 hideSpinner();
+                saveReviewButton.disabled = false;
+                saveReviewButton.innerHTML = saveReviewButton.dataset.originalText || 'Guardar revisión';
             }
         });
     });
