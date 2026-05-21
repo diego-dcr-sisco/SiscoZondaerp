@@ -76,6 +76,9 @@ class ReportController extends Controller
 
     private $file_answers_path = 'datas/json/answers.json';
     private $bulkPrint_path = 'bulk_print/';
+    private const AUTOREVIEW_QUEUE_DEVICE_LIMIT = 10;
+    private const AUTOREVIEW_QUEUE_OPERATION_LIMIT = 120;
+    private const INCIDENT_QUEUE_OPERATION_LIMIT = 25;
 
 
     private $recommendations = [
@@ -154,13 +157,26 @@ class ReportController extends Controller
             Order::findOrFail($orderId);
 
             $user = Auth::user();
-            AutoReviewJob::dispatch($orderId, $autoreview_data, $user->id);
+
+            if ($this->shouldQueueAutoReview($autoreview_data)) {
+                AutoReviewJob::dispatch($orderId, $autoreview_data, $user->id);
+
+                return response()->json([
+                    'success' => true,
+                    'queued' => true,
+                    'message' => 'La autorevisión es pesada y fue enviada a segundo plano.',
+                ], 202);
+            }
+
+            (new AutoReviewJob($orderId, $autoreview_data, $user->id))
+                ->handle(app(ReportStockService::class));
 
             return response()->json([
                 'success' => true,
-                'queued' => true,
-                'message' => 'El proceso de autoreview fue enviado a segundo plano.',
-            ], 202);
+                'queued' => false,
+                'message' => 'Autorevisión guardada correctamente.',
+                'data' => $autoreview_data,
+            ]);
         } catch (\Exception $e) {
             Log::error('Error en autoreview: ' . $e->getMessage());
             return response()->json([
@@ -168,6 +184,73 @@ class ReportController extends Controller
                 'message' => 'Error al procesar la autorevisión: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function shouldQueueAutoReview(array $autoreviewData): bool
+    {
+        $deviceCount = 0;
+        $operationCount = 0;
+
+        foreach (($autoreviewData['control_points'] ?? []) as $controlPoint) {
+            $devices = $controlPoint['devices'] ?? [];
+            $questions = $controlPoint['questions'] ?? [];
+            $products = $controlPoint['products'] ?? [];
+            $pests = $controlPoint['pests'] ?? [];
+            $currentDevices = count($devices);
+
+            $deviceCount += $currentDevices;
+            $operationCount += $currentDevices * (count($questions) + count($products) + count($pests) + 1);
+        }
+
+        return $deviceCount > self::AUTOREVIEW_QUEUE_DEVICE_LIMIT
+            || $operationCount > self::AUTOREVIEW_QUEUE_OPERATION_LIMIT;
+    }
+
+    private function shouldQueueIncident(array $review): bool
+    {
+        $operationCount = count($review['questions'] ?? [])
+            + count($review['pests'] ?? [])
+            + count($review['products'] ?? [])
+            + 1;
+
+        return $operationCount > self::INCIDENT_QUEUE_OPERATION_LIMIT;
+    }
+
+    private function getOrderProductsResponse(int $orderId)
+    {
+        return OrderProduct::with(['product', 'service', 'appMethod', 'lot', 'metric'])
+            ->where('order_id', $orderId)
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'product' => [
+                        'id' => $p->product_id,
+                        'name' => $p->product->name ?? '-',
+                    ],
+                    'service' => [
+                        'id' => $p->service_id ?? null,
+                        'name' => $p->service->name ?? '-',
+                    ],
+                    'application_method' => [
+                        'id' => $p->application_method_id ?? null,
+                        'name' => $p->appMethod->name ?? '-',
+                    ],
+                    'lot' => [
+                        'id' => $p->lot_id ?? null,
+                        'name' => $p->lot->registration_number ?? '-',
+                        'registration_number' => $p->lot->registration_number ?? null,
+                    ],
+                    'metric' => [
+                        'id' => $p->metric_id,
+                        'value' => $p->metric->value ?? null,
+                    ],
+                    'amount' => $p->amount,
+                    'dosage' => $p->dosage,
+                    'possible_lot' => $p->possible_lot,
+                    'data' => $p,
+                ];
+            });
     }
 
     private function handleStock($order, $products_data, $technician, $user)
@@ -538,14 +621,28 @@ class ReportController extends Controller
             Order::findOrFail($orderId);
 
             $user = Auth::user();
-            SetIncidentJob::dispatch($orderId, $review, $user->id);
+
+            if ($this->shouldQueueIncident($review)) {
+                SetIncidentJob::dispatch($orderId, $review, $user->id);
+
+                return response()->json([
+                    'success' => true,
+                    'queued' => true,
+                    'message' => 'La revisión es pesada y fue enviada a segundo plano.',
+                    'data' => $review,
+                ], 202);
+            }
+
+            (new SetIncidentJob($orderId, $review, $user->id))
+                ->handle(app(ReportStockService::class));
 
             return response()->json([
                 'success' => true,
-                'queued' => true,
-                'message' => 'La revisión del dispositivo fue enviada a segundo plano.',
+                'queued' => false,
+                'message' => 'Incidentes actualizados correctamente.',
                 'data' => $review,
-            ], 202);
+                'order_products' => $this->getOrderProductsResponse($orderId),
+            ], 200);
 
         } catch (ModelNotFoundException $e) {
             return response()->json([
