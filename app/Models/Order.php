@@ -69,7 +69,7 @@ class Order extends Model
         return $this->belongsTo(Contract::class, 'contract_id');
     }
 
-    // Definir la relaci贸n hasManyThrough con el modelo Technician
+    // Definir la relacion hasManyThrough con el modelo Technician
     public function technicians()
     {
         return $this->belongsToMany(
