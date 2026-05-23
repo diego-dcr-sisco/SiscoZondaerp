@@ -1,0 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,300..900;1,300..900&display=swap');
+
+* {
+    font-family:  'Helvetica', sans-serif;
+    font-weight: 400;
+    font-size:  0.95rem;
+}
+
+
+.is-required::after {
+    content: " *";
+    color: #e3342f;
+    font-weight: bold;
+}

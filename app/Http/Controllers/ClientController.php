@@ -1,0 +1,2364 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\DirectoryManagement;
+use App\Models\DirectoryPermission;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use App\Models\ClientFile;
+use App\Models\Customer;
+use App\Models\DirectoryUser;
+use App\Models\LineBusiness;
+use App\Models\MIPFile;
+use App\Models\Order;
+use App\Models\OrderService;
+use App\Models\Service;
+use App\Services\GoogleDriveCachedService;
+use App\Models\UserCustomer;
+use App\Models\User;
+use App\Models\DatabaseLog;
+use Carbon\Carbon;
+use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use League\Flysystem\FilesystemOperator;
+
+class ClientController extends Controller
+{
+    private $path = 'client_system/';
+    private $mip_path = 'mip_directory/';
+    private $reports_path = 'backups/reports/';
+    private $dir_names = [];
+    private $disk_type = 'google'; // Cambiar a 'google' o 'public' según necesites
+
+    private $size = 50;
+
+    private function googleDriveTimingEnabled(): bool
+    {
+        return filter_var(config('filesystems.disks.google.logTiming', false), FILTER_VALIDATE_BOOLEAN);
+    }
+
+    private function googleDriveCacheMinutes(): int
+    {
+        return max((int) config('filesystems.disks.google.cacheMinutes', 10), 1);
+    }
+
+    private function shouldLogDriveTiming(): bool
+    {
+        return $this->disk_type === 'google' && $this->googleDriveTimingEnabled();
+    }
+
+    private function drivePathCacheKey(string $path, string $operation = 'listing'): string
+    {
+        return 'google_drive_path_' . md5($operation . ':' . trim($path, '/'));
+    }
+
+    private function currentRoutePath(): ?string
+    {
+        $routePath = request()->route('path');
+
+        return is_string($routePath) ? $routePath : request()->path();
+    }
+
+    private function logDriveTiming(string $operation, string $path, float $startedAt, array $context = []): void
+    {
+        if (!$this->shouldLogDriveTiming()) {
+            return;
+        }
+
+        Log::info('Google Drive timing', array_merge([
+            'operation' => $operation,
+            'path' => $path,
+            'current_route_path' => $this->currentRoutePath(),
+            'seconds' => round(microtime(true) - $startedAt, 4),
+            'files_count' => $context['files_count'] ?? null,
+            'directories_count' => $context['directories_count'] ?? null,
+            'source' => $context['source'] ?? 'drive',
+            'cache_key' => $context['cache_key'] ?? null,
+        ], $context));
+    }
+
+    private function isGoogleAuthError(string $message): bool
+    {
+        $needles = [
+            'UNAUTHENTICATED',
+            'CREDENTIALS_MISSING',
+            'Login Required',
+            'required authentication credential',
+            '401',
+        ];
+
+        foreach ($needles as $needle) {
+            if (stripos($message, $needle) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function logClientFolderChange(string $event, array $payload = []): void
+    {
+        try {
+            DatabaseLog::create([
+                'user_id' => Auth::id(),
+                'model_type' => 'client_system_folder',
+                'model_id' => null,
+                'sql_query' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'event' => $event,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error logging client folder change: ' . $e->getMessage(), [
+                'event' => $event,
+                'payload' => $payload,
+            ]);
+        }
+    }
+
+    private $mip_directories = [
+        'MIP',
+        'Contrato de servicio',
+        'Justificación',
+        'Datos de la empresa',
+        'Certificación MIP',
+        'Plano de ubicación de dispositivos',
+        'Responsabilidades',
+        'Plago objeto',
+        'Calendarización de actividades',
+        'Descripción de actividades POEs',
+        'Métodos preventivos',
+        'Métodos correctivos',
+        'Información de plaguicidas',
+        'Reportes',
+        'Gráficas de tendencias',
+        'Señaléticas',
+        'Pago seguro'
+    ];
+
+    // Método helper para obtener el disco configurado
+    /**
+     * @return FilesystemAdapter
+     */
+    private function getDisk()
+    {
+        /** @var FilesystemAdapter $disk */
+        $disk = Storage::disk($this->disk_type);
+
+        return $disk;
+    }
+
+    private function getDiskDriver(): FilesystemOperator
+    {
+        return $this->getDisk()->getDriver();
+    }
+
+    private function googleDriveCache(): GoogleDriveCachedService
+    {
+        return app(GoogleDriveCachedService::class);
+    }
+
+    private function diskDirectoryExists(string $path): bool
+    {
+        return $this->googleDriveCache()->directoryExists($this->getDisk(), $path, $this->disk_type);
+    }
+
+    private function cachedDiskDirectoryExists(string $path): bool
+    {
+        return $this->googleDriveCache()->rememberDirectoryExists($this->getDisk(), $path, $this->disk_type);
+    }
+
+    private function diskFileExists(string $path): bool
+    {
+        return $this->googleDriveCache()->fileExists($this->getDisk(), $path, $this->disk_type);
+    }
+
+    private function diskCreateDirectory(string $path): void
+    {
+        $startedAt = microtime(true);
+        $this->getDiskDriver()->createDirectory($path);
+        $this->logDriveTiming('createDirectory', $path, $startedAt);
+        $this->forgetDirectoryListingCache($path);
+    }
+
+    private function diskListContents(string $path, bool $recursive = false)
+    {
+        return $this->googleDriveCache()->listContents($this->getDisk(), $path, $recursive, $this->disk_type);
+    }
+
+    private function diskWrite(string $path, string $contents): void
+    {
+        $startedAt = microtime(true);
+        $this->getDiskDriver()->write($path, $contents);
+        $this->logDriveTiming('write', $path, $startedAt, [
+            'bytes' => strlen($contents),
+        ]);
+        $this->forgetDirectoryListingCache($path);
+    }
+
+    private function diskRead(string $path): string
+    {
+        return $this->googleDriveCache()->read($this->getDisk(), $path, $this->disk_type);
+    }
+
+    private function diskMimeType(string $path): string
+    {
+        return $this->googleDriveCache()->mimeType($this->getDisk(), $path, $this->disk_type);
+    }
+
+    private function normalizeClientSystemPath(?string $path): string
+    {
+        return $this->normalizeStoragePath($path, $this->path);
+    }
+
+    private function parentStoragePath(string $path): string
+    {
+        $parent = dirname(trim($path, '/'));
+
+        return $parent === '.' ? trim($this->path, '/') : $parent;
+    }
+
+    private function normalizeStoragePath(?string $path, string $basePath): string
+    {
+        $normalizedBase = trim(str_replace('\\', '/', $basePath), '/');
+        $rawPath = rawurldecode((string) $path);
+        $normalizedPath = trim(str_replace('\\', '/', $rawPath));
+        $normalizedPath = preg_replace('~/+~', '/', $normalizedPath ?? '') ?? '';
+        $normalizedPath = trim($normalizedPath, '/');
+
+        if ($normalizedPath === '') {
+            return $normalizedBase;
+        }
+
+        $basePattern = preg_quote($normalizedBase, '~');
+        $normalizedPath = preg_replace('~^(?:' . $basePattern . '/)+~u', $normalizedBase . '/', $normalizedPath) ?? $normalizedPath;
+
+        if ($normalizedPath === $normalizedBase || Str::startsWith($normalizedPath, $normalizedBase . '/')) {
+            return $normalizedPath;
+        }
+
+        return $normalizedBase . '/' . $normalizedPath;
+    }
+
+    private function canonicalPathSegment(string $segment): string
+    {
+        $ascii = Str::ascii($segment);
+        $lower = mb_strtolower($ascii, 'UTF-8');
+        return preg_replace('/[^a-z0-9]+/u', '', $lower) ?? $lower;
+    }
+
+    private function resolveExistingDirectoryPath(string $path, string $basePath): string
+    {
+        $normalizedBase = trim($basePath, '/');
+        $normalizedPath = $this->normalizeStoragePath($path, $basePath);
+
+        if ($this->diskDirectoryExists($normalizedPath)) {
+            return $normalizedPath;
+        }
+
+        $relativePath = ltrim(Str::after($normalizedPath, $normalizedBase), '/');
+        if ($relativePath === '') {
+            return $normalizedPath;
+        }
+
+        $segments = array_values(array_filter(explode('/', $relativePath), fn($segment) => $segment !== ''));
+        $currentPath = $normalizedBase;
+
+        foreach ($segments as $segment) {
+            if (!$this->diskDirectoryExists($currentPath)) {
+                return $normalizedPath;
+            }
+
+            $contents = $this->diskListContents($currentPath, false);
+            $directories = [];
+
+            foreach ($contents as $item) {
+                if ($item->isDir()) {
+                    $directories[] = basename($item->path());
+                }
+            }
+
+            if (in_array($segment, $directories, true)) {
+                $currentPath = $currentPath . '/' . $segment;
+                continue;
+            }
+
+            $segmentKey = $this->canonicalPathSegment($segment);
+            $matched = null;
+
+            foreach ($directories as $dirName) {
+                if ($this->canonicalPathSegment($dirName) === $segmentKey) {
+                    $matched = $dirName;
+                    break;
+                }
+            }
+
+            if ($matched === null) {
+                return $normalizedPath;
+            }
+
+            $currentPath = $currentPath . '/' . $matched;
+        }
+
+        return $currentPath;
+    }
+
+    // Método para listar directorios (compatible con Flysystem v3)
+    private function getDirectoriesInPath($path)
+    {
+        [$directories] = $this->cachedListDirectoryContentsByType($path);
+
+        return $directories;
+    }
+
+    private function listDirectoryContentsByType(string $path): array
+    {
+        return $this->googleDriveCache()->rememberDirectoryListing($this->getDisk(), $path, $this->disk_type);
+    }
+
+    private function directoryListingCacheKey(string $path): string
+    {
+        if ($this->disk_type === 'google') {
+            return $this->googleDriveCache()->cacheKey($path);
+        }
+
+        return 'client_directory_listing:' . $this->disk_type . ':' . sha1(trim($path, '/'));
+    }
+
+    private function cachedListDirectoryContentsByType(string $path): array
+    {
+        return $this->listDirectoryContentsByType($path);
+    }
+
+    private function forgetDirectoryListingCache(string ...$paths): void
+    {
+        $this->googleDriveCache()->forgetRelatedTo(...$paths);
+    }
+
+    // Método para listar archivos (compatible con Flysystem v3)
+    private function listFiles($path)
+    {
+        [, $files] = $this->cachedListDirectoryContentsByType($path);
+
+        return $files;
+    }
+
+    // Método para listar recursivamente
+    private function listAll($path, $recursive = false)
+    {
+        return $this->diskListContents($path, $recursive)->toArray();
+    }
+
+    public function localClientSystemFormat($local_data)
+    {
+        $data = [];
+        foreach ($local_data as $d) {
+            $data[] = [
+                'name' => basename($d),
+                'path' => $d,
+            ];
+        }
+        return $data;
+    }
+
+    private function directoryPathVariants(string $path): array
+    {
+        $normalizedPath = trim(str_replace('\\', '/', rawurldecode($path)), '/');
+
+        return array_values(array_unique([
+            $path,
+            $normalizedPath,
+            Str::finish($normalizedPath, '/'),
+        ]));
+    }
+
+    private function buildDirectoryViewState(User $user, array $paths): array
+    {
+        $isAdminDepartment = in_array($user->work_department_id, [1, 7]);
+        $permissionPaths = $user->directories->pluck('path')->all();
+        $permissionPathSet = array_fill_keys($permissionPaths, true);
+
+        $pathVariantsByPath = [];
+        $allPathVariants = [];
+
+        foreach ($paths as $path) {
+            $pathVariantsByPath[$path] = $this->directoryPathVariants($path);
+            $allPathVariants = array_merge($allPathVariants, $pathVariantsByPath[$path]);
+        }
+
+        $managementRows = empty($allPathVariants)
+            ? collect()
+            : DirectoryManagement::whereIn('path', array_values(array_unique($allPathVariants)))->get();
+
+        $directoryVisibility = [];
+        $directoryAccess = [];
+        $directoryPermissionExact = [];
+
+        foreach ($paths as $path) {
+            $variants = $pathVariantsByPath[$path];
+            $matches = $managementRows->whereIn('path', $variants);
+            $dirManagement = $matches->firstWhere('user_id', $user->id);
+
+            if (!$dirManagement && $isAdminDepartment) {
+                $dirManagement = $matches->firstWhere('is_visible', false) ?? $matches->first();
+            }
+
+            $directoryVisibility[$path] = $dirManagement ? (bool) $dirManagement->is_visible : true;
+            $directoryPermissionExact[$path] = isset($permissionPathSet[$path]);
+            $directoryAccess[$path] = $directoryPermissionExact[$path] || $this->pathIsInsideAnyDirectory($path, $permissionPaths);
+        }
+
+        return [$isAdminDepartment, $directoryVisibility, $directoryAccess, $directoryPermissionExact];
+    }
+
+    private function pathIsInsideAnyDirectory(string $pathToCheck, array $permissionPaths): bool
+    {
+        $normalizedPath = Str::finish($pathToCheck, '/');
+
+        foreach ($permissionPaths as $permissionPath) {
+            $normalizedBase = Str::finish($permissionPath, '/');
+
+            if (Str::startsWith($normalizedPath, $normalizedBase)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function getPermissions($dirs)
+    {
+        $permissions = [];
+        foreach ($dirs as $dir) {
+            $permissions[] = [
+                'dirId' => $dir->id,
+                'users' => DirectoryUser::where('directory_id', $dir->id)->get()->pluck('user_id'),
+            ];
+        }
+        return $permissions;
+    }
+
+    private function getBreadcrumb($path)
+    {
+        $breadcrump = [];
+        $aux = '';
+        $parts = explode('/', $path);
+        foreach ($parts as $part) {
+            if (!empty($part)) {
+                $breadcrump[] = $aux . $part;
+                $aux .= ($part . '/');
+            }
+        }
+        return $breadcrump;
+    }
+
+    private function flattenArray(array $array): array
+    {
+        return array_merge(...$array);
+    }
+
+    private function uniqueArray($items)
+    {
+        $uniqueItems = array_unique(
+            array_map(
+                function ($item) {
+                    return serialize($item);
+                },
+                $items
+            )
+        );
+
+        return array_map(
+            function ($item) {
+                return unserialize($item);
+            },
+            $uniqueItems
+        );
+    }
+
+    private function filterFiles($id, $date, $filesArray)
+    {
+        $results = [];
+        $date = str_replace("-", "", $date);
+        foreach ($filesArray as $file) {
+            $fileParts = explode('_', $file['name']);
+            if (count($fileParts) == 3) {
+                $fileDate = $fileParts[0];
+                $fileId = explode('.', $fileParts[2])[0];
+                $dateMatches = ($date == null || $fileDate == $date);
+                $idMatches = ($id == null || $fileId == $id);
+
+                if ($dateMatches && $idMatches) {
+                    $results[] = $file;
+                }
+            }
+        }
+
+        return $results;
+    }
+
+    private function getRootPath(string $path): string
+    {
+        $parts = explode('/', rtrim($path, '/'));
+        return count($parts) > 1 ? $parts[0] . '/' . $parts[1] . '/' : $path . '/';
+    }
+
+    public function createMip(string $path)
+    {
+        foreach ($this->mip_directories as $name) {
+            $folder_name = $path . '/' . $name;
+            if (!$this->diskDirectoryExists($folder_name)) {
+                $this->diskCreateDirectory($folder_name);
+            }
+        }
+        return back();
+    }
+
+    public function index()
+    {
+        $path = $this->path;
+        $mip_path = $this->mip_path;
+        return view('client.index', compact('path', 'mip_path'));
+    }
+
+    public function directories(string $path)
+    {
+        $path = $this->normalizeStoragePath($path, $this->path);
+
+        if (!$this->cachedDiskDirectoryExists($path)) {
+            $resolvedPath = $this->resolveExistingDirectoryPath($path, $this->path);
+
+            if ($resolvedPath !== $path && $this->cachedDiskDirectoryExists($resolvedPath)) {
+                $path = $resolvedPath;
+            }
+        }
+
+        $navigation = [
+            'Carpetas' => route('client.system.index', ['path' => $this->path]),
+            'Reportes' => route('client.reports')
+        ];
+
+        $mip_dirs = $mip_files = [];
+        $dir_name = $this->mip_path . basename($path);
+
+        [$local_dirs, $local_files] = $this->cachedListDirectoryContentsByType($path);
+
+        sort($local_dirs);
+        sort($local_files);
+
+        $links = $this->getBreadcrumb($path);
+        $user = User::with('directories')->find(Auth::id());
+
+        if ($this->cachedDiskDirectoryExists($dir_name)) {
+            [$mip_dirs, $mip_files] = $this->cachedListDirectoryContentsByType($dir_name);
+        }
+
+        [
+            $isAdminDepartment,
+            $directoryVisibility,
+            $directoryAccess,
+            $directoryPermissionExact,
+        ] = $this->buildDirectoryViewState($user, array_merge($local_dirs, $mip_dirs));
+
+        $data = [
+            'root_path' => $path,
+            'directories' => $this->localClientSystemFormat($local_dirs),
+            'files' => $this->localClientSystemFormat($local_files),
+            'mip_directories' => $this->localClientSystemFormat($mip_dirs),
+            'mip_files' => $this->localClientSystemFormat($mip_files)
+        ];
+
+        return view('client.directory.index', compact(
+            'data',
+            'links',
+            'user',
+            'navigation',
+            'isAdminDepartment',
+            'directoryVisibility',
+            'directoryAccess',
+            'directoryPermissionExact'
+        ));
+    }
+
+    public function mip(string $path)
+    {
+        $directories = $files = [];
+
+        [$local_dirs, $local_files] = $this->cachedListDirectoryContentsByType($path);
+
+        $links = $this->getBreadcrumb($path);
+
+        $data = [
+            'root_path' => $path,
+            'directories' => $this->localClientSystemFormat($local_dirs),
+            'files' => $this->localClientSystemFormat($local_files),
+        ];
+
+        return view('client.mip.index', compact('data', 'links'));
+    }
+
+    public function storeFile(Request $request)
+    {
+        $request->validate([
+            'path' => 'required|string',
+            'files' => 'required|array|max:5',
+            'files.*' => 'file|max:2048',
+        ], [
+            'files.max' => 'Solo puedes subir hasta 5 archivos por carga.',
+            'files.*.max' => 'Cada archivo debe pesar máximo 2 MB.',
+        ]);
+
+        $file_path = trim($request->input('path'), '/');
+        $files = $request->file('files');
+        $maxFileSize = 2 * 1024 * 1024; // 2 MB por archivo
+        $maxTotalSize = 10 * 1024 * 1024; // 5 archivos de 2 MB
+
+        if (!$files || count($files) === 0) {
+            return redirect()->back()->withErrors(['files' => 'No files uploaded.']);
+        }
+
+        $totalUploadSize = array_sum(array_map(fn($file) => $file->getSize(), $files));
+
+        if ($totalUploadSize > $maxTotalSize) {
+            return redirect()->back()->withErrors([
+                'files' => 'El total de la carga no debe superar 10 MB.',
+            ]);
+        }
+
+        $disk = $this->getDisk();
+        $uploadedFiles = [];
+        $skippedFiles = [];
+        $errors = [];
+        $existingFilenames = [];
+
+        try {
+            foreach ($this->diskListContents($file_path, false) as $item) {
+                if ($item->isFile()) {
+                    $existingFilenames[basename($item->path())] = true;
+                }
+            }
+        } catch (\Exception $e) {
+            Log::warning("No se pudo listar la carpeta antes de subir archivos: " . $e->getMessage(), [
+                'path' => $file_path,
+                'disk' => $this->disk_type,
+            ]);
+        }
+
+        foreach ($files as $file) {
+            if (!$file->isValid()) {
+                $errors[] = 'Archivo inválido: ' . $file->getClientOriginalName();
+                continue;
+            }
+
+            if ($file->getSize() > $maxFileSize) {
+                $errors[] = 'El archivo ' . $file->getClientOriginalName() . ' excede el límite de 2 MB.';
+                continue;
+            }
+
+            $originalFilename = $file->getClientOriginalName();
+            $filename = str_replace(' ', '_', $originalFilename);
+            $fullPath = $file_path . '/' . $filename;
+
+            try {
+                // Verificar si el archivo ya existe
+                if (isset($existingFilenames[$filename])) {
+                    // Obtener timestamp para nombre único
+                    $timestamp = time();
+                    $pathInfo = pathinfo($filename);
+                    $extension = isset($pathInfo['extension']) ? '.' . $pathInfo['extension'] : '';
+                    $basename = $pathInfo['filename'];
+                    $counter = 0;
+
+                    // Crear nuevo nombre con timestamp
+                    do {
+                        $suffix = $counter === 0 ? $timestamp : $timestamp . '_' . $counter;
+                        $filename = $basename . '_' . $suffix . $extension;
+                        $counter++;
+                    } while (isset($existingFilenames[$filename]));
+
+                    $fullPath = $file_path . '/' . $filename;
+                }
+
+                // Subir el archivo
+                $this->diskWrite($fullPath, file_get_contents($file->getRealPath()));
+                $existingFilenames[$filename] = true;
+                $uploadedFiles[] = $filename;
+
+            } catch (\Exception $e) {
+                Log::error("Error uploading file {$filename}: " . $e->getMessage());
+
+                if ($this->disk_type === 'google' && $this->isGoogleAuthError($e->getMessage())) {
+                    return response()->view('google-drive-auth-error', [
+                        'error_message' => $e->getMessage(),
+                    ], 401);
+                }
+
+                $errors[] = "Error al subir {$originalFilename}: " . $e->getMessage();
+            }
+        }
+
+        // Preparar mensaje de respuesta
+        $messages = [];
+        if (!empty($uploadedFiles)) {
+            $messages[] = count($uploadedFiles) . ' archivo(s) subido(s) exitosamente';
+        }
+        if (!empty($skippedFiles)) {
+            $messages[] = count($skippedFiles) . ' archivo(s) omitido(s) (ya existían)';
+        }
+        if (!empty($errors)) {
+            return redirect()->back()->withErrors(['file' => implode(', ', $errors)]);
+        }
+
+        if (!empty($uploadedFiles)) {
+            $this->forgetDirectoryListingCache($file_path);
+        }
+
+        return back()->with('success', implode('. ', $messages));
+    }
+
+    // ... (mantener los métodos storeSignature, processBase64Image, processUploadedImage iguales)
+    public function storeSignature(Request $request)
+    {
+        try {
+            $request->validate([
+                'order' => 'required|exists:order,id',
+                'name' => 'required|string|max:1024',
+                'signature' => 'nullable|string', // Firma en base64
+                'image' => 'nullable|string' // Imagen en base64
+            ]);
+
+            $order = Order::findOrFail($request->input('order'));
+            $name = $request->input('name');
+            $base64Data = null;
+            $signatureSource = null;
+
+            // Procesar firma digital (viene como string base64)
+            if ($request->filled('signature')) {
+                $signatureSource = 'drawing';
+
+                // Validar que sea un string base64 válido
+                $signatureData = $request->input('signature');
+                if (!preg_match('/^data:image\/(png|jpg|jpeg);base64,/', $signatureData)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Formato de firma no válido. Debe ser base64 de imagen.'
+                    ], 422);
+                }
+
+                $base64Data = $this->processBase64Image($signatureData);
+            }
+
+            // Procesar imagen subida en base64
+            if ($request->filled('image') && !$base64Data) {
+                $signatureSource = 'upload';
+
+                // Validar que sea un string base64 válido
+                $imageData = $request->input('image');
+                if (!preg_match('/^data:image\/(png|jpg|jpeg);base64,/', $imageData)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Formato de imagen no válido. Debe ser base64 de imagen.'
+                    ], 422);
+                }
+
+                $base64Data = $this->processBase64Image($imageData);
+            }
+
+            if (empty($base64Data)) {
+                throw new \Exception('No se proporcionó ni firma ni imagen válida');
+            }
+
+            // Actualizar orden
+            $order->update([
+                'customer_signature' => $base64Data,
+                'signature_name' => $name
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'order_id' => $order->id,
+                    'signature_name' => $name,
+                    'has_signature' => true,
+                    'signature_source' => $signatureSource
+                ],
+                'message' => 'Firma/imagen guardada correctamente'
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->validator->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al guardar: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function processBase64Image($base64Data)
+    {
+        try {
+            // Separar el encabezado de los datos
+            $exploded = explode(',', $base64Data);
+            if (count($exploded) < 2) {
+                throw new \Exception('Formato base64 no válido');
+            }
+
+            $imageData = base64_decode($exploded[1]);
+
+            if ($imageData === false) {
+                throw new \Exception('Error al decodificar base64');
+            }
+
+            // Obtener el tipo MIME del encabezado
+            $mimeType = '';
+            $header = $exploded[0];
+            if (preg_match('/data:image\/(\w+);base64/', $header, $matches)) {
+                $mimeType = $matches[1];
+            }
+
+            // Validar tamaño (máximo 5MB)
+            $sizeInBytes = (int) (strlen(rtrim($base64Data, '=')) * 3 / 4);
+            if ($sizeInBytes > 5 * 1024 * 1024) { // 5MB
+                throw new \Exception('La imagen excede el tamaño máximo de 5MB');
+            }
+
+            // Para Laravel, puedes guardar como base64 directo en la base de datos
+            // O si prefieres guardar como archivo:
+            return $base64Data; // O procesar y guardar como archivo
+
+            // Opcional: Guardar como archivo
+            /*
+            $fileName = 'signature_' . time() . '_' . uniqid() . '.' . $mimeType;
+            $path = 'signatures/' . $fileName;
+
+            // Guardar en storage
+            Storage::disk('public')->put($path, $imageData);
+
+            return $path; // Retornar ruta del archivo
+            */
+
+        } catch (\Exception $e) {
+            throw new \Exception('Error procesando imagen: ' . $e->getMessage());
+        }
+    }
+    /**
+     * Procesa imagen en base64 (de la firma digital)
+     */
+    /*protected function processBase64Image($base64)
+    {
+        if (preg_match('/^data:image\/(\w+);base64,/', $base64)) {
+            list(, $base64) = explode(',', $base64);
+        }
+
+        if (!base64_decode($base64, true)) {
+            throw new \Exception('Formato base64 inválido');
+        }
+
+        return $base64;
+    }*/
+
+    /**
+     * Procesa imagen subida via file input
+     */
+    protected function processUploadedImage($image)
+    {
+        if (!$image->isValid()) {
+            throw new \Exception('Archivo de imagen inválido');
+        }
+
+        $imageContent = file_get_contents($image->getRealPath());
+    }
+
+    public function searchReport(Request $request)
+    {
+        $user = User::find(Auth::id());
+        $sedes = Customer::where('general_sedes', '!=', 0)->get();
+        $business_lines = LineBusiness::all();
+        $section = 1;
+
+        $order_id = $request->input('report');
+        $customer_id = $request->input('sede');
+        $serviceTerm = '%' . $request->input('service') . '%';
+        $date = $request->input('date');
+        $time = $request->input('time');
+        $business_line_id = $request->input('business_line');
+        $tracking_type = $request->input('tracking_type');
+
+        $serviceIds = Service::where('name', 'LIKE', $serviceTerm)->get()->pluck('id');
+        $orderServiceIds = OrderService::whereIn('service_id', $serviceIds)->get()->pluck('order_id');
+        $orderBusinessIds = OrderService::where(
+            'service_id',
+            Service::where('business_line_id', $business_line_id)->get()->pluck('id')->toArray()
+        )->get()->pluck('order_id');
+
+        [$startDate, $endDate] = array_map(function ($d) {
+            return Carbon::createFromFormat('d/m/Y', trim($d));
+        }, explode(' - ', $date));
+
+        $startDate = $startDate->format('Y-m-d');
+        $endDate = $endDate->format(format: 'Y-m-d');
+
+        $orders = Order::where('status_id', 5)->where('customer_id', $customer_id);
+
+        if ($order_id) {
+            $orders = $orders->where('id', $order_id);
+        } else {
+            $orders = $orders->where(function ($query) use ($order_id, $orderServiceIds, $orderBusinessIds, $startDate, $endDate, $time) {
+                $query->whereBetween('programmed_date', [$startDate, $endDate])
+                    ->orWhere('id', $order_id)
+                    ->orWhereIn('id', $orderServiceIds)
+                    ->orWhereIn('id', $orderBusinessIds)
+                    ->orWhere('start_time', $time);
+            });
+        }
+
+        $orders = $tracking_type ? $orders->whereNotNull('contract_id') : $orders->whereNull('contract_id');
+        $orders = $orders->orderByRaw('signature_name IS NULL DESC')->paginate($this->size);
+        return view('client.report.index', compact('user', 'orders', 'business_lines', 'sedes', 'section'));
+    }
+
+    function searchDirectories(Request $request, ?string $search = null, bool $exactMatch = false): array
+    {
+        try {
+            $contain_root = str_starts_with($request->input('path'), $this->path);
+            $search_path = $contain_root ? $request->input('path') : $this->path . $request->input('path');
+            $search_path = Str::finish($search_path, '/');
+
+            if (!$this->cachedDiskDirectoryExists($search_path)) {
+                return [];
+            }
+
+            $directories = $this->getDirectoriesInPath($search_path);
+
+            if (empty($search)) {
+                return array_map(function ($dir) {
+                    return [
+                        'name' => basename($dir),
+                        'path' => $dir,
+                        'full_path' => $dir
+                    ];
+                }, $directories);
+            }
+
+            $searchTerm = Str::lower($search);
+            $filtered = array_filter($directories, function ($dir) use ($searchTerm, $exactMatch) {
+                $dirName = Str::lower(basename($dir));
+                return $exactMatch ? $dirName === $searchTerm : Str::contains($dirName, $searchTerm);
+            });
+
+            return array_map(function ($dir) {
+                return [
+                    'name' => basename($dir),
+                    'path' => $dir,
+                    'full_path' => $dir
+                ];
+            }, array_values($filtered));
+
+        } catch (\Exception $e) {
+            Log::error("Folder search error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function searchBackupReport(Request $request)
+    {
+        $files = [];
+        $business_lines = LineBusiness::all();
+        $user = User::find(Auth::id());
+        $disk = $this->getDisk();
+        $section = 2;
+
+        $customer_id = $request->input('sede');
+        $report_id = $request->input('report_id');
+        $date = $request->input('date');
+
+        $folder_name = Customer::find($customer_id)->name;
+
+        // Obtener todos los directorios recursivamente
+        $allContents = $this->diskListContents($this->reports_path, true);
+        $directories = $allContents->filter(fn($item) => $item->isDir())
+            ->map(fn($item) => $item->path())
+            ->toArray();
+
+        $matchingDirectories = array_filter($directories, function ($dir) use ($folder_name) {
+            return str_contains(strtolower($dir), strtolower($folder_name));
+        });
+
+        foreach ($matchingDirectories as $directory) {
+            $dirFiles = $this->diskListContents($directory, false)
+                ->filter(fn($item) => $item->isFile())
+                ->map(fn($item) => ['name' => basename($item->path()), 'path' => $item->path()])
+                ->toArray();
+            $files[] = $dirFiles;
+        }
+
+        $files = $this->filterFiles($report_id, $date, $this->uniqueArray($this->flattenArray($files)));
+
+        return view('client.report.index', compact('user', 'files', 'folder_name', 'business_lines', 'section'));
+    }
+
+    public function downloadFile($path)
+    {
+        try {
+            $decodedPath = urldecode($path);
+
+            if ($this->diskFileExists($decodedPath)) {
+                $mimeType = $this->diskMimeType($decodedPath);
+                $fileContents = $this->diskRead($decodedPath);
+
+                return response($fileContents)
+                    ->header('Content-Type', $mimeType)
+                    ->header('Content-Disposition', 'inline; filename="' . basename($decodedPath) . '"');
+            }
+            return response()->json(['error' => 'File not found.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while downloading the file.'], 500);
+        }
+    }
+
+    public function managementDirectory(string $path)
+    {
+        $path = trim(str_replace('\\', '/', rawurldecode($path)), '/');
+        $pathVariants = array_values(array_unique([
+            $path,
+            Str::finish($path, '/'),
+        ]));
+
+
+        $dir_permissions = DirectoryPermission::whereIn('path', $pathVariants)->get();
+
+        if ($dir_permissions->isEmpty()) {
+            $root = $this->getRootPath($path);
+            $root = trim(str_replace('\\', '/', $root), '/');
+            $rootVariants = array_values(array_unique([
+                $root,
+                Str::finish($root, '/'),
+            ]));
+
+            //dd($rootVariants);
+            $dir_permissions = DirectoryPermission::whereIn('path', $rootVariants)->get();
+        }
+
+        $isVisible = null;
+
+        foreach ($dir_permissions as $dir_per) {
+            $dir_mgmt = DirectoryManagement::where('user_id', $dir_per->user_id)
+                ->whereIn('path', $pathVariants)
+                ->first();
+
+            if ($dir_mgmt) {
+                $isVisible = !$dir_mgmt->is_visible;
+                $dir_mgmt->update([
+                    'path' => $path,
+                    'is_visible' => $isVisible,
+                ]);
+                continue;
+            }
+
+            $isVisible = false;
+            DirectoryManagement::create([
+                'user_id' => $dir_per->user_id,
+                'path' => $path,
+                'is_visible' => false,
+            ]);
+        }
+
+        if ($isVisible === null) {
+            return back()->with('warning', 'No se encontraron permisos para cambiar la visibilidad de la carpeta.');
+        }
+
+        return back()->with('success', $isVisible ? 'La carpeta se mostró correctamente.' : 'La carpeta se ocultó correctamente.');
+    }
+
+    public function updateDirectory(Request $request)
+    {
+        $disk = $this->getDisk();
+        $validated = $request->validate([
+            'name' => 'required|string|max:1024',
+            'path' => 'required|string',
+            'root_path' => 'required|string',
+        ]);
+
+        $root_path = $this->normalizeStoragePath($validated['root_path'], $this->path);
+        $path = $this->normalizeStoragePath($validated['path'], $this->path);
+
+        // Resolver contra el almacenamiento real para evitar falsos negativos por variaciones en ruta/nombre
+        $resolvedPath = $this->resolveExistingDirectoryPath($path, $this->path);
+        if ($this->diskDirectoryExists($resolvedPath)) {
+            $path = $resolvedPath;
+        }
+
+        $new_path = trim($root_path . '/' . trim($validated['name']), '/');
+
+        if ($path === $new_path) {
+            $this->logClientFolderChange('client_folder_rename_blocked_same_path', [
+                'path' => $path,
+                'new_path' => $new_path,
+                'disk' => $this->disk_type,
+            ]);
+
+            return back()->with('warning', 'El nuevo nombre es igual al nombre actual.');
+        }
+
+        if (!$this->diskDirectoryExists($path)) {
+            return back()->with('error', 'La carpeta no existe o ya no está disponible.');
+        }
+
+        if ($this->diskDirectoryExists($new_path)) {
+            return back()->with('warning', 'Ya existe una carpeta con ese nombre en esta ubicación.');
+        }
+
+        try {
+            $disk->move($path, $new_path);
+            $this->forgetDirectoryListingCache($path, $new_path, $this->parentStoragePath($path), $this->parentStoragePath($new_path));
+
+            $this->logClientFolderChange('client_folder_renamed', [
+                'old_path' => $path,
+                'new_path' => $new_path,
+                'disk' => $this->disk_type,
+            ]);
+
+            return back()->with('success', 'Carpeta renombrada correctamente.');
+        } catch (\Exception $e) {
+            Log::error('Error renaming directory', [
+                'old_path' => $path,
+                'new_path' => $new_path,
+                'disk' => $this->disk_type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'No fue posible renombrar la carpeta. Intenta nuevamente.');
+        }
+    }
+
+    public function updateFile(Request $request)
+    {
+        $disk = $this->getDisk();
+
+        $validated = $request->validate([
+            'name' => 'required|string',
+            'extension' => 'required|string',
+            'path' => 'required|string',
+            'root_path' => 'required|string',
+        ]);
+
+        $oldPath = $this->normalizeStoragePath($validated['path'], $this->path);
+        $rootPath = $this->normalizeStoragePath($validated['root_path'], $this->path);
+        $newFilename = $validated['name'] . '.' . $validated['extension'];
+        $newPath = rtrim($rootPath, '/') . '/' . $newFilename;
+
+        if ($oldPath === $newPath) {
+            return back()->with('warning', 'El nuevo nombre es igual al nombre actual.');
+        }
+
+        try {
+            if (!$this->diskFileExists($oldPath)) {
+                return back()->with('error', 'El archivo no existe o ya no está disponible.');
+            }
+
+            if ($this->diskFileExists($newPath)) {
+                return back()->with('warning', 'Ya existe un archivo con ese nombre en esta ubicación.');
+            }
+
+            $disk->move($oldPath, $newPath);
+            $this->forgetDirectoryListingCache($oldPath, $newPath, $this->parentStoragePath($oldPath), $this->parentStoragePath($newPath));
+            return back()->with('success', 'Archivo renombrado correctamente.');
+
+        } catch (\Exception $e) {
+            Log::error('Error renaming file', [
+                'old_path' => $oldPath,
+                'new_path' => $newPath,
+                'disk' => $this->disk_type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'No fue posible renombrar el archivo. Intenta nuevamente.');
+        }
+    }
+
+    public function destroyDirectory(string $path)
+    {
+        try {
+            $disk = $this->getDisk();
+            $path = $this->normalizeClientSystemPath($path);
+
+            if (!$this->diskDirectoryExists($path)) {
+                return response()->json(['error' => 'Directory not found.'], 404);
+            }
+
+            // Para Google Drive, usar una estrategia diferente
+            if ($this->disk_type === 'google') {
+                $this->deleteGoogleDriveDirectory($disk, $path);
+            } else {
+                // Para almacenamiento local
+                $this->deleteLocalDirectory($disk, $path);
+            }
+
+            $this->forgetDirectoryListingCache($path, $this->parentStoragePath($path));
+
+            $this->logClientFolderChange('client_folder_deleted', [
+                'path' => $path,
+                'disk' => $this->disk_type,
+            ]);
+
+            return back()->with('success', 'Directorio eliminado exitosamente');
+
+        } catch (\Exception $e) {
+            Log::error('Error deleting directory: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'An error occurred while deleting the directory.',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Elimina un directorio de Google Drive recursivamente
+     */
+    private function deleteGoogleDriveDirectory($disk, string $path)
+    {
+        // Listar contenido recursivamente
+        $contents = $this->diskListContents($path, true)->toArray();
+
+        // Separar archivos y directorios
+        $files = [];
+        $directories = [];
+
+        foreach ($contents as $item) {
+            if ($item->isFile()) {
+                $files[] = $item->path();
+            } elseif ($item->isDir()) {
+                $directories[] = $item->path();
+            }
+        }
+
+        // Eliminar primero todos los archivos
+        foreach ($files as $file) {
+            try {
+                $disk->delete($file);
+            } catch (\Exception $e) {
+                Log::warning("No se pudo eliminar archivo: {$file} - " . $e->getMessage());
+            }
+        }
+
+        // Ordenar directorios por profundidad (más profundo primero)
+        usort($directories, function ($a, $b) {
+            return substr_count($b, '/') - substr_count($a, '/');
+        });
+
+        // Eliminar directorios en orden
+        foreach ($directories as $directory) {
+            try {
+                $disk->deleteDirectory($directory);
+            } catch (\Exception $e) {
+                Log::warning("No se pudo eliminar directorio: {$directory} - " . $e->getMessage());
+            }
+        }
+
+        // Finalmente eliminar el directorio raíz
+        $disk->deleteDirectory($path);
+    }
+
+    /**
+     * Elimina un directorio local recursivamente
+     */
+    private function deleteLocalDirectory($disk, string $path)
+    {
+        $contents = $this->diskListContents($path, true)->toArray();
+
+        // Ordenar por profundidad en orden descendente
+        usort($contents, function ($a, $b) {
+            return substr_count($b->path(), '/') - substr_count($a->path(), '/');
+        });
+
+        // Eliminar archivos y directorios en orden inverso
+        foreach ($contents as $item) {
+            if ($item->isFile()) {
+                $disk->delete($item->path());
+            } elseif ($item->isDir()) {
+                $disk->deleteDirectory($item->path());
+            }
+        }
+
+        // Eliminar el directorio raíz
+        $disk->deleteDirectory($path);
+    }
+
+    public function destroyFile(string $path)
+    {
+        try {
+            $disk = $this->getDisk();
+            $path = $this->normalizeClientSystemPath($path);
+
+            if (!$this->diskFileExists($path)) {
+                return response()->json(['error' => 'File not found.'], 404);
+            }
+
+            $disk->delete($path);
+            $this->forgetDirectoryListingCache($this->parentStoragePath($path));
+
+            return back();
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while deleting the file.'], 500);
+        }
+    }
+
+    /**
+     * Eliminar múltiples carpetas de forma masiva
+     */
+    public function massDeleteDirectories(Request $request)
+    {
+        $request->validate([
+            'directories' => 'required|string'
+        ]);
+
+        $disk = $this->getDisk();
+        $directories = json_decode($request->input('directories'), true);
+
+        if (!is_array($directories)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Formato de carpetas inválido'
+            ], 422);
+        }
+
+        $results = [];
+        $allSuccess = true;
+        $deletedCount = 0;
+
+        foreach ($directories as $directory) {
+            $dirPath = $this->normalizeClientSystemPath($directory);
+
+            try {
+                if (!$this->diskDirectoryExists($dirPath)) {
+                    $results[$directory] = [
+                        'success' => false,
+                        'message' => 'El directorio no existe'
+                    ];
+                    $allSuccess = false;
+                    continue;
+                }
+
+                if ($this->disk_type === 'google') {
+                    $this->deleteGoogleDriveDirectory($disk, $dirPath);
+                } else {
+                    $this->deleteLocalDirectory($disk, $dirPath);
+                }
+
+                $this->forgetDirectoryListingCache($dirPath, $this->parentStoragePath($dirPath));
+
+                $results[$directory] = [
+                    'success' => true,
+                    'message' => 'Directorio eliminado correctamente'
+                ];
+                $deletedCount++;
+                Log::info("Directorio eliminado: {$dirPath}");
+
+                $this->logClientFolderChange('client_folder_deleted_mass', [
+                    'path' => $dirPath,
+                    'original_input' => $directory,
+                    'disk' => $this->disk_type,
+                ]);
+
+            } catch (\Exception $e) {
+                $results[$directory] = [
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ];
+                $allSuccess = false;
+                Log::error("Error deleting directory {$directory}: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => $allSuccess,
+            'deleted_count' => $deletedCount,
+            'total' => count($directories),
+            'results' => $results,
+            'message' => $allSuccess 
+                ? "Todos los directorios fueron eliminados correctamente" 
+                : "Algunos directorios no pudieron ser eliminados"
+        ]);
+    }
+
+    /**
+     * Eliminar múltiples archivos de forma masiva
+     */
+    public function massDeleteFiles(Request $request)
+    {
+        $request->validate([
+            'files' => 'required|string'
+        ]);
+
+        $disk = $this->getDisk();
+        $files = json_decode($request->input('files'), true);
+
+        if (!is_array($files)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Formato de archivos inválido'
+            ], 422);
+        }
+
+        $results = [];
+        $allSuccess = true;
+        $deletedCount = 0;
+
+        foreach ($files as $file) {
+            $filePath = $this->normalizeClientSystemPath($file);
+
+            try {
+                if (!$this->diskFileExists($filePath)) {
+                    $results[$file] = [
+                        'success' => false,
+                        'message' => 'El archivo no existe'
+                    ];
+                    $allSuccess = false;
+                    continue;
+                }
+
+                $disk->delete($filePath);
+                $this->forgetDirectoryListingCache($this->parentStoragePath($filePath));
+
+                $results[$file] = [
+                    'success' => true,
+                    'message' => 'Archivo eliminado correctamente'
+                ];
+                $deletedCount++;
+                Log::info("Archivo eliminado: {$filePath}");
+
+            } catch (\Exception $e) {
+                $results[$file] = [
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ];
+                $allSuccess = false;
+                Log::error("Error deleting file {$file}: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => $allSuccess,
+            'deleted_count' => $deletedCount,
+            'total' => count($files),
+            'results' => $results,
+            'message' => $allSuccess 
+                ? "Todos los archivos fueron eliminados correctamente" 
+                : "Algunos archivos no pudieron ser eliminados"
+        ]);
+    }
+
+    // ... (mantener los métodos permissions, copyDirectories, moveDirectories, reports iguales)
+    public function permissions(Request $request)
+    {
+        $directoryId = $request->input('directory_id');
+        $userIds = json_decode($request->input('selected_users'));
+        $users = DirectoryUser::where('directory_id', $directoryId)->pluck('user_id')->toArray();
+
+        //Elimina permisos
+        $userIdstoDelete = array_diff($users, $userIds);
+        foreach ($userIdstoDelete as $userId) {
+            DirectoryUser::where('user_id', $userId)->where('directory_id', $directoryId)->delete();
+        }
+
+        // Agregar permiso
+        $userIdstoAdd = array_diff($userIds, $users);
+        foreach ($userIdstoAdd as $userId) {
+            DirectoryUser::insert([
+                'directory_idconsole.log(path);' => $directoryId,
+                'user_id' => $userId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return back();
+    }
+
+    public function copyDirectories(Request $request)
+    {
+        $request->validate([
+            'path' => 'required|string',
+            'directories' => 'required|json'
+        ]);
+
+        $disk = $this->getDisk();
+        $destinationInput = $this->normalizeStoragePath($request->path, $this->path);
+        $destination = Str::finish($destinationInput, '/');
+        
+        $directories = json_decode($request->directories, true);
+        $results = [];
+        $allSuccess = true;
+
+        foreach ($directories as $directory) {
+            // Normalizar ruta de origen
+            $sourceInput = $this->normalizeStoragePath($directory, $this->path);
+            $source = Str::finish($sourceInput, '/');
+            
+            $dirname = basename(rtrim($source, '/'));
+            $target = $destination . $dirname;
+
+            try {
+                // Verificaciones iniciales
+                if (!$disk->exists($source)) {
+                    throw new \Exception('El directorio origen no existe: ' . $source);
+                }
+                if ($disk->exists($target)) {
+                    throw new \Exception('El directorio destino ya existe: ' . $target);
+                }
+
+                // Crear directorio principal
+                if (!$disk->makeDirectory($target)) {
+                    throw new \Exception('No se pudo crear el directorio destino: ' . $target);
+                }
+
+                // Obtener todos los contenidos (directorios y archivos)
+                $allDirs = [];
+                $allFiles = [];
+                
+                try {
+                    $contents = $this->diskListContents($source, true);
+                    foreach ($contents as $item) {
+                        if ($item->isDir()) {
+                            $allDirs[] = $item->path();
+                        } else {
+                            $allFiles[] = $item->path();
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Error listing contents of {$source}: " . $e->getMessage());
+                }
+
+                // Crear subdirectorios primero
+                foreach ($allDirs as $dir) {
+                    $relativePath = Str::after($dir, $source);
+                    $newDirPath = rtrim($target, '/') . '/' . ltrim($relativePath, '/');
+                    
+                    if (!$this->diskDirectoryExists($newDirPath)) {
+                        $disk->makeDirectory($newDirPath);
+                    }
+                }
+
+                // Copiar archivos
+                foreach ($allFiles as $file) {
+                    $relativePath = Str::after($file, $source);
+                    $newFilePath = rtrim($target, '/') . '/' . ltrim($relativePath, '/');
+                    
+                    // Asegurar que el directorio padre existe
+                    $parentDir = dirname($newFilePath);
+                    if (!$disk->exists($parentDir)) {
+                        $disk->makeDirectory($parentDir);
+                    }
+                    
+                    $disk->copy($file, $newFilePath);
+                }
+
+                $results[$directory] = [
+                    'success' => true,
+                    'message' => 'Directorio y subdirectorios copiados correctamente',
+                    'new_path' => $target
+                ];
+
+                $this->logClientFolderChange('client_folder_copied', [
+                    'source_path' => $source,
+                    'target_path' => $target,
+                    'disk' => $this->disk_type,
+                ]);
+
+                $this->forgetDirectoryListingCache($target, $this->parentStoragePath($target));
+
+            } catch (\Exception $e) {
+                // Limpieza en caso de error
+                if ($disk->exists($target)) {
+                    try {
+                        $disk->deleteDirectory($target);
+                    } catch (\Exception $cleanupError) {
+                        Log::error("Error cleaning up {$target}: " . $cleanupError->getMessage());
+                    }
+                }
+
+                $results[$directory] = [
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ];
+                $allSuccess = false;
+                Log::error("Error copiando {$directory}: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => $allSuccess,
+            'results' => $results
+        ]);
+    }
+
+    public function moveDirectories(Request $request)
+    {
+        $request->validate([
+            'path' => 'required|string',
+            'directories' => 'required|json'
+        ]);
+
+        $disk = $this->getDisk();
+        $destinationInput = $this->normalizeStoragePath($request->path, $this->path);
+        $destination = Str::finish($destinationInput, '/');
+        
+        $directories = json_decode($request->directories, true);
+        $results = [];
+        $allSuccess = true;
+
+        foreach ($directories as $directory) {
+            // Normalizar ruta de origen
+            $sourceInput = $this->normalizeStoragePath($directory, $this->path);
+            $source = rtrim($sourceInput, '/');
+            
+            $dirname = basename($source);
+            $target = rtrim($destination, '/') . '/' . $dirname;
+
+            if ($source === $target) {
+                $results[$directory] = [
+                    'success' => false,
+                    'message' => 'El directorio origen y destino son iguales'
+                ];
+                $allSuccess = false;
+
+                $this->logClientFolderChange('client_folder_move_blocked_same_path', [
+                    'old_path' => $source,
+                    'new_path' => $target,
+                    'disk' => $this->disk_type,
+                ]);
+
+                continue;
+            }
+
+            try {
+                // Verificar si el origen existe
+                if (!$disk->exists($source)) {
+                    $results[$directory] = [
+                        'success' => false,
+                        'message' => 'El directorio origen no existe: ' . $source
+                    ];
+                    $allSuccess = false;
+                    continue;
+                }
+
+                // Verificar si el destino ya existe
+                if ($disk->exists($target)) {
+                    $results[$directory] = [
+                        'success' => false,
+                        'message' => 'El directorio destino ya existe: ' . $target
+                    ];
+                    $allSuccess = false;
+                    continue;
+                }
+
+                // Verificar que no se esté moviendo a una subcarpeta de sí mismo
+                if (strpos($target, $source . '/') === 0) {
+                    $results[$directory] = [
+                        'success' => false,
+                        'message' => 'No se puede mover un directorio dentro de sí mismo'
+                    ];
+                    $allSuccess = false;
+                    continue;
+                }
+
+                // Mover el directorio
+                $moved = $disk->move($source, $target);
+
+                if ($moved) {
+                    $this->forgetDirectoryListingCache($source, $target, $this->parentStoragePath($source), $this->parentStoragePath($target));
+
+                    $results[$directory] = [
+                        'success' => true,
+                        'message' => 'Directorio movido correctamente',
+                        'old_path' => $source,
+                        'new_path' => $target
+                    ];
+
+                    $this->logClientFolderChange('client_folder_moved', [
+                        'old_path' => $source,
+                        'new_path' => $target,
+                        'disk' => $this->disk_type,
+                    ]);
+                    
+                    Log::info("Directorio movido: {$source} -> {$target}");
+                } else {
+                    throw new \Exception("Error al mover el directorio");
+                }
+
+            } catch (\Exception $e) {
+                $results[$directory] = [
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ];
+                $allSuccess = false;
+                Log::error("Error moving directory {$directory}: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => $allSuccess,
+            'results' => $results
+        ]);
+    }
+
+    /**
+     * Copiar archivos individuales a una nueva ubicación
+     */
+    public function copyFiles(Request $request)
+    {
+        $request->validate([
+            'path' => 'required|string',
+            'file_paths' => 'required|json'
+        ]);
+
+        $disk = $this->getDisk();
+        $destinationInput = $this->normalizeStoragePath($request->path, $this->path);
+        $destination = Str::finish($destinationInput, '/');
+        
+        $files = json_decode($request->file_paths, true);
+        $results = [];
+        $allSuccess = true;
+
+        foreach ($files as $file) {
+            // Normalizar ruta de origen
+            $sourceInput = $this->normalizeStoragePath($file, $this->path);
+            $source = $sourceInput;
+            
+            $filename = basename($source);
+            $target = rtrim($destination, '/') . '/' . $filename;
+
+            try {
+                // Verificaciones iniciales
+                if (!$disk->exists($source)) {
+                    throw new \Exception('El archivo origen no existe: ' . $source);
+                }
+                if ($disk->exists($target)) {
+                    throw new \Exception('El archivo destino ya existe: ' . $target);
+                }
+
+                // Asegurar que el directorio de destino existe
+                $targetDir = dirname($target);
+                if (!$disk->exists($targetDir)) {
+                    $disk->makeDirectory($targetDir);
+                }
+
+                // Copiar el archivo
+                if (!$disk->copy($source, $target)) {
+                    throw new \Exception('No se pudo copiar el archivo');
+                }
+
+                $this->forgetDirectoryListingCache($target, $this->parentStoragePath($target));
+
+                $results[$file] = [
+                    'success' => true,
+                    'message' => 'Archivo copiado correctamente',
+                    'new_path' => $target
+                ];
+
+            } catch (\Exception $e) {
+                $results[$file] = [
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ];
+                $allSuccess = false;
+                Log::error("Error copiando archivo {$file}: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => $allSuccess,
+            'results' => $results
+        ]);
+    }
+
+    /**
+     * Mover archivos individuales a una nueva ubicación
+     */
+    public function moveFiles(Request $request)
+    {
+        $request->validate([
+            'path' => 'required|string',
+            'file_paths' => 'required|json'
+        ]);
+
+        $disk = $this->getDisk();
+        $destinationInput = $this->normalizeStoragePath($request->path, $this->path);
+        $destination = Str::finish($destinationInput, '/');
+        
+        $files = json_decode($request->file_paths, true);
+        $results = [];
+        $allSuccess = true;
+
+        foreach ($files as $file) {
+            // Normalizar ruta de origen
+            $sourceInput = $this->normalizeStoragePath($file, $this->path);
+            $source = $sourceInput;
+            
+            $filename = basename($source);
+            $target = rtrim($destination, '/') . '/' . $filename;
+
+            try {
+                // Verificar si el origen existe
+                if (!$disk->exists($source)) {
+                    $results[$file] = [
+                        'success' => false,
+                        'message' => 'El archivo origen no existe: ' . $source
+                    ];
+                    $allSuccess = false;
+                    continue;
+                }
+
+                // Verificar si el destino ya existe
+                if ($disk->exists($target)) {
+                    $results[$file] = [
+                        'success' => false,
+                        'message' => 'El archivo destino ya existe: ' . $target
+                    ];
+                    $allSuccess = false;
+                    continue;
+                }
+
+                // Asegurar que el directorio de destino existe
+                $targetDir = dirname($target);
+                if (!$disk->exists($targetDir)) {
+                    $disk->makeDirectory($targetDir);
+                }
+
+                // Mover el archivo
+                $moved = $disk->move($source, $target);
+
+                if ($moved) {
+                    $this->forgetDirectoryListingCache($source, $target, $this->parentStoragePath($source), $this->parentStoragePath($target));
+
+                    $results[$file] = [
+                        'success' => true,
+                        'message' => 'Archivo movido correctamente',
+                        'old_path' => $source,
+                        'new_path' => $target
+                    ];
+                    
+                    Log::info("Archivo movido: {$source} -> {$target}");
+                } else {
+                    throw new \Exception("Error al mover el archivo");
+                }
+
+            } catch (\Exception $e) {
+                $results[$file] = [
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ];
+                $allSuccess = false;
+                Log::error("Error moving file {$file}: " . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => $allSuccess,
+            'results' => $results
+        ]);
+    }
+
+    // Funciones para los filtros de reportes 
+    public function reports(Request $request)
+    {
+        //dd($request->all());
+        $navigation = [
+            'Carpetas' => route('client.system.index', ['path' => $this->path]),
+            'Reportes' => route('client.reports')
+        ];
+
+        $user = User::find(Auth::id());
+        $business_lines = LineBusiness::all();
+        $sedes = $user->role_id == 5
+            ? $user->customers
+            : Customer::where('general_sedes', '!=', 0)->orderBy('name', 'asc')->get();
+
+        $query = Order::query();
+
+        // Validar que se haya seleccionado una sede
+        $filteredParams = $request->except('page');
+
+        // Validar que se haya seleccionado al menos un filtro (excluyendo page)
+        $has_orders = count($filteredParams) > 0;
+
+        if ($has_orders) {
+            if ($request->filled('sede')) {
+                $query->where('customer_id', $request->input('sede'));
+            }
+
+            if ($request->filled('no_report')) {
+                $query->where('folio', 'LIKE', '%-' . $request->no_report);
+            }
+
+            if ($request->filled('date_range')) {
+                [$startDate, $endDate] = array_map(function ($d) {
+                    return Carbon::createFromFormat('d/m/Y', trim($d));
+                }, explode(' - ', $request->input('date_range')));
+
+                $query->whereBetween('programmed_date', [
+                    $startDate->format('Y-m-d'),
+                    $endDate->format('Y-m-d')
+                ]);
+            }
+
+            if ($request->filled('service')) {
+                $serviceName = '%' . $request->input('service') . '%';
+                $serviceIds = Service::where('name', 'LIKE', $serviceName)->pluck('id');
+                $orderIds = OrderService::whereIn('service_id', $serviceIds)->pluck('order_id');
+                $query->whereIn('id', $orderIds);
+            }
+
+            if ($request->filled('has_signature')) {
+                $query = $request->input('has_signature') == "yes" ?
+                    $query->whereNotNull('customer_signature') :
+                    $query->whereNull('customer_signature');
+            }
+        }
+
+        $orders = $query->where('status_id', 5)->orderByRaw('signature_name IS NULL DESC')
+            ->orderBy('programmed_date', 'desc')->paginate($this->size)->appends($request->query());
+
+        return view('client.report.index', compact(
+            'user',
+            'orders',
+            'business_lines',
+            'sedes',
+            'navigation',
+            'has_orders'
+        ));
+
+    }
+
+    public function listDirs(Request $request)
+    {
+        $input = $request->input('path', '');
+        $normalized = $this->normalizeStoragePath($input, $this->path);
+        $subpath = ltrim(Str::after($normalized, trim($this->path, '/')), '/');
+
+        $disk = $this->getDisk();
+        $basePath = $subpath !== '' ? "client_system/{$subpath}" : 'client_system';
+
+        $list = function (string $path) use (&$list, $disk) {
+            if (!$this->diskDirectoryExists($path)) {
+                return [];
+            }
+
+            $dirs = [];
+            $contents = $this->diskListContents($path, false);
+
+            foreach ($contents as $item) {
+                if ($item->isDir()) {
+                    $rel = substr($item->path(), strlen('client_system/'));
+                    $rel = ltrim($rel, '/');
+                    $dirs[] = [
+                        'name' => basename($item->path()),
+                        'path' => $rel,
+                        'children' => $list($item->path()),
+                    ];
+                }
+            }
+            return $dirs;
+        };
+
+        return response()->json($list($basePath));
+    }
+
+    /**
+     * Método público para listar directorios (usado por el clipboard AJAX)
+     * Retorna solo los directorios de un path específico
+     */
+    public function listDirectories(Request $request)
+    {
+        try {
+            $input = $request->input('path', '');
+            $normalized = $this->normalizeStoragePath($input, $this->path);
+            $subpath = ltrim(Str::after($normalized, trim($this->path, '/')), '/');
+
+            $disk = $this->getDisk();
+            $basePath = $subpath !== '' ? "client_system/{$subpath}" : 'client_system';
+
+            // Verificar si el directorio existe
+            if (!$this->diskDirectoryExists($basePath)) {
+                return response()->json([]);
+            }
+
+            $dirs = [];
+            $contents = $this->diskListContents($basePath, false);
+
+            foreach ($contents as $item) {
+                if ($item->isDir()) {
+                    // Retornar la ruta relativa sin 'client_system/'
+                    $relativePath = substr($item->path(), strlen('client_system/'));
+                    $relativePath = ltrim($relativePath, '/');
+                    
+                    $dirs[] = [
+                        'name' => basename($item->path()),
+                        'path' => $relativePath
+                    ];
+                }
+            }
+
+            return response()->json($dirs);
+
+        } catch (\Exception $e) {
+            Log::error("Error listing directories: " . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // Método para cambiar entre discos (opcional)
+    public function switchDisk($type)
+    {
+        $this->disk_type = in_array($type, ['public', 'google']) ? $type : 'public';
+        return back()->with('success', 'Disk switched to ' . $this->disk_type);
+    }
+
+    public function storeDirectory(Request $request)
+    {
+        try {
+            $request->validate([
+                'folder_name' => 'required|string|max:1024',
+                'parent_path' => 'nullable|string',
+                'is_mip' => 'nullable|boolean'
+            ]);
+
+            $folderName = trim($request->input('folder_name'));
+            $parentPath = $request->input('parent_path');
+            $isMip = $request->input('is_mip', false);
+
+            // Validar que el nombre no esté vacío después de trim
+            if (empty($folderName)) {
+                return back()->withErrors(['folder_name' => 'El nombre de la carpeta no puede estar vacío']);
+            }
+
+            // Determinar la ruta base según el tipo
+            $basePath = $isMip ? $this->mip_path : $this->path;
+
+            $parentPath = $parentPath ? $this->normalizeStoragePath($parentPath, $basePath) : null;
+
+            if ($parentPath) {
+                $resolvedParentPath = $this->resolveExistingDirectoryPath($parentPath, $basePath);
+
+                if (!$this->diskDirectoryExists($resolvedParentPath)) {
+                    return back()->withErrors([
+                        'folder_name' => 'La ruta destino no existe: ' . $parentPath,
+                    ])->withInput();
+                }
+
+                $parentPath = $resolvedParentPath;
+            }
+
+            // Construir la ruta completa
+            $fullPath = $parentPath
+                ? rtrim($parentPath, '/') . '/' . $folderName
+                : rtrim($basePath, '/') . '/' . $folderName;
+
+            $disk = $this->getDisk();
+
+            // Verificar si la carpeta ya existe (doble verificación por seguridad)
+            if ($this->diskDirectoryExists($fullPath)) {
+                return back()->withErrors(['folder_name' => 'La carpeta "' . $folderName . '" ya existe en esta ubicación']);
+            }
+
+            // Crear la carpeta con manejo de errores mejorado
+            try {
+                $created = $disk->makeDirectory($fullPath);
+
+                if (!$created) {
+                    throw new \Exception('No se pudo crear la carpeta');
+                }
+
+                // Verificar que se creó correctamente
+                if (!$this->diskDirectoryExists($fullPath)) {
+                    throw new \Exception('La carpeta no existe después de crearla');
+                }
+
+                // Si es una carpeta MIP, crear la estructura completa
+                if ($isMip) {
+                    $this->createMipStructure($fullPath);
+                }
+
+                $this->logClientFolderChange('client_folder_created', [
+                    'path' => $fullPath,
+                    'is_mip' => (bool) $isMip,
+                    'disk' => $this->disk_type,
+                ]);
+
+                $this->forgetDirectoryListingCache($parentPath ?: $basePath);
+
+                return back()->with('success', 'Carpeta "' . $folderName . '" creada exitosamente');
+
+            } catch (\Exception $e) {
+                // Si falla, verificar si se creó parcialmente y limpiar
+                if ($this->diskDirectoryExists($fullPath)) {
+                    try {
+                        $disk->deleteDirectory($fullPath);
+                    } catch (\Exception $cleanupError) {
+                        Log::error('Error cleaning up failed directory creation: ' . $cleanupError->getMessage());
+                    }
+                }
+                throw $e;
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->validator->errors())->withInput();
+
+        } catch (\Exception $e) {
+            Log::error('Error creating directory: ' . $e->getMessage());
+            return back()->withErrors(['folder_name' => 'Error al crear la carpeta: ' . $e->getMessage()])->withInput();
+        }
+    }
+
+    /**
+     * Crea la estructura completa de carpetas MIP
+     *
+     * @param string $basePath
+     * @return void
+     */
+    private function createMipStructure(string $basePath)
+    {
+        $disk = $this->getDisk();
+
+        foreach ($this->mip_directories as $directory) {
+            $folderPath = $basePath . '/' . $directory;
+            if (!$this->diskDirectoryExists($folderPath)) {
+                $disk->makeDirectory($folderPath);
+                $this->forgetDirectoryListingCache($folderPath);
+            }
+        }
+    }
+
+    /**
+     * Crea múltiples carpetas recursivamente
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function storeDirectoriesRecursive(Request $request)
+    {
+        try {
+            $request->validate([
+                'folder_path' => 'required|string',
+                'parent_path' => 'nullable|string',
+                'is_mip' => 'nullable|boolean'
+            ]);
+
+            $folderPath = $request->input('folder_path');
+            $parentPath = $request->input('parent_path');
+            $isMip = $request->input('is_mip', false);
+
+            $basePath = $isMip ? $this->mip_path : $this->path;
+            $fullBasePath = $parentPath
+                ? $this->normalizeStoragePath($parentPath, $basePath)
+                : trim($basePath, '/');
+
+            $folders = explode('/', trim($folderPath, '/'));
+            $currentPath = rtrim($fullBasePath, '/');
+
+            $createdFolders = [];
+
+            foreach ($folders as $folder) {
+                if (empty(trim($folder)))
+                    continue;
+
+                $currentPath .= '/' . $folder;
+                $disk = $this->getDisk();
+
+                if (!$this->diskDirectoryExists($currentPath)) {
+                    if ($disk->makeDirectory($currentPath)) {
+                        $createdFolders[] = $currentPath;
+
+                        $this->logClientFolderChange('client_folder_created_recursive', [
+                            'path' => $currentPath,
+                            'is_mip' => (bool) $isMip,
+                            'disk' => $this->disk_type,
+                        ]);
+                    } else {
+                        throw new \Exception("Error al crear la carpeta: {$currentPath}");
+                    }
+                }
+            }
+
+            // Si es MIP, crear estructura en la última carpeta
+            if ($isMip && !empty($createdFolders)) {
+                $this->createMipStructure(end($createdFolders));
+            }
+
+            if (!empty($createdFolders)) {
+                $this->forgetDirectoryListingCache($fullBasePath, $currentPath);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Carpetas creadas exitosamente',
+                'created_folders' => $createdFolders,
+                'final_path' => $currentPath
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error creating recursive directories: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Verifica si una carpeta existe
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function directoryExists(Request $request)
+    {
+        try {
+            $request->validate([
+                'folder_path' => 'required|string'
+            ]);
+
+            $folderPath = $request->input('folder_path');
+            $disk = $this->getDisk();
+
+            $exists = $this->diskDirectoryExists($folderPath);
+
+            return response()->json([
+                'success' => true,
+                'exists' => $exists,
+                'folder_path' => $folderPath
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateDirectoryName(Request $request)
+    {
+        try {
+            $request->validate([
+                'current_path' => 'required|string',
+                'new_name' => 'required|string|max:1024|regex:/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s\-_\.]+$/',
+                'is_mip' => 'nullable|boolean'
+            ], [
+                'new_name.regex' => 'El nombre solo puede contener letras, números, espacios, guiones, puntos y guiones bajos.',
+                'new_name.max' => 'El nombre no puede exceder los 255 caracteres.'
+            ]);
+
+            $currentPath = $request->input('current_path');
+            $newName = trim($request->input('new_name'));
+            $isMip = $request->input('is_mip', false);
+
+            $disk = $this->getDisk();
+
+            // Verificar que la carpeta original existe
+            if (!$this->diskDirectoryExists($currentPath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La carpeta no existe o no se puede acceder a ella'
+                ], 404);
+            }
+
+            // Verificar que el nuevo nombre no sea igual al actual
+            $currentName = basename($currentPath);
+            if ($currentName === $newName) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El nuevo nombre es igual al nombre actual'
+                ], 422);
+            }
+
+            // Construir la nueva ruta
+            $parentPath = dirname($currentPath);
+            $newPath = $parentPath . '/' . $newName;
+            $normalizedCurrentPath = trim($currentPath, '/');
+            $normalizedNewPath = trim($newPath, '/');
+
+            if ($normalizedCurrentPath === $normalizedNewPath) {
+                $this->logClientFolderChange('client_folder_rename_blocked_same_path', [
+                    'path' => $normalizedCurrentPath,
+                    'new_path' => $normalizedNewPath,
+                    'is_mip' => (bool) $isMip,
+                    'disk' => $this->disk_type,
+                    'source' => 'updateDirectoryName',
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El nuevo nombre es igual al nombre actual'
+                ], 422);
+            }
+
+            // Verificar si ya existe una carpeta con el nuevo nombre
+            if ($this->diskDirectoryExists($newPath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ya existe una carpeta con ese nombre en esta ubicación'
+                ], 409);
+            }
+
+            // Renombrar la carpeta
+            $renamed = $disk->move($currentPath, $newPath);
+
+            if ($renamed) {
+                $this->forgetDirectoryListingCache($currentPath, $newPath, $this->parentStoragePath($currentPath), $this->parentStoragePath($newPath));
+
+                // Si es una carpeta MIP, también actualizar las referencias en la base de datos si es necesario
+                if ($isMip) {
+                    $this->updateMipReferences($currentPath, $newPath);
+                }
+
+                // Actualizar permisos si existen en la base de datos
+                $this->updateDirectoryPermissions($currentPath, $newPath);
+
+                Log::info("Carpeta renombrada: {$currentPath} -> {$newPath}");
+
+                $this->logClientFolderChange('client_folder_renamed', [
+                    'old_path' => $currentPath,
+                    'new_path' => $newPath,
+                    'is_mip' => (bool) $isMip,
+                    'disk' => $this->disk_type,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Carpeta renombrada exitosamente',
+                    'old_path' => $currentPath,
+                    'new_path' => $newPath,
+                    'new_name' => $newName
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al renombrar la carpeta'
+            ], 500);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->validator->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            Log::error('Error renaming directory: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+}

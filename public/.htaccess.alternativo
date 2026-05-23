@@ -1,0 +1,76 @@
+# ============================================
+# ALTERNATIVA: ModSecurity con Whitelist Selectivo
+# ============================================
+# Si desactivar ModSecurity completamente no es una opción,
+# usa este .htaccess alternativo que solo desactiva reglas problemáticas
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+    
+    # ============================================
+    # WHITELIST MOD_SECURITY PARA RUTAS ESPECÍFICAS
+    # ============================================
+    
+    # Solo desactivar ModSecurity para rutas de orders
+    <If "%{REQUEST_URI} =~ m#^/orders/(update|store)#">
+        <IfModule mod_security.c>
+            SecFilterEngine Off
+            SecFilterScanPOST Off
+        </IfModule>
+        
+        <IfModule mod_security2.c>
+            SecRuleEngine Off
+        </IfModule>
+    </If>
+    
+    # Desactivar reglas específicas que causan falsos positivos
+    <IfModule mod_security2.c>
+        # Desactivar reglas SQL injection que bloquean JSON legítimo
+        SecRuleRemoveById 942100 942200 942260 942270 942340 942370
+        
+        # Desactivar reglas XSS que bloquean HTML legítimo en descripciones
+        SecRuleRemoveById 941100 941110 941160 941170 941180 941190
+        
+        # Desactivar reglas de size que limitan POST grandes
+        SecRuleRemoveById 960335
+        
+        # Permitir múltiples valores en arrays
+        SecRuleRemoveById 960915
+    </IfModule>
+    
+    # ============================================
+    # LÍMITES PHP PARA POST GRANDES
+    # ============================================
+    php_value upload_max_filesize 20M
+    php_value post_max_size 100M
+    php_value max_execution_time 300
+    php_value max_input_time 300
+    php_value memory_limit 512M
+    php_value max_input_vars 10000
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# ============================================
+# NOTA: 
+# Si este .htaccess causa error 500, significa que tu servidor
+# no soporta algunas de estas directivas. En ese caso:
+# 1. Usa el .htaccess original (más simple)
+# 2. O desactiva ModSecurity desde cPanel
+# ============================================

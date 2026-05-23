@@ -1,0 +1,39 @@
+.bi-arrow-left:hover {
+    cursor: pointer;
+}
+
+.edit-body-responsive {
+    display: none; 
+}
+
+.edit-body {
+    display: flex; 
+    flex-direction: column; 
+}
+
+@media(max-width: 900px) {
+    
+    .form-container {
+        width: 90%;
+    }
+
+    .data-container {
+        margin: 3%;
+        margin-top: 5%;
+    }
+
+    .edit-body-responsive {
+        display: flex; 
+        flex-direction: column;
+    }
+
+    .edit-body {
+        display: none; 
+    }
+}
+
+
+
+
+
+

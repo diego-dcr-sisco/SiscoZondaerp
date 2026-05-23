@@ -1,0 +1,97 @@
+[
+	{
+		"id": 1,
+		"type": "select",
+		"options": [ "Si","No"]
+	},
+
+	{
+		"id": 2,
+		"type": "select",
+		"options": ["Bien", "Regular", "Mal"]
+	},
+
+	{
+		"id": 3,
+		"type": "number",
+		"options": []
+	},
+
+	{
+		"id": 4,
+		"type": "number",
+		"options": []
+	},
+	
+	{
+		"id": 5,
+		"type": "text",
+		"options": []
+	},
+
+	{
+		"id": 6,
+		"type": "text",
+		"options": []
+	},
+
+	{
+		"id": 7,
+		"type": "select",
+		"options": ["Nulo", "Bajo", "Poco"]
+	},
+
+	{
+		"id": 8,
+		"type": "number",
+		"options": []
+	},
+
+	{
+		"id": 9,
+		"type": "text",
+		"options": []
+	},
+
+	{
+		"id": 10,
+		"type": "select",
+		"options": [ "Perfecto","Muy mal", "Mal", "Regular", "Bien"]
+	},
+
+	{
+		"id": 11,
+		"type": "select",
+		"options": ["Nulo", "Bajo", "Medio", "Alto", "Consumo Total"]
+	},
+
+	{
+		"id": 12,
+		"type": "select",
+		"options": []
+	},
+
+	{
+		"id": 13,
+		"type": "select",
+		"options": ["Correcta", "Desaparecida", "Inaccesible", "Reducida", "Rota", "Apagada"]
+	},
+
+	{
+		"id": 14,
+		"type": "select",
+		"options": ["Correcto", "Estropeado", "Completamente comido", "Parcialmente", "Comido", "Sin cebo"]
+	},
+
+	{
+		"id": 15,
+		"type": "select",
+		"options": [ "No hay deteccion","Huella", "Deposicion", "Restos comida", "Pelos", "Rata", "Raton", "Cebo roido"]
+	},
+
+	{
+		"id": 16,
+		"type": "select",
+		"options": ["Área interior", "Área exterior", "Perímetro"]
+	}
+]
