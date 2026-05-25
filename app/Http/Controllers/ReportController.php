@@ -1505,7 +1505,7 @@ class ReportController extends Controller
                 ], 404);
             }
 
-            $order->update(['notes' => $data['text']]);
+            $order->update(['notes' => $data['text'], 'comments' => null]);
 
             return response()->json([
                 'success' => true,
