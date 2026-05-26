@@ -132,13 +132,19 @@
     }
 
     .smnote .ql-editor table {
+        display: table;
         width: 100%;
         border-collapse: collapse;
         margin: 0.5rem 0;
     }
 
+    .smnote .ql-editor tr {
+        display: table-row;
+    }
+
     .smnote .ql-editor th,
     .smnote .ql-editor td {
+        display: table-cell;
         border: 1px solid #adb5bd;
         min-width: 90px;
         padding: 0.35rem 0.5rem;
@@ -671,6 +677,32 @@
         selection.addRange(range);
     }
 
+    function createEmptyTableCell(tagName = 'td') {
+        const cell = document.createElement(tagName.toLowerCase() === 'th' ? 'th' : 'td');
+        cell.innerHTML = '<br>';
+        return cell;
+    }
+
+    function getRowCellCount(row) {
+        return Array.from(row.children).filter(child => ['TD', 'TH'].includes(child.tagName)).length;
+    }
+
+    function normalizeTableSections(table) {
+        const directRows = Array.from(table.children).filter(child => child.tagName === 'TR');
+
+        if (directRows.length === 0) {
+            return;
+        }
+
+        const tbody = table.querySelector('tbody') || document.createElement('tbody');
+
+        if (!tbody.parentNode) {
+            table.appendChild(tbody);
+        }
+
+        directRows.forEach(row => tbody.appendChild(row));
+    }
+
     function insertTableInEditor(quill, editorId) {
         const table = createEditableTable();
         const spacer = document.createElement('p');
@@ -715,16 +747,26 @@
         const cellIndex = currentCells.indexOf(context.cell);
 
         if (action === 'add-row') {
-            const newRow = context.row.cloneNode(true);
-            Array.from(newRow.children).forEach(cell => cell.innerHTML = '<br>');
-            context.row.insertAdjacentElement('afterend', newRow);
+            normalizeTableSections(context.table);
+
+            const rowParent = context.row.parentElement && ['TBODY', 'THEAD', 'TFOOT', 'TABLE'].includes(context.row.parentElement.tagName)
+                ? context.row.parentElement
+                : context.table.querySelector('tbody') || context.table;
+            const newRow = document.createElement('tr');
+            const columnCount = Math.max(getRowCellCount(context.row), 1);
+            const cellTag = context.cell.tagName === 'TH' ? 'th' : 'td';
+
+            for (let index = 0; index < columnCount; index++) {
+                newRow.appendChild(createEmptyTableCell(cellTag));
+            }
+
+            rowParent.insertBefore(newRow, context.row.nextSibling);
             focusCell(newRow.children[cellIndex] || newRow.children[0]);
         }
 
         if (action === 'add-column') {
             rows.forEach(row => {
-                const newCell = document.createElement(row.children[cellIndex]?.tagName?.toLowerCase() || 'td');
-                newCell.innerHTML = '<br>';
+                const newCell = createEmptyTableCell(row.children[cellIndex]?.tagName || 'td');
                 const reference = row.children[cellIndex];
 
                 if (reference) {
