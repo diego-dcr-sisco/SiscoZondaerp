@@ -24,7 +24,6 @@ class ClientReportController_br extends Controller
         // 2. Rompemos las fechas con Carbon
         [$startDate, $endDate] = explode(' - ', $filters['date_range']);
 
-        // 3. Instanciamos tu servicio (que ya confirmamos que funciona con XAMPP)
         $reportService = new \App\Services\CustomerReportService_br();
         
         $customers = $reportService->getReportData(
@@ -36,7 +35,7 @@ class ClientReportController_br extends Controller
 
         $metrics = $filters['metrics'] ?? [];
 
-        // 4. 🚀 CONFIGURACIÓN NATIVA PARA ENGAÑAR AL NAVEGADOR (Bypass de Maatwebsite)
+        // 4. CONFIGURACIÓN NATIVA PARA ENGAÑAR AL NAVEGADOR (Bypass de Maatwebsite)
         $filename = 'reporte_clientes_' . date('Ymd_His') . '.xls';
         
         // Cabeceras HTTP para forzar la descarga de un Excel
@@ -71,27 +70,34 @@ class ClientReportController_br extends Controller
         // 6. Llenamos las filas con los clientes reales de XAMPP
         foreach ($customers as $customer) {
             echo '<tr>';
-            echo '<td>' . ($customer['customer_id'] ?? $customer->customer_id ?? '') . '</td>';
-            echo '<td>' . htmlspecialchars($customer['name'] ?? $customer->name ?? 'N/A') . '</td>';
-            echo '<td>' . (($customer['is_new'] ?? false) ? 'Nuevo' : 'Recurrente') . '</td>';
+            // El ID real en tu objeto es 'id'
+            echo '<td>' . ($customer->id ?? '') . '</td>';
+            echo '<td>' . htmlspecialchars($customer->name ?? 'N/A') . '</td>';
+            
+            // El tipo real que calcula tu servicio es 'calculated_type'
+            $tipoCliente = ($customer->calculated_type ?? 'new') === 'new' ? 'Nuevo' : 'Recurrente';
+            echo '<td>' . $tipoCliente . '</td>';
             
             if (in_array('inc_orders_count', $metrics)) {
-                echo '<td>' . ($customer['orders_count'] ?? 0) . '</td>';
+                // Tu servicio inyecta 'total_orders_in_range'
+                echo '<td>' . ($customer->total_orders_in_range ?? 0) . '</td>';
             }
             if (in_array('inc_has_devices', $metrics)) {
-                echo '<td>' . (($customer['has_devices'] ?? false) ? 'Sí' : 'No') . '</td>';
+                // Si el conteo es mayor a 0, entonces sí tiene dispositivos
+                $tieneDispositivos = ($customer->devices_count ?? 0) > 0 ? 'Sí' : 'No';
+                echo '<td>' . $tieneDispositivos . '</td>';
             }
             if (in_array('inc_devices_count', $metrics)) {
-                echo '<td>' . ($customer['devices_count'] ?? 0) . '</td>';
+                echo '<td>' . ($customer->devices_count ?? 0) . '</td>';
             }
             if (in_array('inc_device_types', $metrics)) {
-                echo '<td>' . htmlspecialchars($customer['device_types'] ?? '') . '</td>';
+                echo '<td>' . htmlspecialchars($customer->device_types ?? 'N/A') . '</td>';
             }
             if (in_array('inc_pests_count', $metrics)) {
-                echo '<td>' . ($customer['pests_count'] ?? 0) . '</td>';
+                echo '<td>' . ($customer->pests_count ?? 0) . '</td>';
             }
             if (in_array('inc_pest_types', $metrics)) {
-                echo '<td>' . htmlspecialchars($customer['pest_types'] ?? '') . '</td>';
+                echo '<td>' . htmlspecialchars($customer->pest_types ?? 'Ninguna') . '</td>';
             }
             echo '</tr>';
         }

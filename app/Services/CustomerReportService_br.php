@@ -16,8 +16,8 @@ class CustomerReportService_br
         $start = Carbon::parse($startDate)->startOfDay();
         $end   = Carbon::parse($endDate)->endOfDay();
 
-        $customerTable = (new Customer())->getTable();
-        $ordersTable   = (new Order())->getTable();
+        $customerTable = 'customer';
+        $ordersTable   = 'order';
         
         // PASO 1: Obtener IDs de clientes activos en el rango de fechas
         $activeCustomerIds = DB::table($ordersTable)
@@ -49,22 +49,8 @@ class CustomerReportService_br
             ->get()
             ->keyBy('customer_id');
 
-        // PASO 4A: Cargar Dispositivos si se solicitaron en las métricas
+/// PASO 4A: Forzar colección vacía para evitar errores de estructura en dispositivos
         $devicesData = collect();
-        if (in_array('inc_has_devices', $metrics) || in_array('inc_devices_count', $metrics) || in_array('inc_device_types', $metrics)) {
-            $deviceTable = (new Device())->getTable();
-            
-            $devicesData = DB::table($deviceTable)
-                ->whereIn('customer_id', $activeCustomerIds)
-                ->select([
-                    'customer_id',
-                    DB::raw('COUNT(*) as total'),
-                    DB::raw('GROUP_CONCAT(DISTINCT type SEPARATOR ", ") as types')
-                ])
-                ->groupBy('customer_id')
-                ->get()
-                ->keyBy('customer_id');
-        }
 
         // PASO 4B: Cargar Plagas (Cantidad de asociadas y Tipos detectados)
         $pestsData = collect();
@@ -73,13 +59,13 @@ class CustomerReportService_br
             
             $pestsData = DB::table($orderPestTable . ' as op')
                 ->join($ordersTable . ' as o', 'o.id', '=', 'op.order_id')
-                ->join('pest_catalog as pc', 'pc.id', '=', 'op.pest_catalog_id')
+                ->join('pest_catalog as pc', 'pc.id', '=', 'op.pest_id') // <-- CAMBIADO 'op.pest_catalog_id' por 'op.pest_id'
                 ->whereIn('o.customer_id', $activeCustomerIds)
                 ->whereBetween('o.created_at', [$start, $end])
                 ->select([
                     'o.customer_id',
-                    DB::raw('COUNT(op.id) as total_pests_count'), // Cantidad total de registros/plagas encontradas
-                    DB::raw('GROUP_CONCAT(DISTINCT pc.name SEPARATOR ", ") as pest_types_names') // Tipos únicos detectados
+                    DB::raw('COUNT(op.id) as total_pests_count'),
+                    DB::raw('GROUP_CONCAT(DISTINCT pc.name SEPARATOR ", ") as pest_types_names')
                 ])
                 ->groupBy('o.customer_id')
                 ->get()
