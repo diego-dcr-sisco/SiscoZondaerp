@@ -119,6 +119,7 @@
 
     .smnote .ql-editor {
         min-height: 250px;
+        overflow-x: auto;
     }
 
     .report-table-tools {
@@ -133,9 +134,11 @@
 
     .smnote .ql-editor table {
         display: table;
-        width: 100%;
+        width: max-content;
+        min-width: 100%;
         border-collapse: collapse;
         margin: 0.5rem 0;
+        table-layout: auto;
     }
 
     .smnote .ql-editor tr {
@@ -146,8 +149,12 @@
     .smnote .ql-editor td {
         display: table-cell;
         border: 1px solid #adb5bd;
-        min-width: 90px;
+        min-width: 130px;
         padding: 0.35rem 0.5rem;
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: normal;
+        vertical-align: top;
     }
 
     .smnote .ql-editor td:focus,
