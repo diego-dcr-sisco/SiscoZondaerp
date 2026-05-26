@@ -62,9 +62,9 @@
 
         .folio-box {
             display: inline-block;
-            border: 0.5px solid #2f6b3f;
-            padding: 2px;
-            margin-bottom: 2px;
+            /*border: 0.5px solid #2f6b3f;
+            padding: 2px;*/
+            margin-bottom: 5px;
         }
 
         .folio-label {
