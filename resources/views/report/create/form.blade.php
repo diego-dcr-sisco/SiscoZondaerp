@@ -703,6 +703,24 @@
         directRows.forEach(row => tbody.appendChild(row));
     }
 
+    function insertRowBelow(currentRow, currentCell) {
+        const table = currentRow.closest('table');
+        normalizeTableSections(table);
+
+        const rowParent = currentRow.parentElement;
+        const parentRows = Array.from(rowParent.rows || rowParent.querySelectorAll(':scope > tr'));
+        const rowIndex = Math.max(parentRows.indexOf(currentRow), 0);
+        const columnCount = Math.max(getRowCellCount(currentRow), 1);
+        const cellTag = currentCell.tagName === 'TH' ? 'th' : 'td';
+        const newRow = rowParent.insertRow(rowIndex + 1);
+
+        for (let index = 0; index < columnCount; index++) {
+            newRow.appendChild(createEmptyTableCell(cellTag));
+        }
+
+        return newRow;
+    }
+
     function insertTableInEditor(quill, editorId) {
         const table = createEditableTable();
         const spacer = document.createElement('p');
@@ -747,20 +765,7 @@
         const cellIndex = currentCells.indexOf(context.cell);
 
         if (action === 'add-row') {
-            normalizeTableSections(context.table);
-
-            const rowParent = context.row.parentElement && ['TBODY', 'THEAD', 'TFOOT', 'TABLE'].includes(context.row.parentElement.tagName)
-                ? context.row.parentElement
-                : context.table.querySelector('tbody') || context.table;
-            const newRow = document.createElement('tr');
-            const columnCount = Math.max(getRowCellCount(context.row), 1);
-            const cellTag = context.cell.tagName === 'TH' ? 'th' : 'td';
-
-            for (let index = 0; index < columnCount; index++) {
-                newRow.appendChild(createEmptyTableCell(cellTag));
-            }
-
-            rowParent.insertBefore(newRow, context.row.nextSibling);
+            const newRow = insertRowBelow(context.row, context.cell);
             focusCell(newRow.children[cellIndex] || newRow.children[0]);
         }
 
