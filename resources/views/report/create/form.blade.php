@@ -791,6 +791,44 @@
     }
 
     function handleTableAction(action, quill, editorId) {
+        const tableModule = quill.getModule('table');
+
+        if (tableModule) {
+            try {
+                quill.focus();
+
+                if (action === 'insert-table') {
+                    tableModule.insertTable(2, 2);
+                }
+
+                if (action === 'add-row') {
+                    tableModule.insertRowBelow();
+                }
+
+                if (action === 'add-column') {
+                    tableModule.insertColumnRight();
+                }
+
+                if (action === 'delete-row') {
+                    tableModule.deleteRow();
+                }
+
+                if (action === 'delete-column') {
+                    tableModule.deleteColumn();
+                }
+
+                if (action === 'delete-table') {
+                    tableModule.deleteTable();
+                }
+
+                triggerReportEditorChange(editorId);
+                return;
+            } catch (error) {
+                alert('Coloca el cursor dentro de una tabla para usar esta opción.');
+                return;
+            }
+        }
+
         const context = getEditorTableContext(quill);
 
         if (action === 'insert-table') {
@@ -931,7 +969,8 @@
             const quill = new Quill(this, {
                 theme: 'snow',
                 modules: {
-                    toolbar: quillToolbar
+                    toolbar: quillToolbar,
+                    table: true
                 }
             });
 
