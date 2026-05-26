@@ -82,6 +82,15 @@
                             </div>
 
                             <div class="col-auto">
+                                <label for="status" class="form-label">Estado</label>
+                                <select class="form-select form-select-sm" id="status" name="status">
+                                    <option value="" {{ request('status') === null ? 'selected' : '' }}>Todos</option>
+                                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Activos</option>
+                                    <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactivos</option>
+                                </select>
+                            </div>
+
+                            <div class="col-auto">
                                 <label for="order_type" class="form-label">Total</label>
                                 <select class="form-select form-select-sm" id="size" name="size">
                                     <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
@@ -110,6 +119,7 @@
                         <th scope="col">Almacén</th>
                         <th scope="col">Cantidad registro</th>
                         <th scope="col">Stock</th>
+                        <th scope="col">Estado</th>
                         <th scope="col">Caducidad</th>
                         <th scope="col">Período</th>
                         @if (auth()->user()->work_department_id == 1)
@@ -169,6 +179,14 @@
                                     </div>
                                     <small class="text-muted">{{ $lot->product->metric->value ?? '' }}</small>
                                 </div>
+                            </td>
+
+                            <td>
+                                @if ($lot->is_active)
+                                    <span class="badge bg-success">Activo</span>
+                                @else
+                                    <span class="badge bg-secondary">Inactivo</span>
+                                @endif
                             </td>
 
                             <!-- Fecha de Caducidad -->

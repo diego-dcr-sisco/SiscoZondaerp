@@ -349,7 +349,7 @@ class ReportController extends Controller
                     return [
                         'id' => $product->id,
                         'name' => strtoupper($product->name),
-                        'lots' => $product->lots()->get()->map(function ($lot) {
+                        'lots' => $product->lots()->active()->get()->map(function ($lot) {
                             return [
                                 'id' => $lot->id,
                                 'registration_number' => $lot->registration_number
@@ -497,7 +497,7 @@ class ReportController extends Controller
             ->get();
         $service_types = ServiceType::all();
         $metrics = Metric::all();
-        $lots = Lot::all();
+        $lots = Lot::active()->get();
 
         $devices = $devices_data;
         $recommendations = $this->recommendations;
@@ -827,7 +827,10 @@ class ReportController extends Controller
                 return response()->json(['message' => 'No products found.'], 404);
             }
 
-            $lots = Lot::whereIn('product_id', $products->pluck('id')->toArray())->where('amount', '>', 0)->get();
+            $lots = Lot::active()
+                ->whereIn('product_id', $products->pluck('id')->toArray())
+                ->where('amount', '>', 0)
+                ->get();
 
             $data = [
                 'products' => $products,

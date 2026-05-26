@@ -206,6 +206,51 @@
                 Registrar Salida
             </button>
         </form>
+
+        <div class="modal fade" id="quickLotModal" tabindex="-1" aria-labelledby="quickLotModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="quickLotModalLabel">Crear lote rápido</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="quick-lot-product-id">
+                        <input type="hidden" id="quick-lot-warehouse-id" value="{{ $warehouse->id }}">
+                        <div class="mb-3">
+                            <label class="form-label">Producto</label>
+                            <input type="text" class="form-control" id="quick-lot-product-name" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label is-required" for="quick-lot-registration">Número de lote</label>
+                            <input type="text" class="form-control" id="quick-lot-registration" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label is-required" for="quick-lot-amount">Cantidad inicial disponible</label>
+                            <input type="number" class="form-control" id="quick-lot-amount" min="0" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="quick-lot-expiration">Fecha de expiración</label>
+                            <input type="date" class="form-control" id="quick-lot-expiration">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Periodo de uso</label>
+                            <div class="input-group">
+                                <input type="date" class="form-control" id="quick-lot-start">
+                                <input type="date" class="form-control" id="quick-lot-end">
+                            </div>
+                        </div>
+                        <div class="form-text">
+                            Al crear el lote aquí se registra una entrada inicial para que pueda usarse en esta salida.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">{{ __('buttons.cancel') }}</button>
+                        <button type="button" class="btn btn-primary" id="quick-lot-save">Crear y seleccionar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -242,6 +287,26 @@
             const productsData = @json($products_data);
             let movementProducts = []; // Array para almacenar los productos del movimiento
             let rowCount = 0;
+            let currentLotRow = null;
+            const quickLotModal = new bootstrap.Modal(document.getElementById('quickLotModal'));
+
+            function escapeHtml(value) {
+                return $('<div>').text(value ?? '').html();
+            }
+
+            function appendLotToProduct(productId, lot) {
+                const product = productsData.find(p => p.id == productId);
+                if (!product) {
+                    return;
+                }
+
+                product.lots = product.lots || [];
+                product.lots.push(lot);
+
+                $(`.product-select option[value="${productId}"]`).each(function() {
+                    $(this).data('lots', product.lots);
+                });
+            }
 
             // Función para agregar una nueva fila
             function addProductRow(selectedProduct = null, selectedLot = null) {
@@ -276,10 +341,15 @@
                        name="products[${rowCount}][metric]" readonly>
             </td>
             <td>
-                <select class="form-control lot-select" name="products[${rowCount}][lot_id]">
-                    <option value="">Sin lote (0.00)</option>
-                    <!-- Lotes se llenarán dinámicamente -->
-                </select>
+                <div class="input-group input-group-sm">
+                    <select class="form-control lot-select" name="products[${rowCount}][lot_id]">
+                        <option value="">Sin lote (0.00)</option>
+                        <!-- Lotes se llenarán dinámicamente -->
+                    </select>
+                    <button type="button" class="btn btn-outline-primary quick-lot-btn" disabled>
+                        <i class="bi bi-plus-lg"></i>
+                    </button>
+                </div>
                 <small class="form-text text-muted null-lot-message" style="display:none;">
                     Este producto permite registro sin lote
                 </small>
@@ -310,6 +380,7 @@
                     const selectedOption = $(this).find('option:selected');
                     const lotSelect = $(this).closest('tr').find('.lot-select');
                     const metricoutput = $(this).closest('tr').find('.metric-output');
+                    const quickLotButton = $(this).closest('tr').find('.quick-lot-btn');
                     const allowNullLot = selectedOption.data('allow-null-lot') === true;
                     const nullLotMessage = $(this).closest('tr').find('.null-lot-message');
 
@@ -324,6 +395,7 @@
 
                     // Actualizar la métrica
                     metricoutput.val(selectedOption.data('metric') || '-');
+                    quickLotButton.prop('disabled', !productId);
 
                     // Limpiar y cargar los lotes
                     lotSelect.empty().append('<option value="">Sin lote (0.00)</option>');
@@ -360,10 +432,72 @@
                 });
 
                 // Evento para actualizar movementProducts cuando cambian los valores
-                $(`#${rowId} select, #${rowId} output`).change(function() {
+                $(`#${rowId} select, #${rowId} input`).change(function() {
                     updateMovementProducts();
                 });
             }
+
+            $(document).on('click', '.quick-lot-btn', function() {
+                currentLotRow = $(this).closest('tr');
+                const productSelect = currentLotRow.find('.product-select');
+                const productId = productSelect.val();
+
+                if (!productId) {
+                    alert('Seleccione un producto antes de crear el lote.');
+                    return;
+                }
+
+                $('#quick-lot-product-id').val(productId);
+                $('#quick-lot-product-name').val(productSelect.find('option:selected').text().trim());
+                $('#quick-lot-registration, #quick-lot-amount, #quick-lot-expiration, #quick-lot-start, #quick-lot-end').val('');
+                quickLotModal.show();
+            });
+
+            $('#quick-lot-save').click(function() {
+                const productId = $('#quick-lot-product-id').val();
+                const registrationNumber = $('#quick-lot-registration').val().trim();
+                const amount = $('#quick-lot-amount').val();
+
+                if (!productId || !registrationNumber || amount === '') {
+                    alert('Complete producto, número de lote y cantidad.');
+                    return;
+                }
+
+                $.ajax({
+                    url: "{{ route('stock.lot.quickStore') }}",
+                    method: 'POST',
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        product_id: productId,
+                        warehouse_id: $('#quick-lot-warehouse-id').val(),
+                        registration_number: registrationNumber,
+                        amount: amount,
+                        expiration_date: $('#quick-lot-expiration').val(),
+                        start_date: $('#quick-lot-start').val(),
+                        end_date: $('#quick-lot-end').val(),
+                        create_initial_stock: 1
+                    },
+                    success: function(response) {
+                        const lot = response.lot;
+                        appendLotToProduct(productId, lot);
+
+                        if (currentLotRow) {
+                            const lotSelect = currentLotRow.find('.lot-select');
+                            lotSelect.append(
+                                `<option value="${lot.id}" data-current-amount="${lot.current_amount}">
+                                    ${escapeHtml(lot.registration_number)} (Disp.: ${lot.current_amount})
+                                </option>`
+                            );
+                            lotSelect.val(lot.id).trigger('change');
+                        }
+
+                        quickLotModal.hide();
+                    },
+                    error: function(xhr) {
+                        alert(xhr.responseJSON?.message || 'No se pudo crear el lote.');
+                    }
+                });
+            });
 
             // Función para actualizar el array movementProducts
             function updateMovementProducts() {

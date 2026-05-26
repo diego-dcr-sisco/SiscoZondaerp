@@ -134,6 +134,7 @@ class ProductCatalog extends Model
 
     public function selectedLots($date) {
         return $this->lots()
+            ->active()
             ->whereDate('start_date', '<=', $date)
             ->whereDate('end_date', '>=', $date)
             ->get();

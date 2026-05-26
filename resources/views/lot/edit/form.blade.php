@@ -46,6 +46,16 @@
                 <input type="date" class="form-control" name="end_date" id="end-date" value="{{ $lot->end_date }}" required>
             </div>
         </div>
+        <div class="col-auto mb-3">
+            <input type="hidden" name="is_active" value="0">
+            <div class="form-check mt-4">
+                <input class="form-check-input" type="checkbox" name="is_active" id="is-active"
+                    value="1" {{ $lot->is_active ? 'checked' : '' }}>
+                <label class="form-check-label" for="is-active">
+                    Lote activo para captura
+                </label>
+            </div>
+        </div>
     </div>
 
     <button type="submit" class="btn btn-primary my-3">{{ __('buttons.update') }}</button>

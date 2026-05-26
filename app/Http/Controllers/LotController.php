@@ -55,6 +55,10 @@ class LotController extends Controller
             });
         }
 
+        if ($request->filled('status')) {
+            $query->where('is_active', $request->status === 'active');
+        }
+
         // Filtro de orden (direction)
         $direction = strtoupper($request->input('direction', 'DESC'));
         if (!in_array($direction, ['ASC', 'DESC'])) {
@@ -101,6 +105,7 @@ class LotController extends Controller
     {
         $lot = new Lot();
         $lot->fill($request->all());
+        $lot->is_active = $request->boolean('is_active', true);
         $lot->save(); // Save first to generate $lot->id
 
         $wm = WarehouseMovement::create([
@@ -142,6 +147,7 @@ class LotController extends Controller
         $navigation = $this->navigation;
         $lot = Lot::findOrFail($id);
         $lot->fill($request->all());
+        $lot->is_active = $request->boolean('is_active');
         $lot->save();
 
         return redirect()->route('lot.index')->with('success', 'Lote actualizado satisfactoriamente')->with('navigation', $navigation);
@@ -168,7 +174,10 @@ class LotController extends Controller
         $navigation = $this->navigation;
         $productId = $request->query('product_id');
         $warehouseId = $request->query('warehouse_id');
-        $lots = Lot::where('product_id', $productId)->where('warehouse_id', $warehouseId)->get();
+        $lots = Lot::active()
+            ->where('product_id', $productId)
+            ->where('warehouse_id', $warehouseId)
+            ->get();
 
         return response()->json($lots);
     }

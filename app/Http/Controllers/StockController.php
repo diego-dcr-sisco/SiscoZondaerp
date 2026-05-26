@@ -70,7 +70,7 @@ class StockController extends Controller
 
         $products = ProductCatalog::all();
         $branches = Branch::all();
-        $lots = Lot::all();
+        $lots = Lot::active()->get();
         $metrics = Metric::all();
         $navigation = $this->navigation;
 
@@ -754,7 +754,7 @@ class StockController extends Controller
         $navigation = $this->navigation;
         $warehouse = Warehouse::find($id);
         $all_warehouses = Warehouse::where('id', '!=', $id)->get();
-        $products = $warehouse->products()->get();//ProductCatalog::all();
+        $products = ProductCatalog::orderBy('name')->get();
 
         $input_movements = MovementType::whereBetween('id', [1, 4])->get();
 
@@ -764,7 +764,7 @@ class StockController extends Controller
                 'name' => $product->name,
                 'presentation' => $product->presentation ? $product->presentation->name : '-',
                 'metric' => $product->metric ? $product->metric->value : '-',
-                'lots' => $product->lots->map(function ($lot) use ($warehouse) {
+                'lots' => $product->lots()->active()->where('warehouse_id', $warehouse->id)->get()->map(function ($lot) use ($warehouse) {
                     $current_amount = $lot->countProductsByWarehouse($warehouse->id);
                     return [
                         'id' => $lot->id,
@@ -776,7 +776,7 @@ class StockController extends Controller
             ];
         }
 
-        session()->flash('warning', 'Antes de agregar un movimiento de entrada, asegurate de haber registrado los lotes correspondientes en el almacén.');
+        session()->flash('warning', 'Si el lote no existe, puedes crearlo desde el botón + en la columna Lote.');
 
         return view('stock.create.inputs.entries', compact('warehouse', 'all_warehouses', 'products_data', 'input_movements', 'navigation'));
     }
@@ -797,7 +797,7 @@ class StockController extends Controller
                 'name' => $product->name,
                 'presentation' => $product->presentation ? $product->presentation->name : '-',
                 'metric' => $product->metric ? $product->metric->value : '-',
-                'lots' => $product->lots->map(function ($lot) use ($warehouse) {
+                'lots' => $product->lots()->active()->where('warehouse_id', $warehouse->id)->get()->map(function ($lot) use ($warehouse) {
                     $current_amount = $lot->countProductsByWarehouse($warehouse->id);
                     return [
                         'id' => $lot->id,
@@ -809,15 +809,71 @@ class StockController extends Controller
             ];
         }
 
-        session()->flash('warning', 'Antes de agregar un movimiento de salida, asegurate de haber registrado los lotes correspondientes en el almacén.');
+        session()->flash('warning', 'Si el lote no existe, puedes crearlo desde el botón + en la columna Lote.');
 
         return view('stock.create.outputs.exits', compact('warehouse', 'all_warehouses', 'products_data', 'output_movements', 'navigation'));
+    }
+
+    public function quickStoreLot(Request $request)
+    {
+        $validated = $request->validate([
+            'product_id' => 'required|exists:product_catalog,id',
+            'warehouse_id' => 'required|exists:warehouse,id',
+            'registration_number' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'expiration_date' => 'nullable|date',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'create_initial_stock' => 'nullable|boolean',
+        ]);
+
+        $lot = Lot::create([
+            'product_id' => $validated['product_id'],
+            'warehouse_id' => $validated['warehouse_id'],
+            'registration_number' => $validated['registration_number'],
+            'expiration_date' => $validated['expiration_date'] ?? null,
+            'start_date' => $validated['start_date'] ?? null,
+            'end_date' => $validated['end_date'] ?? null,
+            'amount' => $validated['amount'],
+            'is_active' => true,
+        ]);
+
+        if ($request->boolean('create_initial_stock')) {
+            $movement = WarehouseMovement::create([
+                'warehouse_id' => null,
+                'destination_warehouse_id' => $validated['warehouse_id'],
+                'movement_id' => 2,
+                'user_id' => Auth::id(),
+                'date' => now()->format('Y-m-d'),
+                'time' => now()->format('H:i:s'),
+                'observations' => 'Alta rápida de lote desde movimiento de almacén',
+                'is_active' => true,
+            ]);
+
+            MovementProduct::create([
+                'warehouse_movement_id' => $movement->id,
+                'movement_id' => 2,
+                'warehouse_id' => $validated['warehouse_id'],
+                'product_id' => $validated['product_id'],
+                'lot_id' => $lot->id,
+                'amount' => $validated['amount'],
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'lot' => [
+                'id' => $lot->id,
+                'registration_number' => $lot->registration_number,
+                'amount' => (float) $lot->amount,
+                'current_amount' => $lot->countProductsByWarehouse($validated['warehouse_id']),
+            ],
+        ]);
     }
 
 
     public function storeInMovement(Request $request)
     {
-        dd($request->all());
         $products = json_decode($request->input('products'), true);
         $movement_id = $request->input('movement_id');
 
@@ -827,12 +883,12 @@ class StockController extends Controller
             'warehouse_id' => $request->input('warehouse_id'),
             'destination_warehouse_id' => $request->input('destination_warehouse_id'),
             'movement_id' => $movement_id,
-            'description' => $request->input('description'),
-            'date' => $request->input['date'] ?? now()->format('Y-m-d'),
+            'observations' => $request->input('observations'),
+            'date' => $request->input('date') ?? now()->format('Y-m-d'),
             'time' => now()->format('H:i:s'),
             'user_id' => Auth::id(),
-            'warehouse_signature' => $request->input('storekeeper_signature_base64'),
-            'technician_signature' => $request->input('technician_signature_base64')
+            'warehouse_signature' => $request->input('warehouse_signature'),
+            'technician_signature' => $request->input('technician_signature')
         ]);
 
         // Procesar cada producto
@@ -865,12 +921,12 @@ class StockController extends Controller
             'warehouse_id' => $request->input('warehouse_id'),
             'destination_warehouse_id' => $request->input('destination_warehouse_id'),
             'movement_id' => $movement_id,
-            'description' => $request->input('description'),
-            'date' => $request->input['date'] ?? now()->format('Y-m-d'),
+            'observations' => $request->input('observations'),
+            'date' => $request->input('date') ?? now()->format('Y-m-d'),
             'time' => now()->format('H:i:s'),
             'user_id' => Auth::id(),
-            'warehouse_signature' => $request->warehouse_signature,
-            'technician_signature' => $request->technician_signature
+            'warehouse_signature' => $request->input('warehouse_signature'),
+            'technician_signature' => $request->input('technician_signature')
         ]);
 
 
@@ -1512,10 +1568,19 @@ class StockController extends Controller
 
     public function voucherPdfPreview($id)
     {
+        $movement = null;
+
         try {
             $data = [];
             $technian_name = 'No asignado';
-            $movement = WarehouseMovement::with(['user', 'warehouse', 'destinationWarehouse', 'movement'])->findOrFail($id);
+            $movement = WarehouseMovement::with([
+                'user',
+                'warehouse',
+                'destinationWarehouse.technician.user',
+                'movement',
+                'products.product',
+                'products.lot',
+            ])->findOrFail($id);
 
             // Procesar firma del almacenista si existe
             $storekeeperSignaturePath = null;
@@ -1530,26 +1595,26 @@ class StockController extends Controller
             }
 
             if ($movement->destinationWarehouse) {
-                $technian_name = $movement->destinationWarehouse->technician ? $movement->destinationWarehouse->technician->user->name : 'No asignado';
+                $technian_name = $movement->destinationWarehouse->technician?->user?->name ?? 'No asignado';
             }
 
             $data = [
                 'title' => 'Constancia de Movimiento',
                 'date' => $movement->date,
                 'time' => $movement->time,
-                'origin' => $movement->warehouse->name,
-                'destination' => $movement->destinationWarehouse ? $movement->destinationWarehouse->name : 'No Aplica',
-                'movement_type' => $movement->movement->name,
+                'origin' => $movement->warehouse?->name ?? 'No Aplica',
+                'destination' => $movement->destinationWarehouse?->name ?? 'No Aplica',
+                'movement_type' => $movement->movement?->name ?? 'No asignado',
                 'folio' => $movement->id,
-                'observations' => $movement->description ?? 'Sin observaciones',
-                'created_by' => $movement->user->name,
+                'observations' => $movement->observations ?? 'Sin observaciones',
+                'created_by' => $movement->user?->name ?? 'No asignado',
                 'storekeeper_signature' => $storekeeperSignaturePath,
                 'technician_signature' => $technicianSignaturePath,
                 'technician_name' => $technian_name,
                 'products' => $movement->products->map(function ($mp) {
                     return [
-                        'product' => $mp->product->name,
-                        'lot' => $mp->lot->registration_number ?? '-',
+                        'product' => $mp->product?->name ?? '-',
+                        'lot' => $mp->lot?->registration_number ?? '-',
                         'amount' => $mp->amount,
                     ];
                 })->toArray(),
@@ -1560,7 +1625,10 @@ class StockController extends Controller
 
         } catch (\Exception $e) {
             // Limpiar archivos temporales en caso de error
-            $this->cleanTempFiles($movement->id);
+            if ($movement) {
+                $this->cleanTempFiles($movement->id);
+            }
+
             throw $e;
         }
     }
@@ -1622,7 +1690,7 @@ class StockController extends Controller
     {
         $navigation = $this->navigation;
         $movement = WarehouseMovement::with(['user', 'warehouse', 'destinationWarehouse', 'movementType'])->findOrFail($id);
-        $products = MovementProduct::with(['product', 'lot'])->where('movement_id', $id)->get();
+        $products = MovementProduct::with(['product', 'lot'])->where('warehouse_movement_id', $id)->get();
 
         return view('stock.movements.show.voucher-preview', compact('movement', 'products', 'navigation'));
     }

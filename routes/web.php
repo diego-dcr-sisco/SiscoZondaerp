@@ -218,6 +218,7 @@ Route::prefix('stock')
         // Entradas de almacen 
         Route::get('/entry{id}', [StockController::class, 'entry'])->name('entry');
         Route::put('/entry/store', [StockController::class, 'storeInMovement'])->name('entry.store');
+        Route::post('/lot/quick-store', [StockController::class, 'quickStoreLot'])->name('lot.quickStore');
         // Salidas de almacen
         Route::get('/exits/{id}', [StockController::class, 'exits'])->name('exits');
         Route::put('/exit/store', [StockController::class, 'storeOutMovement'])->name('exit.store');

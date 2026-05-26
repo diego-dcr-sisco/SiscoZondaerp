@@ -20,11 +20,21 @@ class Lot extends Model
         'registration_number',
         'expiration_date',
         'amount',
+        'is_active',
         'start_date',
         'end_date',
         'created_at',
         'updated_at',
     ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     // En el modelo Lot.php (asumiendo que estás desde el modelo Lot)
     public function countProducts()

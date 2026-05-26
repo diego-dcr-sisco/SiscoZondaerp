@@ -71,6 +71,17 @@
                     </div>
 
                     <div class="col-lg-6 col-12 mb-3">
+                        <input type="hidden" name="is_active" value="0">
+                        <div class="form-check mt-4">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="is-active"
+                                value="1" checked>
+                            <label class="form-check-label" for="is-active">
+                                Lote activo para captura
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6 col-12 mb-3">
                         <div class="d-flex">
                             <label for="amount" class="form-label is-required">Cantidad total
                                 <span class="metrics-help-icon" data-bs-toggle="tooltip" data-bs-html="true"
