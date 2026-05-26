@@ -259,7 +259,7 @@
     <table class="topbar">
         <tr>
             <td class="logo-cell">
-                <img class="logo" src="file://{{ public_path('images/logo.png') }}" alt="Logo">
+                <img class="logo" src="file://{{ public_path('images/siscoplagas/landscape_logo.png') }}" alt="Logo">
             </td>
             <td class="title-cell">
                 <div class="document-title">Voucher de Movimiento</div>
