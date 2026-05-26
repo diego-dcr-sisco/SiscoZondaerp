@@ -36,7 +36,7 @@
 
         .logo {
             width: 240px;
-            max-height: 40px;
+            max-height: 50px;
         }
 
         .title-cell {
