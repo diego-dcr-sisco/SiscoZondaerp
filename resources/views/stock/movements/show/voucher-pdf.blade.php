@@ -26,7 +26,7 @@
             border-collapse: collapse;
             margin-bottom: 12px;
             padding-bottom: 10px;
-            border-bottom: 1.5px solid #2f6b3f;
+            border-bottom: 1px solid #98A253;
         }
 
         .logo-cell {
@@ -109,7 +109,7 @@
             display: block;
             margin-bottom: 1px;
             color: #66736f;
-            font-size: 8.5px;
+            font-size: 8px;
             text-transform: uppercase;
             letter-spacing: 0.4px;
             font-weight: bold;
