@@ -608,7 +608,25 @@
 
         const autosaveType = $(editor).data('autosave-type');
         const serviceId = $(editor).data('service-id');
-        $(document).trigger('quill-editor-change', [autosaveType, serviceId]);
+        let statusSelector = null;
+
+        if (autosaveType === 'notes') {
+            statusSelector = '#autosave-status-notes';
+        }
+
+        if (autosaveType === 'service' && serviceId) {
+            statusSelector = `#autosave-status-service-${serviceId}`;
+        }
+
+        if (autosaveType === 'recommendation' && serviceId) {
+            statusSelector = `#autosave-status-recommendation-${serviceId}`;
+        }
+
+        if (statusSelector) {
+            $(statusSelector)
+                .removeClass('is-saving is-saved is-error')
+                .text('Cambios sin guardar');
+        }
     }
 
     function getEditorTableContext(quill) {
@@ -913,11 +931,7 @@
             window.reportQuillEditors[this.id] = quill;
             addTableTools(quill, this.id);
 
-            quill.on('text-change', () => {
-                const autosaveType = $(this).data('autosave-type');
-                const serviceId = $(this).data('service-id');
-                $(document).trigger('quill-editor-change', [autosaveType, serviceId]);
-            });
+            quill.on('text-change', () => triggerReportEditorChange(this.id));
         });
 
         // Toggle collapse icons
@@ -1118,180 +1132,4 @@
             }
         });
     });
-</script>
-
-<script>
-    (function() {
-        const autosaveTimers = {};
-        const autosaveDelayMs = 1400;
-        let autosaveReady = false;
-
-        setTimeout(function() {
-            autosaveReady = true;
-        }, 2500);
-
-        function setAutosaveStatus(scope, state, text) {
-            const statusEl = $(scope);
-            if (!statusEl.length) {
-                return;
-            }
-
-            statusEl.removeClass('is-saving is-saved is-error');
-            if (state) {
-                statusEl.addClass(state);
-            }
-            if (text) {
-                statusEl.text(text);
-            }
-        }
-
-        function postSilent(url, payloadKey, payload, onSuccess, onError) {
-            const csrfToken = $('meta[name="csrf-token"]').attr('content');
-            if (!csrfToken) {
-                if (typeof onError === 'function') {
-                    onError('No se encontró el token CSRF');
-                }
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append(payloadKey, JSON.stringify(payload));
-            formData.append('_token', csrfToken);
-
-            $.ajax({
-                type: 'POST',
-                url: url,
-                data: formData,
-                headers: {
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                processData: false,
-                contentType: false,
-                success: function(response) {
-                    if (response && response.success) {
-                        if (typeof onSuccess === 'function') {
-                            onSuccess(response);
-                        }
-                    } else if (typeof onError === 'function') {
-                        onError((response && response.message) || 'Error de guardado');
-                    }
-                },
-                error: function(xhr) {
-                    let msg = 'Error de guardado';
-                    if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
-                        msg = xhr.responseJSON.message;
-                    }
-                    if (typeof onError === 'function') {
-                        onError(msg);
-                    }
-                },
-            });
-        }
-
-        function autosaveServiceDescription(serviceId) {
-            const statusSelector = `#autosave-status-service-${serviceId}`;
-            setAutosaveStatus(statusSelector, 'is-saving', 'Guardando...');
-
-            const rawHtml = getServiceEditorHtml(serviceId);
-            const normalizedHtml = typeof normalizeImageSizesForPdf === 'function' ?
-                normalizeImageSizesForPdf(rawHtml) :
-                rawHtml;
-
-            const payload = {
-                service_id: parseInt(serviceId, 10),
-                text: normalizedHtml,
-                can_propagate: $(`#service${serviceId}-can-propagate`).is(':checked'),
-                order_id: parseInt($('#order-id').val(), 10),
-            };
-
-            postSilent('/report/description/update', 'description', payload,
-                function() {
-                    setAutosaveStatus(statusSelector, 'is-saved', 'Guardado automático');
-                },
-                function() {
-                    setAutosaveStatus(statusSelector, 'is-error', 'Error al guardar');
-                }
-            );
-        }
-
-        function autosaveNotes() {
-            const statusSelector = '#autosave-status-notes';
-            setAutosaveStatus(statusSelector, 'is-saving', 'Guardando...');
-
-            let notesHtml = getNotesEditorHtml();
-            if (typeof compressBase64Images === 'function') {
-                notesHtml = compressBase64Images(notesHtml);
-            }
-
-            const payload = {
-                text: notesHtml,
-                order_id: parseInt($('#order-id').val(), 10),
-            };
-
-            postSilent('/report/notes/update', 'notes', payload,
-                function() {
-                    $('#notes').val(notesHtml);
-                    setAutosaveStatus(statusSelector, 'is-saved', 'Guardado automático');
-                },
-                function() {
-                    setAutosaveStatus(statusSelector, 'is-error', 'Error al guardar');
-                }
-            );
-        }
-
-        function autosaveRecommendations(serviceId) {
-            const statusSelector = `#autosave-status-recommendation-${serviceId}`;
-            setAutosaveStatus(statusSelector, 'is-saving', 'Guardando...');
-
-            const recommendationsHtml = getRecommendationEditorHtml(serviceId);
-            const payload = {
-                service_id: parseInt(serviceId, 10),
-                text: recommendationsHtml,
-                order_id: parseInt($('#order-id').val(), 10),
-            };
-
-            postSilent('/report/recommendations/update', 'recommendations', payload,
-                function() {
-                    setAutosaveStatus(statusSelector, 'is-saved', 'Guardado automático');
-                },
-                function() {
-                    setAutosaveStatus(statusSelector, 'is-error', 'Error al guardar');
-                }
-            );
-        }
-
-        function queueAutosave(key, callback) {
-            clearTimeout(autosaveTimers[key]);
-            autosaveTimers[key] = setTimeout(callback, autosaveDelayMs);
-        }
-
-        $(document).on('quill-editor-change', function(event, autosaveType, serviceId) {
-            if (!autosaveReady) {
-                return;
-            }
-
-            if (autosaveType === 'notes') {
-                setAutosaveStatus('#autosave-status-notes', '', 'Cambios pendientes...');
-                queueAutosave('notes', autosaveNotes);
-                return;
-            }
-
-            if (autosaveType === 'service' && serviceId) {
-                const statusSelector = `#autosave-status-service-${serviceId}`;
-                setAutosaveStatus(statusSelector, '', 'Cambios pendientes...');
-                queueAutosave(`service-${serviceId}`, function() {
-                    autosaveServiceDescription(serviceId);
-                });
-                return;
-            }
-
-            if (autosaveType === 'recommendation' && serviceId) {
-                const statusSelector = `#autosave-status-recommendation-${serviceId}`;
-                setAutosaveStatus(statusSelector, '', 'Cambios pendientes...');
-                queueAutosave(`recommendation-${serviceId}`, function() {
-                    autosaveRecommendations(serviceId);
-                });
-            }
-        });
-    })();
 </script>
