@@ -63,7 +63,7 @@
         .folio-box {
             display: inline-block;
             border: 0.5px solid #2f6b3f;
-            padding: 3px 8px;
+            padding: 2px;
         }
 
         .folio-label {
