@@ -45,7 +45,7 @@
                         <th scope="col" class="">Sucursal</th>
                         <th scope="col" class="">Técnico</th>
                         <th scope="col" class="">Tipo</th>
-                        <th scope="col" class="">Productos</th>
+                        <th scope="col" class="">Productos en stock</th>
                         @can('write_warehouse')
                             <th scope="col" class=""></th>
                         @endcan

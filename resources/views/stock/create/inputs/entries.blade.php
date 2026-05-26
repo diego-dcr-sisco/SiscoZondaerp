@@ -82,6 +82,7 @@
                                     <th>Cantidad</th>
                                     <th>Unidades</th>
                                     <th>Lote</th>
+                                    <th>Estado lote</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -221,8 +222,14 @@
                             <input type="text" class="form-control" id="quick-lot-registration" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label is-required" for="quick-lot-amount">Cantidad registrada</label>
-                            <input type="number" class="form-control" id="quick-lot-amount" min="0" step="0.01" required>
+                            <label class="form-label is-required" for="quick-lot-amount">Cantidad de registro del lote</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="quick-lot-amount" min="0" step="0.01" required>
+                                <span class="input-group-text" id="quick-lot-unit">Unidad</span>
+                            </div>
+                            <div class="form-text">
+                                El stock se afectará hasta guardar esta entrada; esta cantidad solo identifica cómo se registró el lote.
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="quick-lot-expiration">Fecha de expiración</label>
@@ -272,6 +279,27 @@
                 });
             }
 
+            function getProductMetric(productId) {
+                const product = productsData.find(p => p.id == productId);
+                return product?.metric || 'Unidad';
+            }
+
+            function setLotStatus(row, type = null) {
+                const badge = row.find('.lot-status-badge');
+
+                if (type === 'new') {
+                    badge.removeClass('bg-secondary bg-warning text-dark').addClass('bg-success').text('Nuevo lote');
+                    return;
+                }
+
+                if (type === 'registered') {
+                    badge.removeClass('bg-secondary bg-success').addClass('bg-warning text-dark').text('Lote registrado');
+                    return;
+                }
+
+                badge.removeClass('bg-success bg-warning text-dark').addClass('bg-secondary').text('Sin lote');
+            }
+
             // Función para agregar una nueva fila
             function addProductRow(selectedProduct = null, selectedLot = null) {
                 rowCount++;
@@ -317,6 +345,9 @@
                     Este producto permite registro sin lote
                 </small>
             </td>
+            <td class="text-center">
+                <span class="badge bg-secondary lot-status-badge">Sin lote</span>
+            </td>
             <td>
                 <button type="button" class="btn btn-danger btn-sm remove-row" data-row="${rowId}">
                     <i class="bi bi-trash-fill"></i>
@@ -359,16 +390,21 @@
                     // Actualizar la métrica
                     metricInput.val(selectedOption.data('metric') || '-');
                     quickLotButton.prop('disabled', !productId);
+                    setLotStatus($(this).closest('tr'));
 
                     // Limpiar y cargar los lotes
                     lotSelect.empty().append('<option value="">Sin lote (0.00)</option>');
 
                     if (productId) {
                         const lots = selectedOption.data('lots') || [];
+                        const unit = selectedOption.data('metric') || '';
                         lots.forEach(lot => {
+                            const label = lot.entry_amount !== undefined && lot.entry_amount !== null
+                                ? `A ingresar: ${lot.entry_amount} ${unit}`
+                                : `Actual: ${lot.current_amount} ${unit}`;
                             lotSelect.append(
-                                `<option value="${lot.id}" data-current-amount="${lot.current_amount}">
-                            ${lot.registration_number} (Disponible: ${lot.current_amount})
+                                `<option value="${lot.id}" data-current-amount="${lot.current_amount}" data-is-new="${lot.is_new ? 1 : 0}">
+                            ${lot.registration_number} (${label})
                         </option>`
                             );
                         });
@@ -380,8 +416,10 @@
                     const selectedOption = $(this).find('option:selected');
                     const currentAmount = selectedOption.data('current-amount') || 0;
                     const amountInput = $(this).closest('tr').find('.amount-input');
+                    const row = $(this).closest('tr');
 
                     if (selectedOption.val()) {
+                        setLotStatus(row, selectedOption.data('is-new') == 1 ? 'new' : 'registered');
                         // Si se seleccionó un lote (no es NULL)
                         /*amountInput.attr('max', currentAmount);
 
@@ -389,6 +427,7 @@
                             amountInput.val(currentAmount);
                         }*/
                     } else {
+                        setLotStatus(row);
                         // Si se seleccionó NULL, quitar cualquier restricción
                         amountInput.removeAttr('max');
                     }
@@ -412,7 +451,12 @@
 
                 $('#quick-lot-product-id').val(productId);
                 $('#quick-lot-product-name').val(productSelect.find('option:selected').text().trim());
+                $('#quick-lot-unit').text(getProductMetric(productId));
                 $('#quick-lot-registration, #quick-lot-amount, #quick-lot-expiration, #quick-lot-start, #quick-lot-end').val('');
+                const rowAmount = currentLotRow.find('.amount-input').val();
+                if (rowAmount && parseFloat(rowAmount) > 0) {
+                    $('#quick-lot-amount').val(rowAmount);
+                }
                 quickLotModal.show();
             });
 
@@ -442,16 +486,22 @@
                     },
                     success: function(response) {
                         const lot = response.lot;
+                        lot.entry_amount = amount;
+                        lot.is_new = true;
                         appendLotToProduct(productId, lot);
 
                         if (currentLotRow) {
                             const lotSelect = currentLotRow.find('.lot-select');
+                            const amountInput = currentLotRow.find('.amount-input');
+                            const unit = getProductMetric(productId);
                             lotSelect.append(
-                                `<option value="${lot.id}" data-current-amount="${lot.current_amount}">
-                                    ${escapeHtml(lot.registration_number)} (Disponible: ${lot.current_amount})
+                                `<option value="${lot.id}" data-current-amount="${lot.current_amount}" data-entry-amount="${amount}" data-is-new="1">
+                                    ${escapeHtml(lot.registration_number)} (A ingresar: ${amount} ${escapeHtml(unit)})
                                 </option>`
                             );
+                            amountInput.val(amount);
                             lotSelect.val(lot.id).trigger('change');
+                            updateMovementProducts();
                         }
 
                         quickLotModal.hide();

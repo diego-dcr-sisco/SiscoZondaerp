@@ -77,7 +77,16 @@ class StockController extends Controller
         $warehouses = Warehouse::orderBy('is_matrix', 'desc')->get();
 
         foreach ($warehouses as $warehouse) {
-            $warehouse->products_count = $warehouse->products()->count();
+            $warehouse->products_count = MovementProduct::where('warehouse_id', $warehouse->id)
+                ->select('product_id')
+                ->selectRaw('
+                    SUM(CASE WHEN movement_id BETWEEN 1 AND 4 THEN amount ELSE 0 END)
+                    - SUM(CASE WHEN movement_id BETWEEN 5 AND 10 THEN amount ELSE 0 END) as net_amount
+                ')
+                ->groupBy('product_id')
+                ->having('net_amount', '>', 0)
+                ->get()
+                ->count();
         }
 
         $input_movements = MovementType::whereBetween('id', [1, 4])->get();
@@ -788,7 +797,7 @@ class StockController extends Controller
         $navigation = $this->navigation;
         $warehouse = Warehouse::find($id);
         $all_warehouses = Warehouse::where('id', '!=', $id)->get();
-        $products = $warehouse->products()->get();
+        $products = ProductCatalog::orderBy('name')->get();
         $output_movements = MovementType::whereBetween('id', [5, 10])->get();
 
         foreach ($products as $product) {
@@ -808,8 +817,6 @@ class StockController extends Controller
                 })->toArray(),
             ];
         }
-
-        session()->flash('warning', 'Si el lote no existe, puedes crearlo desde el botón + en la columna Lote.');
 
         return view('stock.create.outputs.exits', compact('warehouse', 'all_warehouses', 'products_data', 'output_movements', 'navigation'));
     }
@@ -916,6 +923,61 @@ class StockController extends Controller
         //dd($request->all());
         $products = json_decode($request->input('products'), true);
         $movement_id = $request->input('movement_id');
+
+        if (!is_array($products) || count($products) === 0) {
+            return back()->withInput()->withErrors(['products' => 'Debe agregar al menos un producto a la salida.']);
+        }
+
+        $lotTotals = [];
+        $validatedLots = [];
+
+        foreach ($products as $index => $product) {
+            $amount = isset($product['amount']) ? (float) $product['amount'] : 0;
+            $productId = $product['product_id'] ?? null;
+            $lotId = $product['lot_id'] ?? null;
+
+            if (!$productId || !$lotId || $amount <= 0) {
+                return back()->withInput()->withErrors([
+                    'products' => 'Cada producto debe tener lote seleccionado y una cantidad mayor a 0.',
+                ]);
+            }
+
+            $lot = Lot::active()
+                ->where('id', $lotId)
+                ->where('product_id', $productId)
+                ->where('warehouse_id', $request->input('warehouse_id'))
+                ->first();
+
+            if (!$lot) {
+                return back()->withInput()->withErrors([
+                    'products' => 'Uno de los lotes seleccionados no pertenece al producto o almacén de salida.',
+                ]);
+            }
+
+            $available = (float) $lot->countProductsByWarehouse($request->input('warehouse_id'));
+
+            if ($amount > $available) {
+                return back()->withInput()->withErrors([
+                    'products' => "La cantidad del lote {$lot->registration_number} no puede ser mayor al disponible ({$available}).",
+                ]);
+            }
+
+            $lotTotals[$lot->id] = ($lotTotals[$lot->id] ?? 0) + $amount;
+            $validatedLots[$lot->id] = [
+                'registration_number' => $lot->registration_number,
+                'available' => $available,
+            ];
+        }
+
+        foreach ($lotTotals as $lotId => $totalAmount) {
+            $available = $validatedLots[$lotId]['available'];
+
+            if ($totalAmount > $available) {
+                return back()->withInput()->withErrors([
+                    'products' => "La suma del lote {$validatedLots[$lotId]['registration_number']} ({$totalAmount}) no puede ser mayor al disponible ({$available}).",
+                ]);
+            }
+        }
 
         $wm = WarehouseMovement::create([
             'warehouse_id' => $request->input('warehouse_id'),
@@ -1581,7 +1643,7 @@ class StockController extends Controller
             ])->findOrFail($id);
 
             $movementProducts = $movement->products()
-                ->with(['product', 'lot'])
+                ->with(['product.metric', 'lot', 'movement', 'warehouse'])
                 ->get();
 
             // Procesar firma del almacenista si existe
@@ -1614,10 +1676,17 @@ class StockController extends Controller
                 'technician_signature' => $technicianSignaturePath,
                 'technician_name' => $technian_name,
                 'products' => $movementProducts->map(function ($mp) {
+                    $isEntry = $mp->movement?->type === 'in' || ((int) $mp->movement_id >= 1 && (int) $mp->movement_id <= 4);
+
                     return [
                         'product' => $mp->product?->name ?? '-',
                         'lot' => $mp->lot?->registration_number ?? '-',
                         'amount' => $mp->amount,
+                        'metric' => $mp->product?->metric?->value ?? '-',
+                        'movement' => $mp->movement?->name ?? '-',
+                        'direction' => $isEntry ? 'Entrada' : 'Salida',
+                        'direction_class' => $isEntry ? 'entry' : 'exit',
+                        'warehouse' => $mp->warehouse?->name ?? '-',
                     ];
                 })->toArray(),
             ];

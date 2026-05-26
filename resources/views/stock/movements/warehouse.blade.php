@@ -140,7 +140,9 @@
                                                         {{ $mp->movement->name ?? '-' }}</td>
                                                     <td
                                                         class="{{ $mp->movement && $mp->movement->type == 'in' ? 'text-success' : 'text-danger' }}">
-                                                        {{ $mp->amount }}</td>
+                                                        {{ number_format((float) $mp->amount, 2) }}
+                                                        <small class="text-muted">{{ $mp->product->metric->value ?? '-' }}</small>
+                                                    </td>
                                                 </tr>
                                             @endforeach
                                         </tbody>

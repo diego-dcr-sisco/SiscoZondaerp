@@ -66,29 +66,38 @@
                 <div class="fw-bold mb-2 fs-5">Productos</div>
 
                 @if ($movement->hasWarehouseProducts($movement->warehouse_id))
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge bg-warning text-dark">Salidas</span>
+                        <span class="text-muted small">Partidas descontadas del almacén origen</span>
+                    </div>
                     <div style="overflow-x: auto; width: 100%;">
                         <table class="table table-striped table-bordered table-sm">
                             <thead>
                                 <tr>
-                                    <th class="fw-bold" scope="col">Almacen origen</th>
+                                    <th class="fw-bold" scope="col">Almacén afectado</th>
                                     <th class="fw-bold" scope="col">Producto</th>
                                     <th class="fw-bold" scope="col">Lote</th>
-                                    <th class="fw-bold" scope="col">Movimiento</th>
-                                    <th class="fw-bold" scope="col">Cantidad del movimiento</th>
+                                    <th class="fw-bold" scope="col">E/S</th>
+                                    <th class="fw-bold" scope="col">Cantidad</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($movement->warehouseProducts($movement->warehouse_id) as $mp)
+                                    @php
+                                        $isEntry = $mp->movement && ($mp->movement->type === 'in' || $mp->movement_id <= 4);
+                                    @endphp
                                     <tr>
                                         <th scope="row"> {{ $mp->warehouse->name }} </th>
                                         <td>{{ $mp->product->name }}</td>
                                         <td>{{ $mp->lot->registration_number ?? '-' }}</td>
-                                        <td
-                                            class="{{ $mp->movement && $mp->movement->type == 'in' ? 'text-success' : 'text-danger' }} fw-bold">
-                                            {{ $mp->movement->name ?? '-' }}</td>
-                                        <td
-                                            class="{{ $mp->movement && $mp->movement->type == 'in' ? 'text-success' : 'text-danger' }}">
-                                            {{ $mp->amount }}</td>
+                                        <td class="{{ $isEntry ? 'text-success' : 'text-warning' }} fw-bold">
+                                            {{ $isEntry ? 'Entrada' : 'Salida' }}
+                                            <div class="small text-muted fw-normal">{{ $mp->movement->name ?? '-' }}</div>
+                                        </td>
+                                        <td class="{{ $isEntry ? 'text-success' : 'text-warning' }} fw-bold">
+                                            {{ number_format((float) $mp->amount, 2) }}
+                                            <span class="text-muted fw-normal">{{ $mp->product->metric->value ?? '-' }}</span>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -97,27 +106,38 @@
                 @endif
 
                 @if ($movement->hasWarehouseProducts($movement->destination_warehouse_id))
+                    <div class="d-flex align-items-center gap-2 mb-2 {{ $movement->hasWarehouseProducts($movement->warehouse_id) ? 'mt-3' : '' }}">
+                        <span class="badge bg-success">Entradas</span>
+                        <span class="text-muted small">Partidas agregadas al almacén destino</span>
+                    </div>
                     <div style="overflow-x: auto; width: 100%;">
                         <table class="table table-striped table-bordered table-sm">
                             <thead>
                                 <tr>
-                                    <th class="fw-bold" scope="col">Almacen origen</th>
+                                    <th class="fw-bold" scope="col">Almacén afectado</th>
                                     <th class="fw-bold" scope="col">Producto</th>
                                     <th class="fw-bold" scope="col">Lote</th>
-                                    <th class="fw-bold" scope="col">Movimiento</th>
-                                    <th class="fw-bold" scope="col">Cantidad del movimiento</th>
+                                    <th class="fw-bold" scope="col">E/S</th>
+                                    <th class="fw-bold" scope="col">Cantidad</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($movement->warehouseProducts($movement->destination_warehouse_id) as $mp)
+                                    @php
+                                        $isEntry = $mp->movement && ($mp->movement->type === 'in' || $mp->movement_id <= 4);
+                                    @endphp
                                     <tr>
                                         <th scope="row"> {{ $mp->warehouse->name ?? '' }} </th>
                                         <td>{{ $mp->product->name }}</td>
                                         <td>{{ $mp->lot->registration_number }}</td>
-                                        <td
-                                            class="{{ $mp->movement && $mp->movement->type == 'in' ? 'text-success' : 'text-danger' }} fw-bold">
-                                            {{ $mp->movement->name ?? '-' }}</td>
-                                        <td class="text-success">{{ $mp->amount }}</td>
+                                        <td class="{{ $isEntry ? 'text-success' : 'text-warning' }} fw-bold">
+                                            {{ $isEntry ? 'Entrada' : 'Salida' }}
+                                            <div class="small text-muted fw-normal">{{ $mp->movement->name ?? '-' }}</div>
+                                        </td>
+                                        <td class="{{ $isEntry ? 'text-success' : 'text-warning' }} fw-bold">
+                                            {{ number_format((float) $mp->amount, 2) }}
+                                            <span class="text-muted fw-normal">{{ $mp->product->metric->value ?? '-' }}</span>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>

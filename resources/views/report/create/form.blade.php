@@ -120,6 +120,35 @@
     .smnote .ql-editor {
         min-height: 250px;
     }
+
+    .report-table-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        padding: 0.35rem;
+        border: 1px solid #dee2e6;
+        border-top: 0;
+        background: #f8f9fa;
+    }
+
+    .smnote .ql-editor table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0.5rem 0;
+    }
+
+    .smnote .ql-editor th,
+    .smnote .ql-editor td {
+        border: 1px solid #adb5bd;
+        min-width: 90px;
+        padding: 0.35rem 0.5rem;
+    }
+
+    .smnote .ql-editor td:focus,
+    .smnote .ql-editor th:focus {
+        outline: 2px solid rgba(13, 110, 253, 0.25);
+        outline-offset: -2px;
+    }
 </style>
 
 <div id="fullscreen-spinner" class="d-none">
@@ -565,6 +594,215 @@
     window.getRecommendationEditorHtml = getRecommendationEditorHtml;
     window.setRecommendationEditorHtml = setRecommendationEditorHtml;
 
+    function triggerReportEditorChange(editorId) {
+        const editor = document.getElementById(editorId);
+        if (!editor) {
+            return;
+        }
+
+        const autosaveType = $(editor).data('autosave-type');
+        const serviceId = $(editor).data('service-id');
+        $(document).trigger('quill-editor-change', [autosaveType, serviceId]);
+    }
+
+    function getEditorTableContext(quill) {
+        const selection = window.getSelection();
+
+        if (!selection || selection.rangeCount === 0) {
+            return {};
+        }
+
+        let node = selection.anchorNode;
+
+        if (!node) {
+            return {};
+        }
+
+        if (node.nodeType === Node.TEXT_NODE) {
+            node = node.parentElement;
+        }
+
+        if (!node || !quill.root.contains(node)) {
+            return {};
+        }
+
+        const cell = node.closest('td, th');
+        const row = node.closest('tr');
+        const table = node.closest('table');
+
+        return {
+            cell,
+            row,
+            table,
+        };
+    }
+
+    function createEditableTable(rows = 2, cols = 2) {
+        const table = document.createElement('table');
+        const tbody = document.createElement('tbody');
+
+        for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
+            const row = document.createElement('tr');
+
+            for (let colIndex = 0; colIndex < cols; colIndex++) {
+                const cell = document.createElement('td');
+                cell.innerHTML = '<br>';
+                row.appendChild(cell);
+            }
+
+            tbody.appendChild(row);
+        }
+
+        table.appendChild(tbody);
+        return table;
+    }
+
+    function focusCell(cell) {
+        if (!cell) {
+            return;
+        }
+
+        const range = document.createRange();
+        range.selectNodeContents(cell);
+        range.collapse(true);
+
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
+    function insertTableInEditor(quill, editorId) {
+        const table = createEditableTable();
+        const spacer = document.createElement('p');
+        spacer.innerHTML = '<br>';
+        const selection = window.getSelection();
+
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+
+            if (quill.root.contains(range.commonAncestorContainer)) {
+                range.deleteContents();
+                range.insertNode(spacer);
+                range.insertNode(table);
+            } else {
+                quill.root.appendChild(table);
+                quill.root.appendChild(spacer);
+            }
+        } else {
+            quill.root.appendChild(table);
+            quill.root.appendChild(spacer);
+        }
+
+        focusCell(table.querySelector('td, th'));
+        triggerReportEditorChange(editorId);
+    }
+
+    function handleTableAction(action, quill, editorId) {
+        const context = getEditorTableContext(quill);
+
+        if (action === 'insert-table') {
+            insertTableInEditor(quill, editorId);
+            return;
+        }
+
+        if (!context.table || !context.cell || !context.row) {
+            alert('Coloca el cursor dentro de una tabla para usar esta opción.');
+            return;
+        }
+
+        const rows = Array.from(context.table.querySelectorAll('tr'));
+        const currentCells = Array.from(context.row.children);
+        const cellIndex = currentCells.indexOf(context.cell);
+
+        if (action === 'add-row') {
+            const newRow = context.row.cloneNode(true);
+            Array.from(newRow.children).forEach(cell => cell.innerHTML = '<br>');
+            context.row.insertAdjacentElement('afterend', newRow);
+            focusCell(newRow.children[cellIndex] || newRow.children[0]);
+        }
+
+        if (action === 'add-column') {
+            rows.forEach(row => {
+                const newCell = document.createElement(row.children[cellIndex]?.tagName?.toLowerCase() || 'td');
+                newCell.innerHTML = '<br>';
+                const reference = row.children[cellIndex];
+
+                if (reference) {
+                    reference.insertAdjacentElement('afterend', newCell);
+                } else {
+                    row.appendChild(newCell);
+                }
+            });
+            focusCell(context.row.children[cellIndex + 1]);
+        }
+
+        if (action === 'delete-row') {
+            if (rows.length <= 1) {
+                context.row.querySelectorAll('td, th').forEach(cell => cell.innerHTML = '<br>');
+                focusCell(context.row.querySelector('td, th'));
+            } else {
+                const nextRow = context.row.nextElementSibling || context.row.previousElementSibling;
+                context.row.remove();
+                focusCell(nextRow?.children[cellIndex] || nextRow?.children[0]);
+            }
+        }
+
+        if (action === 'delete-column') {
+            const maxColumns = Math.max(...rows.map(row => row.children.length));
+
+            if (maxColumns <= 1) {
+                rows.forEach(row => Array.from(row.children).forEach(cell => cell.innerHTML = '<br>'));
+                focusCell(context.cell);
+            } else {
+                rows.forEach(row => row.children[cellIndex]?.remove());
+                focusCell(context.row.children[cellIndex] || context.row.children[cellIndex - 1]);
+            }
+        }
+
+        if (action === 'delete-table') {
+            const fallback = document.createElement('p');
+            fallback.innerHTML = '<br>';
+            context.table.replaceWith(fallback);
+        }
+
+        triggerReportEditorChange(editorId);
+    }
+
+    function addTableTools(quill, editorId) {
+        const tools = $(`
+            <div class="report-table-tools">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-table-action="insert-table">
+                    <i class="bi bi-table"></i> Tabla
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-table-action="add-row">
+                    <i class="bi bi-plus-lg"></i> Fila
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-table-action="add-column">
+                    <i class="bi bi-plus-lg"></i> Columna
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" data-table-action="delete-row">
+                    <i class="bi bi-dash-lg"></i> Fila
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" data-table-action="delete-column">
+                    <i class="bi bi-dash-lg"></i> Columna
+                </button>
+                <button type="button" class="btn btn-outline-danger btn-sm" data-table-action="delete-table">
+                    <i class="bi bi-trash"></i> Tabla
+                </button>
+            </div>
+        `);
+
+        tools.on('mousedown', function(event) {
+            event.preventDefault();
+        });
+
+        tools.on('click', 'button[data-table-action]', function() {
+            handleTableAction($(this).data('table-action'), quill, editorId);
+        });
+
+        $(quill.container).after(tools);
+    }
+
     $(document).ready(function() {
         const quillToolbar = [
             ['bold', 'italic', 'underline', 'strike'],
@@ -590,6 +828,7 @@
             });
 
             window.reportQuillEditors[this.id] = quill;
+            addTableTools(quill, this.id);
 
             quill.on('text-change', () => {
                 const autosaveType = $(this).data('autosave-type');

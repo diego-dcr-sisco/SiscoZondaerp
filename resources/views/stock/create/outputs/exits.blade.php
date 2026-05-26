@@ -18,6 +18,15 @@
             </span>
         </div>
 
+        @if ($errors->any())
+            <div class="alert alert-danger m-3 mb-0">
+                <div class="fw-bold mb-1">No se pudo registrar la salida</div>
+                @foreach ($errors->all() as $error)
+                    <div>{{ $error }}</div>
+                @endforeach
+            </div>
+        @endif
+
         <form class="m-3" id="form-stock-entry" action="{{ route('stock.exit.store') }}" method="POST">
             @csrf
             @method('PUT')
@@ -82,6 +91,7 @@
                                     <th>Cantidad</th>
                                     <th>Unidades</th>
                                     <th>Lote</th>
+                                    <th>Estado lote</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -201,56 +211,11 @@
            {{ __('buttons.cancel') }}
         </a> --}} 
 
-            <button type="submit" class="btn btn-primary" id="submit-btn"
-                onclick="return validateForm()">
+            <button type="submit" class="btn btn-primary" id="submit-btn">
                 Registrar Salida
             </button>
         </form>
 
-        <div class="modal fade" id="quickLotModal" tabindex="-1" aria-labelledby="quickLotModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="quickLotModalLabel">Crear lote rápido</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="quick-lot-product-id">
-                        <input type="hidden" id="quick-lot-warehouse-id" value="{{ $warehouse->id }}">
-                        <div class="mb-3">
-                            <label class="form-label">Producto</label>
-                            <input type="text" class="form-control" id="quick-lot-product-name" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label is-required" for="quick-lot-registration">Número de lote</label>
-                            <input type="text" class="form-control" id="quick-lot-registration" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label is-required" for="quick-lot-amount">Cantidad inicial disponible</label>
-                            <input type="number" class="form-control" id="quick-lot-amount" min="0" step="0.01" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label" for="quick-lot-expiration">Fecha de expiración</label>
-                            <input type="date" class="form-control" id="quick-lot-expiration">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Periodo de uso</label>
-                            <div class="input-group">
-                                <input type="date" class="form-control" id="quick-lot-start">
-                                <input type="date" class="form-control" id="quick-lot-end">
-                            </div>
-                        </div>
-                        <div class="form-text">
-                            Al crear el lote aquí se registra una entrada inicial para que pueda usarse en esta salida.
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">{{ __('buttons.cancel') }}</button>
-                        <button type="button" class="btn btn-primary" id="quick-lot-save">Crear y seleccionar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script>
@@ -287,25 +252,39 @@
             const productsData = @json($products_data);
             let movementProducts = []; // Array para almacenar los productos del movimiento
             let rowCount = 0;
-            let currentLotRow = null;
-            const quickLotModal = new bootstrap.Modal(document.getElementById('quickLotModal'));
 
-            function escapeHtml(value) {
-                return $('<div>').text(value ?? '').html();
-            }
+            function setLotStatus(row, type = null) {
+                const badge = row.find('.lot-status-badge');
 
-            function appendLotToProduct(productId, lot) {
-                const product = productsData.find(p => p.id == productId);
-                if (!product) {
+                if (type === 'registered') {
+                    badge.removeClass('bg-secondary').addClass('bg-warning text-dark').text('Lote registrado');
                     return;
                 }
 
-                product.lots = product.lots || [];
-                product.lots.push(lot);
+                badge.removeClass('bg-warning text-dark').addClass('bg-secondary').text('Sin lote');
+            }
 
-                $(`.product-select option[value="${productId}"]`).each(function() {
-                    $(this).data('lots', product.lots);
-                });
+            function validateOutputRow(row) {
+                const lotSelect = row.find('.lot-select');
+                const amountInput = row.find('.amount-output');
+                const amount = parseFloat(amountInput.val());
+                const selectedLot = lotSelect.find('option:selected');
+                const available = parseFloat(selectedLot.data('current-amount')) || 0;
+                let message = '';
+
+                if (!lotSelect.val()) {
+                    message = 'Seleccione un lote disponible.';
+                } else if (isNaN(amount) || amount <= 0) {
+                    message = 'La cantidad debe ser mayor a 0.';
+                } else if (amount > available) {
+                    message = `La cantidad no puede ser mayor al disponible (${available}).`;
+                }
+
+                row.find('.amount-error').text(message);
+                amountInput.toggleClass('is-invalid', message !== '');
+                lotSelect.toggleClass('is-invalid', !lotSelect.val());
+
+                return message === '';
             }
 
             // Función para agregar una nueva fila
@@ -325,8 +304,7 @@
                         `<option value="${product.id}" 
                                                                                                                                         data-presentation="${product.presentation}"
                                                                                                                                         data-metric="${product.metric}"
-                                                                                                                                        data-lots='${JSON.stringify(product.lots)}'
-                                                                                                                                        data-allow-null-lot="${product.allow_null_lot || false}">
+                                                                                                                                        data-lots='${JSON.stringify(product.lots)}'>
                                                                                                                                         ${product.name}
                                                                                                                                     </option>`
                     ).join('')}
@@ -335,24 +313,20 @@
             <td>
                 <input type="number" class="form-control amount-output" 
                        name="products[${rowCount}][amount]" value="0" min="0" step="0.01" required>
+                <div class="invalid-feedback amount-error"></div>
             </td>
             <td>
                 <input type="text" class="form-control metric-output" 
                        name="products[${rowCount}][metric]" readonly>
             </td>
             <td>
-                <div class="input-group input-group-sm">
-                    <select class="form-control lot-select" name="products[${rowCount}][lot_id]">
-                        <option value="">Sin lote (0.00)</option>
-                        <!-- Lotes se llenarán dinámicamente -->
-                    </select>
-                    <button type="button" class="btn btn-outline-primary quick-lot-btn" disabled>
-                        <i class="bi bi-plus-lg"></i>
-                    </button>
-                </div>
-                <small class="form-text text-muted null-lot-message" style="display:none;">
-                    Este producto permite registro sin lote
-                </small>
+                <select class="form-control lot-select" name="products[${rowCount}][lot_id]" required>
+                    <option value="">Seleccionar lote</option>
+                    <!-- Lotes se llenarán dinámicamente -->
+                </select>
+            </td>
+            <td class="text-center">
+                <span class="badge bg-secondary lot-status-badge">Sin lote</span>
             </td>
             <td>
                 <button type="button" class="btn btn-danger btn-sm remove-row" data-row="${rowId}">
@@ -380,36 +354,27 @@
                     const selectedOption = $(this).find('option:selected');
                     const lotSelect = $(this).closest('tr').find('.lot-select');
                     const metricoutput = $(this).closest('tr').find('.metric-output');
-                    const quickLotButton = $(this).closest('tr').find('.quick-lot-btn');
-                    const allowNullLot = selectedOption.data('allow-null-lot') === true;
-                    const nullLotMessage = $(this).closest('tr').find('.null-lot-message');
-
-                    // Mostrar/ocultar mensaje de lote nulo permitido
-                    if (allowNullLot) {
-                        nullLotMessage.show();
-                        //lotSelect.prop('required', false);
-                    } else {
-                        nullLotMessage.hide();
-                        //lotSelect.prop('required', true);
-                    }
 
                     // Actualizar la métrica
                     metricoutput.val(selectedOption.data('metric') || '-');
-                    quickLotButton.prop('disabled', !productId);
+                    setLotStatus($(this).closest('tr'));
 
                     // Limpiar y cargar los lotes
-                    lotSelect.empty().append('<option value="">Sin lote (0.00)</option>');
+                    lotSelect.empty().append('<option value="">Seleccionar lote</option>');
 
                     if (productId) {
                         const lots = selectedOption.data('lots') || [];
+                        const unit = selectedOption.data('metric') || '';
                         lots.forEach(lot => {
                             lotSelect.append(
                                 `<option value="${lot.id}" data-current-amount="${lot.current_amount}">
-                            ${lot.registration_number} (Disp.: ${lot.current_amount})
+                            ${lot.registration_number} (Disp.: ${lot.current_amount} ${unit})
                         </option>`
                             );
                         });
                     }
+
+                    validateOutputRow($(this).closest('tr'));
                 });
 
                 // Evento para cuando se selecciona un lote
@@ -417,18 +382,23 @@
                     const selectedOption = $(this).find('option:selected');
                     const currentAmount = selectedOption.data('current-amount') || 0;
                     const amountoutput = $(this).closest('tr').find('.amount-output');
+                    const row = $(this).closest('tr');
 
                     if (selectedOption.val()) {
+                        setLotStatus(row, 'registered');
                         // Si se seleccionó un lote (no es NULL)
                         amountoutput.attr('max', currentAmount);
-
-                        if (parseInt(amountoutput.val()) > currentAmount) {
-                            amountoutput.val(currentAmount);
-                        }
                     } else {
+                        setLotStatus(row);
                         // Si se seleccionó NULL, quitar cualquier restricción
                         amountoutput.removeAttr('max');
                     }
+
+                    validateOutputRow(row);
+                });
+
+                $(`#${rowId} .amount-output`).on('input change', function() {
+                    validateOutputRow($(this).closest('tr'));
                 });
 
                 // Evento para actualizar movementProducts cuando cambian los valores
@@ -436,68 +406,6 @@
                     updateMovementProducts();
                 });
             }
-
-            $(document).on('click', '.quick-lot-btn', function() {
-                currentLotRow = $(this).closest('tr');
-                const productSelect = currentLotRow.find('.product-select');
-                const productId = productSelect.val();
-
-                if (!productId) {
-                    alert('Seleccione un producto antes de crear el lote.');
-                    return;
-                }
-
-                $('#quick-lot-product-id').val(productId);
-                $('#quick-lot-product-name').val(productSelect.find('option:selected').text().trim());
-                $('#quick-lot-registration, #quick-lot-amount, #quick-lot-expiration, #quick-lot-start, #quick-lot-end').val('');
-                quickLotModal.show();
-            });
-
-            $('#quick-lot-save').click(function() {
-                const productId = $('#quick-lot-product-id').val();
-                const registrationNumber = $('#quick-lot-registration').val().trim();
-                const amount = $('#quick-lot-amount').val();
-
-                if (!productId || !registrationNumber || amount === '') {
-                    alert('Complete producto, número de lote y cantidad.');
-                    return;
-                }
-
-                $.ajax({
-                    url: "{{ route('stock.lot.quickStore') }}",
-                    method: 'POST',
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                        product_id: productId,
-                        warehouse_id: $('#quick-lot-warehouse-id').val(),
-                        registration_number: registrationNumber,
-                        amount: amount,
-                        expiration_date: $('#quick-lot-expiration').val(),
-                        start_date: $('#quick-lot-start').val(),
-                        end_date: $('#quick-lot-end').val(),
-                        create_initial_stock: 1
-                    },
-                    success: function(response) {
-                        const lot = response.lot;
-                        appendLotToProduct(productId, lot);
-
-                        if (currentLotRow) {
-                            const lotSelect = currentLotRow.find('.lot-select');
-                            lotSelect.append(
-                                `<option value="${lot.id}" data-current-amount="${lot.current_amount}">
-                                    ${escapeHtml(lot.registration_number)} (Disp.: ${lot.current_amount})
-                                </option>`
-                            );
-                            lotSelect.val(lot.id).trigger('change');
-                        }
-
-                        quickLotModal.hide();
-                    },
-                    error: function(xhr) {
-                        alert(xhr.responseJSON?.message || 'No se pudo crear el lote.');
-                    }
-                });
-            });
 
             // Función para actualizar el array movementProducts
             function updateMovementProducts() {
@@ -541,6 +449,61 @@
                 console.log('Movement Products:', movementProducts);
             }
 
+            window.stockOutputState = {
+                updateMovementProducts,
+                getMovementProducts: () => movementProducts,
+                validateRows: function() {
+                    let isValid = true;
+                    let firstInvalid = null;
+                    const lotTotals = {};
+                    const lotRows = {};
+
+                    $('#products-container tr').each(function() {
+                        const row = $(this);
+                        if (!validateOutputRow(row)) {
+                            isValid = false;
+                            firstInvalid = firstInvalid || row;
+                        }
+
+                        const lotId = row.find('.lot-select').val();
+                        const amount = parseFloat(row.find('.amount-output').val());
+                        const available = parseFloat(row.find('.lot-select option:selected').data('current-amount')) || 0;
+
+                        if (lotId && !isNaN(amount) && amount > 0) {
+                            lotTotals[lotId] = (lotTotals[lotId] || 0) + amount;
+                            lotRows[lotId] = lotRows[lotId] || {
+                                rows: [],
+                                available,
+                            };
+                            lotRows[lotId].rows.push(row);
+                        }
+                    });
+
+                    Object.keys(lotTotals).forEach(function(lotId) {
+                        const total = lotTotals[lotId];
+                        const available = lotRows[lotId].available;
+
+                        if (total > available) {
+                            isValid = false;
+
+                            lotRows[lotId].rows.forEach(function(row) {
+                                row.find('.amount-error').text(
+                                    `La suma de este lote (${total}) supera el disponible (${available}).`
+                                );
+                                row.find('.amount-output').addClass('is-invalid');
+                                firstInvalid = firstInvalid || row;
+                            });
+                        }
+                    });
+
+                    if (firstInvalid) {
+                        firstInvalid.find('.is-invalid:first').focus();
+                    }
+
+                    return isValid;
+                },
+            };
+
             // Evento para agregar una nueva fila
             $('#add-product-row').click(function() {
                 addProductRow();
@@ -576,58 +539,6 @@
 
             // Ejemplo de cómo cargar productos iniciales
             // loadInitialProducts([]);
-
-
-            function confirmAndSubmit(event) {
-                // Actualizar el array movementProducts por última vez
-                updateMovementProducts();
-
-                // Validar que haya al menos un producto
-                if (movementProducts.length === 0) {
-                    alert('Debe agregar al menos un producto');
-                    return false;
-                }
-
-                // Validar que todos los productos tengan cantidad válida
-                let isValid = true;
-                $('.amount-output').each(function() {
-                    const amount = parseInt($(this).val());
-                    if (isNaN(amount)) {
-                        isValid = false;
-                        $(this).addClass('is-invalid');
-                    } else {
-                        $(this).removeClass('is-invalid');
-                    }
-                });
-
-                if (!isValid) {
-                    alert('Por favor complete todas las cantidades correctamente');
-                    return false;
-                }
-
-
-                if (!confirm('¿Está seguro de registrar el movimiento con ' + movementProducts.length +
-                        ' producto(s)?')) {
-                    return false;
-                }
-
-                // Crear o actualizar el output hidden con los datos
-                let $hiddenoutput = $('output[name="products"]');
-                if ($hiddenoutput.length === 0) {
-                    $hiddenoutput = $('<input>')
-                        .attr('type', 'hidden')
-                        .attr('name', 'products')
-                        .appendTo('form');
-                }
-
-                // Convertir a JSON y asignar al output
-                $hiddenoutput.val(JSON.stringify(movementProducts));
-
-                // Continuar con el envío del formulario
-                return true;
-            }
-
-            $('form').on('submit', confirmAndSubmit);
         });
 
         $(document).ready(function() {
@@ -795,7 +706,8 @@
                 }
 
                 // Actualizar el array movementProducts por última vez
-                updateMovementProducts();
+                window.stockOutputState?.updateMovementProducts();
+                const movementProducts = window.stockOutputState?.getMovementProducts() || [];
 
                 // Validar que haya al menos un producto
                 if (movementProducts.length === 0) {
@@ -803,20 +715,8 @@
                     return false;
                 }
 
-                // Validar que todos los productos tengan cantidad válida
-                let isValid = true;
-                $('.amount-output').each(function() {
-                    const amount = parseInt($(this).val());
-                    if (isNaN(amount)) {
-                        isValid = false;
-                        $(this).addClass('is-invalid');
-                    } else {
-                        $(this).removeClass('is-invalid');
-                    }
-                });
-
-                if (!isValid) {
-                    alert('Por favor complete todas las cantidades correctamente');
+                if (!window.stockOutputState?.validateRows()) {
+                    alert('Revise las cantidades: deben ser mayores a 0 y no superar el disponible del lote.');
                     return false;
                 }
 
@@ -826,7 +726,7 @@
                     $hiddenInput = $('<input>')
                         .attr('type', 'hidden')
                         .attr('name', 'products')
-                        .appendTo('form');
+                        .appendTo('#form-stock-entry');
                 }
 
                 // Convertir a JSON y asignar al input

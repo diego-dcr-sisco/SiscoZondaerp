@@ -315,27 +315,66 @@
     </div>
 
     {{-- ── PRODUCTOS ── --}}
-    <div class="section-title">Productos</div>
+    @php
+        $exitProducts = collect($products)->where('direction', 'Salida')->values();
+        $entryProducts = collect($products)->where('direction', 'Entrada')->values();
+    @endphp
+
+    <div class="section-title">Salidas</div>
     <table class="products-table">
         <thead>
             <tr>
                 <th style="width: 5%;"  class="text-center">#</th>
-                <th style="width: 52%;">Producto</th>
-                <th style="width: 27%;">Lote / Serie</th>
-                <th style="width: 16%;" class="text-right">Cantidad</th>
+                <th style="width: 40%;">Producto</th>
+                <th style="width: 20%;">Lote / Serie</th>
+                <th style="width: 23%;">Almacén origen</th>
+                <th style="width: 12%;" class="text-right">Cantidad</th>
             </tr>
         </thead>
         <tbody>
-            @forelse ($products as $index => $product)
+            @forelse ($exitProducts as $index => $product)
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $product['product'] }}</td>
                     <td>{{ $product['lot'] }}</td>
-                    <td class="text-right">{{ number_format((float) $product['amount'], 2) }}</td>
+                    <td>{{ $product['warehouse'] }}</td>
+                    <td class="text-right">
+                        {{ number_format((float) $product['amount'], 2) }} {{ $product['metric'] }}
+                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="4" class="text-center muted">Sin productos registrados para este movimiento.</td>
+                    <td colspan="5" class="text-center muted">Sin salidas registradas para este movimiento.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <div class="section-title">Entradas</div>
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;"  class="text-center">#</th>
+                <th style="width: 40%;">Producto</th>
+                <th style="width: 20%;">Lote / Serie</th>
+                <th style="width: 23%;">Almacén destino</th>
+                <th style="width: 12%;" class="text-right">Cantidad</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($entryProducts as $index => $product)
+                <tr>
+                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td>{{ $product['product'] }}</td>
+                    <td>{{ $product['lot'] }}</td>
+                    <td>{{ $product['warehouse'] }}</td>
+                    <td class="text-right">
+                        {{ number_format((float) $product['amount'], 2) }} {{ $product['metric'] }}
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="5" class="text-center muted">Sin entradas registradas para este movimiento.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -343,7 +382,13 @@
 
     <table class="summary-table">
         <tr>
-            <td>Total de partidas: <strong>{{ count($products) }}</strong></td>
+            <td>
+                Salidas: <strong>{{ $exitProducts->count() }}</strong>
+                &nbsp;|&nbsp;
+                Entradas: <strong>{{ $entryProducts->count() }}</strong>
+                &nbsp;|&nbsp;
+                Total de partidas: <strong>{{ count($products) }}</strong>
+            </td>
             <td class="text-right">Documento generado: {{ date('d/m/Y H:i') }}</td>
         </tr>
     </table>
