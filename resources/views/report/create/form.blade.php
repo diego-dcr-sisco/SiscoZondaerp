@@ -687,38 +687,56 @@
         return Array.from(row.children).filter(child => ['TD', 'TH'].includes(child.tagName)).length;
     }
 
-    function normalizeTableSections(table) {
-        const directRows = Array.from(table.children).filter(child => child.tagName === 'TR');
+    function getTableMatrix(table) {
+        const rows = Array.from(table.rows);
+        const maxColumns = Math.max(1, ...rows.map(row => row.cells.length));
 
-        if (directRows.length === 0) {
-            return;
-        }
+        return rows.map(row => {
+            const cells = Array.from(row.cells).map(cell => ({
+                tag: cell.tagName === 'TH' ? 'th' : 'td',
+                html: cell.innerHTML || '<br>',
+            }));
 
-        const tbody = table.querySelector('tbody') || document.createElement('tbody');
+            while (cells.length < maxColumns) {
+                cells.push({
+                    tag: 'td',
+                    html: '<br>',
+                });
+            }
 
-        if (!tbody.parentNode) {
-            table.appendChild(tbody);
-        }
-
-        directRows.forEach(row => tbody.appendChild(row));
+            return cells;
+        });
     }
 
-    function insertRowBelow(currentRow, currentCell) {
-        const table = currentRow.closest('table');
-        normalizeTableSections(table);
+    function buildTableFromMatrix(matrix) {
+        const table = document.createElement('table');
+        const tbody = document.createElement('tbody');
 
-        const rowParent = currentRow.parentElement;
-        const parentRows = Array.from(rowParent.rows || rowParent.querySelectorAll(':scope > tr'));
-        const rowIndex = Math.max(parentRows.indexOf(currentRow), 0);
-        const columnCount = Math.max(getRowCellCount(currentRow), 1);
-        const cellTag = currentCell.tagName === 'TH' ? 'th' : 'td';
-        const newRow = rowParent.insertRow(rowIndex + 1);
+        matrix.forEach(rowData => {
+            const row = document.createElement('tr');
 
-        for (let index = 0; index < columnCount; index++) {
-            newRow.appendChild(createEmptyTableCell(cellTag));
-        }
+            rowData.forEach(cellData => {
+                const cell = createEmptyTableCell(cellData.tag);
+                cell.innerHTML = cellData.html || '<br>';
+                row.appendChild(cell);
+            });
 
-        return newRow;
+            tbody.appendChild(row);
+        });
+
+        table.appendChild(tbody);
+        return table;
+    }
+
+    function replaceTableFromMatrix(oldTable, matrix, targetRowIndex, targetCellIndex) {
+        const newTable = buildTableFromMatrix(matrix);
+        oldTable.replaceWith(newTable);
+
+        const targetRow = newTable.rows[Math.max(0, Math.min(targetRowIndex, newTable.rows.length - 1))];
+        const targetCell = targetRow?.cells[Math.max(0, Math.min(targetCellIndex, (targetRow?.cells.length || 1) - 1))];
+        focusCell(targetCell || newTable.querySelector('td, th'));
+
+        return newTable;
     }
 
     function insertTableInEditor(quill, editorId) {
@@ -760,49 +778,67 @@
             return;
         }
 
-        const rows = Array.from(context.table.querySelectorAll('tr'));
-        const currentCells = Array.from(context.row.children);
+        const tableRows = Array.from(context.table.rows);
+        const currentCells = Array.from(context.row.cells);
+        const rowIndex = Math.max(tableRows.indexOf(context.row), 0);
         const cellIndex = currentCells.indexOf(context.cell);
+        let matrix = getTableMatrix(context.table);
+        const columnCount = Math.max(matrix[0]?.length || getRowCellCount(context.row), 1);
 
         if (action === 'add-row') {
-            const newRow = insertRowBelow(context.row, context.cell);
-            focusCell(newRow.children[cellIndex] || newRow.children[0]);
+            const cellTag = context.cell.tagName === 'TH' ? 'th' : 'td';
+            const newRow = Array.from({ length: columnCount }, () => ({
+                tag: cellTag,
+                html: '<br>',
+            }));
+            matrix.splice(rowIndex + 1, 0, newRow);
+            replaceTableFromMatrix(context.table, matrix, rowIndex + 1, Math.max(cellIndex, 0));
         }
 
         if (action === 'add-column') {
-            rows.forEach(row => {
-                const newCell = createEmptyTableCell(row.children[cellIndex]?.tagName || 'td');
-                const reference = row.children[cellIndex];
+            const insertIndex = Math.max(cellIndex, 0) + 1;
 
-                if (reference) {
-                    reference.insertAdjacentElement('afterend', newCell);
-                } else {
-                    row.appendChild(newCell);
-                }
+            matrix = matrix.map(rowData => {
+                const reference = rowData[Math.max(cellIndex, 0)] || rowData[rowData.length - 1] || {
+                    tag: 'td',
+                };
+                rowData.splice(insertIndex, 0, {
+                    tag: reference.tag || 'td',
+                    html: '<br>',
+                });
+                return rowData;
             });
-            focusCell(context.row.children[cellIndex + 1]);
+
+            replaceTableFromMatrix(context.table, matrix, rowIndex, insertIndex);
         }
 
         if (action === 'delete-row') {
-            if (rows.length <= 1) {
-                context.row.querySelectorAll('td, th').forEach(cell => cell.innerHTML = '<br>');
-                focusCell(context.row.querySelector('td, th'));
+            if (matrix.length <= 1) {
+                matrix = [Array.from({ length: columnCount }, (_, index) => ({
+                    tag: matrix[0]?.[index]?.tag || 'td',
+                    html: '<br>',
+                }))];
+                replaceTableFromMatrix(context.table, matrix, 0, Math.max(cellIndex, 0));
             } else {
-                const nextRow = context.row.nextElementSibling || context.row.previousElementSibling;
-                context.row.remove();
-                focusCell(nextRow?.children[cellIndex] || nextRow?.children[0]);
+                matrix.splice(rowIndex, 1);
+                replaceTableFromMatrix(context.table, matrix, Math.min(rowIndex, matrix.length - 1), Math.max(cellIndex, 0));
             }
         }
 
         if (action === 'delete-column') {
-            const maxColumns = Math.max(...rows.map(row => row.children.length));
-
-            if (maxColumns <= 1) {
-                rows.forEach(row => Array.from(row.children).forEach(cell => cell.innerHTML = '<br>'));
-                focusCell(context.cell);
+            if (columnCount <= 1) {
+                matrix = matrix.map(rowData => rowData.map(cellData => ({
+                    tag: cellData.tag,
+                    html: '<br>',
+                })));
+                replaceTableFromMatrix(context.table, matrix, rowIndex, 0);
             } else {
-                rows.forEach(row => row.children[cellIndex]?.remove());
-                focusCell(context.row.children[cellIndex] || context.row.children[cellIndex - 1]);
+                const deleteIndex = Math.max(cellIndex, 0);
+                matrix = matrix.map(rowData => {
+                    rowData.splice(deleteIndex, 1);
+                    return rowData;
+                });
+                replaceTableFromMatrix(context.table, matrix, rowIndex, Math.min(deleteIndex, columnCount - 2));
             }
         }
 
