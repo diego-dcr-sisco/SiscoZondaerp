@@ -2,10 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Customer;
-use App\Models\Order;
-use App\Models\Device;
-use App\Models\OrderPest;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -36,76 +32,83 @@ class CustomerReportService_br
             ->select(['id', 'code', 'name', 'businessname', 'tax_name', 'tel', 'phone', 'email', 'created_at'])
             ->get();
 
-        // PASO 3: Fechas históricas masivas
-        $historicalData = DB::table($ordersTable)
+        // PASO 3: Obtener métricas históricas de órdenes
+        $ordersData = DB::table($ordersTable)
             ->whereIn('customer_id', $activeCustomerIds)
             ->select([
                 'customer_id',
-                DB::raw('MIN(created_at) as first_order'),
-                DB::raw('MAX(created_at) as last_order'),
                 DB::raw("SUM(CASE WHEN created_at BETWEEN '{$start}' AND '{$end}' THEN 1 ELSE 0 END) as total_orders_in_range")
             ])
             ->groupBy('customer_id')
             ->get()
             ->keyBy('customer_id');
 
-/// PASO 4A: Forzar colección vacía para evitar errores de estructura en dispositivos
+        // ==========================================
+        // PASO 4A: Cargar Dispositivos Reales (vía floorplans)
+        // ==========================================
         $devicesData = collect();
-
-        // PASO 4B: Cargar Plagas (Cantidad de asociadas y Tipos detectados)
-        $pestsData = collect();
-        if (in_array('inc_pests_count', $metrics) || in_array('inc_pest_types', $metrics)) {
-            $orderPestTable = (new OrderPest())->getTable();
-            
-            $pestsData = DB::table($orderPestTable . ' as op')
-                ->join($ordersTable . ' as o', 'o.id', '=', 'op.order_id')
-                ->join('pest_catalog as pc', 'pc.id', '=', 'op.pest_id') // <-- CAMBIADO 'op.pest_catalog_id' por 'op.pest_id'
-                ->whereIn('o.customer_id', $activeCustomerIds)
-                ->whereBetween('o.created_at', [$start, $end])
+        if (in_array('inc_has_devices', $metrics) || in_array('inc_devices_count', $metrics) || in_array('inc_device_types', $metrics)) {
+            $devicesData = DB::table('device as d')
+                ->join('floorplans as f', 'f.id', '=', 'd.floorplan_id')
+                ->whereIn('f.customer_id', $activeCustomerIds)
                 ->select([
-                    'o.customer_id',
-                    DB::raw('COUNT(op.id) as total_pests_count'),
-                    DB::raw('GROUP_CONCAT(DISTINCT pc.name SEPARATOR ", ") as pest_types_names')
+                    'f.customer_id',
+                    DB::raw('COUNT(d.id) as total_devices'),
+                    DB::raw('GROUP_CONCAT(DISTINCT d.code SEPARATOR ", ") as device_types_list')
                 ])
-                ->groupBy('o.customer_id')
+                ->groupBy('f.customer_id')
                 ->get()
                 ->keyBy('customer_id');
         }
 
-        // PASO 4C: Unificar de manera ultra eficiente en memoria RAM
-        $processed = $customers->map(function ($customer) use ($historicalData, $devicesData, $pestsData, $start) {
-            $history = $historicalData->get($customer->id);
-            $devices = $devicesData->get($customer->id);
-            $pests   = $pestsData->get($customer->id);
-
-            // Inyección de Órdenes
-            $customer->first_order = $history ? $history->first_order : null;
-            $customer->last_order  = $history ? $history->last_order : null;
-            $customer->total_orders_in_range = $history ? $history->total_orders_in_range : 0;
-
-            // Inyección de Dispositivos
-            $customer->devices_count = $devices ? $devices->total : 0;
-            $customer->device_types  = $devices ? $devices->types : 'N/A';
-
-            // Inyección de Plagas con su cantidad total y tipos detectados
-            $customer->pests_count = $pests ? $pests->total_pests_count : 0;
-            $customer->pest_types  = $pests ? $pests->pest_types_names : 'Ninguna';
-
-            // Clasificación
-            if ($customer->first_order && Carbon::parse($customer->first_order)->lt($start)) {
-                $customer->calculated_type = 'recurrent';
-            } else {
-                $customer->calculated_type = 'new';
-            }
-
-            return $customer;
-        });
-
-        // PASO 5: Filtrar por tipo de cliente seleccionado
-        if ($clientType !== 'all') {
-            $processed = $processed->where('calculated_type', $clientType);
+        // ==========================================
+        // PASO 4B: Cargar Plagas Reales (¡CORREGIDO vía device_pest!)
+        // ==========================================
+        $pestsData = collect();
+        if (in_array('inc_pests_count', $metrics) || in_array('inc_pest_types', $metrics)) {
+            // Conectamos la tabla de 90k filas cruzando por el dispositivo hasta llegar al cliente
+            $pestsData = DB::table('device_pest as dp')
+                ->join('device as d', 'd.id', '=', 'dp.device_id')
+                ->join('floorplans as f', 'f.id', '=', 'd.floorplan_id')
+                ->join('pest_catalog as pc', 'pc.id', '=', 'dp.pest_id')
+                ->whereIn('f.customer_id', $activeCustomerIds)
+                ->select([
+                    'f.customer_id',
+                    DB::raw('COUNT(dp.id) as total_pests'),
+                    DB::raw('GROUP_CONCAT(DISTINCT pc.name SEPARATOR ", ") as pest_names_list')
+                ])
+                ->groupBy('f.customer_id')
+                ->get()
+                ->keyBy('customer_id');
         }
 
-        return $processed->values();
+        // ==========================================
+        // PASO 4C: Inyectar datos calculados en cada objeto Cliente
+        // ==========================================
+        foreach ($customers as $customer) {
+            $cid = $customer->id;
+
+            // Mapeo de Órdenes
+            $ordersCount = $ordersData[$cid]->total_orders_in_range ?? 0;
+            $customer->total_orders_in_range = $ordersCount;
+            $customer->calculated_type       = ($ordersCount <= 1) ? 'new' : 'recurrent';
+
+            // Mapeo de Dispositivos
+            $devInfo = $devicesData[$cid] ?? null;
+            $customer->devices_count = $devInfo->total_devices ?? 0;
+            $customer->device_types  = ($devInfo && $devInfo->total_devices > 0) ? $devInfo->device_types_list : 'N/A';
+
+            // Mapeo de Plagas Reales de la tabla device_pest
+            $pestInfo = $pestsData[$cid] ?? null;
+            $customer->pests_count = $pestInfo->total_pests ?? 0;
+            $customer->pest_types  = ($pestInfo && $pestInfo->total_pests > 0) ? $pestInfo->pest_names_list : 'Ninguna';
+        }
+
+        // PASO 5: Filtrar la colección final por tipo
+        if ($clientType !== 'all') {
+            $customers = $customers->where('calculated_type', $clientType);
+        }
+
+        return $customers->values();
     }
-}   
+}

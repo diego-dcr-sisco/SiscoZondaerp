@@ -24,6 +24,7 @@ class ClientReportController_br extends Controller
         // 2. Rompemos las fechas con Carbon
         [$startDate, $endDate] = explode(' - ', $filters['date_range']);
 
+        // 3. Instanciamos tu servicio definitivo
         $reportService = new \App\Services\CustomerReportService_br();
         
         $customers = $reportService->getReportData(
@@ -35,20 +36,19 @@ class ClientReportController_br extends Controller
 
         $metrics = $filters['metrics'] ?? [];
 
-        // 4. CONFIGURACIÓN NATIVA PARA ENGAÑAR AL NAVEGADOR (Bypass de Maatwebsite)
+        // 4. Configuración nativa para descarga de Excel
         $filename = 'reporte_clientes_' . date('Ymd_His') . '.xls';
         
-        // Cabeceras HTTP para forzar la descarga de un Excel
         header("Content-Type: application/vnd.ms-excel; charset=utf-8");
         header("Content-Disposition: attachment; filename=\"$filename\"");
         header("Expires: 0");
         header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
         header("Cache-Control: private", false);
 
-        // Agregamos el BOM de UTF-8 para que Excel lea bien los acentos y la Ñ
+        // BOM para manejo correcto de acentos y Ñ en Excel/LibreOffice
         echo "\xEF\xBB\xBF"; 
 
-        // 5. Pintamos la estructura de la tabla que Excel convertirá en columnas automáticamente
+        // 5. Estructura de la tabla HTML
         echo '<table border="1">';
         echo '<thead style="background-color: #0d6efd; color: white; font-weight: bold;">';
         echo '<tr>';
@@ -56,7 +56,6 @@ class ClientReportController_br extends Controller
         echo '<th>Nombre / Razón Social</th>';
         echo '<th>Tipo de Cliente</th>';
         
-        // Encabezados dinámicos según los checkboxes del PDF
         if (in_array('inc_orders_count', $metrics)) echo '<th>Cant. Órdenes de Servicio</th>';
         if (in_array('inc_has_devices', $metrics))  echo '<th>¿Cuenta con Dispositivos?</th>';
         if (in_array('inc_devices_count', $metrics)) echo '<th>Cant. Total Dispositivos</th>';
@@ -67,23 +66,19 @@ class ClientReportController_br extends Controller
         echo '</thead>';
         echo '<tbody>';
 
-        // 6. Llenamos las filas con los clientes reales de XAMPP
+        // 6. Llenamos las filas mapeando las propiedades reales del objeto Service
         foreach ($customers as $customer) {
             echo '<tr>';
-            // El ID real en tu objeto es 'id'
             echo '<td>' . ($customer->id ?? '') . '</td>';
             echo '<td>' . htmlspecialchars($customer->name ?? 'N/A') . '</td>';
             
-            // El tipo real que calcula tu servicio es 'calculated_type'
             $tipoCliente = ($customer->calculated_type ?? 'new') === 'new' ? 'Nuevo' : 'Recurrente';
             echo '<td>' . $tipoCliente . '</td>';
             
             if (in_array('inc_orders_count', $metrics)) {
-                // Tu servicio inyecta 'total_orders_in_range'
                 echo '<td>' . ($customer->total_orders_in_range ?? 0) . '</td>';
             }
             if (in_array('inc_has_devices', $metrics)) {
-                // Si el conteo es mayor a 0, entonces sí tiene dispositivos
                 $tieneDispositivos = ($customer->devices_count ?? 0) > 0 ? 'Sí' : 'No';
                 echo '<td>' . $tieneDispositivos . '</td>';
             }
