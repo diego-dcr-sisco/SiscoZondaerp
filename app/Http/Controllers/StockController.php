@@ -1578,9 +1578,11 @@ class StockController extends Controller
                 'warehouse',
                 'destinationWarehouse.technician.user',
                 'movement',
-                'products.product',
-                'products.lot',
             ])->findOrFail($id);
+
+            $movementProducts = $movement->products()
+                ->with(['product', 'lot'])
+                ->get();
 
             // Procesar firma del almacenista si existe
             $storekeeperSignaturePath = null;
@@ -1611,7 +1613,7 @@ class StockController extends Controller
                 'storekeeper_signature' => $storekeeperSignaturePath,
                 'technician_signature' => $technicianSignaturePath,
                 'technician_name' => $technian_name,
-                'products' => $movement->products->map(function ($mp) {
+                'products' => $movementProducts->map(function ($mp) {
                     return [
                         'product' => $mp->product?->name ?? '-',
                         'lot' => $mp->lot?->registration_number ?? '-',
@@ -1623,7 +1625,7 @@ class StockController extends Controller
             $pdf = Pdf::loadView('stock.movements.show.voucher-pdf', $data);
             return $pdf->stream('movimiento_' . $movement->id . '.pdf');
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Limpiar archivos temporales en caso de error
             if ($movement) {
                 $this->cleanTempFiles($movement->id);
@@ -1636,23 +1638,39 @@ class StockController extends Controller
     // Método para procesar imágenes base64
     private function processSignature($base64Image, $filename)
     {
+        if (!is_string($base64Image) || trim($base64Image) === '') {
+            return null;
+        }
+
         // Extraer la parte base64 de la cadena
         if (strpos($base64Image, 'base64,') !== false) {
             $base64Image = explode('base64,', $base64Image)[1];
         }
 
+        $base64Image = preg_replace('/\s+/', '', $base64Image);
+
         // Decodificar la imagen base64
-        $imageData = base64_decode($base64Image);
+        $imageData = base64_decode($base64Image, true);
+
+        if ($imageData === false) {
+            return null;
+        }
 
         // Crear directorio temporal si no existe
         $tempDir = storage_path('app/temp/signatures/');
         if (!file_exists($tempDir)) {
-            mkdir($tempDir, 0755, true);
+            @mkdir($tempDir, 0755, true);
+        }
+
+        if (!is_dir($tempDir) || !is_writable($tempDir)) {
+            return null;
         }
 
         // Guardar la imagen temporalmente
         $filePath = $tempDir . $filename . '.png';
-        file_put_contents($filePath, $imageData);
+        if (file_put_contents($filePath, $imageData) === false) {
+            return null;
+        }
 
         return $filePath;
     }
