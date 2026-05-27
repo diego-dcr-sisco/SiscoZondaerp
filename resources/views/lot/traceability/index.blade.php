@@ -89,6 +89,110 @@
             </div>
         </form>
 
+        @php
+            $traceabilityNodes = $orders->getCollection()->groupBy('order_id');
+        @endphp
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="card-title fw-bold mb-0">
+                    <i class="bi bi-diagram-3-fill"></i> Recorrido del producto
+                </h5>
+            </div>
+            <div class="card-body">
+                @if ($traceabilityNodes->isNotEmpty())
+                    <div class="traceability-flow">
+                        @foreach ($traceabilityNodes as $orderId => $items)
+                            @php
+                                $firstItem = $items->first();
+                                $nodeOrder = $firstItem->order;
+                                $createdAt = $nodeOrder->created_at ?? $firstItem->created_at ?? null;
+                                $metric = $firstItem->metric->value ?? '';
+                                $services = $items
+                                    ->map(fn($item) => $item->service->name ?? null)
+                                    ->filter()
+                                    ->unique()
+                                    ->values();
+                                $methods = $items
+                                    ->map(fn($item) => $item->appMethod->name ?? null)
+                                    ->filter()
+                                    ->unique()
+                                    ->values();
+                            @endphp
+
+                            <div class="traceability-node">
+                                <div class="traceability-node-marker">
+                                    {{ $loop->iteration }}
+                                </div>
+                                <div class="traceability-node-card">
+                                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                        <div class="fw-bold text-primary">
+                                            Nodo {{ $loop->iteration }}
+                                        </div>
+                                        <span class="badge bg-light text-dark border">
+                                            {{ $createdAt ? \Carbon\Carbon::parse($createdAt)->format('d/m/Y H:i') : '-' }}
+                                        </span>
+                                    </div>
+
+                                    <div class="row g-2">
+                                        <div class="col-lg-3 col-sm-6 col-12">
+                                            <div class="small text-muted">Cantidad</div>
+                                            <div class="fw-semibold">
+                                                {{ number_format($items->sum('amount'), 2) }}
+                                                <span class="text-muted">{{ $metric }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-sm-6 col-12">
+                                            <div class="small text-muted">Cliente</div>
+                                            <div class="fw-semibold">{{ $nodeOrder->customer->name ?? 'N/A' }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-sm-6 col-12">
+                                            <div class="small text-muted">Order</div>
+                                            <div class="fw-semibold">{{ $nodeOrder->folio ?? $nodeOrder->id ?? '-' }}</div>
+                                        </div>
+                                        <div class="col-lg-3 col-sm-6 col-12">
+                                            <div class="small text-muted">Creado en</div>
+                                            <div class="fw-semibold">
+                                                {{ $createdAt ? \Carbon\Carbon::parse($createdAt)->format('d/m/Y H:i') : '-' }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-lg-6 col-12">
+                                            <div class="small text-muted">Servicio(s)</div>
+                                            @forelse ($services as $service)
+                                                <div class="traceability-list-item">
+                                                    <i class="bi bi-chevron-right"></i> {{ $service }}
+                                                </div>
+                                            @empty
+                                                <div class="text-muted">-</div>
+                                            @endforelse
+                                        </div>
+                                        <div class="col-lg-6 col-12">
+                                            <div class="small text-muted">Metodo de aplicacion</div>
+                                            @forelse ($methods as $method)
+                                                <div class="traceability-list-item">
+                                                    <i class="bi bi-chevron-right"></i> {{ $method }}
+                                                </div>
+                                            @empty
+                                                <div class="text-muted">-</div>
+                                            @endforelse
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-diagram-3 fs-1 d-block mb-2"></i>
+                        No hay nodos de trazabilidad para mostrar.
+                    </div>
+                @endif
+            </div>
+        </div>
+
         <div class="overflow-auto w-100">
             <table class="table table-bordered table-striped table-sm align-middle">
                 <thead>
@@ -143,4 +247,61 @@
 
         {{ $orders->links('pagination::bootstrap-5') }}
     </div>
+
+    <style>
+        .traceability-flow {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding-left: 1.75rem;
+        }
+
+        .traceability-flow::before {
+            content: "";
+            position: absolute;
+            top: 1rem;
+            bottom: 1rem;
+            left: 0.75rem;
+            width: 2px;
+            background: #dee2e6;
+        }
+
+        .traceability-node {
+            position: relative;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .traceability-node-marker {
+            position: absolute;
+            left: -1.75rem;
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            background: var(--bs-primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            z-index: 1;
+        }
+
+        .traceability-node-card {
+            width: 100%;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            background: #fff;
+            padding: 1rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .traceability-list-item {
+            font-weight: 600;
+            line-height: 1.6;
+        }
+    </style>
 @endsection
