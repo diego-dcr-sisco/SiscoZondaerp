@@ -74,7 +74,8 @@ class StockController extends Controller
         $metrics = Metric::all();
         $navigation = $this->navigation;
 
-        $warehouses = Warehouse::orderBy('is_matrix', 'desc')
+        $warehouses = Warehouse::orderBy('branch_id', 'asc')
+            ->orderBy('is_matrix', 'desc')
             ->orderBy('name', 'asc')
             ->get();
 
