@@ -74,7 +74,9 @@ class StockController extends Controller
         $metrics = Metric::all();
         $navigation = $this->navigation;
 
-        $warehouses = Warehouse::orderBy('is_matrix', 'desc')->get();
+        $warehouses = Warehouse::orderBy('is_matrix', 'desc')
+            ->orderBy('name', 'asc')
+            ->get();
 
         foreach ($warehouses as $warehouse) {
             $warehouse->products_count = MovementProduct::where('warehouse_id', $warehouse->id)
