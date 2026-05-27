@@ -5,11 +5,12 @@
         exit(); ?>
     @endif
 
-    <div class="w-100 h-100 m-0 p-5">
-        <h1 class="fw-bold text-center mb-5">
-            CONSUMOS
-        </h1>
+    @include('components.page-header', [
+        'title' => 'CONSUMOS',
+        'icon' => 'bi-file-earmark-text',
+    ])
 
+    <div class="w-100 h-100 m-0 p-5">
         <div class="d-flex justify-content-center gap-3 w-100 text-center">
             <a href="{{ route('consumptions.index') }}"
                 class="d-flex justify-content-center align-items-center border rounded shadow text-white text-decoration-none card"

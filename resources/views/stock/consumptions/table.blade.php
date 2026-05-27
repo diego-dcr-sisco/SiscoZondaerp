@@ -27,12 +27,12 @@
         }
     </style>
 
+    @include('components.page-header', [
+        'title' => 'CONSUMOS',
+        'icon' => 'bi-file-earmark-text',
+    ])
+
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <span class="text-black fw-bold fs-4">
-                CONSUMOS
-            </span>
-        </div>
 
         <div id="fullscreen-spinner" class="d-none">
             <div class="spinner-overlay">

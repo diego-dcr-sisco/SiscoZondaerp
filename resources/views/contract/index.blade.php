@@ -33,68 +33,83 @@
     ])
     <div class="container-fluid">
 
+        <form action="{{ route('contract.search') }}" method="GET" class="mb-3">
+            @csrf
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <h5 class="card-title fw-bold mb-0">
+                            <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
+                        </h5>
+                        <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
+                            data-bs-target=".contract-search-collapse" aria-expanded="false"
+                            aria-controls="contractSearchFilters contractSearchFooter">
+                            <i class="bi bi-caret-down-fill"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body collapse contract-search-collapse" id="contractSearchFilters">
+                    <div class="row g-3 mb-3">
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <label for="customer" class="form-label">Cliente</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="customer" name="customer"
+                                    value="{{ request('customer') }}" placeholder="Buscar nombre">
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4 col-sm-6 col-12">
+                            <label for="date-range" class="form-label">Rango de fechas (Periodo)</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                                <input type="text" class="form-control date-range-picker" id="date-range"
+                                    name="date_range" value="{{ request('date_range') }}"
+                                    placeholder="Selecciona un rango" autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="direction" class="form-label">Ordenar / Mostrar</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-arrow-down-up"></i></span>
+                                <select class="form-select form-select-sm" id="direction" name="direction">
+                                    <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>DESC
+                                    </option>
+                                    <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
+                                    </option>
+                                </select>
+                                <span class="input-group-text"><i class="bi bi-list-ol"></i></span>
+                                <select class="form-select form-select-sm" id="size" name="size">
+                                    <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
+                                    <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
+                                    <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
+                                    <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
+                                    <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer collapse contract-search-collapse" id="contractSearchFooter">
+                    <div class="row justify-content-end">
+                        <div class="col-lg-1 col-6">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="bi bi-funnel-fill"></i> Filtrar
+                            </button>
+                        </div>
+                        <div class="col-lg-1 col-6">
+                            <a href="{{ route('contract.index') }}" class="btn btn-secondary btn-sm w-100">
+                                <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
 
         <div class="overflow-auto w-100">
-            <table class="table table-sm table-bordered table-striped caption-top">
-                <caption class="border rounded-top p-2 text-dark bg-white">
-                    <form action="{{ route('contract.search') }}" method="GET">
-                        @csrf
-                        <div class="row g-3 mb-0">
-                            <div class="col-lg-4">
-                                <label for="customer" class="form-label">Cliente</label>
-                                <div class="input-group input-group-sm mb-3">
-                                    <span class="input-group-text" id="basic-addon1"><i class="bi bi-person"></i></span>
-                                    <input type="text" class="form-control form-control-sm" id="customer"
-                                        name="customer" value="{{ request('customer') }}" placeholder="Buscar nombre">
-                                </div>
-                            </div>
-
-                            <div class="col-lg-4">
-                                <label for="date_range" class="form-label">Rango de fechas (Periodo)</label>
-                                <div class="input-group input-group-sm mb-3">
-                                    <span class="input-group-text" id="basic-addon1"><i class="bi bi-calendar"></i></span>
-                                    <input type="text" class="form-control form-control-sm date-range-picker"
-                                        id="date-range" name="date_range" value="{{ request('date_range') }}"
-                                        placeholder="Selecciona un rango" autocomplete="off">
-                                </div>
-                            </div>
-
-                            <div class="col-lg-2">
-                                <label class="form-label">Ordenar / Mostrar</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text"><i class="bi bi-arrow-down-up"></i></span>
-                                    <select class="form-select form-select-sm" id="direction" name="direction">
-                                        <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>DESC
-                                        </option>
-                                        <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
-                                        </option>
-                                    </select>
-                                    <span class="input-group-text"><i class="bi bi-list-ol"></i></span>
-                                    <select class="form-select form-select-sm" id="size" name="size">
-                                        <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
-                                        <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
-                                        <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
-                                        <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
-                                        <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row justify-content-end g-3 mb-0 mt-0">
-                            <div class="col-lg-1 col-6">
-                                <button type="submit" class="btn btn-primary btn-sm w-100">
-                                    <i class="bi bi-funnel-fill"></i> Filtrar
-                                </button>
-                            </div>
-                            <div class="col-lg-1 col-6">
-                                <a href="{{ route('pest.index') }}" class="btn btn-secondary btn-sm w-100">
-                                    <i class="bi bi-arrow-counterclockwise"></i> Limpiar
-                                </a>
-                            </div>
-                        </div>
-                    </form>
-
-                </caption>
+            <table class="table table-sm table-bordered table-striped">
                 <thead>
                     <tr>
                         <th scope="col">#</th>

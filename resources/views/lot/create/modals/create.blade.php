@@ -14,7 +14,6 @@
         <form class="modal-content border-0 shadow-sm needs-validation" action="{{ route('lot.store') }}"
             method="POST" id="lotForm" novalidate>
             @csrf
-
             <div class="modal-header bg-light">
                 <div>
                     <h5 class="modal-title text-primary fw-bold mb-1" id="createLotModalLabel">
@@ -27,9 +26,9 @@
             </div>
 
             <div class="modal-body">
-                <div class="card border-0 shadow-sm mb-3">
+                <div class="card border-0 rounded-0 shadow-sm mb-3">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0 text-primary">
+                        <h6 class="mb-0 fw-bold text-secondary">
                             <i class="bi bi-info-circle me-2"></i>
                             Información del lote
                         </h6>
@@ -37,40 +36,68 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-12 mb-3">
-                                <label for="product" class="form-label fw-semibold">
+                                <label for="create-lot-search-product" class="form-label fw-semibold">
                                     <i class="bi bi-box me-1"></i>
                                     Producto <span class="text-danger">*</span>
                                 </label>
-                                <div class="input-group">
-                                    <label class="input-group-text" for="search-product">
-                                        <i class="bi bi-search"></i>
-                                    </label>
-                                    <input type="text" class="form-control" placeholder="Buscar producto"
-                                        id="search-product" name="search_product" aria-label="Buscar producto"
-                                        oninput="searchProducts(this.value)">
-                                    <select name="product_id" id="product" class="form-select"
-                                        onchange="setUnit(this.value)" required>
-                                        <option value="" selected disabled>Seleccione un producto</option>
-                                        @foreach ($products as $product)
-                                            <option value="{{ $product->id }}">{{ $product->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <div class="invalid-feedback">
-                                        Seleccione un producto.
-                                    </div>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mt-1">
-                                    <div class="form-text">
-                                        <i class="bi bi-info-circle me-1"></i>
-                                        Si no encuentras el producto,
-                                        <a href="{{ route('product.create') }}" target="_blank"
-                                            class="text-decoration-underline link-primary">
-                                            créalo aquí
-                                        </a>
+                                <div class="border rounded bg-light p-3">
+                                    <div class="row g-2">
+                                        <div class="col-md-5">
+                                            <label class="form-label small text-muted mb-1" for="create-lot-search-product">
+                                                Buscar por nombre
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="bi bi-search"></i>
+                                                </span>
+                                                <input type="text" class="form-control" placeholder="Escribe para filtrar"
+                                                    id="create-lot-search-product" name="search_product"
+                                                    aria-label="Buscar producto" oninput="searchProducts(this.value)">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-7">
+                                            <label class="form-label small text-muted mb-1" for="create-lot-product">
+                                                Producto seleccionado
+                                            </label>
+                                            <select name="product_id[]" id="create-lot-product" class="form-select"
+                                                multiple size="8"
+                                                onchange="syncSelectedProducts()" required>
+                                                <option value="" disabled>Escribe para buscar productos</option>
+                                            </select>
+                                            <div class="invalid-feedback">
+                                                Seleccione al menos un producto.
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div id="resultsHelp" class="form-text text-muted small">
-                                        <span id="resultsCount">0</span> resultados
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Si no encuentras el producto,
+                                            <a href="{{ route('product.create') }}" target="_blank"
+                                                class="text-decoration-underline link-primary">
+                                                créalo aquí
+                                            </a>
+                                        </div>
+
+                                        <div id="resultsHelp" class="form-text text-muted small">
+                                            <span id="resultsCount">0</span> resultados
+                                        </div>
+                                    </div>
+
+                                    <div id="selectedProductSummary" class="mt-3 d-none">
+                                        <div class="d-flex align-items-center border rounded bg-white p-2">
+                                            <div class="text-primary me-2">
+                                                <i class="bi bi-box-seam fs-5"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-semibold text-dark" id="selectedProductName"></div>
+                                                <small class="text-muted">
+                                                    Unidad: <span id="selectedProductMetric">-</span>
+                                                </small>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -127,7 +154,7 @@
 
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-light">
-                        <h6 class="mb-0 text-primary">
+                        <h6 class="mb-0 fw-bold text-secondary">
                             <i class="bi bi-sliders me-2"></i>
                             Stock y configuración
                         </h6>
@@ -223,6 +250,11 @@
 <script>
     const metrics = @json($metrics);
     const products = @json($products);
+    let selectedProductIds = [];
+
+    function lotModalField(selector) {
+        return $(`#createLotModal ${selector}`);
+    }
 
     function getAbbreviation(cadena) {
         const regex = /\(([^)]+)\)/;
@@ -230,54 +262,62 @@
         return coincidencia ? coincidencia[1] : null;
     }
 
-    function setUnit(product_id) {
-        var product = products.find(item => item.id == product_id);
-        if (product) {
+    function syncSelectedProducts() {
+        selectedProductIds = (lotModalField('#create-lot-product').val() || []).map(String);
+        setUnit();
+    }
+
+    function setUnit() {
+        const selectedProducts = products.filter(item => selectedProductIds.includes(String(item.id)));
+
+        if (selectedProducts.length === 1) {
+            const product = selectedProducts[0];
             var metric = metrics.find(item => item.id == product.metric_id);
-            $('#metric').val(product.metric_id);
+            lotModalField('#metric').val(product.metric_id);
+            lotModalField('#selectedProductName').text(product.name);
+            lotModalField('#selectedProductMetric').text(metric ? metric.value : 'Sin unidad');
+            lotModalField('#selectedProductSummary').removeClass('d-none');
+        } else if (selectedProducts.length > 1) {
+            lotModalField('#selectedProductName').text(`${selectedProducts.length} productos seleccionados`);
+            lotModalField('#selectedProductMetric').text('Se usará la unidad configurada en cada producto');
+            lotModalField('#selectedProductSummary').removeClass('d-none');
+        } else {
+            lotModalField('#selectedProductSummary').addClass('d-none');
         }
     }
 
     function searchProducts(query) {
+        const normalizedQuery = query.trim().toLowerCase();
+        const filteredProducts = normalizedQuery
+            ? products.filter(product => product.name.toLowerCase().includes(normalizedQuery))
+            : [];
 
-        // Create FormData object
-        const formData = new FormData();
-        formData.append('q', query);
-        formData.append('_token', '{{ csrf_token() }}'); // Add CSRF token for security
+        const productsToShow = [
+            ...products.filter(product => selectedProductIds.includes(String(product.id))),
+            ...filteredProducts.filter(product => !selectedProductIds.includes(String(product.id))),
+        ];
 
-        $.ajax({
-            url: "{{ route('lot.products.search') }}",
-            method: 'POST', // Changed to POST since we're using FormData
-            data: formData,
-            processData: false, // Required for FormData
-            contentType: false, // Required for FormData
-            success: function(response) {
-                const $select = $('#product');
-                console.log(response);
-                $select.empty().append(
-                    '<option value="" selected disabled>Seleccione un producto</option>'
+        const $select = lotModalField('#create-lot-product');
+        $select.empty();
+
+        if (productsToShow.length > 0) {
+            productsToShow.forEach(product => {
+                const productId = String(product.id);
+                $select.append(
+                    $('<option>')
+                        .val(productId)
+                        .text(product.name)
+                        .prop('selected', selectedProductIds.includes(productId))
                 );
+            });
+        } else if (!normalizedQuery) {
+            $select.append('<option value="" disabled>Escribe para buscar productos</option>');
+        } else {
+            $select.append('<option value="" disabled>No se encontraron productos</option>');
+        }
 
-                if (response.data && response.data.length > 0) {
-                    response.data.forEach(product => {
-                        $select.append(
-                            `<option value="${product.id}">${product.name}</option>`
-                        );
-                    });
-                } else {
-                    $select.append('<option value="" disabled>No se encontraron productos</option>');
-                }
-
-                $('#resultsCount').text(response.data.length);
-            },
-            error: function(xhr) {
-                //console.error('Error searching products:', xhr.responseText);
-                $('#product').html(`
-                <option value="" selected disabled>Error en la búsqueda</option>
-                <option value="" disabled>${xhr.responseJSON?.message || 'Intente nuevamente'}</option>
-            `);
-            }
-        });
+        lotModalField('#resultsCount').text(filteredProducts.length);
+        setUnit();
     }
 
     document.addEventListener('DOMContentLoaded', function() {

@@ -102,7 +102,6 @@ class LotController extends Controller
                 'data' => $products,
                 'count' => $products->count()
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -113,32 +112,45 @@ class LotController extends Controller
 
     public function store(Request $request)
     {
-        $lot = new Lot();
-        $lot->fill($request->all());
-        $lot->end_date = $request->input('end_date') ?: $request->input('expiration_date');
-        $lot->is_active = $request->boolean('is_active', true);
-        $lot->save(); // Save first to generate $lot->id
+        $productIds = array_values(array_filter((array) $request->input('product_id')));
 
-        $wm = WarehouseMovement::create([
-            'warehouse_id' => null,
-            'destination_warehouse_id' => $request->input('warehouse_id'),
-            'movement_id' => 2,
-            'user_id' => Auth::id(),
-            'date' => now()->format('Y-m-d'),
-            'time' => now()->format('H:i:s'),
-            'observations' => null,
-            'is_active' => true
-        ]);
+        if (empty($productIds)) {
+            return back()
+                ->withInput()
+                ->with('error', 'Debe seleccionar al menos un producto.');
+        }
 
-        // Create MovementProduct entry
-        MovementProduct::create([
-            'warehouse_movement_id' => $wm->id,
-            'movement_id' => 2,
-            'warehouse_id' => $request->input('warehouse_id'),
-            'product_id' => $request->input('product_id'),
-            'lot_id' => $lot->id,
-            'amount' => $request->input('amount'),
-        ]);
+        DB::transaction(function () use ($request, $productIds) {
+            $wm = WarehouseMovement::create([
+                'warehouse_id' => null,
+                'destination_warehouse_id' => $request->input('warehouse_id'),
+                'movement_id' => 2,
+                'user_id' => Auth::id(),
+                'date' => now()->format('Y-m-d'),
+                'time' => now()->format('H:i:s'),
+                'observations' => null,
+                'is_active' => true
+            ]);
+
+            foreach ($productIds as $productId) {
+                $lot = new Lot();
+                $lot->fill($request->except('product_id'));
+                $lot->product_id = $productId;
+                $lot->end_date = $request->input('end_date') ?: $request->input('expiration_date');
+                $lot->is_active = $request->boolean('is_active', true);
+                $lot->save(); // Save first to generate $lot->id
+
+                // Create MovementProduct entry
+                MovementProduct::create([
+                    'warehouse_movement_id' => $wm->id,
+                    'movement_id' => 2,
+                    'warehouse_id' => $request->input('warehouse_id'),
+                    'product_id' => $productId,
+                    'lot_id' => $lot->id,
+                    'amount' => $request->input('amount'),
+                ]);
+            }
+        });
 
         return back();
     }
@@ -394,9 +406,10 @@ class LotController extends Controller
         $lot = Lot::findOrFail($id);
         $navigation = $this->navigation;
         $products = ProductCatalog::orderBy('name', 'asc')->get();
+        $metrics = Metric::all();
         $warehouses = Warehouse::where('allow_material_receipts', true)->where('is_active', true)->get();
 
-        return view('lot.edit', compact('lot', 'products', 'warehouses', 'navigation'));
+        return view('lot.edit', compact('lot', 'products', 'warehouses', 'metrics', 'navigation'));
     }
 
     public function update(Request $request, $id)
@@ -454,14 +467,37 @@ class LotController extends Controller
         return response()->json($lots);
     }
 
-    public function getTraceability($id){
+    public function getTraceability(Request $request, $id)
+    {
 
-        $orders = OrderProduct::with(['order.customer', 'service', 'product', 'metric', 'appMethod', 'lot'])
-                ->where('lot_id', $id)
-                ->get();
         $lot = Lot::find($id);
-        //dd ($orders);
-        return view('lot.traceability.index',compact('lot','orders'));
-    }
+        $query = OrderProduct::with(['order.customer', 'service', 'product', 'metric', 'appMethod', 'lot'])
+            ->where('lot_id', $id);
 
+        if ($request->filled('order_id')) {
+            $query->whereHas('order', function ($orderQuery) use ($request) {
+                $orderQuery->where('id', 'like', '%' . $request->order_id . '%')
+                    ->orWhere('folio', 'like', '%' . $request->order_id . '%');
+            });
+        }
+
+        if ($request->filled('service')) {
+            $query->whereHas('service', function ($serviceQuery) use ($request) {
+                $serviceQuery->where('name', 'like', '%' . $request->service . '%');
+            });
+        }
+
+        $quantityDirection = $request->input('quantity_filter');
+        if (in_array($quantityDirection, ['min', 'max'], true)) {
+            $query->orderBy('amount', $quantityDirection === 'min' ? 'asc' : 'desc');
+        } else {
+            $query->latest('id');
+        }
+
+        $orders = $query
+            ->paginate($request->input('size', 25))
+            ->appends($request->all());
+
+        return view('lot.traceability.index', compact('lot', 'orders'));
+    }
 }

@@ -1,11 +1,11 @@
 @extends('layouts.app')
 @section('content')
+    @include('components.page-header', [
+        'title' => 'CONSUMOS EN ORDENES',
+        'icon' => 'bi-clipboard-data',
+    ])
+
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <span class="text-black fw-bold fs-4">
-                CONSUMOS EN ORDENES
-            </span>
-        </div>
         <div class="m-3">
             <table class="table table-bordered table-striped table-sm align-middle caption-top">
                 <caption class="border rounded-top p-2 text-dark bg-white">

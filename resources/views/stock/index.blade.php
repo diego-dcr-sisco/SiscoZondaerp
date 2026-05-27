@@ -18,21 +18,58 @@
 
     {{-- @include('dashboard.stock.navigation') --}}
 
-    <div class="container-fluid ">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <span class="text-black fw-bold fs-4">
-                LISTA DE ALMACENES
-            </span>
-        </div>
-        <div class="d-flex flex-row justify-content-between align-items-center py-3">
+    @include('components.page-header', [
+        'title' => 'LISTA DE ALMACENES',
+        'icon' => 'bi-building',
+    ])
+
+    <div class="container-fluid">
+        <div class="py-3">
             @can('write_warehouse')
                 <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
                     <i class="bi bi-plus-lg fw-bold"></i> Crear almacén
                 </button>
             @endcan
-            <div class="col-md-6 col-lg-4">
-                <input type="text" id="warehouseSearch" class="form-control border-success"
-                    placeholder="Buscar almacén por nombre...">
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                    <h5 class="card-title fw-bold mb-0">
+                        <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
+                    </h5>
+                    <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
+                        data-bs-target=".stock-search-collapse" aria-expanded="false"
+                        aria-controls="stockSearchFilters">
+                        <i class="bi bi-caret-down-fill"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="card-body collapse stock-search-collapse" id="stockSearchFilters">
+                <div class="row g-3 mb-3">
+                    <div class="col-lg-4 col-sm-6 col-12">
+                        <label for="warehouseSearch" class="form-label">Almacén</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text"><i class="bi bi-building"></i></span>
+                            <input type="text" id="warehouseSearch" class="form-control"
+                                placeholder="Buscar almacén por nombre...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer collapse stock-search-collapse">
+                <div class="row justify-content-end">
+                    <div class="col-lg-1 col-6">
+                        <button type="button" class="btn btn-primary btn-sm w-100" id="warehouseSearchButton">
+                            <i class="bi bi-funnel-fill"></i> Filtrar
+                        </button>
+                    </div>
+                    <div class="col-lg-1 col-6">
+                        <button type="button" class="btn btn-secondary btn-sm w-100" id="warehouseSearchClear">
+                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="overflow-auto w-100">
@@ -420,8 +457,11 @@
         // Buscar almacén por nombre
         document.addEventListener('DOMContentLoaded', function() {
             const searchInput = document.getElementById('warehouseSearch');
-            searchInput.addEventListener('input', function() {
-                const filter = this.value.toLowerCase();
+            const searchButton = document.getElementById('warehouseSearchButton');
+            const clearButton = document.getElementById('warehouseSearchClear');
+
+            function filterWarehouses() {
+                const filter = searchInput.value.toLowerCase();
                 document.querySelectorAll('.warehouse-row').forEach(function(row) {
                     const nameCell = row.querySelector('.fw-semibold.text-dark');
                     if (nameCell) {
@@ -433,6 +473,13 @@
                         }
                     }
                 });
+            }
+
+            searchInput.addEventListener('input', filterWarehouses);
+            searchButton.addEventListener('click', filterWarehouses);
+            clearButton.addEventListener('click', function() {
+                searchInput.value = '';
+                filterWarehouses();
             });
         });
     </script>

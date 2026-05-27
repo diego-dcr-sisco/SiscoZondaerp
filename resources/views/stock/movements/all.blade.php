@@ -1,11 +1,11 @@
 @extends('layouts.app')
 @section('content')
+    @include('components.page-header', [
+        'title' => 'MOVIMIENTOS EN LOS ALMACENES',
+        'icon' => 'bi-arrow-left-right',
+    ])
+
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <span class="text-black fw-bold fs-4">
-                MOVIMIENTOS EN LOS ALMACENES
-            </span>
-        </div>
         <div class="m-3">
             <table class="table table-bordered table-hover table-sm align-middle caption-top">
                 <caption class="border rounded-top p-2 text-dark bg-white">

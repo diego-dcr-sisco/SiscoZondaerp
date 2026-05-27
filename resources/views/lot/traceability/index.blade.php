@@ -1,105 +1,136 @@
 @extends('layouts.app')
 @section('content')
-<div class="container-fluid p-0">
+    @include('components.page-header', [
+        'title' => 'TRAZABILIDAD DEL LOTE ' . $lot->registration_number,
+        'icon' => 'bi-truck',
+    ])
 
-    
-    <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="#" onclick="history.back(); return false;" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <h1 class="col-auto fs-2 fw-bold m-0">{{ $lot->registration_number }}</h1>
-    </div>
-    <div class="overflow-auto w-100">
-        <table class="table table-bordered table-striped table-sm">
-            <caption class="border rounded-top p-2 text-dark bg-white caption-top">
-                <form action="{{ route('order.search') }}" method="GET">
-                    @csrf
-                    <div class="row g-3 mb-0">
-                        <div class="col-lg-3 col-md-6 col-12">
-                            <label for="order_id" class="form-label">ID Orden</label>
-                            <input type="text" class="form-control form-control-sm" name="order_id" value="{{ request('order_id') }}"/>
+    <div class="container-fluid">
+        <form action="{{ route('lot.traceability', $lot->id) }}" method="GET" class="mb-3">
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <h5 class="card-title fw-bold mb-0">
+                            <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
+                        </h5>
+                        <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
+                            data-bs-target=".traceability-search-collapse" aria-expanded="false"
+                            aria-controls="traceabilitySearchFilters traceabilitySearchFooter">
+                            <i class="bi bi-caret-down-fill"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body collapse traceability-search-collapse" id="traceabilitySearchFilters">
+                    <div class="row g-3 mb-3">
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="order_id" class="form-label">Orden</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-file-earmark-text"></i></span>
+                                <input type="text" class="form-control" id="order_id" name="order_id"
+                                    value="{{ request('order_id') }}" placeholder="ID o folio de orden">
+                            </div>
                         </div>
 
-                        <div class="col-lg-3 col-md-6 col-12">
+                        <div class="col-lg-3 col-sm-6 col-12">
                             <label for="service" class="form-label">Servicio</label>
-                            <input type="text" class="form-control form-control-sm" name="service" value="{{ request('service') }}"/>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-briefcase-fill"></i></span>
+                                <input type="text" class="form-control" id="service" name="service"
+                                    value="{{ request('service') }}" placeholder="Buscar servicio">
+                            </div>
                         </div>
 
-                        <div class="col-lg-3 col-md-6 col-12">
-                            <label for="quantity" class="form-label">Cantidad</label>
-                            <select class="form-select form-select-sm" name="quantity_filter">
-                                <option value="">Todos</option>
-                                <option value="min" {{ request('quantity_filter') == 'min' ? 'selected' : '' }}>Mínimo</option>
-                                <option value="max" {{ request('quantity_filter') == 'max' ? 'selected' : '' }}>Máximo</option>
-                            </select>
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="quantity_filter" class="form-label">Cantidad</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-sort-numeric-down"></i></span>
+                                <select class="form-select" id="quantity_filter" name="quantity_filter">
+                                    <option value="">Todos</option>
+                                    <option value="min" {{ request('quantity_filter') == 'min' ? 'selected' : '' }}>
+                                        Minimo
+                                    </option>
+                                    <option value="max" {{ request('quantity_filter') == 'max' ? 'selected' : '' }}>
+                                        Maximo
+                                    </option>
+                                </select>
+                            </div>
                         </div>
 
-                        <div class="col-lg-3 col-md-6 col-12">
-                            <label for="size" class="form-label">Registros por página</label>
-                            <select class="form-select form-select-sm" id="size" name="size">
-                                <option value="10" {{ request('size') == 10 ? 'selected' : '' }}>10</option>
-                                <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
-                                <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
-                                <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
-                            </select>
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="size" class="form-label">Mostrar</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-list-ol"></i></span>
+                                <select class="form-select" id="size" name="size">
+                                    <option value="10" {{ request('size') == 10 ? 'selected' : '' }}>10</option>
+                                    <option value="25" {{ request('size', 25) == 25 ? 'selected' : '' }}>25</option>
+                                    <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
+                                    <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
+                                </select>
+                            </div>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Botones -->
-                        <div class="col-lg-12 d-flex justify-content-end m-0 mt-3">
-                            <button type="submit" class="btn btn-primary btn-sm me-2">
+                <div class="card-footer collapse traceability-search-collapse" id="traceabilitySearchFooter">
+                    <div class="row justify-content-end">
+                        <div class="col-lg-1 col-6">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
                                 <i class="bi bi-funnel-fill"></i> Filtrar
                             </button>
-                            <a href="{{ route('order.index') }}" class="btn btn-outline-secondary btn-sm">
-                                <i class="bi bi-arrow-clockwise"></i> Limpiar
+                        </div>
+                        <div class="col-lg-1 col-6">
+                            <a href="{{ route('lot.traceability', $lot->id) }}" class="btn btn-secondary btn-sm w-100">
+                                <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                             </a>
                         </div>
                     </div>
-                </form>
-            </caption>
-            <thead>
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Cliente</th>
-                    <th scope="col">Servicio</th>
-                    <th scope="col">Método de aplicación</th>
-                    <th scope="col">Cantidad</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($orders as $index => $order)
+                </div>
+            </div>
+        </form>
+
+        <div class="overflow-auto w-100">
+            <table class="table table-bordered table-striped table-sm align-middle">
+                <thead>
                     <tr>
-                        <th scope="row">{{ $index + 1 }}</th>
-                        <td class="fw-bold">{{ $order->order->customer->name ?? 'N/A' }}</td>
-                        <td>{{ $order->service->name ?? 'N/A' }}</td>
-                        <td>{{ $order->appMethod->name ?? '-' }}</td>
-                        <td>{{ $order->amount ?? '-' }}</td>
+                        <th scope="col">#</th>
+                        <th scope="col">Orden</th>
+                        <th scope="col">Cliente</th>
+                        <th scope="col">Servicio</th>
+                        <th scope="col">Metodo de aplicacion</th>
+                        <th scope="col">Cantidad</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-    <div class="d-flex justify-content-between align-items-center mt-3">
-        {{-- <div class="text-muted">
-            Mostrando {{ $orders->firstItem() }} - {{ $orders->lastItem() }} de {{ $orders->total() }} registros
-        </div> --}}
-        
-    </div>
-</div>
+                </thead>
+                <tbody>
+                    @forelse ($orders as $index => $order)
+                        <tr>
+                            <th scope="row">{{ $orders->firstItem() + $index }}</th>
+                            <td class="fw-bold text-primary">
+                                {{ $order->order->folio ?? $order->order->id ?? '-' }}
+                            </td>
+                            <td class="fw-bold">{{ $order->order->customer->name ?? 'N/A' }}</td>
+                            <td>{{ $order->service->name ?? 'N/A' }}</td>
+                            <td>{{ $order->appMethod->name ?? '-' }}</td>
+                            <td>
+                                {{ $order->amount ?? '-' }}
+                                <span class="text-muted">{{ $order->metric->value ?? '' }}</span>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="empty-state">
+                                    <i class="bi bi-truck text-muted fs-1 mb-3"></i>
+                                    <h5 class="text-muted">Sin trazabilidad para mostrar</h5>
+                                    <p class="text-muted mb-0">No se encontraron consumos asociados a este lote.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
 
-<style>
-    .table-hover tbody tr:hover {
-        background-color: rgba(52, 152, 219, 0.1);
-    }
-    .badge {
-        font-size: 0.85em;
-    }
-    .caption-top {
-        background-color: #f8f9fa !important;
-    }
-</style>
-
-<script>
-    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
-    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
-</script>
+        {{ $orders->links('pagination::bootstrap-5') }}
+    </div>
 @endsection

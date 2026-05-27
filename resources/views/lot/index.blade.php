@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('content')
     @php
-         if (!function_exists('stockLevel')) {
+        if (!function_exists('stockLevel')) {
             function stockLevel($total, $current)
             {
                 // Evitar división por cero y manejar $total o $current igual a 0
@@ -25,14 +25,14 @@
         }
     @endphp
 
+    @include('components.page-header', [
+        'title' => 'LOTES DE PRODUCTOS',
+        'icon' => 'bi-box-seam',
+    ])
+
     <div class="container-fluid">
-        <div class="d-flex align-items-center border-bottom p-2">
-            <span class="text-black fw-bold fs-4">
-                LOTES DE PRODUCTOS
-            </span>
-        </div>
         <div class="py-3">
-            @if(auth()->user()->work_department_id == 1 || auth()->user()->work_department_id == 5)
+            @if (auth()->user()->work_department_id == 1 || auth()->user()->work_department_id == 5)
                 <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createLotModal">
                     <i class="bi bi-plus-lg fw-bold"></i> Crear lote
                 </button>
@@ -42,84 +42,88 @@
             @endif
         </div>
 
-        @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
+        <form action="{{ route('lot.index') }}" method="GET" class="mb-3">
+            @csrf
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <h5 class="card-title fw-bold mb-0">
+                            <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
+                        </h5>
+                        <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
+                            data-bs-target=".lot-search-collapse" aria-expanded="false"
+                            aria-controls="lotSearchFilters lotSearchFooter">
+                            <i class="bi bi-caret-down-fill"></i>
+                        </button>
+                    </div>
+                </div>
 
-        @if (session('error'))
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
-        @if (session('lot_import_errors'))
-            <div class="alert alert-warning" role="alert">
-                <div class="fw-bold mb-1">Filas omitidas</div>
-                <ul class="mb-0">
-                    @foreach (session('lot_import_errors') as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-        
-
-        <div class="overflow-auto w-100">
-            <table class="table table-bordered table-striped table-sm align-middle caption-top">
-                <caption class="border rounded-top p-2 text-dark bg-white">
-                    <form action="{{ route('lot.index') }}" method="GET">
-                        @csrf
-                        <div class="row g-3 mb-0">
-                            <div class="col-lg-4 col-12">
-                                <label for="customer" class="form-label">No de lote</label>
-                                <input type="text" class="form-control form-control-sm" id="registration_number"
+                <div class="card-body collapse lot-search-collapse" id="lotSearchFilters">
+                    <div class="row g-3 mb-3">
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="registration_number" class="form-label">No de lote</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+                                <input type="text" class="form-control" id="registration_number"
                                     name="registration_number" value="{{ request('registration_number') }}"
-                                    placeholder="Buscar por número de registro del lote">
+                                    placeholder="Buscar lote">
                             </div>
+                        </div>
 
-                            <div class="col-lg-4 col-12">
-                                <label for="customer" class="form-label">Almacén</label>
-                                <select class="form-select form-select-sm" id="warehouse" name="warehouse">
-                                    <option value="">Todos los almacenes</option>
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="warehouse" class="form-label">Almacen</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-building"></i></span>
+                                <select class="form-select" id="warehouse" name="warehouse">
+                                    <option value="">Todos</option>
                                     @foreach ($warehouses as $warehouse)
                                         <option value="{{ $warehouse->id }}"
                                             {{ request('warehouse') == $warehouse->id ? 'selected' : '' }}>
-                                            {{ $warehouse->name }}</option>
+                                            {{ $warehouse->name }}
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
+                        </div>
 
-                            <div class="col-lg-4 col-12">
-                                <label for="customer" class="form-label">Producto</label>
-                                <input type="text" class="form-control form-control-sm" id="product" name="product"
-                                    value="{{ request('product') }}" placeholder="Buscar por el nombre del producto">
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="product" class="form-label">Producto</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
+                                <input type="text" class="form-control" id="product" name="product"
+                                    value="{{ request('product') }}" placeholder="Buscar producto">
                             </div>
+                        </div>
 
-                            <div class="col-auto">
-                                <label for="signature_status" class="form-label">Dirección</label>
-                                <select class="form-select form-select-sm" id="direction" name="direction">
-                                    <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>DESC
-                                    </option>
-                                    <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
-                                    </option>
-                                </select>
-                            </div>
-
-                            <div class="col-auto">
-                                <label for="status" class="form-label">Estado</label>
-                                <select class="form-select form-select-sm" id="status" name="status">
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="status" class="form-label">Estado</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-toggle-on"></i></span>
+                                <select class="form-select" id="status" name="status">
                                     <option value="" {{ request('status') === null ? 'selected' : '' }}>Todos</option>
-                                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Activos</option>
-                                    <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactivos</option>
+                                    <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>
+                                        Activos
+                                    </option>
+                                    <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>
+                                        Inactivos
+                                    </option>
                                 </select>
                             </div>
+                        </div>
 
-                            <div class="col-auto">
-                                <label for="order_type" class="form-label">Total</label>
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="direction" class="form-label">Ordenar / Mostrar</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-arrow-down-up"></i></span>
+                                <select class="form-select form-select-sm" id="direction" name="direction">
+                                    <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
+                                        DESC
+                                    </option>
+                                    <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>
+                                        ASC
+                                    </option>
+                                </select>
+                                <span class="input-group-text"><i class="bi bi-list-ol"></i></span>
                                 <select class="form-select form-select-sm" id="size" name="size">
                                     <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
                                     <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
@@ -128,17 +132,29 @@
                                     <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
                                 </select>
                             </div>
-
-                            <!-- Botones -->
-                            <div class="col-12 d-flex justify-content-end m-0">
-                                <button type="submit" class="btn btn-primary btn-sm me-2">
-                                    <i class="bi bi-funnel-fill"></i> Filtrar
-                                </button>
-
-                            </div>
                         </div>
-                    </form>
-                </caption>
+                    </div>
+                </div>
+
+                <div class="card-footer collapse lot-search-collapse" id="lotSearchFooter">
+                    <div class="row justify-content-end">
+                        <div class="col-lg-1 col-6">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="bi bi-funnel-fill"></i> Filtrar
+                            </button>
+                        </div>
+                        <div class="col-lg-1 col-6">
+                            <a href="{{ route('lot.index') }}" class="btn btn-secondary btn-sm w-100">
+                                <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <div class="overflow-auto w-100">
+            <table class="table table-bordered table-striped table-sm align-middle">
                 <thead>
                     <tr>
                         <th scope="col">#</th>
@@ -256,10 +272,9 @@
 
                             <!-- Acciones -->
                             <td>
-                                <a class="btn btn-info btn-sm"
-                                    href="{{ route('lot.traceability', $lot->id) }}"
-                                    title="Ver">
-                                    <i class="bi bi-eye-fill"></i>
+                                <a class="btn btn-dark btn-sm" href="{{ route('lot.traceability', $lot->id) }}"
+                                    title="Trazabilidad del lote">
+                                    <i class="bi bi-truck"></i>
                                 </a>
                                 <a href="{{ route('lot.edit', $lot->id) }}" class="btn btn-secondary btn-sm"
                                     title="Editar lote">
@@ -326,9 +341,11 @@
 
     @include('lot.create.modals.create')
 
-    <div class="modal fade" id="importLotsModal" tabindex="-1" aria-labelledby="importLotsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="importLotsModal" tabindex="-1" aria-labelledby="importLotsModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
-            <form class="modal-content" action="{{ route('lot.import') }}" method="POST" enctype="multipart/form-data">
+            <form class="modal-content" action="{{ route('lot.import') }}" method="POST"
+                enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="importLotsModalLabel">Importar lotes desde Excel</h5>
@@ -356,8 +373,8 @@
 
                     <div class="mb-3">
                         <label class="form-label" for="lot-import-amount">Cantidad inicial para lotes nuevos</label>
-                        <input type="number" class="form-control" id="lot-import-amount" name="amount"
-                            min="0" step="0.01" value="0">
+                        <input type="number" class="form-control" id="lot-import-amount" name="amount" min="0"
+                            step="0.01" value="0">
                         <div class="form-text">
                             Usa 0 si solo quieres registrar lotes sin afectar stock.
                         </div>
