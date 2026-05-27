@@ -74,9 +74,11 @@ class StockController extends Controller
         $metrics = Metric::all();
         $navigation = $this->navigation;
 
-        $warehouses = Warehouse::orderBy('branch_id', 'asc')
-            ->orderBy('is_matrix', 'desc')
-            ->orderBy('name', 'asc')
+        $warehouses = Warehouse::leftJoin('branch', 'warehouse.branch_id', '=', 'branch.id')
+            ->select('warehouse.*')
+            ->orderBy('branch.name', 'asc')
+            ->orderBy('warehouse.is_matrix', 'desc')
+            ->orderBy('warehouse.name', 'asc')
             ->get();
 
         foreach ($warehouses as $warehouse) {
