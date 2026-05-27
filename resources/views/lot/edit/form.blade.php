@@ -36,7 +36,7 @@
         <div class="col-2 mb-3">
             <label class="form-label" for="expiration-date">Fecha de expiración</label>
             <input type="date" class="form-control" id="expiration-date" name="expiration_date"
-                value="{{ $lot->expiration_date }}" onchange="syncLotEndDate(this.value)">
+                value="{{ $lot->expiration_date }}">
         </div>
 
         <div class="col-2 mb-3">
@@ -45,11 +45,6 @@
                 value="{{ $lot->start_date }}" required>
         </div>
 
-        <div class="col-2 mb-3">
-            <label for="end-date" class="form-label is-required">Fin de uso / expiración</label>
-            <input type="date" class="form-control" name="end_date" id="end-date"
-                value="{{ $lot->end_date ?: $lot->expiration_date }}" required>
-        </div>
         <div class="col-auto mb-3">
             <input type="hidden" name="is_active" value="0">
             <div class="form-check mt-4">
@@ -64,9 +59,3 @@
 
     <button type="submit" class="btn btn-primary my-3">{{ __('buttons.update') }}</button>
 </form>
-
-<script>
-    function syncLotEndDate(value) {
-        document.getElementById('end-date').value = value;
-    }
-</script>

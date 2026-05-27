@@ -72,16 +72,7 @@
 
                     <div class="col-lg-6 col-12 mb-3">
                         <label for="expiration_date" class="form-label">Fecha de expiración</label>
-                        <input type="date" class="form-control" name="expiration_date" id="expiration_date"
-                            onchange="syncLotEndDate(this.value)">
-                    </div>
-
-                    <div class="col-lg-6 col-12 mb-3">
-                        <label for="end_date" class="form-label">Fin de uso / fecha de expiración</label>
-                        <input type="date" class="form-control" name="end_date" id="end_date">
-                        <div class="form-text">
-                            Se llena con la fecha de expiración; puedes ajustarla si el lote debe dejar de usarse antes.
-                        </div>
+                        <input type="date" class="form-control" name="expiration_date" id="expiration_date">
                     </div>
 
                     <div class="col-lg-6 col-12 mb-3">
@@ -147,10 +138,6 @@
             var metric = metrics.find(item => item.id == product.metric_id);
             $('#metric').val(product.metric_id);
         }
-    }
-
-    function syncLotEndDate(value) {
-        $('#end_date').val(value);
     }
 
     function searchProducts(query) {
