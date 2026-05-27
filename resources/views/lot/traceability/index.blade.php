@@ -120,64 +120,88 @@
                                     ->values();
                             @endphp
 
-                            <div class="traceability-node">
-                                <div class="traceability-node-marker">
-                                    {{ $loop->iteration }}
-                                </div>
-                                <div class="traceability-node-card">
-                                    <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                                        <div class="fw-bold text-primary">
+                            <div class="traceability-node card">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center gap-2">
+                                        <h6 class="card-title fw-bold mb-0">
+                                            <i class="bi bi-circle-fill text-primary"></i>
                                             Nodo {{ $loop->iteration }}
-                                        </div>
-                                        <span class="badge bg-light text-dark border">
+                                        </h6>
+                                        <div class="small text-muted">
                                             {{ $createdAt ? \Carbon\Carbon::parse($createdAt)->format('d/m/Y H:i') : '-' }}
-                                        </span>
+                                        </div>
                                     </div>
+                                </div>
 
+                                <div class="card-body">
                                     <div class="row g-2">
                                         <div class="col-lg-3 col-sm-6 col-12">
-                                            <div class="small text-muted">Cantidad</div>
-                                            <div class="fw-semibold">
-                                                {{ number_format($items->sum('amount'), 2) }}
-                                                <span class="text-muted">{{ $metric }}</span>
+                                            <label class="form-label">Cantidad</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
+                                                <div class="form-control bg-light">
+                                                    {{ number_format($items->sum('amount'), 2) }}
+                                                    <span class="text-muted">{{ $metric }}</span>
+                                                </div>
                                             </div>
                                         </div>
+
                                         <div class="col-lg-3 col-sm-6 col-12">
-                                            <div class="small text-muted">Cliente</div>
-                                            <div class="fw-semibold">{{ $nodeOrder->customer->name ?? 'N/A' }}</div>
+                                            <label class="form-label">Cliente</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                                <div class="form-control bg-light">
+                                                    {{ $nodeOrder->customer->name ?? 'N/A' }}
+                                                </div>
+                                            </div>
                                         </div>
+
                                         <div class="col-lg-3 col-sm-6 col-12">
-                                            <div class="small text-muted">Order</div>
-                                            <div class="fw-semibold">{{ $nodeOrder->folio ?? $nodeOrder->id ?? '-' }}</div>
+                                            <label class="form-label">Order</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="bi bi-file-earmark-text"></i></span>
+                                                <div class="form-control bg-light">
+                                                    {{ $nodeOrder->folio ?? $nodeOrder->id ?? '-' }}
+                                                </div>
+                                            </div>
                                         </div>
+
                                         <div class="col-lg-3 col-sm-6 col-12">
-                                            <div class="small text-muted">Creado en</div>
-                                            <div class="fw-semibold">
-                                                {{ $createdAt ? \Carbon\Carbon::parse($createdAt)->format('d/m/Y H:i') : '-' }}
+                                            <label class="form-label">Creado en</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
+                                                <div class="form-control bg-light">
+                                                    {{ $createdAt ? \Carbon\Carbon::parse($createdAt)->format('d/m/Y H:i') : '-' }}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div class="row g-2 mt-2">
+                                    <div class="row g-2 mt-1">
                                         <div class="col-lg-6 col-12">
-                                            <div class="small text-muted">Servicio(s)</div>
-                                            @forelse ($services as $service)
-                                                <div class="traceability-list-item">
-                                                    <i class="bi bi-chevron-right"></i> {{ $service }}
-                                                </div>
-                                            @empty
-                                                <div class="text-muted">-</div>
-                                            @endforelse
+                                            <label class="form-label">Servicio(s)</label>
+                                            <div class="traceability-list-box">
+                                                @forelse ($services as $service)
+                                                    <div class="traceability-list-item">
+                                                        <i class="bi bi-chevron-right"></i> {{ $service }}
+                                                    </div>
+                                                @empty
+                                                    <div class="text-muted">-</div>
+                                                @endforelse
+                                            </div>
                                         </div>
+
                                         <div class="col-lg-6 col-12">
-                                            <div class="small text-muted">Metodo de aplicacion</div>
-                                            @forelse ($methods as $method)
-                                                <div class="traceability-list-item">
-                                                    <i class="bi bi-chevron-right"></i> {{ $method }}
-                                                </div>
-                                            @empty
-                                                <div class="text-muted">-</div>
-                                            @endforelse
+                                            <label class="form-label">Metodo de aplicacion</label>
+                                            <div class="traceability-list-box">
+                                                @forelse ($methods as $method)
+                                                    <div class="traceability-list-item">
+                                                        <i class="bi bi-chevron-right"></i> {{ $method }}
+                                                    </div>
+                                                @empty
+                                                    <div class="text-muted">-</div>
+                                                @endforelse
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -193,115 +217,38 @@
             </div>
         </div>
 
-        <div class="overflow-auto w-100">
-            <table class="table table-bordered table-striped table-sm align-middle">
-                <thead>
-                    <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Orden</th>
-                        <th scope="col">Cliente</th>
-                        <th scope="col">Servicio</th>
-                        <th scope="col">Metodo de aplicacion</th>
-                        <th scope="col">Cantidad</th>
-                        <th scope="col">Fecha</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($orders as $index => $order)
-                        @php
-                            $traceabilityDate = $order->order->completed_date
-                                ?? $order->order->programmed_date
-                                ?? $order->order->created_at
-                                ?? null;
-                        @endphp
-                        <tr>
-                            <th scope="row">{{ $orders->firstItem() + $index }}</th>
-                            <td class="fw-bold text-primary">
-                                {{ $order->order->folio ?? $order->order->id ?? '-' }}
-                            </td>
-                            <td class="fw-bold">{{ $order->order->customer->name ?? 'N/A' }}</td>
-                            <td>{{ $order->service->name ?? 'N/A' }}</td>
-                            <td>{{ $order->appMethod->name ?? '-' }}</td>
-                            <td>
-                                {{ $order->amount ?? '-' }}
-                                <span class="text-muted">{{ $order->metric->value ?? '' }}</span>
-                            </td>
-                            <td>
-                                {{ $traceabilityDate ? \Carbon\Carbon::parse($traceabilityDate)->format('d/m/Y') : '-' }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="text-center py-5">
-                                <div class="empty-state">
-                                    <i class="bi bi-truck text-muted fs-1 mb-3"></i>
-                                    <h5 class="text-muted">Sin trazabilidad para mostrar</h5>
-                                    <p class="text-muted mb-0">No se encontraron consumos asociados a este lote.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
         {{ $orders->links('pagination::bootstrap-5') }}
     </div>
 
     <style>
         .traceability-flow {
-            position: relative;
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            padding-left: 1.75rem;
-        }
-
-        .traceability-flow::before {
-            content: "";
-            position: absolute;
-            top: 1rem;
-            bottom: 1rem;
-            left: 0.75rem;
-            width: 2px;
-            background: #dee2e6;
         }
 
         .traceability-node {
-            position: relative;
-            display: flex;
-            gap: 1rem;
-            align-items: flex-start;
-        }
-
-        .traceability-node-marker {
-            position: absolute;
-            left: -1.75rem;
-            width: 1.5rem;
-            height: 1.5rem;
-            border-radius: 50%;
-            background: var(--bs-primary);
-            color: #fff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.75rem;
-            font-weight: 700;
-            z-index: 1;
-        }
-
-        .traceability-node-card {
-            width: 100%;
-            border: 1px solid #dee2e6;
             border-radius: 0.375rem;
-            background: #fff;
-            padding: 1rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .traceability-node .form-control {
+            min-height: 31px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .traceability-list-box {
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            background: #f8f9fa;
+            min-height: 31px;
+            padding: 0.25rem 0.5rem;
         }
 
         .traceability-list-item {
-            font-weight: 600;
-            line-height: 1.6;
+            font-size: 0.875rem;
+            line-height: 1.5;
         }
     </style>
 @endsection
