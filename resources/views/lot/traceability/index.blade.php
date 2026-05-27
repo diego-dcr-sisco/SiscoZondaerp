@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('content')
     @include('components.page-header', [
-        'title' => 'TRAZABILIDAD DEL LOTE ' . $lot->registration_number,
+        'title' => 'TRAZABILIDAD DEL LOTE ' . $lot->registration_number . ' - ' . ($lot->product->name ?? 'Producto desconocido'),
         'icon' => 'bi-truck',
     ])
 
