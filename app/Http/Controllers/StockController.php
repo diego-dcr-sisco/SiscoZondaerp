@@ -77,7 +77,7 @@ class StockController extends Controller
         $warehouses = Warehouse::leftJoin('branch', 'warehouse.branch_id', '=', 'branch.id')
             ->select('warehouse.*')
             ->orderBy('warehouse.is_matrix', 'desc')
-            ->orderBy('branch.name', 'asc')
+            ->orderBy('branch.id', 'asc')
             ->orderBy('warehouse.name', 'asc')
             ->get();
 
