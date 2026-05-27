@@ -237,6 +237,17 @@
                                     title="Editar lote">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
+                                <form action="{{ route('lot.toggle-active', $lot->id) }}" method="POST"
+                                    class="d-inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit"
+                                        class="btn btn-{{ $lot->is_active ? 'warning' : 'success' }} btn-sm"
+                                        title="{{ $lot->is_active ? 'No mostrar lote' : 'Mostrar lote' }}"
+                                        onclick="return confirm('{{ $lot->is_active ? '¿Quieres ocultar este lote para que ya no pueda seleccionarse?' : '¿Quieres volver a mostrar este lote?' }}')">
+                                        <i class="bi bi-{{ $lot->is_active ? 'eye-slash-fill' : 'eye-fill' }}"></i>
+                                    </button>
+                                </form>
                                 <button type="button" class="btn btn-danger btn-sm"
                                     onclick="confirmDelete({{ $lot->id }}, '{{ $lot->registration_number }}')"
                                     title="Eliminar lote">

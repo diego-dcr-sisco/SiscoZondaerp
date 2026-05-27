@@ -36,16 +36,19 @@ class LotController extends Controller
     {
         // dd($request->all());
         $navigation = $this->navigation;
-        $query = Lot::query()->with(['product', 'warehouse']);
+        $query = Lot::query()
+            ->with(['product', 'warehouse'])
+            ->leftJoin('product_catalog', 'lot.product_id', '=', 'product_catalog.id')
+            ->select('lot.*');
 
         // Filtro por número de lote (registration_number)
         if ($request->filled('registration_number')) {
-            $query->where('registration_number', 'like', '%' . $request->registration_number . '%');
+            $query->where('lot.registration_number', 'like', '%' . $request->registration_number . '%');
         }
 
         // Filtro por almacén
         if ($request->filled('warehouse')) {
-            $query->where('warehouse_id', $request->warehouse);
+            $query->where('lot.warehouse_id', $request->warehouse);
         }
 
         // Filtro por producto (nombre)
@@ -56,7 +59,7 @@ class LotController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
+            $query->where('lot.is_active', $request->status === 'active');
         }
 
         // Filtro de orden (direction)
@@ -64,7 +67,9 @@ class LotController extends Controller
         if (!in_array($direction, ['ASC', 'DESC'])) {
             $direction = 'DESC';
         }
-        $query->orderBy('created_at', $direction);
+        $query->orderBy('product_catalog.name', $direction)
+            ->orderBy('lot.registration_number', $direction)
+            ->orderBy('lot.created_at', $direction);
 
         // Filtro de tamaño de página (size)
         $size = $request->input('size', 50);
@@ -84,6 +89,7 @@ class LotController extends Controller
                 ->where('name', 'like', '%' . $request->q . '%')
                 //->orWhere('code', 'like', '%' . $request->q . '%')
                 ->select(['id', 'name'])
+                ->orderBy('name', 'asc')
                 //->limit(15)
                 ->get();
 
@@ -136,7 +142,7 @@ class LotController extends Controller
     {
         $lot = Lot::findOrFail($id);
         $navigation = $this->navigation;
-        $products = ProductCatalog::all();
+        $products = ProductCatalog::orderBy('name', 'asc')->get();
         $warehouses = Warehouse::where('allow_material_receipts', true)->where('is_active', true)->get();
 
         return view('lot.edit', compact('lot', 'products', 'warehouses', 'navigation'));
@@ -151,6 +157,19 @@ class LotController extends Controller
         $lot->save();
 
         return redirect()->route('lot.index')->with('success', 'Lote actualizado satisfactoriamente')->with('navigation', $navigation);
+    }
+
+    public function toggleActive($id)
+    {
+        $lot = Lot::findOrFail($id);
+        $lot->is_active = !$lot->is_active;
+        $lot->save();
+
+        $message = $lot->is_active
+            ? 'Lote activado satisfactoriamente'
+            : 'Lote ocultado satisfactoriamente';
+
+        return back()->with('success', $message);
     }
 
     public function show($id)
@@ -177,6 +196,7 @@ class LotController extends Controller
         $lots = Lot::active()
             ->where('product_id', $productId)
             ->where('warehouse_id', $warehouseId)
+            ->orderBy('registration_number', 'asc')
             ->get();
 
         return response()->json($lots);

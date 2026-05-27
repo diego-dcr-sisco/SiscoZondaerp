@@ -295,6 +295,7 @@ Route::prefix('lot')
         Route::post('/store', [LotController::class, 'store'])->name('store');
         Route::get('/{id}/edit', [LotController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [LotController::class, 'update'])->name('update');
+        Route::patch('/{id}/toggle-active', [LotController::class, 'toggleActive'])->name('toggle-active');
         Route::get('/show/{id}', [LotController::class, 'show'])->name('show');
         Route::get('/destroy/{id}', [LotController::class, 'destroy'])->name('destroy');
         Route::get('/search', [LotController::class, 'search'])->name('search');

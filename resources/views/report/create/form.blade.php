@@ -607,32 +607,46 @@
     window.getRecommendationEditorHtml = getRecommendationEditorHtml;
     window.setRecommendationEditorHtml = setRecommendationEditorHtml;
 
+    function setReportChangeStatus(selector, state, text) {
+        const status = $(selector);
+
+        if (!status.length) {
+            return;
+        }
+
+        status.removeClass('is-saving is-saved is-error');
+
+        if (state) {
+            status.addClass(state);
+        }
+
+        status.text(text);
+    }
+
     function triggerReportEditorChange(editorId) {
         const editor = document.getElementById(editorId);
         if (!editor) {
             return;
         }
 
-        const autosaveType = $(editor).data('autosave-type');
+        const changeType = $(editor).data('change-type');
         const serviceId = $(editor).data('service-id');
         let statusSelector = null;
 
-        if (autosaveType === 'notes') {
-            statusSelector = '#autosave-status-notes';
+        if (changeType === 'notes') {
+            statusSelector = '#change-status-notes';
         }
 
-        if (autosaveType === 'service' && serviceId) {
-            statusSelector = `#autosave-status-service-${serviceId}`;
+        if (changeType === 'service' && serviceId) {
+            statusSelector = `#change-status-service-${serviceId}`;
         }
 
-        if (autosaveType === 'recommendation' && serviceId) {
-            statusSelector = `#autosave-status-recommendation-${serviceId}`;
+        if (changeType === 'recommendation' && serviceId) {
+            statusSelector = `#change-status-recommendation-${serviceId}`;
         }
 
         if (statusSelector) {
-            $(statusSelector)
-                .removeClass('is-saving is-saved is-error')
-                .text('Cambios sin guardar');
+            setReportChangeStatus(statusSelector, null, 'Cambios sin guardar');
         }
     }
 
@@ -994,6 +1008,7 @@
     });
 
     function updateDescription(service_id) {
+        const statusSelector = `#change-status-service-${service_id}`;
         const rawHtml = getServiceEditorHtml(service_id);
         const normalizedHtml = normalizeImageSizesForPdf(rawHtml);
 
@@ -1015,6 +1030,7 @@
         new_formdata.append('description', JSON.stringify(description));
         new_formdata.append('_token', csrfToken);
 
+        setReportChangeStatus(statusSelector, 'is-saving', 'Guardando...');
         showSpinner();
 
         $.ajax({
@@ -1028,13 +1044,16 @@
             contentType: false,
             success: function(response) {
                 if (response.success) {
+                    setReportChangeStatus(statusSelector, 'is-saved', 'Guardado');
                     alert('Descripción actualizada!');
                 } else {
+                    setReportChangeStatus(statusSelector, 'is-error', 'Error al guardar');
                     alert('Error al actualizar la descripción: ' + response.message);
                 }
             },
             error: function(xhr, status, error) {
                 var errorMsg = 'Error al actualizar la descripción';
+                setReportChangeStatus(statusSelector, 'is-error', 'Error al guardar');
 
                 if (xhr.status === 403) {
                     errorMsg =
@@ -1056,6 +1075,7 @@
     }
 
     function updateNotes() {
+        const statusSelector = '#change-status-notes';
         var notesHtml = getNotesEditorHtml();
         notesHtml = compressBase64Images(notesHtml);
 
@@ -1075,6 +1095,7 @@
         new_formdata.append('notes', JSON.stringify(notes));
         new_formdata.append('_token', csrfToken);
 
+        setReportChangeStatus(statusSelector, 'is-saving', 'Guardando...');
         showSpinner();
 
         $.ajax({
@@ -1089,13 +1110,16 @@
             success: function(response) {
                 if (response.success) {
                     $('#notes').val(notes.text);
+                    setReportChangeStatus(statusSelector, 'is-saved', 'Guardado');
                     alert('Notas actualizada!');
                 } else {
+                    setReportChangeStatus(statusSelector, 'is-error', 'Error al guardar');
                     alert('Error al actualizar las notas: ' + response.message);
                 }
             },
             error: function(xhr, status, error) {
                 var errorMsg = 'Error al actualizar las notas';
+                setReportChangeStatus(statusSelector, 'is-error', 'Error al guardar');
 
                 if (xhr.status === 403) {
                     errorMsg =

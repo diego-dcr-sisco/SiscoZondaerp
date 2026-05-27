@@ -988,7 +988,15 @@ class ReportController extends Controller
     public function destroyProduct(string $dataId)
     {
         $order_product = OrderProduct::find($dataId);
+        if (!$order_product) {
+            return back()->with('warning', 'El producto del reporte ya no existe o ya fue eliminado.');
+        }
+
         $order = Order::find($order_product->order_id);
+        if (!$order) {
+            $order_product->delete();
+            return back()->with('warning', 'La orden asociada ya no existe, se eliminó el producto del reporte.');
+        }
 
         WarehouseOrder::where('order_id', $order_product->order_id)
             ->where('product_id', $order_product->product_id)

@@ -13,10 +13,10 @@
             <i class="bi bi-plus-lg"></i> Agregar revision especial
         </button>
 
-        @if (!empty($devices))
-            <button class="btn btn-warning btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#autoreviewModal">
-                <i class="bi bi-tools"></i> Configurar autorevision
-            </button>
+        @if ($loop->first)
+            <span id="report-unsaved-indicator" class="badge bg-secondary ms-2">
+                Sin cambios pendientes
+            </span>
         @endif
     </div>
 
