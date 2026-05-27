@@ -99,10 +99,17 @@
                         <th scope="col">Servicio</th>
                         <th scope="col">Metodo de aplicacion</th>
                         <th scope="col">Cantidad</th>
+                        <th scope="col">Fecha</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($orders as $index => $order)
+                        @php
+                            $traceabilityDate = $order->order->completed_date
+                                ?? $order->order->programmed_date
+                                ?? $order->order->created_at
+                                ?? null;
+                        @endphp
                         <tr>
                             <th scope="row">{{ $orders->firstItem() + $index }}</th>
                             <td class="fw-bold text-primary">
@@ -115,10 +122,13 @@
                                 {{ $order->amount ?? '-' }}
                                 <span class="text-muted">{{ $order->metric->value ?? '' }}</span>
                             </td>
+                            <td>
+                                {{ $traceabilityDate ? \Carbon\Carbon::parse($traceabilityDate)->format('d/m/Y') : '-' }}
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-5">
+                            <td colspan="7" class="text-center py-5">
                                 <div class="empty-state">
                                     <i class="bi bi-truck text-muted fs-1 mb-3"></i>
                                     <h5 class="text-muted">Sin trazabilidad para mostrar</h5>
