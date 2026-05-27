@@ -113,13 +113,22 @@
         font-family: inherit;
     }
 
+    .smnote.ql-container,
     .smnote .ql-container {
+        height: 300px;
         min-height: 250px;
+        max-height: 75vh;
+        overflow: auto;
+        resize: vertical;
     }
 
+    .smnote.ql-container .ql-editor,
+    .smnote .ql-container .ql-editor,
     .smnote .ql-editor {
+        height: 100%;
         min-height: 250px;
         overflow-x: auto;
+        overflow-y: auto;
     }
 
     .report-table-tools {
