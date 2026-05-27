@@ -63,9 +63,9 @@ class LotController extends Controller
         }
 
         // Filtro de orden (direction)
-        $direction = strtoupper($request->input('direction', 'DESC'));
+        $direction = strtoupper($request->input('direction', 'ASC'));
         if (!in_array($direction, ['ASC', 'DESC'])) {
-            $direction = 'DESC';
+            $direction = 'ASC';
         }
         $query->orderBy('product_catalog.name', $direction)
             ->orderBy('lot.registration_number', $direction)
