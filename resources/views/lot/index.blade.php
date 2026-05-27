@@ -36,8 +36,36 @@
                 <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createLotModal">
                     <i class="bi bi-plus-lg fw-bold"></i> Crear lote
                 </button>
+                <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#importLotsModal">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Importar Excel
+                </button>
             @endif
         </div>
+
+        @if (session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if (session('lot_import_errors'))
+            <div class="alert alert-warning" role="alert">
+                <div class="fw-bold mb-1">Filas omitidas</div>
+                <ul class="mb-0">
+                    @foreach (session('lot_import_errors') as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         
 
         <div class="overflow-auto w-100">
@@ -297,6 +325,62 @@
     @endif
 
     @include('lot.create.modals.create')
+
+    <div class="modal fade" id="importLotsModal" tabindex="-1" aria-labelledby="importLotsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form class="modal-content" action="{{ route('lot.import') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importLotsModalLabel">Importar lotes desde Excel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label is-required" for="lot-import-file">Archivo</label>
+                        <input type="file" class="form-control" id="lot-import-file" name="file"
+                            accept=".xlsx,.xls,.csv,.ods" required>
+                        <div class="form-text">
+                            Encabezados esperados: PRODUCTID, NOMBRE DEL PRODUCTO, REGISTRO SANITARIO,
+                            NUMERO DE LOTE, USO, INGREDIENTE ACTIVO, FECHA DE FABRICACION, FECHA DE CADUCIDAD.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label is-required" for="lot-import-warehouse">Almacén de registro</label>
+                        <select class="form-select" id="lot-import-warehouse" name="warehouse_id" required>
+                            @foreach ($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label" for="lot-import-amount">Cantidad inicial para lotes nuevos</label>
+                        <input type="number" class="form-control" id="lot-import-amount" name="amount"
+                            min="0" step="0.01" value="0">
+                        <div class="form-text">
+                            Usa 0 si solo quieres registrar lotes sin afectar stock.
+                        </div>
+                    </div>
+
+                    <input type="hidden" name="is_active" value="0">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_active" id="lot-import-is-active"
+                            value="1" checked>
+                        <label class="form-check-label" for="lot-import-is-active">
+                            Importar lotes activos para captura
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-upload"></i> Importar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Estilos CSS -->
     <style>

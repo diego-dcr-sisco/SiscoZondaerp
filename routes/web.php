@@ -293,6 +293,7 @@ Route::prefix('lot')
         Route::get('/index', [LotController::class, 'index'])->name('index');
         Route::get('/create', [LotController::class, 'create'])->name('create');
         Route::post('/store', [LotController::class, 'store'])->name('store');
+        Route::post('/import', [LotController::class, 'import'])->name('import');
         Route::get('/{id}/edit', [LotController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [LotController::class, 'update'])->name('update');
         Route::patch('/{id}/toggle-active', [LotController::class, 'toggleActive'])->name('toggle-active');
