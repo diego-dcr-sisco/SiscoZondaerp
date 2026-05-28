@@ -51,12 +51,6 @@
                                                 <i class="bi bi-geo-alt-fill"></i>
                                             </a>
 
-                                            <a href="{{ route('user.destroy', ['id' => $user->id]) }}"
-                                                onclick="return confirm('¿Estás seguro de eliminar este usuario?');"
-                                                class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                                title="Eliminar usuario">
-                                                <i class="bi bi-trash-fill"></i>
-                                            </a>
                                         @endcan
                                     </div>
                                 </td>

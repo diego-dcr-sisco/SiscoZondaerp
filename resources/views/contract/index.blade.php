@@ -182,12 +182,6 @@
                                         data-bs-toggle="tooltip" data-bs-placement="top" title="Calendario PDF">
                                         <i class="bi bi-file-pdf-fill"></i>
                                     </a>
-                                    <a href="{{ route('contract.destroy', ['id' => $contract->id]) }}"
-                                        class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="Eliminar contrato"
-                                        onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </a>
                                 @endcan
                             </td>
                         </tr>

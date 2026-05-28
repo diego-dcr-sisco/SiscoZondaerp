@@ -371,20 +371,6 @@
                                                 <i class="bi bi-file-earmark-plus-fill"></i>
                                             </a>
                                         @endif
-                                        @if ($order->status_id != 6)
-                                            <a href="{{ route('order.destroy', ['id' => $order->id]) }}"
-                                                class="btn btn-danger btn-sm" data-bs-toggle="tooltip"
-                                                data-bs-placement="top" data-bs-title="Cancelar orden"
-                                                onclick="return confirm('{{ __('messages.are_you_sure') }}')">
-                                                <i class="bi bi-x-lg"></i>
-                                            </a>
-
-                                            {{-- <a href="{{ route('order.destroy', ['id' => $order->id]) }}"
-                                    class="btn btn-outline-danger "
-                                    onclick="return confirm('{{ __('messages.are_you_sure') }}')">
-                                    <i class="bi bi-trash-fill"></i>
-                                </a> --}}
-                                        @endif
                                     @endcan
                                 </div>
                             </td>

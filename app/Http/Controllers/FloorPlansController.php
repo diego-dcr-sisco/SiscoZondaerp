@@ -938,7 +938,7 @@ class FloorPlansController extends Controller
         $data['devices'] = $devices_data;
 
         $pdf = Pdf::loadView('floorplans.pdf.qr', $data);
-        $pdf_name = 'QR_' . $floorplan->filename . '_' . $floorplan->customer->name;
+        $pdf_name = 'QR_' . $floorplan->filename . '_' . $floorplan->customer->name . '_' . date('Y-m-d_H-i') . '.pdf';
 
         register_shutdown_function(function () use ($tempDir) {
             if (File::exists($tempDir)) {

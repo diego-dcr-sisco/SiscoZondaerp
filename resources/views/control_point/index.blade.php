@@ -119,10 +119,6 @@
                                     data-bs-toggle="tooltip" data-bs-placement="top" title="Editar punto de control">
                                     <i class="bi bi-pencil-square"></i>
                                 </a>
-                                <a href="{{ route('point.destroy', ['id' => $point->id]) }}" class="btn btn-danger btn-sm"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar punto de control"
-                                    onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')"><i
-                                        class="bi bi-trash-fill"></i></a>
                             </td>
                         </tr>
                     @endforeach

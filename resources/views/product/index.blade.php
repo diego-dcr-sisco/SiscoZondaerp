@@ -69,14 +69,6 @@
                                             data-bs-placement="top" title="Editar producto">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
-                                        @if (auth()->user()->work_department_id == 1)
-                                            <a href="{{ route('product.destroy', ['id' => $product->id]) }}"
-                                                class="btn btn-danger btn-sm"
-                                                onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')"
-                                                data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar producto">
-                                                <i class="bi bi-trash-fill"></i>
-                                            </a>
-                                        @endif
                                     </div>
                                 @endcan
                             </td>

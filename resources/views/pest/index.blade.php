@@ -139,10 +139,6 @@
                                 <a href="{{ route('pest.edit', ['id' => $pest->id]) }}" class="btn btn-secondary btn-sm"
                                     data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Editar plaga"><i
                                         class="bi bi-pencil-square"></i></a>
-                                <a href="{{ route('pest.destroy', ['id' => $pest->id]) }}" class="btn btn-danger btn-sm"
-                                    onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Eliminar plaga">
-                                    <i class="bi bi-trash-fill"></i> </a>
                             </td>
                         </tr>
                     @empty

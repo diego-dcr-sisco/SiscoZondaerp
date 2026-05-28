@@ -346,6 +346,15 @@
             </div>
             <button class="btn btn-primary my-3">{{ __('buttons.update') }}</button>
         </form>
+        @can('write_user')
+            @include('components.danger-action', [
+                'actionRoute' => route('user.destroy', ['id' => $user->id]),
+                'title' => 'Zona de peligro',
+                'description' => 'Elimina este usuario desde su pantalla de edición.',
+                'buttonText' => 'Eliminar usuario',
+                'confirmMessage' => '¿Estás seguro de eliminar este usuario?',
+            ])
+        @endcan
     </div>
 
     @include('user.modals.files.create')

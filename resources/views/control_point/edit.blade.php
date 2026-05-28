@@ -75,6 +75,12 @@
             <input type="hidden" class="form-control" id="questions" name="questions" required>
             <button type="submit" class="btn btn-primary my-3">Actualizar</button>
         </form>
+        @include('components.danger-action', [
+            'actionRoute' => route('point.destroy', ['id' => $point->id]),
+            'title' => 'Zona de peligro',
+            'description' => 'Elimina este punto de control desde su pantalla de edición.',
+            'buttonText' => 'Eliminar punto de control',
+        ])
     </div>
 
     @include('control_point.modals.questions')

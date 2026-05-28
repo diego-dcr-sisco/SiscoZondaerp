@@ -203,5 +203,15 @@
             </div>
             <button type="submit" class="btn btn-primary my-3">{{ __('buttons.update') }}</button>
         </form>
+        @can('write_product')
+            @if (auth()->user()->work_department_id == 1)
+                @include('components.danger-action', [
+                    'actionRoute' => route('product.destroy', ['id' => $product->id]),
+                    'title' => 'Zona de peligro',
+                    'description' => 'Elimina este producto desde su pantalla de edición.',
+                    'buttonText' => 'Eliminar producto',
+                ])
+            @endif
+        @endcan
     </div>
 @endsection

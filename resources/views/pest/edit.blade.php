@@ -77,5 +77,13 @@
                 {{ __('buttons.store') }}
             </button>
         </form>
+        @can('write_product')
+            @include('components.danger-action', [
+                'actionRoute' => route('pest.destroy', ['id' => $pest->id]),
+                'title' => 'Zona de peligro',
+                'description' => 'Elimina esta plaga desde su pantalla de edición.',
+                'buttonText' => 'Eliminar plaga',
+            ])
+        @endcan
     </div>
 @endsection

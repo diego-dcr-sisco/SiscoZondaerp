@@ -79,6 +79,14 @@
                 {{ __('buttons.update') }}
             </button>
         </form>
+        @can('write_service')
+            @include('components.danger-action', [
+                'actionRoute' => route('service.destroy', ['id' => $service->id]),
+                'title' => 'Zona de peligro',
+                'description' => 'Elimina este servicio desde su pantalla de edición.',
+                'buttonText' => 'Eliminar servicio',
+            ])
+        @endcan
     </div>
 
     <script>

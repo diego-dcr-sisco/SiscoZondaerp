@@ -15,6 +15,14 @@
             </span>
         </div>
         @include('contract.edit.form')
+        @can('write_order')
+            @include('components.danger-action', [
+                'actionRoute' => route('contract.destroy', ['id' => $contract->id]),
+                'title' => 'Zona de peligro',
+                'description' => 'Elimina este contrato desde su pantalla de edición.',
+                'buttonText' => 'Eliminar contrato',
+            ])
+        @endcan
         @include('contract.modals.configure-service')
         @include('contract.modals.preview')
         @include('contract.modals.service')

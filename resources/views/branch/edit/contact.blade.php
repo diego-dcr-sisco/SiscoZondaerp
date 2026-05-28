@@ -55,5 +55,11 @@
                 <i class="bi bi-save"></i> {{ __('buttons.store') }}
             </button>
         </form>
+        @include('components.danger-action', [
+            'actionRoute' => route('branch.destroy', ['id' => $branch->id]),
+            'title' => 'Zona de peligro',
+            'description' => 'Elimina esta sucursal desde su pantalla de edición.',
+            'buttonText' => 'Eliminar sucursal',
+        ])
     </div>
 @endsection

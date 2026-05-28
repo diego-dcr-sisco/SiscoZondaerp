@@ -148,6 +148,46 @@
                 overlay.classList.remove('active');
             });
         })();
+
+        (function() {
+            function isAdvancedSearchCard(card) {
+                const title = card.querySelector('.card-title');
+
+                return title && title.textContent
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .toLowerCase()
+                    .includes('busqueda avanzada');
+            }
+
+            function closeAdvancedSearchCollapses() {
+                document.querySelectorAll('.card').forEach((card) => {
+                    if (!isAdvancedSearchCard(card)) return;
+
+                    card.querySelectorAll('.collapse').forEach((collapseElement) => {
+                        const collapse = window.bootstrap?.Collapse.getOrCreateInstance(collapseElement, {
+                            toggle: false
+                        });
+
+                        if (collapse) {
+                            collapse.hide();
+                        }
+
+                        collapseElement.classList.remove('show', 'collapsing');
+                        collapseElement.classList.add('collapse');
+                        collapseElement.style.height = '';
+                    });
+
+                    card.querySelectorAll('[data-bs-toggle="collapse"]').forEach((button) => {
+                        button.classList.add('collapsed');
+                        button.setAttribute('aria-expanded', 'false');
+                    });
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', closeAdvancedSearchCollapses);
+            window.addEventListener('pageshow', closeAdvancedSearchCollapses);
+        })();
     </script>
 </body>
 

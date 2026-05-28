@@ -10,6 +10,18 @@
             </span>
         </div>
         @include('order.edit.form')
+        @can('write_order')
+            @if ($order->status_id != 6)
+                @include('components.danger-action', [
+                    'actionRoute' => route('order.destroy', ['id' => $order->id]),
+                    'title' => 'Zona de peligro',
+                    'description' => 'Cancela esta orden desde su pantalla de edición.',
+                    'buttonText' => 'Cancelar orden',
+                    'icon' => 'bi-x-lg',
+                    'confirmMessage' => __('messages.are_you_sure'),
+                ])
+            @endif
+        @endcan
         @include('order.modals.service')
         @include('order.modals.configure-service')
     </div>

@@ -111,6 +111,14 @@
             </button>
 
         </form>
+        @can('write_customer')
+            @include('components.danger-action', [
+                'actionRoute' => route('customer.destroy', ['id' => $customer->id]),
+                'title' => 'Zona de peligro',
+                'description' => 'Elimina este cliente desde su pantalla de edición.',
+                'buttonText' => 'Eliminar cliente',
+            ])
+        @endcan
     </div>
 
     <script type="text/javascript">

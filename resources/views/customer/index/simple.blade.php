@@ -67,12 +67,6 @@
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
 
-                                    <a href="{{ route('customer.destroy', ['id' => $customer->id]) }}"
-                                        class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                        data-bs-title="Eliminar cliente"
-                                        onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </a>
                                 @endcan
                             </td>
                         </tr>
