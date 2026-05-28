@@ -82,13 +82,13 @@
                             <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
                         </h5>
                         <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
-                            data-bs-target=".order-search-collapse" aria-expanded="false"
+                            data-bs-target=".order-search-collapse" aria-expanded="true"
                             aria-controls="orderSearchFilters orderSearchFooter">
                             <i class="bi bi-caret-down-fill"></i>
                         </button>
                     </div>
                 </div>
-                <div class="card-body collapse order-search-collapse" id="orderSearchFilters">
+                <div class="card-body collapse show order-search-collapse" id="orderSearchFilters">
                     <div class="row g-3 mb-3">
                         <div class="col-lg-1 col-sm-6 col-12">
                             <label for="folio" class="form-label">No. Reporte</label>
@@ -222,7 +222,7 @@
                     </div>
                 </div>
 
-                <div class="card-footer collapse order-search-collapse" id="orderSearchFooter">
+                <div class="card-footer collapse show order-search-collapse" id="orderSearchFooter">
                     <div class="row justify-content-end">
                         <div class="col-lg-1 col-6">
                             <button type="submit" class="btn btn-primary btn-sm w-100">

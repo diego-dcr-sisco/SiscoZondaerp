@@ -20,13 +20,13 @@
                             <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
                         </h5>
                         <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
-                            data-bs-target=".point-search-collapse" aria-expanded="false"
+                            data-bs-target=".point-search-collapse" aria-expanded="true"
                             aria-controls="pointSearchFilters pointSearchFooter">
                             <i class="bi bi-caret-down-fill"></i>
                         </button>
                     </div>
                 </div>
-                <div class="card-body collapse point-search-collapse" id="pointSearchFilters">
+                <div class="card-body collapse show point-search-collapse" id="pointSearchFilters">
                     <div class="row g-3 mb-3">
                         <div class="col-lg-3 col-sm-6 col-12">
                             <label for="name" class="form-label">Nombre</label>
@@ -68,7 +68,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-footer collapse point-search-collapse" id="pointSearchFooter">
+                <div class="card-footer collapse show point-search-collapse" id="pointSearchFooter">
                     <div class="row justify-content-end">
                         <div class="col-lg-1 col-6">
                             <button type="submit" class="btn btn-primary btn-sm w-100">

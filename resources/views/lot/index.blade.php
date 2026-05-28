@@ -51,14 +51,14 @@
                             <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
                         </h5>
                         <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
-                            data-bs-target=".lot-search-collapse" aria-expanded="false"
+                            data-bs-target=".lot-search-collapse" aria-expanded="true"
                             aria-controls="lotSearchFilters lotSearchFooter">
                             <i class="bi bi-caret-down-fill"></i>
                         </button>
                     </div>
                 </div>
 
-                <div class="card-body collapse lot-search-collapse" id="lotSearchFilters">
+                <div class="card-body collapse show lot-search-collapse" id="lotSearchFilters">
                     <div class="row g-3 mb-3">
                         <div class="col-lg-3 col-sm-6 col-12">
                             <label for="registration_number" class="form-label">No de lote</label>
@@ -136,7 +136,7 @@
                     </div>
                 </div>
 
-                <div class="card-footer collapse lot-search-collapse" id="lotSearchFooter">
+                <div class="card-footer collapse show lot-search-collapse" id="lotSearchFooter">
                     <div class="row justify-content-end">
                         <div class="col-lg-1 col-6">
                             <button type="submit" class="btn btn-primary btn-sm w-100">

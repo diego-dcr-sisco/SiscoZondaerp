@@ -42,13 +42,13 @@
                             <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
                         </h5>
                         <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
-                            data-bs-target=".contract-search-collapse" aria-expanded="false"
+                            data-bs-target=".contract-search-collapse" aria-expanded="true"
                             aria-controls="contractSearchFilters contractSearchFooter">
                             <i class="bi bi-caret-down-fill"></i>
                         </button>
                     </div>
                 </div>
-                <div class="card-body collapse contract-search-collapse" id="contractSearchFilters">
+                <div class="card-body collapse show contract-search-collapse" id="contractSearchFilters">
                     <div class="row g-3 mb-3">
                         <div class="col-lg-4 col-sm-6 col-12">
                             <label for="customer" class="form-label">Cliente</label>
@@ -91,7 +91,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-footer collapse contract-search-collapse" id="contractSearchFooter">
+                <div class="card-footer collapse show contract-search-collapse" id="contractSearchFooter">
                     <div class="row justify-content-end">
                         <div class="col-lg-1 col-6">
                             <button type="submit" class="btn btn-primary btn-sm w-100">
