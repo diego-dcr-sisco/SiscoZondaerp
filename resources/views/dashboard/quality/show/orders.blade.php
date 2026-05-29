@@ -1,13 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid">
-        <div class="row border-bottom p-3 mb-2">
-            <a href="{{ route('quality.customer', ['id' => $customer->id]) }}" class="col-auto btn-primary p-0"><i
-                    class="bi bi-arrow-left m-3 fs-4"></i></a>
-            <h1 class="col-auto fs-2 fw-bold m-0 fw-bold">{{ $customer->name }}</h1>
-        </div>
-
-        <div class="row justify-content-between p-3 m-0">
+    @include('components.page-header', [
+        'title' => 'VER DASHBOARD - ORDENES',
+        'icon' => 'bi-speedometer2',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid">
+<div class="row justify-content-between p-3 m-0">
             <div class="col-auto">
                 @can('write_order')
                     <a class="btn btn-primary" href="{{ route('order.create') }}">

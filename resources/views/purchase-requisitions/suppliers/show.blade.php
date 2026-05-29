@@ -1,14 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
+@include('components.page-header', [
+        'title' => 'VER REQUISICION',
+        'icon' => 'bi-cart-check',
+        'backRoute' => url()->previous(),
+    ])
 <div class="container-fluid">
-    <div class="row border-bottom p-3 mb-4">
-        <a href="{{ route('supplier.index') }}" class="col-auto btn-primary p-0 fs-3">
-            <i class="bi bi-arrow-left fs-4"></i>
-        </a>        
-        <h1 class="col-auto fs-2 fw-bold m-0">Detalles del proveedor</h1>      
-    </div>
-    <div class="row px-3">
+<div class="row px-3">
         <div class="col-lg-6">
             <div class="mb-3">
                 <label for="name" class="form-label">Nombre</label>

@@ -1,17 +1,14 @@
 @extends('layouts.app')
 @section('content')
+    @include('components.page-header', [
+        'title' => 'CONSUMO DE ' . $product->name,
+        'icon' => 'bi-clock-history',
+        'backRoute' => route('consumption.show.past'),
+    ])
     <div class="row w-100 h-100 m-0">
         @include('dashboard.stock.navigation')
 
         <div class="col-11 p-3 m-o">
-            
-
-            <div class="row border-bottom p-1 mb-3">
-                <a href="{{ route('consumption.show.past') }}" class="col-auto btn-primary p-0 fs-3"><i
-                        class="bi bi-arrow-left m-3"></i></a>
-                <h1 class="col-auto fs-2 fw-bold m-0"> Consumo de {{ $product->name }}</h1>
-            </div>
-
             <div class="row mb-3">
                 <div class="col">
                     <!-- Filtros -->

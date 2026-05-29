@@ -82,7 +82,7 @@
                         <th scope="col" class="">Sucursal</th>
                         <th scope="col" class="">Técnico</th>
                         <th scope="col" class="">Tipo</th>
-                        <th scope="col" class="">Productos en stock</th>
+                        <th scope="col" class="">Productos</th>
                         @can('write_warehouse')
                             <th scope="col" class=""></th>
                         @endcan
@@ -142,7 +142,8 @@
                                 @endif
                             </td>
                             <td class="">
-                                {{ $warehouse->products_count }}
+                                <span class="fw-semibold">{{ $warehouse->products_with_quantity_count }}</span>/<span
+                                    class="text-muted">{{ $warehouse->products_total_count }}</span>
                             </td>
                             @can('write_warehouse')
                                 <td>

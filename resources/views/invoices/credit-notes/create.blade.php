@@ -1,16 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="row m-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <span class="text-black fw-bold fs-4">
-                CREAR NUEVA NOTA DE CREDITO
-                <span class="badge text-bg-warning" id="selectedInvoiceBadge">
-                    {{ isset($invoice->folio) ? $invoice->serie . '-' . $invoice->folio : 'SIN FACTURA SELECCIONADA' }}
-                </span>
-            </span>
-        </div>
-
-        <form class="form p-3" action="{{ route('invoices.credit-notes.store') }}" method="POST" enctype="">
+    @include('components.page-header', [
+        'title' => 'CREAR FACTURA',
+        'icon' => 'bi-receipt',
+        'backRoute' => url()->previous(),
+    ])
+<div class="row m-0">
+<form class="form p-3" action="{{ route('invoices.credit-notes.store') }}" method="POST" enctype="">
             @csrf
             <input type="hidden" id="selected_invoice_id" name="invoice_id">
             <input type="hidden" id="selected_uuid" name="cfdi_uuid">

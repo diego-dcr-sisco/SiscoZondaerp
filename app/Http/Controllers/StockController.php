@@ -52,6 +52,7 @@ class StockController extends Controller
         'Movimientos' => '/stock/movements',
         // 'Zonas' => '/customer-zones',
         'Consumos en ordenes' => '/stock/movements/orders',
+        'Consumos por cliente' => '/stock/consumptions/by-customer',
         //'Consumos' => '/consumptions/',
         // 'Estadisticas' => '/stock/analytics',
         // 'Pedidos' => '/consumptions',
@@ -82,16 +83,19 @@ class StockController extends Controller
             ->get();
 
         foreach ($warehouses as $warehouse) {
-            $warehouse->products_count = MovementProduct::where('warehouse_id', $warehouse->id)
+            $warehouseProducts = MovementProduct::where('warehouse_id', $warehouse->id)
                 ->select('product_id')
                 ->selectRaw('
                     SUM(CASE WHEN movement_id BETWEEN 1 AND 4 THEN amount ELSE 0 END)
                     - SUM(CASE WHEN movement_id BETWEEN 5 AND 10 THEN amount ELSE 0 END) as net_amount
                 ')
                 ->groupBy('product_id')
-                ->having('net_amount', '>', 0)
-                ->get()
+                ->get();
+
+            $warehouse->products_with_quantity_count = $warehouseProducts
+                ->where('net_amount', '>', 0)
                 ->count();
+            $warehouse->products_total_count = $warehouseProducts->count();
         }
 
         $input_movements = MovementType::whereBetween('id', [1, 4])->get();
@@ -277,6 +281,180 @@ class StockController extends Controller
         $lots = Lot::with('product')->get()->sortBy('product.name');
 
         return view('stock.movements.order', compact('navigation', 'wos', 'products', 'lots'));
+    }
+
+    public function consumptionsByCustomer(Request $request)
+    {
+        $navigation = $this->navigation;
+        $dateRange = $this->parseStockConsumptionDateRange($request->input('date_range'));
+        $availableDivisions = $this->stockConsumptionAvailableDivisions($dateRange);
+        $division = $this->resolveStockConsumptionDivision($request->input('division', 'month'), $availableDivisions);
+        $periodSql = $this->stockConsumptionPeriodSql($division);
+
+        $baseQuery = DB::table('device_product')
+            ->join('order as orders', 'device_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->join('product_catalog as products', 'device_product.product_id', '=', 'products.id')
+            ->leftJoin('metric as metrics', 'products.metric_id', '=', 'metrics.id')
+            ->leftJoin('lot as lots', 'device_product.lot_id', '=', 'lots.id')
+            ->leftJoin('device as devices', 'device_product.device_id', '=', 'devices.id')
+            ->leftJoin('control_point as control_points', 'devices.type_control_point_id', '=', 'control_points.id')
+            ->whereNotNull('orders.programmed_date');
+
+        if ($request->filled('customer')) {
+            $customerName = trim($request->input('customer'));
+            $baseQuery->where('customers.name', 'like', '%' . $customerName . '%');
+        }
+
+        if ($dateRange) {
+            $baseQuery->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ]);
+        }
+
+        $summary = (clone $baseQuery)
+            ->selectRaw('COUNT(DISTINCT customers.id) as customers_count')
+            ->selectRaw('COUNT(DISTINCT orders.id) as orders_count')
+            ->selectRaw('COUNT(DISTINCT products.id) as products_count')
+            ->selectRaw('COALESCE(SUM(device_product.quantity), 0) as total_quantity')
+            ->first();
+
+        $consumptions = (clone $baseQuery)
+            ->selectRaw('customers.id as customer_id')
+            ->selectRaw('customers.name as customer_name')
+            ->selectRaw($periodSql . ' as period_key')
+            ->selectRaw('COALESCE(control_points.name, "Sin dispositivo") as device_type')
+            ->selectRaw('products.id as product_id')
+            ->selectRaw('products.name as product_name')
+            ->selectRaw('COALESCE(lots.registration_number, device_product.possible_lot, "Sin lote") as lot_name')
+            ->selectRaw('COALESCE(metrics.value, "") as metric_name')
+            ->selectRaw('SUM(device_product.quantity) as quantity')
+            ->selectRaw('COUNT(DISTINCT orders.id) as orders_count')
+            ->groupBy(
+                'customers.id',
+                'customers.name',
+                DB::raw($periodSql),
+                'control_points.name',
+                'products.id',
+                'products.name',
+                'lots.registration_number',
+                'device_product.possible_lot',
+                'metrics.value'
+            )
+            ->orderByDesc('period_key')
+            ->orderBy('customers.name')
+            ->orderBy('control_points.name')
+            ->orderBy('products.name')
+            ->paginate((int) $request->input('size', $this->size))
+            ->appends($request->all());
+
+        $consumptions->getCollection()->transform(function ($row) use ($division) {
+            $row->period_label = $this->formatStockConsumptionPeriodLabel($row->period_key, $division);
+            return $row;
+        });
+
+        return view('stock.consumptions.by-customer', compact(
+            'navigation',
+            'consumptions',
+            'summary',
+            'division',
+            'availableDivisions'
+        ));
+    }
+
+    private function parseStockConsumptionDateRange(?string $dateRange): ?array
+    {
+        if (!$dateRange || !str_contains($dateRange, ' - ')) {
+            return null;
+        }
+
+        try {
+            [$startDate, $endDate] = array_map(function ($date) {
+                return Carbon::createFromFormat('d/m/Y', trim($date));
+            }, explode(' - ', $dateRange));
+
+            return [
+                'start' => $startDate->startOfDay(),
+                'end' => $endDate->endOfDay(),
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function stockConsumptionAvailableDivisions(?array $dateRange): array
+    {
+        if (!$dateRange) {
+            return ['day', 'week', 'month', 'year'];
+        }
+
+        $days = $dateRange['start']->diffInDays($dateRange['end']) + 1;
+        $divisions = ['day'];
+
+        if ($days >= 7) {
+            $divisions[] = 'week';
+        }
+
+        if ($days >= 28) {
+            $divisions[] = 'month';
+        }
+
+        if ($days >= 365) {
+            $divisions[] = 'year';
+        }
+
+        return $divisions;
+    }
+
+    private function resolveStockConsumptionDivision(?string $division, array $availableDivisions): string
+    {
+        $division = strtolower((string) $division);
+        $allowedDivisions = ['day', 'week', 'month', 'year'];
+
+        if (!in_array($division, $allowedDivisions, true)) {
+            $division = 'month';
+        }
+
+        return in_array($division, $availableDivisions, true)
+            ? $division
+            : $availableDivisions[0];
+    }
+
+    private function stockConsumptionPeriodSql(string $division): string
+    {
+        return match ($division) {
+            'day' => 'DATE_FORMAT(orders.programmed_date, "%Y-%m-%d")',
+            'week' => 'DATE_FORMAT(orders.programmed_date, "%x-W%v")',
+            'year' => 'DATE_FORMAT(orders.programmed_date, "%Y")',
+            default => 'DATE_FORMAT(orders.programmed_date, "%Y-%m")',
+        };
+    }
+
+    private function formatStockConsumptionPeriodLabel(string $period, string $division): string
+    {
+        try {
+            return match ($division) {
+                'day' => Carbon::createFromFormat('Y-m-d', $period)->format('d/m/Y'),
+                'week' => $this->formatStockConsumptionWeekLabel($period),
+                'month' => Carbon::createFromFormat('Y-m', $period)->format('m/Y'),
+                default => $period,
+            };
+        } catch (\Exception $e) {
+            return $period;
+        }
+    }
+
+    private function formatStockConsumptionWeekLabel(string $period): string
+    {
+        if (!preg_match('/^(\d{4})-W(\d{1,2})$/', $period, $matches)) {
+            return $period;
+        }
+
+        $start = Carbon::now()->setISODate((int) $matches[1], (int) $matches[2])->startOfDay();
+        $end = $start->copy()->addDays(6);
+
+        return $start->format('d/m/Y') . ' - ' . $end->format('d/m/Y');
     }
 
     public function wMovement(string $id)

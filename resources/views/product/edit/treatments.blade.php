@@ -1,4 +1,9 @@
 @extends('layouts.app')
 @section('content')
-    <span class="m-3"> En desarollo </span>
+    @include('components.page-header', [
+        'title' => 'EDITAR PRODUCTO - TRATAMIENTOS',
+        'icon' => 'bi-box-seam',
+        'backRoute' => url()->previous(),
+    ])
+<span class="m-3"> En desarollo </span>
 @endsection

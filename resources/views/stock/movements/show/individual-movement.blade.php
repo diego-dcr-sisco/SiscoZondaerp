@@ -8,16 +8,14 @@
         }
     </style>
 
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('stock.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                VISTA PREVIA DEL VOUCHER
-            </span>
-        </div>
+    @include('components.page-header', [
+        'title' => 'VISTA PREVIA DEL VOUCHER',
+        'icon' => 'bi-file-pdf-fill',
+        'iconColor' => 'text-danger',
+        'backRoute' => route('stock.index'),
+    ])
 
+    <div class="container-fluid p-0">
         <form class="m-3" id="form-stock-entry" action="{{ route('stock.movement.update', ['id' => $movement->id]) }}"
             method="POST">
             @csrf
@@ -84,17 +82,18 @@
                             <tbody>
                                 @foreach ($movement->warehouseProducts($movement->warehouse_id) as $mp)
                                     @php
-                                        $isEntry = $mp->movement && ($mp->movement->type === 'in' || $mp->movement_id <= 4);
+                                        $isEntry = $mp->isEntry();
+                                        $movementColorClass = $mp->movementColorClass();
                                     @endphp
                                     <tr>
                                         <th scope="row"> {{ $mp->warehouse->name }} </th>
                                         <td>{{ $mp->product->name }}</td>
                                         <td>{{ $mp->lot->registration_number ?? '-' }}</td>
-                                        <td class="{{ $isEntry ? 'text-success' : 'text-warning' }} fw-bold">
+                                        <td class="{{ $movementColorClass }} fw-bold">
                                             {{ $isEntry ? 'Entrada' : 'Salida' }}
                                             <div class="small text-muted fw-normal">{{ $mp->movement->name ?? '-' }}</div>
                                         </td>
-                                        <td class="{{ $isEntry ? 'text-success' : 'text-warning' }} fw-bold">
+                                        <td class="{{ $movementColorClass }} fw-bold">
                                             {{ number_format((float) $mp->amount, 2) }}
                                             <span class="text-muted fw-normal">{{ $mp->product->metric->value ?? '-' }}</span>
                                         </td>
@@ -124,17 +123,18 @@
                             <tbody>
                                 @foreach ($movement->warehouseProducts($movement->destination_warehouse_id) as $mp)
                                     @php
-                                        $isEntry = $mp->movement && ($mp->movement->type === 'in' || $mp->movement_id <= 4);
+                                        $isEntry = $mp->isEntry();
+                                        $movementColorClass = $mp->movementColorClass();
                                     @endphp
                                     <tr>
                                         <th scope="row"> {{ $mp->warehouse->name ?? '' }} </th>
                                         <td>{{ $mp->product->name }}</td>
                                         <td>{{ $mp->lot->registration_number }}</td>
-                                        <td class="{{ $isEntry ? 'text-success' : 'text-warning' }} fw-bold">
+                                        <td class="{{ $movementColorClass }} fw-bold">
                                             {{ $isEntry ? 'Entrada' : 'Salida' }}
                                             <div class="small text-muted fw-normal">{{ $mp->movement->name ?? '-' }}</div>
                                         </td>
-                                        <td class="{{ $isEntry ? 'text-success' : 'text-warning' }} fw-bold">
+                                        <td class="{{ $movementColorClass }} fw-bold">
                                             {{ number_format((float) $mp->amount, 2) }}
                                             <span class="text-muted fw-normal">{{ $mp->product->metric->value ?? '-' }}</span>
                                         </td>

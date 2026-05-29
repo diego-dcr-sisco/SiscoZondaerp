@@ -1,7 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-    @if (!auth()->check())
+    @include('components.page-header', [
+        'title' => 'VER CLIENTE',
+        'icon' => 'bi-people',
+        'backRoute' => url()->previous(),
+    ])
+@if (!auth()->check())
         <?php header('Location: /login');
         exit(); ?>
     @endif

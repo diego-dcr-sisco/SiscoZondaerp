@@ -48,6 +48,17 @@ class MovementProduct extends Model
         return $this->belongsTo(Lot::class);
     }
 
+    public function isEntry(): bool
+    {
+        return $this->movement?->type === 'in'
+            || ((int) $this->movement_id >= 1 && (int) $this->movement_id <= 4);
+    }
+
+    public function movementColorClass(): string
+    {
+        return $this->isEntry() ? 'text-success' : 'text-danger';
+    }
+
     public static function getProductsGroupedByLot($warehouseId)
     {
         return self::where('warehouse_id', $warehouseId)
@@ -76,4 +87,3 @@ class MovementProduct extends Model
             ->toArray();
     }
 }
-

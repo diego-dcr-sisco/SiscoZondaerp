@@ -1,34 +1,19 @@
 @extends('layouts.app')
 @section('content')
+    @include('components.page-header', [
+        'title' => isset($customerId) && $customerId ? 'CONSUMO DE ' . $customer->name : 'GESTION DE PEDIDOS MENSUALES',
+        'icon' => 'bi-clipboard-data',
+        'backRoute' => isset($customerId) && $customerId ? route('consumption.show.past') : null,
+        'actionRoute' => route('consumptions.create'),
+        'actionText' => 'Nueva solicitud',
+        'actionIcon' => 'bi-plus-lg',
+    ])
     <div class="row w-100 h-100 m-0">
 
         <div class="col-12 p-3 m-o">
             
             <div class="row mb-3">
-
-                <div class="col-lg-8">
-                    @if (isset($customerId) && $customerId)
-                        <div class="row p-1 mb-3 ">
-                            <a href="{{ route('consumption.show.past') }}" class="col-auto btn-primary p-0 fs-3"><i
-                                    class="bi bi-arrow-left m-3"></i></a>
-                            <h1 class="col-auto fs-2 fw-bold m-0"> Consumo de {{ $customer->name }}</h1>
-                        </div>
-                    @else
-                        <h1 class="h3 mb-0">
-                            <!-- <i class="bi bi-graph-up-arrow text-primary"></i> -->
-                            Gestión de Pedidos Mensuales
-                        </h1>
-                        <p class="text-muted">Administra los pedidos mensuales por cliente y zona</p>
-                    @endif
-                </div>
-
-                <div class="col-lg-4 text-end">
-                    <a href="{{ route('consumptions.create') }}" class="btn btn-primary">
-                        <i class="bi bi-plus"></i>
-                        Nueva solicitud de pedido
-                    </a>
-                </div>
-                <div class="col-lg-4 text-end">
+                <div class="col-lg-4 text-end ms-auto">
                     <a href="{{ route('consumptions.create-order-based-rp') }}" class="btn btn-primary">
                         <i class="bi bi-plus"></i>
                         Solicitud por plan de rotación

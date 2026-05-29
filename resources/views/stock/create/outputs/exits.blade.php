@@ -8,16 +8,13 @@
         }
     </style>
 
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('stock.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                MOVIMIENTO DE SALIDA <span class="fs-5 fw-bold bg-warning p-1 rounded">{{ $warehouse->name }}</span>
-            </span>
-        </div>
+    @include('components.page-header', [
+        'title' => 'MOVIMIENTO DE SALIDA - ' . $warehouse->name,
+        'icon' => 'bi-box-arrow-up-left',
+        'backRoute' => route('stock.index'),
+    ])
 
+    <div class="container-fluid p-0">
         @if ($errors->any())
             <div class="alert alert-danger m-3 mb-0">
                 <div class="fw-bold mb-1">No se pudo registrar la salida</div>

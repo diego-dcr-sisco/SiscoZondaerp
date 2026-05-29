@@ -124,11 +124,9 @@
                                             <tr>
                                                 <th scope="row">{{ $mp->product->name }}</th>
                                                 <td>{{ $mp->lot->registration_number ?? '-' }}</td>
-                                                <td
-                                                    class="{{ $mp->movement && $mp->movement->type == 'in' ? 'text-success' : 'text-danger' }} fw-bold">
+                                                <td class="{{ $mp->movementColorClass() }} fw-bold">
                                                     {{ $mp->movement->name ?? '-' }}</td>
-                                                <td
-                                                    class="{{ $mp->movement && $mp->movement->type == 'in' ? 'text-success' : 'text-danger' }}">
+                                                <td class="{{ $mp->movementColorClass() }}">
                                                     {{ number_format((float) $mp->amount, 2) }}
                                                     <small class="text-muted">{{ $mp->product->metric->value ?? '-' }}</small>
                                                 </td>

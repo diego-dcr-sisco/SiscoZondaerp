@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid p-0">
+    @include('components.page-header', [
+        'title' => 'CREAR ORDEN DE SERVICIO',
+        'icon' => 'bi-clipboard-check',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
         <div class="d-flex align-items-center border-bottom ps-4 p-2">
             <!-- <a href="{{ route('order.index') }}" class="text-decoration-none pe-3">
                     <i class="bi bi-arrow-left fs-4"></i>

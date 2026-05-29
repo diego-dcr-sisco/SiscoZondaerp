@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    @php
+    @include('components.page-header', [
+        'title' => 'VER CONTRATO',
+        'icon' => 'bi-file-earmark-text',
+        'backRoute' => url()->previous(),
+    ])
+@php
         if (!function_exists('isPDF')) { 
             function isPDF($filePath)
             {
@@ -28,13 +33,7 @@
     </style>
 
     <div class="container-fluid">
-        <div class="row p-3 border-bottom">
-            <a href="#" onclick="history.back(); return false;" class="col-auto btn-primary p-0 fs-3">
-                <i class="bi bi-arrow-left m-3"></i>
-            </a>
-            <h1 class="col-auto fs-2 fw-bold m-0">{{ __('contract.title.show') }} {{ $contract->id }} [ {{ $contract->customer->name }} ] </h1>
-        </div>
-        <div class="m-3">
+<div class="m-3">
             @include('messages.alert')
             <div class="overflow-auto w-100">
                 @include('contract.tables.orders')

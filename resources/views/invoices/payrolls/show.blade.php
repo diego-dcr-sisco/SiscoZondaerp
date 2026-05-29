@@ -1,47 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="row m-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('payrolls.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                DETALLE DE NÓMINA
-            </span>
-            <div class="ms-auto me-4">
-                @if ($payroll->status === 'stamped')
-                    <span class="badge bg-success fs-6">
-                        <i class="bi bi-bell-fill"></i> TIMBRADA
-                    </span>
-                @elseif($payroll->status === 'active')
-                    <span class="badge bg-primary fs-6">
-                        <i class="fas fa-edit me-1"></i> ACTIVA
-                    </span>
-                @else
-                    <span class="badge bg-secondary fs-6">
-                        <i class="bi bi-bell-slash-fill"></i> NO TIMBRADA
-                    </span>
-                @endif
-            </div>
-        </div>
-
-        <div class="container-fluid py-4">
-            <!-- Información General -->
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="card shadow-sm border-0 rounded-1">
-                        <div class="card-header bg-primary text-white rounded-top-2">
-                            <h5 class="card-title mb-0">
-                                <i class="fas fa-info-circle me-2"></i>Información General de la Nómina
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-3 mb-3">
-                                    <strong>Folio:</strong><br>
-                                    <span class="text-muted">N-{{ $payroll->folio }}</span>
-                                </div>
-                                <div class="col-md-3 mb-3">
+    @include('components.page-header', [
+        'title' => 'VER FACTURA',
+        'icon' => 'bi-receipt',
+        'backRoute' => url()->previous(),
+    ])
+<div class="row m-0">
+<div class="col-md-3 mb-3">
                                     <strong>Fecha de Pago:</strong><br>
                                     <span
                                         class="text-muted">{{ \Carbon\Carbon::parse($payroll->payment_date)->format('d/m/Y') }}</span>

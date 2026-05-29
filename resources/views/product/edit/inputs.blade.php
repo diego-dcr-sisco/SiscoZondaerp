@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    @php
+    @include('components.page-header', [
+        'title' => 'EDITAR PRODUCTO - INSUMOS',
+        'icon' => 'bi-box-seam',
+        'backRoute' => url()->previous(),
+    ])
+@php
         function formatPath($path)
         {
             return str_replace(['/', ' '], ['-', ''], $path);
@@ -16,17 +21,7 @@
     @endphp
 
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('product.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                INSUMOS DEL PRODUCTO <span class="fs-5 fw-bold bg-warning p-1 rounded">{{ $product->name }}</span>
-            </span>
-        </div>
-
-
-        <div class="m-3">
+<div class="m-3">
             <div class="mb-3">
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#inputModal">
                     <i class="bi bi-plus-lg"></i> Agregar insumo </button>

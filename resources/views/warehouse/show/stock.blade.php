@@ -1,12 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid">
-        <div class="row border-bottom p-3 mb-3">
-            <a href="{{ route('warehouse.index', ['is_active' => 1]) }}"
-                class="col-auto btn-primary p-0 fs-3"><i class="bi bi-arrow-left m-3"></i></a>
-            <h1 class="col-auto fs-2 fw-bold m-0"> Lista de movimientos [ {{ $warehouse->name }} ] </h1>
-        </div>
-        <div class="row justify-content-center">
+    @include('components.page-header', [
+        'title' => 'VER ALMACEN - STOCK',
+        'icon' => 'bi-building',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid">
+<div class="row justify-content-center">
             <div class="overflow-auto w-100">
                 <table class="table text-center table-bordered table-striped">
                     <thead>

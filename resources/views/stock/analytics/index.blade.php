@@ -3,14 +3,14 @@
 @php
     use Carbon\Carbon;
 @endphp
+    @include('components.page-header', [
+        'title' => 'ESTADISTICAS DE ALMACEN',
+        'icon' => 'bi-graph-up-arrow',
+        'backRoute' => route('stock.index'),
+    ])
+
     <div class="row w-100 h-100 m-0">
         <div class="col p-0 m-0">
-            <div class="d-flex align-items-center border-bottom ps-4 p-2 mb-3">
-                <span class="text-black fw-bold fs-4">
-                    ESTADISTICAS DE ALMACEN
-                </span>
-            </div>
-            
             <div class="container-fluid">
                 <!-- Primera fila: Gráficas principales -->
                 <div class="d-flex flex-row mb-4 px-4">

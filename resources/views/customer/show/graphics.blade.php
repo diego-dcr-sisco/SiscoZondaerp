@@ -1,16 +1,12 @@
     @extends('layouts.app')
     @section('content')
-        <div class="container-fluid p-0">
-            <div class="d-flex align-items-center border-bottom ps-4 p-2">
-                <a href="{{ route('customer.index.sedes') }}" class="text-decoration-none pe-3">
-                    <i class="bi bi-arrow-left fs-4"></i>
-                </a>
-                <span class="text-black fw-bold fs-4">
-                    Estadisticas DE LA SEDE </span> <span class="ms-2 fs-4"> {{ $customer->name }}</span>
-                </span>
-            </div>
-
-            <div class="p-3">
+        @include('components.page-header', [
+        'title' => 'VER CLIENTE - ESTADISTICAS',
+        'icon' => 'bi-people',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
+<div class="p-3">
                 <div class="border rounded p-3 text-dark bg-light mb-3">
                     <form id="filter-form" action="{{ route('customer.graphics', ['id' => $customer->id]) }}" method="GET">
                         <div class="row g-2 mb-0">

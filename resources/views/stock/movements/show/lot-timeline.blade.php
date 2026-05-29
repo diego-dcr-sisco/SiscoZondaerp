@@ -1,15 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
+    @include('components.page-header', [
+        'title' => 'REGISTRO DE MOVIMIENTOS',
+        'icon' => 'bi-clock-history',
+        'backRoute' => route('stock.movements.all'),
+    ])
+
     <div class="row w-100 h-100 m-0">
 
         <div class="col-12 p-3">
-            <div class="row border-bottom p-3 mb-3">
-                <a href="{{ route('stock.movements.all') }}" class="col-auto btn-primary p-0 fs-3"><i
-                        class="bi bi-arrow-left m-3"></i></a>
-                <h1 class="col-auto fs-2 fw-bold m-0"> Registro de movimientos</h1> 
-            </div>
-            
             {{-- Datos del Movimiento --}}
             <div class="card shadow-lg mb-4">
                 <div class="card-header bg-light text-start align-middle">

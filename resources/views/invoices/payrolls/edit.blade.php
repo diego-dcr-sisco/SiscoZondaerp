@@ -1,16 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="row m-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('payrolls.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                EDITAR NÓMINA
-            </span>
-        </div>
-
-        <form class="form p-3" action="{{ route('payrolls.update', $payroll->id) }}" method="POST" id="payrollForm">
+    @include('components.page-header', [
+        'title' => 'EDITAR FACTURA',
+        'icon' => 'bi-receipt',
+        'backRoute' => url()->previous(),
+    ])
+<div class="row m-0">
+<form class="form p-3" action="{{ route('payrolls.update', $payroll->id) }}" method="POST" id="payrollForm">
             @csrf
             @method('PUT')
             <input type="hidden" id="payroll_data" name="payroll_data">

@@ -7,90 +7,136 @@
 
     <div class="container-fluid p-0">
             <div class="m-3">
-                <table class="table table-bordered table-hover table-sm align-middle caption-top">
-                    <caption class="border rounded-top p-2 text-dark bg-white">
-                        <form action="{{ route('stock.movements.all', ['id' => 0]) }}" method="GET">
-                            @csrf
-                            <div class="row">
-                                <div class="col-lg-4 col-12 mb-3">
+                <form action="{{ route('stock.movements.all', ['id' => 0]) }}" method="GET" class="mb-3">
+                    @csrf
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center gap-2">
+                                <h5 class="card-title fw-bold mb-0">
+                                    <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
+                                </h5>
+                                <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
+                                    data-bs-target=".warehouse-movement-search-collapse" aria-expanded="true"
+                                    aria-controls="warehouseMovementSearchFilters warehouseMovementSearchFooter">
+                                    <i class="bi bi-caret-down-fill"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body collapse show warehouse-movement-search-collapse"
+                            id="warehouseMovementSearchFilters">
+                            <div class="row g-3 mb-3">
+                                <div class="col-lg-4 col-sm-6 col-12">
                                     <label for="warehouse" class="form-label">Almacen</label>
-                                    <input type="text" class="form-control form-control-sm" id="warehouse" name="warehouse"
-                                        value="{{ $warehouse->name ?? '' }}" placeholder="Nombre del almacen."
-                                        {{ isset($warehouse) ? 'readonly' : '' }} />
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-building"></i></span>
+                                        <input type="text" class="form-control" id="warehouse" name="warehouse"
+                                            value="{{ $warehouse->name ?? '' }}" placeholder="Nombre del almacen."
+                                            {{ isset($warehouse) ? 'readonly' : '' }}>
+                                    </div>
                                 </div>
-                                <div class="col-lg-2 col-12 mb-3">
+
+                                <div class="col-lg-2 col-sm-6 col-12">
                                     <label for="movement" class="form-label">Movimiento</label>
-                                    <select class="form-select form-select-sm" id="movement" name="movement_id">
-                                        <option value="">Todos los movimientos</option>
-                                        @foreach ($movement_types as $movement)
-                                            <option value="{{ $movement->id }}"
-                                                {{ request('movement_id') == $movement->id ? 'selected' : '' }}>
-                                                {{ $movement->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-arrow-left-right"></i></span>
+                                        <select class="form-select" id="movement" name="movement_id">
+                                            <option value="">Todos los movimientos</option>
+                                            @foreach ($movement_types as $movement)
+                                                <option value="{{ $movement->id }}"
+                                                    {{ request('movement_id') == $movement->id ? 'selected' : '' }}>
+                                                    {{ $movement->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="col-lg-3 col-12 mb-3">
-                                    <label for="movement" class="form-label">Producto</label>
-                                    <select class="form-select form-select-sm" id="product" name="product_id">
-                                        <option value="">Todos los productos</option>
-                                        @foreach ($products as $product)
-                                            <option value="{{ $product->id }}"
-                                                {{ request('product_id') == $product->id ? 'selected' : '' }}>
-                                                {{ $product->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+
+                                <div class="col-lg-3 col-sm-6 col-12">
+                                    <label for="product" class="form-label">Producto</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
+                                        <select class="form-select" id="product" name="product_id">
+                                            <option value="">Todos los productos</option>
+                                            @foreach ($products as $product)
+                                                <option value="{{ $product->id }}"
+                                                    {{ request('product_id') == $product->id ? 'selected' : '' }}>
+                                                    {{ $product->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="col-lg-3 col-12 mb-3">
+
+                                <div class="col-lg-3 col-sm-6 col-12">
                                     <label for="lot" class="form-label">Lote</label>
-                                    <select class="form-select form-select-sm" id="lot" name="lot_id">
-                                        <option value="">Todos los lotes</option>
-                                        @foreach ($lots as $lot)
-                                            <option value="{{ $lot->id }}"
-                                                {{ request('lot_id') == $lot->id ? 'selected' : '' }}>
-                                                {{ $lot->registration_number ?? '-' }}
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-upc-scan"></i></span>
+                                        <select class="form-select" id="lot" name="lot_id">
+                                            <option value="">Todos los lotes</option>
+                                            @foreach ($lots as $lot)
+                                                <option value="{{ $lot->id }}"
+                                                    {{ request('lot_id') == $lot->id ? 'selected' : '' }}>
+                                                    {{ $lot->registration_number ?? '-' }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-3 col-sm-6 col-12">
+                                    <label for="date-range" class="form-label">Fecha</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+                                        <input type="text" class="form-control" id="date-range" name="date_range"
+                                            value="{{ request('date-range') }}"
+                                            placeholder="Rango de fecha de los movimientos" autocomplete="off">
+                                    </div>
+                                </div>
+
+                                <div class="col-lg-3 col-sm-6 col-12">
+                                    <label for="direction" class="form-label">Ordenar / Mostrar</label>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text"><i class="bi bi-arrow-down-up"></i></span>
+                                        <select class="form-select" id="direction" name="direction">
+                                            <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>
+                                                DESC
                                             </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-lg-3 col-12 mb-3">
-                                    <label for="lot" class="form-label">Fecha</label>
-                                    <input type="text" class="form-control form-control-sm" id="date-range" name="date_range"
-                                        value="{{ request('date-range') }}" placeholder="Rango de fecha de los movimientos"
-                                        autocomplete="off">
-                                </div>
-                                <div class="col-auto mb-3">
-                                    <label for="signature_status" class="form-label">Dirección</label>
-                                    <select class="form-select form-select-sm" id="direction" name="direction">
-                                        <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>DESC
-                                        </option>
-                                        <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
-                                        </option>
-                                    </select>
-                                </div>
-
-                                <div class="col-auto mb-3">
-                                    <label for="order_type" class="form-label">Total</label>
-                                    <select class="form-select form-select-sm" id="size" name="size">
-                                        <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
-                                        <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
-                                        <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
-                                        <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
-                                        <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
-                                    </select>
-                                </div>
-
-                                <!-- Botones -->
-                                <div class="col-12 d-flex justify-content-end m-0">
-                                    <button type="submit" class="btn btn-primary btn-sm me-2">
-                                        <i class="bi bi-funnel-fill"></i> Filtrar
-                                    </button>
-
+                                            <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>
+                                                ASC
+                                            </option>
+                                        </select>
+                                        <span class="input-group-text"><i class="bi bi-list-ol"></i></span>
+                                        <select class="form-select" id="size" name="size">
+                                            <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
+                                            <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
+                                            <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
+                                            <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
+                                            <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
-                        </form>
-                    </caption>
+                        </div>
+                        <div class="card-footer collapse show warehouse-movement-search-collapse"
+                            id="warehouseMovementSearchFooter">
+                            <div class="row justify-content-end">
+                                <div class="col-lg-1 col-6">
+                                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                                        <i class="bi bi-funnel-fill"></i> Filtrar
+                                    </button>
+                                </div>
+                                <div class="col-lg-1 col-6">
+                                    <a href="{{ isset($warehouse) ? route('stock.movements.warehouse', ['id' => $warehouse->id]) : route('stock.movements.all') }}"
+                                        class="btn btn-secondary btn-sm w-100">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <table class="table table-bordered table-hover table-sm align-middle">
                     <thead>
                         <tr>
                             <th scope="col">ID</th>
@@ -128,11 +174,9 @@
                                                 <tr>
                                                     <th scope="row">{{ $mp->product->name }}</th>
                                                     <td>{{ $mp->lot->registration_number ?? '-' }}</td>
-                                                    <td
-                                                        class="{{ $mp->movement && $mp->movement->type == 'in' ? 'text-success' : 'text-danger' }} fw-bold">
+                                                    <td class="{{ $mp->movementColorClass() }} fw-bold">
                                                         {{ $mp->movement->name ?? '-' }}</td>
-                                                    <td
-                                                        class="{{ $mp->movement && $mp->movement->type == 'in' ? 'text-success' : 'text-danger' }}">
+                                                    <td class="{{ $mp->movementColorClass() }}">
                                                         {{ number_format((float) $mp->amount, 2) }}
                                                         <small class="text-muted">{{ $mp->product->metric->value ?? '-' }}</small>
                                                     </td>

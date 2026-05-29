@@ -1,7 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="row h-100 w-100 m-0 p-0">
+    @include('components.page-header', [
+        'title' => 'EDITAR ZONA COMERCIAL',
+        'icon' => 'bi-map',
+        'backRoute' => url()->previous(),
+    ])
+<div class="row h-100 w-100 m-0 p-0">
         @include('dashboard.stock.navigation')
         <div class="col-11">
             <!-- Header -->

@@ -6,14 +6,15 @@
         exit();
         ?>
     @endif
+    @include('components.page-header', [
+        'title' => 'ALMACEN DE INDIRECTOS - ' . $warehouse->name,
+        'icon' => 'bi-boxes',
+        'backRoute' => route('stock.index', ['is_active' => 1]),
+    ])
+
     <div class="row w-100 h-100 m-0">
         @include('dashboard.stock.navigation')
         <div class="col-11 p-3 m-0">
-            <div class="row border-bottom p-3 mb-3">
-                <a href="{{ route('stock.index', ['is_active' => 1]) }}" class="col-auto btn-primary p-0"><i
-                        class="bi bi-arrow-left m-3 fs-4"></i></a>
-                <h1 class="col-auto fs-2 fw-bold m-0"> Almacén de indirectos [ {{ $warehouse->name }} ] </h1>
-            </div>
             <div class="row justify-content-center">
                 <div class="col-11">
                     <div class="row">

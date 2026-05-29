@@ -1,16 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('customer.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                CREAR CLIENTE</span>
-            </span>
-        </div>
-
-        <form class="m-3" method="POST" action="{{ route('customer.store') }}" enctype="multipart/form-data">
+    @include('components.page-header', [
+        'title' => 'CREAR CLIENTE',
+        'icon' => 'bi-people',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
+<form class="m-3" method="POST" action="{{ route('customer.store') }}" enctype="multipart/form-data">
             @csrf
             <div class="border rounded shadow p-3">
                 <div class="row">

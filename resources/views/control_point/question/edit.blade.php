@@ -1,6 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
+@include('components.page-header', [
+        'title' => 'EDITAR PUNTO DE CONTROL',
+        'icon' => 'bi-geo-alt',
+        'backRoute' => url()->previous(),
+    ])
 @php
     $productid = session()->get('product_id');
 @endphp

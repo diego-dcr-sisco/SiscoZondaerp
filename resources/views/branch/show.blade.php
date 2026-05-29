@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    @if (!auth()->check())
+    @include('components.page-header', [
+        'title' => 'VER SUCURSAL',
+        'icon' => 'bi-diagram-3',
+        'backRoute' => url()->previous(),
+    ])
+@if (!auth()->check())
         <?php header('Location: /login');
         exit(); ?>
     @endif
@@ -41,18 +46,7 @@
         </div>
 
         <div class="col-11">
-            <div class="row p-3 border-bottom">
-                <a href="{{ route('branch.index') }}" class="col-auto btn-primary p-0 fs-3"><i
-                        class="bi bi-arrow-left m-3"></i></a>
-                <h1 class="col-auto fs-2 fw-bold m-0">
-                    @if ($section == 1)
-                        Datos generales
-                    @else
-                        Datos del contacto
-                    @endif
-                </h1>
-            </div>
-            <div class="row p-5 pt-3">
+<div class="row p-5 pt-3">
                 @if ($section == 1)
                     <div class="row">
                         <span class="col fw-bold">{{ __('branch.data.name') }}:</span>

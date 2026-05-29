@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    @php
+    @include('components.page-header', [
+        'title' => 'VER CLIENTE',
+        'icon' => 'bi-people',
+        'backRoute' => url()->previous(),
+    ])
+@php
         function isPDF($filePath)
         {
             $extension = pathinfo($filePath, PATHINFO_EXTENSION);

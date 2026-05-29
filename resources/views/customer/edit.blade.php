@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    <style>
+    @include('components.page-header', [
+        'title' => 'EDITAR CLIENTE',
+        'icon' => 'bi-people',
+        'backRoute' => url()->previous(),
+    ])
+<style>
         .sidebar {
             color: white;
             text-decoration: none

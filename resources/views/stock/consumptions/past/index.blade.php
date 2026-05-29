@@ -1,5 +1,9 @@
 @extends('layouts.app')
 @section('content')
+    @include('components.page-header', [
+        'title' => 'HISTORICO DE CONSUMOS',
+        'icon' => 'bi-clock-history',
+    ])
     <div class="row w-100 h-100 m-0">
 
         <div class="col-12 p-3 m-o">

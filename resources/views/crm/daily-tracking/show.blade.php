@@ -1,7 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container-fluid p-3">
+    @include('components.page-header', [
+        'title' => 'VER CRM',
+        'icon' => 'bi-graph-up',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-3">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h4 class="mb-0">Detalle de actividad diaria</h4>
             <div class="d-flex gap-2">

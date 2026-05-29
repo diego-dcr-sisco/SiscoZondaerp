@@ -1,16 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('service.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                EDITAR SERVICIO <span class="ms-2 fs-4"> {{ $service->name }}</span>
-            </span>
-        </div>
-
-        <form class="m-3" method="POST" action="{{ route('service.update', ['id' => $service->id]) }}"
+    @include('components.page-header', [
+        'title' => 'EDITAR SERVICIO',
+        'icon' => 'bi-tools',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
+<form class="m-3" method="POST" action="{{ route('service.update', ['id' => $service->id]) }}"
             enctype="multipart/form-data">
             @csrf
             <div class="border rounded shadow p-3">
