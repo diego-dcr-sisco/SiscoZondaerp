@@ -6,7 +6,12 @@ use Carbon\Carbon;
 
 class ClientReportService
 {
-    public function getReportData(string $startDate, string $endDate, string $type = 'all', array $metrics = [])
+    public function getReportData(
+        string $startDate, 
+        string $endDate, 
+        string $type = 'all', 
+        array $metrics = []
+        )
     {
         $start = Carbon::parse($startDate)->startOfDay()->format('Y-m-d H:i:s');
         $end   = Carbon::parse($endDate)->endOfDay()->format('Y-m-d H:i:s');
@@ -41,7 +46,7 @@ class ClientReportService
                 BETWEEN "' . $start . '" 
                 AND "' . $end . '") as last_order'),
 
-                // Órdenes en el rango
+            // Órdenes en el rango
                 DB::raw('(SELECT COUNT(id) 
                 FROM `order` 
                 WHERE customer_id = c.id 
@@ -57,11 +62,11 @@ class ClientReportService
                 ) as devices_count'),
 
                 DB::raw('(
-    SELECT GROUP_CONCAT(DISTINCT d.code SEPARATOR ", ")
-    FROM devices dv
-    JOIN device d ON d.id = dv.device_id
-    WHERE dv.customer_id = c.id
-) as device_types'),
+                SELECT GROUP_CONCAT(DISTINCT d.code SEPARATOR ", ")
+                FROM devices dv
+                JOIN device d ON d.id = dv.device_id
+                WHERE dv.customer_id = c.id
+                ) as device_types'),
 
                 DB::raw('(
                 SELECT COUNT(*)
@@ -70,7 +75,7 @@ class ClientReportService
                 WHERE o.customer_id = c.id
                 ) as pest_count'),
 
-        // TIPOS DE PLAGA
+            // TIPOS DE PLAGA
                 DB::raw('(
                 SELECT GROUP_CONCAT(DISTINCT pcg.category SEPARATOR ", ")
                 FROM device_pest dp
@@ -100,7 +105,7 @@ class ClientReportService
             return $c;
             });
 
-        // Filtro por tipo
+    // Filtro por tipo
         if ($type === 'new') {
             $customers = $customers->filter(fn($c) => $c->calculated_type === 'new');
         } elseif ($type === 'recurring') {

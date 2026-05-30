@@ -5,7 +5,7 @@
 
         <h2 class="mb-4">Reporte de Clientes</h2>
 
-        {{-- FORM FILTROS (solo para visualizar, no submittea) --}}
+        {{-- FORM FILTROS (solo para visualizar) --}}
         <div class="card p-3 mb-4" id="filterForm">
             <div class="row">
 
@@ -23,7 +23,7 @@
                     <label>Tipo de cliente</label>
                     <select name="type" class="form-control">
                         <option value="all">Todos</option>
-                        {{-- ✅ valores alineados con el Service --}}
+
                         <option value="new">Nuevos</option>
                         <option value="recurring">Recurrentes</option>
                     </select>
@@ -34,16 +34,22 @@
             <div class="mt-3">
                 <label><strong>Información a incluir en el Excel</strong></label><br>
 
-                {{-- ✅ values alineados con Controller y Export --}}
+                {{-- values alineados con Controller y Export --}}
                 <label>
                     <input type="checkbox" name="metrics[]" value="inc_orders_count">
                     Cantidad de órdenes de servicio
                 </label>
 
+                <br>
+
+
                 <label class="ml-3">
                     <input type="checkbox" name="metrics[]" value="inc_has_devices">
                     ¿Cuenta con dispositivos?
                 </label>
+
+                                <br>
+
 
                 <label class="ml-3">
                     <input type="checkbox" name="metrics[]" value="inc_devices_count">
@@ -57,16 +63,25 @@
                     Tipos de dispositivos
                 </label>
 
+                <br>
+
+
                 <label class="ml-3">
                     <input type="checkbox" name="metrics[]" value="inc_pests_count">
                     Cantidad de plagas
                 </label>
+
+                <br>
+
 
                 <label class="ml-3">
                     <input type="checkbox" name="metrics[]" value="inc_pest_types">
                     Tipos de plagas
                 </label>
             </div>
+
+                <br>
+
 
             <div class="mt-3">
                 <button type="button" class="btn btn-success" onclick="submitExport()">
