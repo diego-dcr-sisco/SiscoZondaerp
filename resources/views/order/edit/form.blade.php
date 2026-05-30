@@ -198,7 +198,7 @@
     <div class="border rounded shadow p-3">
         <div class="row">
             <div class="fw-bold mb-0 fs-5">Información para la ejecución</div>
-            <div class="col-4 mb-3">
+            <div class="col-lg-4 mb-3">
                 <label class="mb-2">{{ __('order.data.execution') }} </label>
                 <div class="border border-end-0 p-2 bg-secondary-subtle">
                     <div class="form-check">
@@ -213,7 +213,7 @@
                     placeholder="Describe cómo se llevó a cabo el servicio o procedimiento." style="height: 250px;">{{ $order->execution }}</textarea>
 
             </div>
-            <div class="col-4 mb-3">
+            <div class="col-lg-4 mb-3">
                 <label class="mb-2">{{ __('order.data.areas') }} </label>
                 <div class="border border-end-0 p-2 bg-secondary-subtle">
                     <div class="form-check">
@@ -227,7 +227,7 @@
                 <textarea class="form-control border-top-0 rounded-0" id="areas" name="areas"
                     placeholder="Indica las áreas o zonas donde se realizó el trabajo." style="height: 250px;">{{ $order->areas ?? (isset($order->customer) && isset($order->customer->applicationAreas) ? implode(', ', $order->customer->applicationAreas->pluck('name')->toArray()) : '') }}</textarea>
             </div>
-            <div class="col-4">
+            <div class="col-lg-4">
                 <label class="mb-2">{{ __('order.data.comments') }} </label>
                 <div class="border border-end-0 p-2 bg-secondary-subtle">
                     <div class="form-check">
