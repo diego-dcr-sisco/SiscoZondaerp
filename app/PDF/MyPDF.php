@@ -536,7 +536,7 @@ class MyPDF extends TCPDF
 
                 $this->setFontSize(8);
                 $x = $this->GetX(); // Actualizar la posición X después de mover
-                $this->MultiCell($width_td, $step, $order_product->product->register_number ?? '-', 0, 'L', true);
+                $this->MultiCell($width_td, $step, $order_product->product->report_register_number ?? '-', 0, 'L', true);
                 $this->SetXY($x + $width_td, $y);
 
                 $x = $this->GetX();

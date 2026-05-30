@@ -325,7 +325,7 @@ class Certificate
             $products_data[] = [
                 'name' => $order_product->product->name,
                 'active_ingredient' => $order_product->product->active_ingredient ?? '-',
-                'no_register' => $order_product->product->register_number ?? '-',
+                'no_register' => $order_product->product->report_register_number ?? '-',
                 'safety_period' => $order_product->product->safety_period ?? '-',
                 'application_method' => $order_product->appMethod->name ?? '-',
                 'dosage' => $order_product->dosage ?? $order_product->product->dosage ?? '-',
