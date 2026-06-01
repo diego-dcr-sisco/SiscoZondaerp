@@ -35,21 +35,21 @@
                         id="customerConsumptionSearchFilters">
                         <div class="row g-3">
                             <div class="col-lg-4 col-sm-6 col-12">
-                                <label for="customer" class="form-label">Cliente</label>
+                                <label for="customer" class="form-label is-required">Cliente</label>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-person-vcard"></i></span>
                                     <input type="text" class="form-control" id="customer" name="customer"
-                                        value="{{ request('customer') }}" placeholder="Nombre del cliente">
+                                        value="{{ request('customer') }}" placeholder="Nombre del cliente" required>
                                 </div>
                             </div>
 
                             <div class="col-lg-4 col-sm-6 col-12">
-                                <label for="date-range" class="form-label">Rango de fecha</label>
+                                <label for="date-range" class="form-label is-required">Rango de fecha</label>
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
                                     <input type="text" class="form-control" id="date-range" name="date_range"
                                         value="{{ request('date_range') }}" placeholder="Fecha de las ordenes"
-                                        autocomplete="off">
+                                        autocomplete="off" required>
                                 </div>
                             </div>
 
@@ -105,28 +105,75 @@
             </form>
 
             <div class="row g-3 mb-3">
-                <div class="col-xl-3 col-md-6 col-12">
-                    <div class="border rounded bg-white p-3 h-100">
-                        <div class="text-muted small text-uppercase fw-semibold">Clientes</div>
-                        <div class="fs-4 fw-bold">{{ number_format($summary->customers_count ?? 0) }}</div>
+                <div class="col-xl-5 col-12">
+                    <div class="table-responsive bg-white border rounded h-100">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Tipo de dispositivo</th>
+                                    <th scope="col" class="text-end">Dispositivos</th>
+                                    <th scope="col" class="text-end">Registros</th>
+                                    <th scope="col" class="text-end">Cantidad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($deviceSummaries as $deviceSummary)
+                                    <tr>
+                                        <td class="fw-semibold">{{ $deviceSummary->device_type }}</td>
+                                        <td class="text-end">{{ number_format($deviceSummary->devices_count) }}</td>
+                                        <td class="text-end">{{ number_format($deviceSummary->consumptions_count) }}</td>
+                                        <td class="text-end fw-bold">
+                                            {{ number_format($deviceSummary->total_quantity, 2) }}
+                                            <small class="text-muted">{{ $deviceSummary->metric_name }}</small>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            Aplica un filtro para consultar dispositivos.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <div class="col-xl-3 col-md-6 col-12">
-                    <div class="border rounded bg-white p-3 h-100">
-                        <div class="text-muted small text-uppercase fw-semibold">Ordenes</div>
-                        <div class="fs-4 fw-bold">{{ number_format($summary->orders_count ?? 0) }}</div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6 col-12">
-                    <div class="border rounded bg-white p-3 h-100">
-                        <div class="text-muted small text-uppercase fw-semibold">Productos</div>
-                        <div class="fs-4 fw-bold">{{ number_format($summary->products_count ?? 0) }}</div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6 col-12">
-                    <div class="border rounded bg-white p-3 h-100">
-                        <div class="text-muted small text-uppercase fw-semibold">Cantidad total</div>
-                        <div class="fs-4 fw-bold">{{ number_format($summary->total_quantity ?? 0, 2) }}</div>
+
+                <div class="col-xl-7 col-12">
+                    <div class="table-responsive bg-white border rounded h-100">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">Servicio</th>
+                                    <th scope="col" class="text-end">Prefijo</th>
+                                    <th scope="col">Producto utilizado</th>
+                                    <th scope="col" class="text-end">Cantidad total</th>
+                                    <th scope="col" class="text-end">Ordenes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($serviceSummaries as $serviceSummary)
+                                    <tr>
+                                        <td class="fw-semibold">{{ $serviceSummary->service_name }}</td>
+                                        <td class="text-end">
+                                            <span class="badge text-bg-light border">{{ $serviceSummary->service_prefix ?? '-' }}</span>
+                                        </td>
+                                        <td>{{ $serviceSummary->product_name }}</td>
+                                        <td class="text-end fw-bold">
+                                            {{ number_format($serviceSummary->total_quantity, 2) }}
+                                            <small class="text-muted">{{ $serviceSummary->metric_name }}</small>
+                                        </td>
+                                        <td class="text-end">{{ number_format($serviceSummary->orders_count) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            Aplica un filtro para consultar productos utilizados por servicio.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -135,38 +182,29 @@
                 <table class="table table-sm table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col">Cliente</th>
-                            <th scope="col">Grupo</th>
-                            <th scope="col">Tipo de dispositivo</th>
                             <th scope="col">Producto utilizado</th>
                             <th scope="col">Lote</th>
-                            <th scope="col" class="text-end">Cantidad</th>
+                            <th scope="col" class="text-end">Cantidad total</th>
                             <th scope="col" class="text-end">Ordenes</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($consumptions as $consumption)
+                        @forelse ($productSummaries as $productSummary)
                             <tr>
-                                <td class="fw-semibold">{{ $consumption->customer_name }}</td>
+                                <td class="fw-semibold">{{ $productSummary->product_name }}</td>
                                 <td>
-                                    <span class="badge text-bg-dark">{{ $divisionLabels[$division] ?? 'Grupo' }}</span>
-                                    <span class="ms-1">{{ $consumption->period_label }}</span>
-                                </td>
-                                <td>{{ $consumption->device_type }}</td>
-                                <td>{{ $consumption->product_name }}</td>
-                                <td>
-                                    <span class="badge text-bg-light border">{{ $consumption->lot_name }}</span>
+                                    <span class="badge text-bg-light border">{{ $productSummary->lot_name }}</span>
                                 </td>
                                 <td class="text-end fw-bold text-danger">
-                                    {{ number_format($consumption->quantity, 2) }}
-                                    <small class="text-muted">{{ $consumption->metric_name }}</small>
+                                    {{ number_format($productSummary->total_quantity, 2) }}
+                                    <small class="text-muted">{{ $productSummary->metric_name }}</small>
                                 </td>
-                                <td class="text-end">{{ number_format($consumption->orders_count) }}</td>
+                                <td class="text-end">{{ number_format($productSummary->orders_count) }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
-                                    No hay consumos para los filtros seleccionados.
+                                <td colspan="4" class="text-center text-muted py-4">
+                                    {{ $hasAppliedFilters ? 'No hay productos utilizados para los filtros seleccionados.' : 'Aplica un filtro para consultar los productos utilizados.' }}
                                 </td>
                             </tr>
                         @endforelse
@@ -174,9 +212,6 @@
                 </table>
             </div>
 
-            <div class="mt-3">
-                {{ $consumptions->links('pagination::bootstrap-5') }}
-            </div>
         </div>
     </div>
 

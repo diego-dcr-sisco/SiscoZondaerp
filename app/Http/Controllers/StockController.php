@@ -289,7 +289,31 @@ class StockController extends Controller
         $dateRange = $this->parseStockConsumptionDateRange($request->input('date_range'));
         $availableDivisions = $this->stockConsumptionAvailableDivisions($dateRange);
         $division = $this->resolveStockConsumptionDivision($request->input('division', 'month'), $availableDivisions);
-        $periodSql = $this->stockConsumptionPeriodSql($division);
+        $hasAppliedFilters = collect($request->query())->except('page')->isNotEmpty();
+
+        if (!$hasAppliedFilters) {
+            $deviceSummaries = collect();
+            $serviceSummaries = collect();
+            $productSummaries = collect();
+
+            return view('stock.consumptions.by-customer', compact(
+                'navigation',
+                'deviceSummaries',
+                'serviceSummaries',
+                'productSummaries',
+                'division',
+                'availableDivisions',
+                'hasAppliedFilters'
+            ));
+        }
+
+        $request->validate([
+            'customer' => 'required|string',
+            'date_range' => 'required|string',
+        ], [
+            'customer.required' => 'El cliente es obligatorio.',
+            'date_range.required' => 'El rango de fecha es obligatorio.',
+        ]);
 
         $baseQuery = DB::table('device_product')
             ->join('order as orders', 'device_product.order_id', '=', 'orders.id')
@@ -313,53 +337,99 @@ class StockController extends Controller
             ]);
         }
 
-        $summary = (clone $baseQuery)
-            ->selectRaw('COUNT(DISTINCT customers.id) as customers_count')
-            ->selectRaw('COUNT(DISTINCT orders.id) as orders_count')
-            ->selectRaw('COUNT(DISTINCT products.id) as products_count')
-            ->selectRaw('COALESCE(SUM(device_product.quantity), 0) as total_quantity')
-            ->first();
-
-        $consumptions = (clone $baseQuery)
-            ->selectRaw('customers.id as customer_id')
-            ->selectRaw('customers.name as customer_name')
-            ->selectRaw($periodSql . ' as period_key')
+        $deviceSummaries = (clone $baseQuery)
             ->selectRaw('COALESCE(control_points.name, "Sin dispositivo") as device_type')
+            ->selectRaw('COALESCE(metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('COUNT(DISTINCT device_product.device_id) as devices_count')
+            ->selectRaw('COUNT(*) as consumptions_count')
+            ->selectRaw('COALESCE(SUM(device_product.quantity), 0) as total_quantity')
+            ->groupBy('control_points.name', 'metrics.value')
+            ->orderBy('control_points.name')
+            ->orderBy('metrics.value')
+            ->get();
+
+        $serviceSummaries = DB::table('order_product')
+            ->join('order as orders', 'order_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->leftJoin('service', 'order_product.service_id', '=', 'service.id')
+            ->leftJoin('product_catalog as products', 'order_product.product_id', '=', 'products.id')
+            ->leftJoin('metric as order_metrics', 'order_product.metric_id', '=', 'order_metrics.id')
+            ->leftJoin('metric as product_metrics', 'products.metric_id', '=', 'product_metrics.id')
+            ->whereNotNull('orders.programmed_date')
+            ->where('customers.name', 'like', '%' . trim($request->input('customer')) . '%')
+            ->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->selectRaw('COALESCE(service.name, "Sin servicio") as service_name')
+            ->selectRaw('service.prefix as service_prefix')
+            ->selectRaw('COALESCE(products.name, "Sin producto") as product_name')
+            ->selectRaw('COALESCE(order_metrics.value, product_metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('COALESCE(SUM(order_product.amount), 0) as total_quantity')
+            ->selectRaw('COUNT(DISTINCT orders.id) as orders_count')
+            ->groupBy('service.id', 'service.name', 'service.prefix', 'products.id', 'products.name', 'order_metrics.value', 'product_metrics.value')
+            ->orderBy('service.name')
+            ->orderBy('products.name')
+            ->get();
+
+        $deviceProductTotals = (clone $baseQuery)
             ->selectRaw('products.id as product_id')
             ->selectRaw('products.name as product_name')
             ->selectRaw('COALESCE(lots.registration_number, device_product.possible_lot, "Sin lote") as lot_name')
-            ->selectRaw('COALESCE(metrics.value, "") as metric_name')
-            ->selectRaw('SUM(device_product.quantity) as quantity')
-            ->selectRaw('COUNT(DISTINCT orders.id) as orders_count')
-            ->groupBy(
-                'customers.id',
-                'customers.name',
-                DB::raw($periodSql),
-                'control_points.name',
-                'products.id',
-                'products.name',
-                'lots.registration_number',
-                'device_product.possible_lot',
-                'metrics.value'
-            )
-            ->orderByDesc('period_key')
-            ->orderBy('customers.name')
-            ->orderBy('control_points.name')
-            ->orderBy('products.name')
-            ->paginate((int) $request->input('size', $this->size))
-            ->appends($request->all());
+            ->selectRaw('COALESCE(metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('device_product.quantity as quantity')
+            ->selectRaw('orders.id as order_id');
 
-        $consumptions->getCollection()->transform(function ($row) use ($division) {
-            $row->period_label = $this->formatStockConsumptionPeriodLabel($row->period_key, $division);
-            return $row;
-        });
+        $chemicalApplicationTotals = DB::table('order_product')
+            ->join('order as orders', 'order_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->join('service', 'order_product.service_id', '=', 'service.id')
+            ->leftJoin('product_catalog as products', 'order_product.product_id', '=', 'products.id')
+            ->leftJoin('lot as lots', 'order_product.lot_id', '=', 'lots.id')
+            ->leftJoin('metric as order_metrics', 'order_product.metric_id', '=', 'order_metrics.id')
+            ->leftJoin('metric as product_metrics', 'products.metric_id', '=', 'product_metrics.id')
+            ->whereNotNull('orders.programmed_date')
+            ->whereIn('service.prefix', [2, 3])
+            ->where('customers.name', 'like', '%' . trim($request->input('customer')) . '%')
+            ->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->selectRaw('products.id as product_id')
+            ->selectRaw('COALESCE(products.name, "Sin producto") as product_name')
+            ->selectRaw('COALESCE(lots.registration_number, order_product.possible_lot, "Sin lote") as lot_name')
+            ->selectRaw('COALESCE(order_metrics.value, product_metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('order_product.amount as quantity')
+            ->selectRaw('orders.id as order_id');
+
+        $productTotals = $deviceProductTotals->unionAll($chemicalApplicationTotals);
+
+        $productSummaries = DB::query()
+            ->fromSub($productTotals, 'product_totals')
+            ->selectRaw('product_id')
+            ->selectRaw('product_name')
+            ->selectRaw('lot_name')
+            ->selectRaw('metric_name')
+            ->selectRaw('COALESCE(SUM(quantity), 0) as total_quantity')
+            ->selectRaw('COUNT(DISTINCT order_id) as orders_count')
+            ->groupBy(
+                'product_id',
+                'product_name',
+                'lot_name',
+                'metric_name'
+            )
+            ->orderBy('product_name')
+            ->orderBy('lot_name')
+            ->get();
 
         return view('stock.consumptions.by-customer', compact(
             'navigation',
-            'consumptions',
-            'summary',
+            'deviceSummaries',
+            'serviceSummaries',
+            'productSummaries',
             'division',
-            'availableDivisions'
+            'availableDivisions',
+            'hasAppliedFilters'
         ));
     }
 

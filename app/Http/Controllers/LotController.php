@@ -491,7 +491,10 @@ class LotController extends Controller
         if (in_array($quantityDirection, ['min', 'max'], true)) {
             $query->orderBy('amount', $quantityDirection === 'min' ? 'asc' : 'desc');
         } else {
-            $query->latest('id');
+            $query->leftJoin('order as traceability_order', 'order_product.order_id', '=', 'traceability_order.id')
+                ->select('order_product.*')
+                ->orderByDesc('traceability_order.created_at')
+                ->orderByDesc('order_product.id');
         }
 
         $orders = $query

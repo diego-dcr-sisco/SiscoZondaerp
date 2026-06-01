@@ -101,7 +101,7 @@
             </div>
             <div class="card-body">
                 @if ($traceabilityNodes->isNotEmpty())
-                    <div class="traceability-flow">
+                    <div class="row align-items-center justify-content-between g-3 traceability-flow">
                         @foreach ($traceabilityNodes as $orderId => $items)
                             @php
                                 $firstItem = $items->first();
@@ -120,7 +120,7 @@
                                     ->values();
                             @endphp
 
-                            <div class="traceability-node card">
+                            <div class="traceability-node col-lg-5 p-0 card">
                                 <div class="card-header">
                                     <div class="d-flex justify-content-between align-items-center gap-2">
                                         <h6 class="card-title fw-bold mb-0">
@@ -206,6 +206,16 @@
                                     </div>
                                 </div>
                             </div>
+
+                            @if (!$loop->last)
+                                <div class="traceability-arrow col-lg-1 col-12">
+                                    <i class="bi bi-arrow-right"></i>
+                                </div>
+                            @else
+                                <div class="traceability-end col-lg-1 col-12">
+                                    <i class="bi bi-check-circle-fill"></i>
+                                </div>
+                            @endif
                         @endforeach
                     </div>
                 @else
@@ -221,14 +231,26 @@
     </div>
 
     <style>
-        .traceability-flow {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
         .traceability-node {
             border-radius: 0.375rem;
+        }
+
+        .traceability-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0d6efd;
+            font-size: 1.75rem;
+            line-height: 1;
+        }
+
+        .traceability-end {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #198754;
+            font-size: 1.5rem;
+            line-height: 1;
         }
 
         .traceability-node .form-control {
@@ -249,6 +271,16 @@
         .traceability-list-item {
             font-size: 0.875rem;
             line-height: 1.5;
+        }
+
+        @media (max-width: 991.98px) {
+            .traceability-end {
+                padding-top: 0.25rem;
+            }
+
+            .traceability-arrow i {
+                transform: rotate(90deg);
+            }
         }
     </style>
 @endsection

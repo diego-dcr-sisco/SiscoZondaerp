@@ -91,10 +91,7 @@ class ReportController extends Controller
         'No realizar comportamientos y hábitos higiénicos que generen atrayentes de organismos, tales como ingerir alimentos en áreas inadecuadas, restos de comida, etc.',
     ];
 
-    public function __construct()
-    {
-        
-    }
+    public function __construct() {}
 
     private function getOptions($id, $answers)
     {
@@ -295,20 +292,20 @@ class ReportController extends Controller
             ->pluck('device_id')->unique()->toArray();
         $devices_with_pests = DevicePest::where('order_id', $order->id)
             ->pluck('device_id')->unique()->toArray();
-        
+
         // Combinar todos los IDs de dispositivos que tienen algún tipo de registro
         $reviewed_device_ids = array_unique(array_merge(
             $devices_incidents_ids,
             $devices_with_products,
             $devices_with_pests
         ));
-        
+
         // Dispositivos revisados (con incidentes, productos o plagas)
         $reviewed_devices = $all_devices->whereIn('id', $reviewed_device_ids);
-        
+
         // Dispositivos no revisados (sin incidentes, productos ni plagas)
         $not_reviewed_devices = $all_devices->whereNotIn('id', $reviewed_device_ids);
-        
+
         // Combinar: primero revisados, luego no revisados
         $devices = $reviewed_devices->merge($not_reviewed_devices);
 
@@ -389,17 +386,17 @@ class ReportController extends Controller
             // 3. Si tiene incidencias/respuestas
             // 4. Si tiene productos aplicados
             // 5. Si tiene plagas registradas
-            $hasAnswers = collect($questions_data)->filter(function($q) {
+            $hasAnswers = collect($questions_data)->filter(function ($q) {
                 return !empty($q['answer']);
             })->count() > 0;
             $hasProducts = $device->products($order->id)->count() > 0;
             $hasPests = $device->pests($order->id)->count() > 0;
-            
-            $isChecked = ($device_states?->is_scanned ?? false) || 
-                        ($device_states?->is_checked ?? false) ||
-                        $hasAnswers ||
-                        $hasProducts ||
-                        $hasPests;
+
+            $isChecked = ($device_states?->is_scanned ?? false) ||
+                ($device_states?->is_checked ?? false) ||
+                $hasAnswers ||
+                $hasProducts ||
+                $hasPests;
 
             $devices_data[] = [
                 'id' => $device->id,
@@ -610,20 +607,17 @@ class ReportController extends Controller
                 'data' => $review,
                 'order_products' => $this->getOrderProductsResponse($orderId),
             ], 200);
-
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Orden no encontrada.'
             ], 404);
-
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Datos inválidos',
                 'errors' => $e->errors()
             ], 422);
-
         } catch (\Exception $e) {
             Log::error("Error en setIncident - Order: {$orderId}: " . $e->getMessage());
             return response()->json([
@@ -838,7 +832,6 @@ class ReportController extends Controller
             ];
 
             return response()->json(['data' => $data], 200);
-
         } catch (\Exception $e) {
             return response()->json(['error' => 'An error occurred while searching for products.', 'details' => $e->getMessage()], 500);
         }
@@ -850,8 +843,6 @@ class ReportController extends Controller
         $data = $request->all();
         $order = Order::find($orderId);
         $op_id = $data['op_id'];
-
-        // dd($data);
 
         if (!$op_id) {
             // Buscar si ya existe un OrderProduct con las mismas características
@@ -880,7 +871,6 @@ class ReportController extends Controller
                     'dosage' => $data['dosage']
                 ]);
             }
-
         } else {
             $order_product = OrderProduct::find($op_id);
             $order_product->update([
@@ -892,7 +882,6 @@ class ReportController extends Controller
                 'amount' => $data['amount'],
                 'dosage' => $data['dosage']
             ]);
-
         }
 
         $dps = DeviceProduct::where('order_id', $order->id)->get();
@@ -1155,7 +1144,6 @@ class ReportController extends Controller
                     } catch (\Exception $e) {
                         Log::warning('Could not get PDF file info', ['order_id' => $order_id, 'tempPath' => $tempPath, 'error' => $e->getMessage()]);
                     }
-
                 } catch (\Exception $e) {
                     Log::error("Error generando certificado para orden $order_id: " . $e->getMessage());
                     continue;
@@ -1169,7 +1157,6 @@ class ReportController extends Controller
                 'delete_url' => route('report.bulk.delete', ['timer' => $timer]),
                 'timer' => $timer
             ]);
-
         } catch (\Exception $e) {
             Log::error("Error en bulkPrint: " . $e->getMessage());
             return response()->json([
@@ -1295,7 +1282,7 @@ class ReportController extends Controller
 
             // Validar firma solo si fue actualizada y no está vacía
             $signatureUpdated = isset($data['signature_updated']) && $data['signature_updated'] == 1;
-            
+
             if ($signatureUpdated && !empty($data['signature_base64']) && !preg_match('/^data:image\/(jpeg|png);base64,/', $data['signature_base64'])) {
                 return response()->json([
                     'success' => false,
@@ -1317,7 +1304,7 @@ class ReportController extends Controller
             // Solo actualizar la firma si fue modificada Y tiene un valor válido
             if ($signatureUpdated) {
                 $signatureValue = $data['signature_base64'] ?? null;
-                
+
                 // Solo actualizar si hay un valor real (no vacío)
                 // Si viene vacío o null, NO modificar el campo (mantener el valor existente)
                 if (!empty($signatureValue) && $signatureValue !== '' && $signatureValue !== 'null') {
@@ -1370,7 +1357,6 @@ class ReportController extends Controller
                 'message' => 'Orden actualizada correctamente',
                 'order' => $order
             ], 200);
-
         } catch (ModelNotFoundException $e) {
             Log::error('Order not found in updateOrder', ['data' => $data, 'error' => $e->getMessage()]);
             return response()->json([
@@ -1414,7 +1400,6 @@ class ReportController extends Controller
                 'message' => $message,
                 'customer' => $customer
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -1462,14 +1447,14 @@ class ReportController extends Controller
             if ($can_propagate) {
                 $orderQuery = Order::where('contract_id', $order->contract_id)
                     ->where('status_id', 1);
-                
+
                 // Manejo correcto de setting_id NULL en SQL
                 if ($order->setting_id) {
                     $orderQuery->where('setting_id', $order->setting_id);
                 } else {
                     $orderQuery->whereNull('setting_id');
                 }
-                
+
                 $orders = $orderQuery->get();
 
                 foreach ($orders as $ord) {
@@ -1492,7 +1477,6 @@ class ReportController extends Controller
                 'message' => $message,
                 'description' => $propagate
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -1521,7 +1505,6 @@ class ReportController extends Controller
             return response()->json([
                 'success' => true,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -1567,7 +1550,6 @@ class ReportController extends Controller
                 'success' => true,
                 'message' => $message,
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -1689,17 +1671,17 @@ class ReportController extends Controller
             // 3. Si tiene incidencias/respuestas
             // 4. Si tiene productos aplicados
             // 5. Si tiene plagas registradas
-            $hasAnswers = collect($questions_data)->filter(function($q) {
+            $hasAnswers = collect($questions_data)->filter(function ($q) {
                 return !empty($q['answer']);
             })->count() > 0;
             $hasProducts = $device->products($order->id)->count() > 0;
             $hasPests = $device->pests($order->id)->count() > 0;
-            
-            $isChecked = ($device_states?->is_scanned ?? false) || 
-                        ($device_states?->is_checked ?? false) ||
-                        $hasAnswers ||
-                        $hasProducts ||
-                        $hasPests;
+
+            $isChecked = ($device_states?->is_scanned ?? false) ||
+                ($device_states?->is_checked ?? false) ||
+                $hasAnswers ||
+                $hasProducts ||
+                $hasPests;
 
             $devices_data[] = [
                 'id' => $device->id,
@@ -1844,7 +1826,6 @@ class ReportController extends Controller
                 'saved_evidences' => $savedEvidences,
                 'total_saved' => count($savedEvidences)
             ]);
-
         } catch (ValidationException $e) {
             DB::rollBack();
             return response()->json([
@@ -1852,14 +1833,12 @@ class ReportController extends Controller
                 'message' => 'Error de validación',
                 'errors' => $e->errors()
             ], 422);
-
         } catch (ModelNotFoundException $e) {
             DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Orden no encontrada'
             ], 404);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error al guardar evidencias: ' . $e->getMessage(), [
@@ -1922,13 +1901,11 @@ class ReportController extends Controller
                 'evidences' => $evidences,
                 'total' => $evidences->count()
             ]);
-
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Orden no encontrada'
             ], 404);
-
         } catch (\Exception $e) {
             Log::error('Error al obtener evidencias: ' . $e->getMessage(), [
                 'order_id' => $orderId
@@ -1954,13 +1931,11 @@ class ReportController extends Controller
                 'success' => true,
                 'message' => 'Evidencia eliminada correctamente'
             ]);
-
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Evidencia no encontrada'
             ], 404);
-
         } catch (\Exception $e) {
             Log::error('Error al eliminar evidencia: ' . $e->getMessage(), [
                 'evidence_id' => $evidenceId
@@ -1991,14 +1966,12 @@ class ReportController extends Controller
                 'message' => "{$deletedCount} evidencias eliminadas correctamente",
                 'deleted_count' => $deletedCount
             ]);
-
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error de validación',
                 'errors' => $e->errors()
             ], 422);
-
         } catch (\Exception $e) {
             Log::error('Error al eliminar múltiples evidencias: ' . $e->getMessage(), [
                 'evidence_ids' => $request->evidence_ids
