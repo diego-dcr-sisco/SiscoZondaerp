@@ -227,19 +227,6 @@
             </form>
         </div>
 
-        @if ($hasChartSearch)
-            <div class="mb-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body py-3">
-                        <h5 class="card-title fw-bold mb-1">{{ $chartDescription['title'] }}</h5>
-                        @if ($chartDescription['description'])
-                            <p class="card-text text-muted mb-0">{{ $chartDescription['description'] }}</p>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        @endif
-
         @if ($hasChartSearch && in_array($selectedMetric, ['new_customers', 'new_leads', 'services_amount', 'scheduled_trackings']))
             <div class="row">
                 <div class="col-lg-6 col-12 mb-3">
