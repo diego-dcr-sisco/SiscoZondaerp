@@ -43,27 +43,27 @@ use App\Http\Controllers\DailyTrackingController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ClientReportController;
 
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\ProfileController;
 
-/*Route::get('/', function () {
-    return view('/auth/login');
-});*/
+// Redirige al login (Breeze lo maneja)
+Route::get('/', function () {
+    return redirect()->route('login');
+});
 
-/*Route::middleware(['auth', 'single.session'])->group(function () {
+Route::middleware(['auth', 'single.session'])->group(function () {
+
+    Route::get('/dashboard', [PagesController::class, 'dashboard'])->name('dashboard');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});*/
 
-
-
-Route::middleware(['auth', 'single.session'])->group(function () {
-    Route::redirect('/', '/dashboard');
     Route::get('/dashboard', [PagesController::class, 'dashboard'])->name('dashboard');
     Route::get('/RRHH/{section}', [PagesController::class, 'rrhh'])->name('rrhh');
     Route::get('/dashboard/stock', [PagesController::class, 'stock'])->name('dashboard.stock.');
-    });
-// DASHBOARD
-
+});
+    
 // CONTROL DE OPERACIONES
 Route::prefix('operations')
     ->name('operations.')

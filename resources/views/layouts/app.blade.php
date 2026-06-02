@@ -94,7 +94,7 @@
 </head>
 
 <body class="m-0 d-flex flex-column" style="height: 100vh;">
-   {{-- @auth --}}
+    @auth
         @include('layouts.header')
 
         <div class="d-flex flex-column flex-md-row flex-grow-1" style="overflow: hidden;">
@@ -120,11 +120,11 @@
             </main>
 
         </div>
-    {{-- @else 
+    @else 
         <main class="flex-grow-1">
             @yield('login')
         </main>
-    @endauth --}}
+    @endauth
 
     <script>
         (function() {

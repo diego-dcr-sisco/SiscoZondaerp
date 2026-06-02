@@ -91,9 +91,9 @@
         </div>
 
         {{-- FORM OCULTO POST para exportar --}}
-        <form id="exportForm" method="POST" action="{{ route('report.client.export') }}">
-            @csrf
-        </form>
+<form method="POST" action="{{ route('report.client.export') }}" id="exportForm">
+    @csrf
+</form>
 
     </div>
 
