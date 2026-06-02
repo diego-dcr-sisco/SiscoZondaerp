@@ -8,7 +8,6 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
@@ -21,8 +20,8 @@ FromCollection,
 WithHeadings, 
 WithMapping, 
 WithStyles, 
-WithColumnFormatting, 
-ShouldAutoSize
+WithColumnFormatting
+// Quitamos ShouldAutoSize para controlar nosotros el ancho de las columnas problemáticas
 {
     protected $customers;
     protected $metrics;
@@ -54,15 +53,15 @@ ShouldAutoSize
         ];
 
         if (in_array('inc_orders_count', $this->metrics)) {
-            $headers[] = 'Cantidad de órdenes en el rango.';
+            $headers[] = "Cantidad de\nórdenes en el rango.";
         }
 
         if (in_array('inc_has_devices', $this->metrics)) {
-            $headers[] = 'Cuenta con dispositivos: sí/no.';
+            $headers[] = "Cuenta con\ndispositivos: sí/no.";
         }
 
         if (in_array('inc_devices_count', $this->metrics)) {
-            $headers[] = 'Cantidad de dispositivos.';
+            $headers[] = "Cantidad de\ndispositivos.";
         }
 
         if (in_array('inc_device_types', $this->metrics)) {
@@ -70,7 +69,7 @@ ShouldAutoSize
         }
 
         if (in_array('inc_pest_count', $this->metrics)) {
-            $headers[] = 'Cantidad de plagas asociadas.';
+            $headers[] = "Cantidad de\nplagas asociadas.";
         }
 
         if (in_array('inc_pest_types', $this->metrics)) {
@@ -89,9 +88,15 @@ ShouldAutoSize
             $customer->businessname,
             $customer->tel,
             $customer->email,
-            $customer->created_at ? ExcelDate::dateTimeToExcel(Carbon::parse($customer->created_at)) : null,
-            $customer->first_order ? ExcelDate::dateTimeToExcel(Carbon::parse($customer->first_order)) : null,
-            $customer->last_order ? ExcelDate::dateTimeToExcel(Carbon::parse($customer->last_order)) : null,
+            $customer->created_at ? 
+            ExcelDate::dateTimeToExcel(
+                Carbon::parse($customer->created_at)) : null,
+            $customer->first_order ? 
+            ExcelDate::dateTimeToExcel(
+                Carbon::parse($customer->first_order)) : null,
+            $customer->last_order ? 
+            ExcelDate::dateTimeToExcel(
+                Carbon::parse($customer->last_order)) : null,
             $customer->calculated_type === 'new' ? 'Nuevo' : 'Recurrente'
         ];
 
@@ -126,13 +131,16 @@ ShouldAutoSize
     {
         $highestColumn = $sheet->getHighestColumn();
         $highestRow = $sheet->getHighestRow();
-        $fullRange = "A1:{$highestColumn}{$highestRow}";
         $headerRange = "A1:{$highestColumn}1";
+        $fullRange = "A1:{$highestColumn}{$highestRow}";
+
+        $sheet->getDefaultRowDimension()->setRowHeight(-1);
+        $sheet->getRowDimension(1)->setRowHeight(75);
 
         $sheet->getStyle($headerRange)->applyFromArray([
             'font' => [
                 'bold' => true,
-                'size' => 12,
+                'size' => 11,
                 'color' => ['argb' => 'FFFFFFFF'],
             ],
             'fill' => [
@@ -143,6 +151,9 @@ ShouldAutoSize
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
                 'vertical' => Alignment::VERTICAL_CENTER,
                 'wrapText' => true,
+            ],
+            'borders' => [
+                'bottom' => ['borderStyle' => Border::BORDER_THICK],
             ],
         ]);
 
@@ -160,61 +171,72 @@ ShouldAutoSize
             }
         }
 
-        $sheet->setAutoFilter($headerRange);
         $sheet->freezePane('A2');
+        $sheet->setAutoFilter($headerRange);
 
-        $sheet->getColumnDimension('C')->setWidth(35);
-        $sheet->getColumnDimension('D')->setWidth(40);
-
-        $deviceTypeColumn = null;
         foreach (range('A', $highestColumn) as $column) {
-            $cellValue = $sheet->getCell("{$column}1")->getValue();
-            if ($cellValue === 'Tipos de dispositivos.') {
-                $deviceTypeColumn = $column;
-                break;
-            }
-        }
+            $title = trim((string) $sheet->getCell("{$column}1")->getValue());
+            $dataRange = "{$column}2:{$column}{$highestRow}";
+            $columnDimension = $sheet->getColumnDimension($column);
 
-        if ($deviceTypeColumn !== null) {
-            $sheet->getColumnDimension($deviceTypeColumn)->setWidth(30);
-        }
+            if ($title === 'ID del cliente.') {
+                $columnDimension->setWidth(10);
+                $sheet->getStyle($dataRange)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            } elseif (in_array($title, ['Código del cliente.', 'Teléfono.'], true) || str_contains($title, 'Fecha')) {
+                $columnDimension->setWidth(15);
+            } elseif ($title === 'Nombre comercial.' || $title === 'Razón social.') {
+                $columnDimension->setWidth(55);
+            } elseif ($title === 'Correo.') {
+                $columnDimension->setWidth(45);
+            } elseif (str_contains($title, 'Tipo de cliente')) {
+                $columnDimension->setWidth(18);
+                $sheet->getStyle($dataRange)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $numericColumns = ['A'];
-        foreach (range('A', $highestColumn) as $column) {
-            $title = $sheet->getCell("{$column}1")->getValue();
-            if (in_array($title, ['Cantidad de órdenes en el rango.', 'Cantidad de dispositivos.', 'Cantidad de plagas asociadas.'])) {
-                $numericColumns[] = $column;
-            }
+                for ($row = 2; $row <= $highestRow; $row++) {
+                    $value = trim((string) $sheet->getCell("{$column}{$row}")->getValue());
 
-            if ($title === 'Correo.') {
-                $sheet->getStyle("{$column}2:{$column}{$highestRow}")
-                    ->getAlignment()
-                    ->setHorizontal(Alignment::HORIZONTAL_LEFT);
-            }
-        }
-
-        foreach ($numericColumns as $column) {
-            $sheet->getStyle("{$column}2:{$column}{$highestRow}")
-                ->getAlignment()
-                ->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        }
-
-        $tipoClienteColumn = 'J';
-        for ($row = 2; $row <= $highestRow; $row++) {
-            $cell = $sheet->getCell("{$tipoClienteColumn}{$row}");
-            $value = trim((string) $cell->getValue());
-
-            if ($value === 'Nuevo') {
-                $sheet->getStyle("{$tipoClienteColumn}{$row}")->applyFromArray([
-                    'font' => ['color' => ['argb' => 'FFFFFFFF'], 'bold' => true],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF2E7D32']],
-                ]);
-            }
-
-            if ($value === 'Recurrente') {
-                $sheet->getStyle("{$tipoClienteColumn}{$row}")->applyFromArray([
-                    'font' => ['color' => ['argb' => 'FFFFFFFF'], 'bold' => true],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => 'FF1565C0']],
+                    if ($value === 'Nuevo') {
+                        $sheet->getStyle("{$column}{$row}")->applyFromArray([
+                            'font' => [
+                                'bold' => true,
+                                'color' => ['argb' => 'FFFFFFFF'],
+                            ],
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+                                'startColor' => ['argb' => 'FF2E7D32'],
+                            ],
+                            'alignment' => [
+                                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                                'vertical' => Alignment::VERTICAL_CENTER,
+                            ],
+                        ]);
+                    } elseif ($value === 'Recurrente') {
+                        $sheet->getStyle("{$column}{$row}")->applyFromArray([
+                            'font' => [
+                                'bold' => true,
+                                'color' => ['argb' => 'FFFFFFFF'],
+                            ],
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+                                'startColor' => ['argb' => 'FF1565C0'],
+                            ],
+                            'alignment' => [
+                                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                                'vertical' => Alignment::VERTICAL_CENTER,
+                            ],
+                        ]);
+                    }
+                }
+            } elseif (str_contains($title, 'Cantidad') || str_contains($title, 'Cuenta con')) {
+                $columnDimension->setWidth(20);
+                $sheet->getStyle($dataRange)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            } elseif (str_contains($title, 'Tipos de dispositivos') || str_contains($title, 'Plagas detectadas')) {
+                $columnDimension->setWidth(50);
+                $sheet->getStyle($dataRange)->applyFromArray([
+                    'alignment' => [
+                        'horizontal' => Alignment::HORIZONTAL_LEFT,
+                        'vertical' => Alignment::VERTICAL_TOP,
+                    ],
                 ]);
             }
         }
@@ -224,10 +246,16 @@ ShouldAutoSize
 
     public function columnFormats(): array
     {
-        return [
-            'G' => NumberFormat::FORMAT_DATE_YYYYMMDD2,
-            'H' => NumberFormat::FORMAT_DATE_YYYYMMDD2,
-            'I' => NumberFormat::FORMAT_DATE_YYYYMMDD2,
-        ];
+        $formats = [];
+        $headers = $this->headings();
+
+        foreach ($headers as $index => $title) {
+            if (str_contains($title, 'Fecha')) {
+                $column = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($index + 1);
+                $formats[$column] = 'yyyy-mm-dd';
+            }
+        }
+
+        return $formats;
     }
 }
