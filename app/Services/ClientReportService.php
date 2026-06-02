@@ -13,46 +13,48 @@ class ClientReportService
         array $metrics = []
         )
     {
-        $start = Carbon::parse($startDate)->startOfDay()->format('Y-m-d H:i:s');
-        $end   = Carbon::parse($endDate)->endOfDay()->format('Y-m-d H:i:s');
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end   = Carbon::parse($endDate)->endOfDay();
+        $startDateOnly = $start->format('Y-m-d');
+        $endDateOnly = $end->format('Y-m-d');
 
         $query = DB::table('customer as c')
             ->select(
                 'c.id',
                 'c.code',
                 'c.name',
-                DB::raw('COALESCE(c.businessname, c.tax_name, "N/A") as businessname'),
+                DB::raw('COALESCE(c.tax_name, c.name, "N/A") as businessname'),
                 DB::raw('COALESCE(c.tel, c.phone, "N/A") as tel'),
                 'c.email',
                 'c.created_at',
 
                 // Primera orden GLOBAL
-                DB::raw('(SELECT MIN(created_at) 
+                DB::raw('(SELECT MIN(programmed_date) 
                 FROM `order` 
                 WHERE customer_id = c.id) as first_order_global'),
 
                 // Primera y última orden EN EL RANGO
-                DB::raw('(SELECT MIN(created_at) 
+                DB::raw('(SELECT MIN(programmed_date) 
                 FROM `order` 
                 WHERE customer_id = c.id 
-                AND created_at 
-                BETWEEN "' . $start . '" 
-                AND "' . $end . '") as first_order'),
+                AND programmed_date 
+                BETWEEN "' . $startDateOnly . '" 
+                AND "' . $endDateOnly . '") as first_order'),
                 
-                DB::raw('(SELECT MAX(created_at) 
+                DB::raw('(SELECT MAX(programmed_date) 
                 FROM `order` 
                 WHERE customer_id = c.id 
-                AND created_at 
-                BETWEEN "' . $start . '" 
-                AND "' . $end . '") as last_order'),
+                AND programmed_date 
+                BETWEEN "' . $startDateOnly . '" 
+                AND "' . $endDateOnly . '") as last_order'),
 
             // Órdenes en el rango
                 DB::raw('(SELECT COUNT(id) 
                 FROM `order` 
                 WHERE customer_id = c.id 
-                AND created_at 
-                BETWEEN "' . $start . '" 
-                AND "' . $end . '") as total_orders_in_range'),
+                AND programmed_date 
+                BETWEEN "' . $startDateOnly . '" 
+                AND "' . $endDateOnly . '") as total_orders_in_range'),
 
                 DB::raw('(
                 SELECT COUNT(DISTINCT dp.device_id)
@@ -62,11 +64,13 @@ class ClientReportService
                 ) as devices_count'),
 
                 DB::raw('(
-                SELECT GROUP_CONCAT(DISTINCT d.code SEPARATOR ", ")
+                SELECT GROUP_CONCAT(DISTINCT cp.name SEPARATOR ", ")
                 FROM devices dv
                 JOIN device d ON d.id = dv.device_id
-                WHERE dv.customer_id = c.id
-                ) as device_types'),
+                JOIN control_point cp ON cp.id = d.type_control_point_id
+                WHERE dv.order_id IN (
+                SELECT id FROM `order` WHERE customer_id = c.id
+                )) as device_types'),
 
                 DB::raw('(
                 SELECT COUNT(*)
@@ -90,16 +94,16 @@ class ClientReportService
             ->whereRaw('(SELECT COUNT(id) 
             FROM `order` 
             WHERE customer_id = c.id 
-            AND created_at 
-            BETWEEN "' . $start . '" 
-            AND "' . $end . '") > 0');
+            AND programmed_date 
+            BETWEEN "' . $startDateOnly . '" 
+            AND "' . $endDateOnly . '") > 0');
 
             $customers = $query->get();
 
         // Tipo: nuevo vs recurrente
-            $customers = $customers->map(function ($c) use ($start) {
+            $customers = $customers->map(function ($c) use ($startDateOnly) {
             $c->calculated_type = ($c->first_order_global &&
-            \Carbon\Carbon::parse($c->first_order_global)->gte(\Carbon\Carbon::parse($start)))
+            \Carbon\Carbon::parse($c->first_order_global)->gte(\Carbon\Carbon::parse($startDateOnly)))
             ? 'new'
             : 'recurring';
             return $c;

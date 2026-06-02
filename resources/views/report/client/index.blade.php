@@ -1,5 +1,4 @@
-    @extends('layouts.app')
-
+    @extends('layouts.app')  
     @section('content')
     <div class="container">
 
@@ -67,7 +66,7 @@
 
 
                 <label class="ml-3">
-                    <input type="checkbox" name="metrics[]" value="inc_pests_count">
+                    <input type="checkbox" name="metrics[]" value="inc_pest_count">
                     Cantidad de plagas
                 </label>
 
@@ -130,4 +129,4 @@
     }
     </script>
 
-    @endsection
+@endsection
