@@ -45,21 +45,12 @@ class StockController extends Controller
 
     private $size = 50;
 
-    public $navigation = [
-        'Almacenes' => '/stock',
-        'Lotes' => '/lot/index',
-        'Productos' => '/products',
-        'Movimientos' => '/stock/movements',
-        // 'Zonas' => '/customer-zones',
-        'Consumos en ordenes' => '/stock/movements/orders',
-        'Consumos por cliente' => '/stock/consumptions/by-customer',
-        //'Consumos' => '/consumptions/',
-        // 'Estadisticas' => '/stock/analytics',
-        // 'Pedidos' => '/consumptions',
-        // 'Productos en ordenes' => '/stock/orders-products',
-        // 'Estadisticas' => '/stock/analytics',
-        // 'Compras' => '/purchase-requisition/purchases',
-    ];
+    public $navigation = [];
+
+    public function __construct()
+    {
+        $this->navigation = config('stock_navigation.items');
+    }
 
 
     ///////////////// FUNCIONES DE ALMACENES /////////////////

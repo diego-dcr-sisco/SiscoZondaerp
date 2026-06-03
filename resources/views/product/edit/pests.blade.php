@@ -5,6 +5,7 @@
         'icon' => 'bi-box-seam',
         'backRoute' => url()->previous(),
     ])
+    @include('product.edit.navigation-tabs')
 <div class="container-fluid p-0">
 <form class="m-3" method="POST" action="{{ route('product.update', ['id' => $product->id]) }}"
             enctype="multipart/form-data">

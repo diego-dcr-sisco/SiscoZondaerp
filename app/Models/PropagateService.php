@@ -18,6 +18,9 @@ class PropagateService extends Model
         'contract_id',
         'setting_id',
         'text',
+        'custom_interval_enabled',
+        'custom_interval_start_date',
+        'custom_interval_days',
     ];
 
     // En app/Models/PropagateService.php

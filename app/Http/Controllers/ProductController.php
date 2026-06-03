@@ -39,19 +39,25 @@ class ProductController extends Controller
 
     private $size = 50;
 
-    public $navigation = [
-        'Almacenes' => '/stock',
-        'Lotes' => '/lot/index',
-        'Productos' => '/products',
-        'Movimientos' => '/stock/movements',
-        'Consumos en ordenes' => '/stock/movements/orders',
-        'Consumos' => '/consumptions/',
-        // 'Zonas' => '/customer-zones',
-        // 'Pedidos' => '/consumptions',
-        // 'Productos en ordenes' => '/stock/orders-products',
-        //'Estadisticas' => 'stock/analytics',
-        // 'Compras' => '/purchase-requisition/purchases',
-    ];  
+    public $navigation = [];
+
+    public function __construct()
+    {
+        $this->navigation = config('stock_navigation.items');
+    }
+
+    private function productEditNavigation(ProductCatalog $product): array
+    {
+        return [
+            'Producto' => route('product.edit', ['id' => $product->id]),
+            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
+            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
+            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
+            'Archivos' => route('product.edit.files', ['id' => $product->id]),
+            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
+            'Movimientos' => route('product.edit.movements', ['id' => $product->id]),
+        ];
+    }
 
     public function getImage(string $url)
     {
@@ -218,19 +224,12 @@ class ProductController extends Controller
         $toxics = ToxicityCategories::all();
         $metrics = Metric::all();
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
         return view(
             'product.edit.form',
-            compact('product', 'line_business', 'purposes', 'biocides', 'presentations', 'toxics', 'metrics', 'navigation')
+            compact('product', 'line_business', 'purposes', 'biocides', 'presentations', 'toxics', 'metrics', 'navigation', 'productNavigation')
         );
     }
 
@@ -239,19 +238,12 @@ class ProductController extends Controller
         $product = ProductCatalog::find($id);
         $application_methods = ApplicationMethod::orderBy('name')->get();
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
         return view(
             'product.edit.app-methods',
-            compact('product', 'application_methods', 'navigation')
+            compact('product', 'application_methods', 'navigation', 'productNavigation')
         );
     }
 
@@ -260,19 +252,12 @@ class ProductController extends Controller
         $product = ProductCatalog::find($id);
         $pest_categories = PestCategory::orderBy('category', 'asc')->get();
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
         return view(
             'product.edit.pests',
-            compact('product', 'pest_categories', 'navigation')
+            compact('product', 'pest_categories', 'navigation', 'productNavigation')
         );
     }
 
@@ -282,19 +267,12 @@ class ProductController extends Controller
         $product = ProductCatalog::find($id);
         $filenames = Filenames::where('type', 'product')->orderBy('name')->get();
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
         return view(
             'product.edit.files',
-            compact('product', 'filenames', 'navigation')
+            compact('product', 'filenames', 'navigation', 'productNavigation')
         );
     }
 
@@ -331,19 +309,12 @@ class ProductController extends Controller
             ];
         }
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
         return view(
             'product.edit.inputs',
-            compact('product', 'line_business', 'application_methods', 'purposes', 'biocides', 'presentations', 'toxics', 'metrics', 'pest_categories', 'inputs', 'filenames', 'navigation')
+            compact('product', 'line_business', 'application_methods', 'purposes', 'biocides', 'presentations', 'toxics', 'metrics', 'pest_categories', 'inputs', 'filenames', 'navigation', 'productNavigation')
         );
     }
 
@@ -403,35 +374,21 @@ class ProductController extends Controller
     {
         $product = ProductCatalog::find($id);
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
 
-        return view('product.edit.treatments', compact('navigation'));
+        return view('product.edit.treatments', compact('product', 'navigation', 'productNavigation'));
     }
 
     public function editMovements(string $id)
     {
         $product = ProductCatalog::find($id);
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
-        return view('product.edit.treatments', compact('navigation'));
+        return view('product.edit.treatments', compact('product', 'navigation', 'productNavigation'));
     }
 
     public function input(Request $request, string $id)

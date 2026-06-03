@@ -136,6 +136,21 @@ class ContractController extends Controller
         return (int) end($parts);
     }
 
+    private function contractServiceCustomIntervalAttributes($data, $fallbackStartDate = null): array
+    {
+        $enabled = (bool) ($data->custom_interval_enabled ?? false);
+
+        return [
+            'custom_interval_enabled' => $enabled,
+            'custom_interval_start_date' => $enabled
+                ? (($data->custom_interval_start_date ?? null) ?: $fallbackStartDate)
+                : null,
+            'custom_interval_days' => $enabled && !empty($data->custom_interval_days)
+                ? (int) $data->custom_interval_days
+                : null,
+        ];
+    }
+
     public function store(Request $request): RedirectResponse
     {
         //dd($request->all());
@@ -185,7 +200,7 @@ class ContractController extends Controller
                 'total' => count($data->dates),
                 'service_description' => $data->description ?? null,
                 'created_at' => now(),
-            ]);
+            ] + $this->contractServiceCustomIntervalAttributes($data, $contract->startdate));
 
 
             foreach ($data->dates as $date) {
@@ -502,6 +517,9 @@ class ContractController extends Controller
                     ];
                 })->toArray(), // ← Convertir a array
                 'description' => $cs->service_description ?? ($service ? $service->description : null),
+                'custom_interval_enabled' => (bool) $cs->custom_interval_enabled,
+                'custom_interval_start_date' => $cs->custom_interval_start_date,
+                'custom_interval_days' => $cs->custom_interval_days,
             ];
         }
 
@@ -579,8 +597,16 @@ class ContractController extends Controller
                         'total' => count($data->dates),
                         'service_description' => $data->description ?? null,
                         'created_at' => now(),
-                    ]);
+                    ] + $this->contractServiceCustomIntervalAttributes($data, $contract->startdate));
                 }
+
+                $contract_service->update([
+                    'execution_frequency_id' => $data->frequency_id,
+                    'interval' => $data->interval_id ?? 1,
+                    'days' => json_encode($data->days),
+                    'total' => count($data->dates),
+                    'service_description' => $data->description ?? null,
+                ] + $this->contractServiceCustomIntervalAttributes($data, $contract->startdate));
 
                 // Proteger órdenes no pendientes aunque no lleguen en el payload del frontend.
                 // Esto evita perder referencia del setting o historial al reconfigurar días/números.
@@ -756,13 +782,13 @@ class ContractController extends Controller
                 'total' => count($setting->dates),
                 'created_at' => now(),
                 'updated_at' => now()
-            ]);
+            ] + $this->contractServiceCustomIntervalAttributes($setting, $contract->startdate));
         } else {
             $contract_service->update([
                 'total' => count($setting->dates),
                 'service_description' => $setting->description ?? null,
                 'updated_at' => now()
-            ]);
+            ] + $this->contractServiceCustomIntervalAttributes($setting, $contract->startdate));
         }
 
         return $contract_service;
@@ -1126,6 +1152,11 @@ class ContractController extends Controller
                     ];
                 })->toArray(),
                 'description' => $cs->service_description ?? null,
+                'custom_interval_enabled' => (bool) $cs->custom_interval_enabled,
+                'custom_interval_start_date' => $cs->custom_interval_start_date
+                    ? Carbon::parse($cs->custom_interval_start_date)->addYear()->format('Y-m-d')
+                    : null,
+                'custom_interval_days' => $cs->custom_interval_days,
             ];
         }
 

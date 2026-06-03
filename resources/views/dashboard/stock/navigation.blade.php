@@ -49,8 +49,13 @@
                 </a>
             </div>
             <div class="row sidebar w-100 rounded px-2 ml-3">
-                <a href="{{ route('consumptions.index') }}" class="sidebar w-100" style="font-size: 0.8rem;">
-                    Histórico
+                <a href="{{ route('stock.consumptions.by-customer') }}" class="sidebar w-100" style="font-size: 0.8rem;">
+                    Por cliente
+                </a>
+            </div>
+            <div class="row sidebar w-100 rounded px-2 ml-3">
+                <a href="{{ route('stock.movements.orders') }}" class="sidebar w-100" style="font-size: 0.8rem;">
+                    En ordenes
                 </a>
             </div>
         </div>

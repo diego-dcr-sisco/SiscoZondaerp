@@ -228,6 +228,13 @@ class OrderController extends Controller
                 'contract_id' => null,
                 'setting_id' => null,
                 'text' => $service_data->description ?? null,
+                'custom_interval_enabled' => (bool) ($service_data->custom_interval_enabled ?? false),
+                'custom_interval_start_date' => !empty($service_data->custom_interval_start_date)
+                    ? $service_data->custom_interval_start_date
+                    : null,
+                'custom_interval_days' => !empty($service_data->custom_interval_days)
+                    ? (int) $service_data->custom_interval_days
+                    : null,
             ]);
         }
 
@@ -584,6 +591,9 @@ class OrderController extends Controller
                 $services_configuration[] = [
                     'service_id' => $service->id,
                     'description' => $order->propagateByService($service->id)->text ?? null,
+                    'custom_interval_enabled' => (bool) ($order->propagateByService($service->id)->custom_interval_enabled ?? false),
+                    'custom_interval_start_date' => $order->propagateByService($service->id)->custom_interval_start_date ?? null,
+                    'custom_interval_days' => $order->propagateByService($service->id)->custom_interval_days ?? null,
                 ];
 
                 $cost += $service->cost;
@@ -647,6 +657,8 @@ class OrderController extends Controller
             $customer = $order->customer; // Ya viene cargado con with()
 
             foreach ($order->services as $service) {
+                $propagation = $order->propagateByService($service->id);
+
                 $selected_services[] = [
                     'id' => $service->id,
                     'prefix' => $service->prefix,
@@ -655,14 +667,17 @@ class OrderController extends Controller
                     'type' => [$service->serviceType->name],
                     'line' => [$service->businessLine->name],
                     'cost' => $service->cost,
-                    'propagate_description' => $order->propagateByService($service->id)->text ?? null,
+                    'propagate_description' => $propagation->text ?? null,
                 ];
 
                 $services_configuration[] = [
                     'service_id' => $service->id,
                     'setting_id' => $order->setting_id,
                     'contract_id' => $order->contract_id,
-                    'description' => $order->propagateByService($service->id)->text ?? null,
+                    'description' => $propagation->text ?? null,
+                    'custom_interval_enabled' => (bool) ($propagation->custom_interval_enabled ?? false),
+                    'custom_interval_start_date' => $propagation->custom_interval_start_date ?? null,
+                    'custom_interval_days' => $propagation->custom_interval_days ?? null,
                 ];
 
                 $cost += $service->cost;
@@ -776,6 +791,13 @@ class OrderController extends Controller
                     ],
                     [
                         'text' => $service_data->description ?? null,
+                        'custom_interval_enabled' => (bool) ($service_data->custom_interval_enabled ?? false),
+                        'custom_interval_start_date' => !empty($service_data->custom_interval_start_date)
+                            ? $service_data->custom_interval_start_date
+                            : null,
+                        'custom_interval_days' => !empty($service_data->custom_interval_days)
+                            ? (int) $service_data->custom_interval_days
+                            : null,
                         'updated_at' => now(),
                     ]
                 );

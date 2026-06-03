@@ -5,6 +5,7 @@
         'icon' => 'bi-box-seam',
         'backRoute' => url()->previous(),
     ])
+    @include('product.edit.navigation-tabs')
 @php
         function extractFileName($filePath)
         {

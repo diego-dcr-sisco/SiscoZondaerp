@@ -20,6 +20,9 @@ class ContractService extends Model
         'days',
         'total',
         'service_description',
+        'custom_interval_enabled',
+        'custom_interval_start_date',
+        'custom_interval_days',
     ];
 
     public function service() {

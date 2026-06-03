@@ -326,7 +326,7 @@
                 <th>Lote / Serie</th>
                 <th>Almacén origen</th>
                 <th class="text-right">Cantidad</th>
-                <th>Movimiento</th>
+                <th>Movimiento</th>p
             </tr>
         </thead>
         <tbody>

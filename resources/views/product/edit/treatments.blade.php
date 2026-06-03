@@ -5,5 +5,6 @@
         'icon' => 'bi-box-seam',
         'backRoute' => url()->previous(),
     ])
+    @include('product.edit.navigation-tabs')
 <span class="m-3"> En desarollo </span>
 @endsection

@@ -22,19 +22,12 @@ use Carbon\Carbon;
 
 class LotController extends Controller
 {
-    public $navigation = [
-        'Almacenes' => '/stock',
-        'Lotes' => '/lot/index',
-        'Productos' => '/products',
-        'Movimientos' => '/stock/movements',
-        'Consumos en ordenes' => '/stock/movements/orders',
-        //'Consumos' => '/consumptions/',
-        // 'Zonas' => '/customer-zones',
-        // 'Pedidos' => '/consumptions',
-        // 'Productos en ordenes' => '/stock/orders-products',
-        //'Estadisticas' => '/stock/analytics',
-        // 'Compras' => '/purchase-requisition/purchases',
-    ];
+    public $navigation = [];
+
+    public function __construct()
+    {
+        $this->navigation = config('stock_navigation.items');
+    }
 
     public function index(Request $request)
     {
