@@ -321,11 +321,12 @@
     <table class="products-table">
         <thead>
             <tr>
-                <th style="width: 5%;"  class="text-center">#</th>
-                <th style="width: 40%;">Producto</th>
-                <th style="width: 20%;">Lote / Serie</th>
-                <th style="width: 23%;">Almacén origen</th>
-                <th style="width: 12%;" class="text-right">Cantidad</th>
+                <th class="text-center">#</th>
+                <th>Producto</th>
+                <th>Lote / Serie</th>
+                <th>Almacén origen</th>
+                <th class="text-right">Cantidad</th>
+                <th>Movimiento</th>
             </tr>
         </thead>
         <tbody>
@@ -336,12 +337,13 @@
                     <td>{{ $product['lot'] }}</td>
                     <td>{{ $product['warehouse'] }}</td>
                     <td class="text-right">
-                        {{ number_format((float) $product['amount'], 2) }} {{ $product['metric'] }}
+                        <b>{{ number_format((float) $product['amount'], 2) }}</b> {{ $product['metric'] }}
                     </td>
+                    <td>{{ $product['movement'] }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="text-center muted">Sin salidas registradas para este movimiento.</td>
+                    <td colspan="6" class="text-center muted">Sin salidas registradas para este movimiento.</td>
                 </tr>
             @endforelse
         </tbody>
@@ -373,7 +375,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5" class="text-center muted">Sin entradas registradas para este movimiento.</td>
+                    <td colspan="6" class="text-center muted">Sin entradas registradas para este movimiento.</td>
                 </tr>
             @endforelse
         </tbody>
