@@ -297,7 +297,7 @@ class ProductController extends Controller
             compact('product', 'filenames', 'navigation')
         );
     }
-
+////////////////////////////////////////////////
     public function editInputs(string $id)
     {
         $inputs = [];

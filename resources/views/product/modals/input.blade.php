@@ -10,13 +10,12 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label for="product" class="form-label">Producto </label>
-                    <input type="text" class="form-control" id="product"
-                        name="product-id" value="{{ $product->name }}" disabled>
+                    <input type="text" class="form-control" id="product" name="product-id"
+                        value="{{ $product->name }}" disabled>
                 </div>
                 <div class="mb-3">
                     <label for="appMethod" class="form-label is-required">Método de aplicación </label>
-                    <select class="form-select" id="application-method"
-                        name="application_method_id" required>
+                    <select class="form-select" id="application-method" name="application_method_id" required>
                         @foreach ($product->applicationMethods as $appMethod)
                             <option value="{{ $appMethod->id }}">{{ $appMethod->name }}</option>
                         @endforeach
@@ -36,8 +35,7 @@
                                 <label class="col-auto col-form-label is-required">Plaga
                                     (Categoría): </label>
                                 <div class="col-7">
-                                    <select class="form-select"
-                                        id="pest_category_id">
+                                    <select class="form-select" id="pest_category_id">
                                         @foreach ($pest_categories as $pest_category)
                                             <option value="{{ $pest_category->id }}">{{ $pest_category->category }}
                                             </option>
@@ -50,9 +48,8 @@
                                 <label class="col-auto col-form-label is-required">Cantidad:
                                 </label>
                                 <div class="col-auto">
-                                    <input class="form-control" type="number"
-                                        id="amount" name="amount" placeholder="{{ $product->metric->value }}"
-                                        min="0" />
+                                    <input class="form-control" type="number" id="amount" name="amount"
+                                        placeholder="{{ $product->metric->value }}" min="0" />
                                     <div class="form-text">{{ $product->metric->value }} x litro(L) de agua</div>
                                 </div>
                             </div>
@@ -174,4 +171,23 @@
             }));
         createPests();
     }
+
+    // Puentes globales para que la pantalla principal pueda limpiar o rellenar este modal
+    window.clearInputModal = function() {
+        resetForm();
+        createPests();
+    };
+
+    window.populateInputModal = function(methodId, pestsList) {
+        pests = [];
+        pestsList.forEach(pest => {
+            pests.push({
+                'index': pests.length,
+                'category_id': pest.id,
+                'amount': pest.amount
+            });
+        });
+        $('#application-method').val(methodId);
+        createPests();
+    };
 </script>
