@@ -367,10 +367,13 @@
                 // (depende de la lógica de negocio)
                 if (can_renew) {
                     const service = {
-                        frequency: config.frequency_id,
-                        interval: config.interval_id,
+                        frequency: parseInt(config.frequency_id, 10),
+                        interval: parseInt(config.interval_id, 10),
                         days: config.days.filter(d => d !== ''),
-                        index: config.config_id
+                        index: config.config_id,
+                        custom_interval_enabled: !!config.custom_interval_enabled,
+                        custom_interval_start_date: config.custom_interval_start_date,
+                        custom_interval_days: config.custom_interval_days
                     };
 
                     const startDate = $("#startdate").val();
@@ -1985,6 +1988,8 @@
 
     function createDates(service, startDate, endDate, configId) {
         var new_dates = [];
+        const frequency = parseInt(service.frequency, 10);
+        const interval = parseInt(service.interval, 10);
 
         if (service.custom_interval_enabled) {
             return generateCustomIntervalDates(
@@ -1994,7 +1999,7 @@
             );
         }
 
-        switch (service.frequency) {
+        switch (frequency) {
             case 1:
                 var new_date = $(`#service-date-${configId}`).val() || null;
                 new_date ? new_dates.push(new_date) : new_dates = [];
@@ -2003,9 +2008,9 @@
                 new_dates = generateDatesByLetter(startDate, endDate, service.days);
                 break;
             case 3:
-                if (service.interval > 0) {
+                if (interval > 0) {
                     new_dates =
-                        service.interval == 1 ?
+                        interval == 1 ?
                         generateDatesByNumber(
                             startDate,
                             endDate,
@@ -2015,7 +2020,7 @@
                             startDate,
                             endDate,
                             service.days,
-                            service.interval - 1
+                            interval - 1
                         );
                 } else {
                     alert(
@@ -2029,8 +2034,8 @@
                 new_dates = getAllDatesBetween(startDate, endDate);
                 break;
             case 5:
-                if (service.interval > 0) {
-                    if (service.interval === 7) { // Quincenal
+                if (interval > 0) {
+                    if (interval === 7) { // Quincenal
                         // Para quincenal, obtener la fecha específica del selector
                         const quincenalStartDate = $(`#service-date-${configId}`).val() || startDate;
                         new_dates = generateQuincenalDatesFromStart(quincenalStartDate, endDate);
@@ -2039,7 +2044,7 @@
                             startDate,
                             endDate,
                             service.days,
-                            service.interval - 1
+                            interval - 1
                         );
                     }
                 } else {
