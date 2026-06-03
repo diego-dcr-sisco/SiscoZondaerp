@@ -34,46 +34,54 @@
             </div>
 
             <div class="overflow-auto w-100">
-                <table class="table table-sm table-bordered table-striped">
+                <table class="table table-hover align-middle">
                     <thead>
                         <tr>
-                            <th class="fw-bold" scope="col">Método de Aplicación</th>
-                            <th class="fw-bold" scope="col">Categoría de Plaga</th>
-                            <th class="fw-bold" scope="col">Cantidad (Dosis)</th>
-                            <th class="fw-bold" scope="col">Acciones</th>
+                            <th># Plagas</th>
+                            <th>Método de Aplicación</th>
+                            <th>Cantidad (Dosis)</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse ($inputs as $inputGroup)
-                            @foreach ($inputGroup['pestCategories'] as $pest)
+                        @php $counter = 1; @endphp
+                        @forelse($inputs as $input)
+                            @foreach($input['pestCategories'] as $pest)
                                 <tr>
-                                    <td>{{ $inputGroup['application_method_name'] }}</td>
-                                    <td>{{ $pest['category'] }}</td>
-                                    <td>{{ $pest['amount'] }}</td>
                                     <td>
-                                        <div class="d-flex gap-1">
-                                            <button type="button" class="btn btn-secondary btn-sm btn-edit-input"
-                                                data-bs-toggle="modal" data-bs-target="#inputModal"
-                                                data-method-id="{{ $inputGroup['application_method_id'] }}"
-                                                data-pests='{{ json_encode($inputGroup['pestCategories']) }}'>
-                                                <i class="bi bi-pencil-square"></i>
-                                            </button>
+                                        <span class="text-muted small">#{{ $counter++ }}</span>
+                                        <strong class="ms-2">{{ $pest['category'] }}</strong>
+                                    </td>
 
-                                            <button type="button" class="btn btn-danger btn-sm btn-delete-input"
-                                                data-method-id="{{ $inputGroup['application_method_id'] }}"
-                                                data-category-id="{{ $pest['id'] }}"
-                                                data-all-pests='{{ json_encode($inputGroup['pestCategories']) }}'>
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
+                                    <td>{{ $input['application_method_name'] }}</td>
+
+                                    <td>
+                                        <span class="fw-bold">{{ $pest['amount'] }}</span>
+                                        <span class="badge bg-light text-dark border ms-1">
+                                            {{ $product->metric->value ?? 'uds' }}
+                                        </span>
+                                    </td>
+
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-primary btn-edit-input"
+                                            data-bs-toggle="modal" data-bs-target="#inputModal"
+                                            data-method-id="{{ $input['application_method_id'] }}"
+                                            data-pests="{{ json_encode($input['pestCategories']) }}">
+                                            Editar
+                                        </button>
+
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-delete-input ms-1"
+                                            data-method-id="{{ $input['application_method_id'] }}"
+                                            data-category-id="{{ $pest['id'] }}"
+                                            data-all-pests="{{ json_encode($input['pestCategories']) }}">
+                                            Eliminar
+                                        </button>
                                     </td>
                                 </tr>
                             @endforeach
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center text-muted">
-                                    No hay insumos configurados para este producto.
-                                </td>
+                                <td colspan="4" class="text-center text-muted py-3">No hay insumos configurados para este
+                                    producto.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -93,18 +101,15 @@
     @include('product.modals.input')
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Escuchamos el ID correcto: inputModal
+        document.addEventListener('DOMContentLoaded', function () {
             const modalEl = document.getElementById('inputModal');
 
             if (modalEl) {
-                modalEl.addEventListener('show.bs.modal', function(event) {
+                modalEl.addEventListener('show.bs.modal', function (event) {
                     const trigger = event.relatedTarget;
                     if (!trigger) return;
 
-                    const methodId = trigger.getAttribute('data-method-id');
-                    const pestsJson = trigger.getAttribute('data-pests');
-
+                    // Si se presiona el botón principal de agregar nuevo insumo
                     if (trigger.id === 'btn-add-input') {
                         if (typeof window.clearInputModal === 'function') {
                             window.clearInputModal();
@@ -112,8 +117,12 @@
                         return;
                     }
 
+                    // Si se presiona el botón Editar de una fila específica
                     if (trigger.classList.contains('btn-edit-input')) {
+                        const methodId = trigger.getAttribute('data-method-id');
+                        const pestsJson = trigger.getAttribute('data-pests');
                         const pests = pestsJson ? JSON.parse(pestsJson) : [];
+
                         if (typeof window.populateInputModal === 'function') {
                             window.populateInputModal(methodId, pests);
                         }
@@ -123,10 +132,8 @@
 
             // Flujo de Eliminación Reactiva
             document.querySelectorAll('.btn-delete-input').forEach(button => {
-                button.addEventListener('click', function() {
-                    if (!confirm(
-                            '¿Estás seguro de que deseas eliminar esta categoría de plaga para este método de aplicación?'
-                            )) {
+                button.addEventListener('click', function () {
+                    if (!confirm('¿Estás seguro de que deseas eliminar esta categoría de plaga para este método de aplicación?')) {
                         return;
                     }
 
@@ -134,16 +141,16 @@
                     const categoryIdToDelete = parseInt(this.getAttribute('data-category-id'), 10);
                     const allPests = JSON.parse(this.getAttribute('data-all-pests') || '[]');
 
+                    // Filtramos la plaga eliminada para enviar la lista actualizada al controlador
                     const remainingCategories = allPests
                         .filter(pest => parseInt(pest.id, 10) !== categoryIdToDelete)
                         .map(pest => ({
-                            category_id: pest.id,
+                            id: pest.id,
                             amount: pest.amount,
                         }));
 
                     document.getElementById('backend-method-id').value = methodId;
-                    document.getElementById('backend-selected-categories').value = JSON.stringify(
-                        remainingCategories);
+                    document.getElementById('backend-selected-categories').value = JSON.stringify(remainingCategories);
                     document.getElementById('input-backend-form').submit();
                 });
             });

@@ -298,53 +298,57 @@ class ProductController extends Controller
         );
     }
 ////////////////////////////////////////////////
-    public function editInputs(string $id)
-    {
-        $inputs = [];
-        $product = ProductCatalog::find($id);
-        $line_business = LineBusiness::all();
-        $application_methods = ApplicationMethod::all();
-        $purposes = Purpose::all();
-        $biocides = Biocide::all();
-        $presentations = Presentation::all();
-        $toxics = ToxicityCategories::all();
-        $metrics = Metric::all();
-        $filenames = Filenames::where('type', 'product')->get();
-        $pest_categories = PestCategory::orderBy('category', 'asc')->get();
-        $appMethods = ProductInput::where('product_id', $id)->get()->pluck('application_method_id')->unique();
+public function editInputs(string $id)
+{
+    $inputs = [];
+    // Cargamos el producto junto con su métrica enlazada
+    $product = ProductCatalog::with('metric')->find($id);
+    
+    $line_business = LineBusiness::all();
+    $application_methods = ApplicationMethod::all();
+    $purposes = Purpose::all();
+    $biocides = Biocide::all();
+    $presentations = Presentation::all();
+    $toxics = ToxicityCategories::all();
+    $metrics = Metric::all();
+    $filenames = Filenames::where('type', 'product')->get();
+    $pest_categories = PestCategory::orderBy('category', 'asc')->get();
+    
+    $appMethods = ProductInput::where('product_id', $id)->get()->pluck('application_method_id')->unique();
 
-        foreach ($appMethods as $appMethodId) {
-            $pestCategories = [];
-            $pestCategoryIds = ProductInput::where('product_id', $id)->where('application_method_id', $appMethodId)->get()->pluck('pest_category_id');
+    foreach ($appMethods as $appMethodId) {
+        $pestCategories = [];
+        $pestCategoryIds = ProductInput::where('product_id', $id)->where('application_method_id', $appMethodId)->get()->pluck('pest_category_id');
 
-            foreach ($pestCategoryIds as $category_id) {
-                $pestCategories[] = [
-                    'id' => $category_id,
-                    'category' => PestCategory::find($category_id)->category,
-                    'amount' => ProductInput::where('product_id', $id)->where('application_method_id', $appMethodId)->where('pest_category_id', $category_id)->first()->amount
-                ];
-            }
-            $inputs[] = [
-                'application_method_id' => $appMethodId,
-                'application_method_name' => ApplicationMethod::find($appMethodId)->name,
-                'pestCategories' => $pestCategories,
+        foreach ($pestCategoryIds as $category_id) {
+            $pestCategories[] = [
+                'id' => $category_id,
+                'category' => PestCategory::find($category_id)->category,
+                // Conservamos el decimal tal cual viene de la base de datos
+                'amount' => ProductInput::where('product_id', $id)->where('application_method_id', $appMethodId)->where('pest_category_id', $category_id)->first()->amount
             ];
         }
-
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
+        $inputs[] = [
+            'application_method_id' => $appMethodId,
+            'application_method_name' => ApplicationMethod::find($appMethodId)->name,
+            'pestCategories' => $pestCategories,
         ];
+    }
 
-        return view(
-            'product.edit.inputs',
-            compact('product', 'line_business', 'application_methods', 'purposes', 'biocides', 'presentations', 'toxics', 'metrics', 'pest_categories', 'inputs', 'filenames', 'navigation')
-        );
+    $navigation = [
+        'Producto' => route('product.edit', ['id' => $product->id]),
+        'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
+        'Plagas' => route('product.edit.pests', ['id' => $product->id]),
+        'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
+        'Archivos' => route('product.edit.files', ['id' => $product->id]),
+        'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
+        'Movimientos' => route('product.edit.movements', ['id' => $product->id])
+    ];
+
+    return view(
+        'product.edit.inputs',
+        compact('product', 'line_business', 'application_methods', 'purposes', 'biocides', 'presentations', 'toxics', 'metrics', 'pest_categories', 'inputs', 'filenames', 'navigation')
+    );
     }
 
     public function update(Request $request, string $id)
@@ -435,28 +439,43 @@ class ProductController extends Controller
     }
 
     public function input(Request $request, string $id)
-    {
-        $selected_categories = json_decode($request->input('selected_categories'));
-        $appMethod_id = $request->input('application_method_id');
-        $pest_categories = ProductInput::where('product_id', $id)->where('application_method_id', $appMethod_id)->get()->pluck('pest_category_id');
-        $categoryIds = array_column($selected_categories, 'category_id');
-        $delete_categories = array_diff($pest_categories->toArray(), $categoryIds);
+{
+    // Decodificamos como array asociativo (true) para un manejo más limpio y seguro
+    $selected_categories = json_decode($request->input('selected_categories'), true) ?? [];
+    $appMethod_id = $request->input('application_method_id');
+    
+    // Obtenemos las plagas actualmente registradas en la base de datos
+    $pest_categories = ProductInput::where('product_id', $id)
+        ->where('application_method_id', $appMethod_id)
+        ->pluck('pest_category_id')
+        ->toArray();
 
-        ProductInput::where('product_id', $id)->where('application_method_id', $appMethod_id)->whereIn('pest_category_id', $delete_categories)->delete();
+    // Corrección: JS envía 'id' en lugar de 'category_id'
+    $categoryIds = array_column($selected_categories, 'id');
+    
+    // Identificamos cuáles categorías se removieron en el modal para eliminarlas
+    $delete_categories = array_diff($pest_categories, $categoryIds);
 
-        if (!empty($selected_categories)) {
-            foreach ($selected_categories as $pest) {
-                ProductInput::updateOrCreate([
-                    'product_id' => $id,
-                    'application_method_id' => $appMethod_id,
-                    'pest_category_id' => $pest->category_id,
-                ], [
-                    'amount' => $pest->amount,
-                ]);
-            }
+    ProductInput::where('product_id', $id)
+        ->where('application_method_id', $appMethod_id)
+        ->whereIn('pest_category_id', $delete_categories)
+        ->delete();
+
+    // Guardamos o actualizamos los nuevos valores (soporta floats/decimales en 'amount')
+    if (!empty($selected_categories)) {
+        foreach ($selected_categories as $pest) {
+            ProductInput::updateOrCreate([
+                'product_id' => $id,
+                'application_method_id' => $appMethod_id,
+                'pest_category_id' => $pest['id'], // Corregido a 'id' de JS
+            ], [
+                'amount' => $pest['amount'], // Guarda el valor decimal de forma correcta
+            ]);
         }
-        return back();
     }
+    
+    return back();
+}
 
     public function search(Request $request)
     {
