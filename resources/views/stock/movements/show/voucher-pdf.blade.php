@@ -317,7 +317,7 @@
         $entryProducts = collect($products)->where('direction', 'Entrada')->values();
     @endphp
 
-    <div class="section-title">Salidas</div>
+    <div class="section-title" style="color: #dc3545;">Salidas</div>
     <table class="products-table">
         <thead>
             <tr>
@@ -349,7 +349,7 @@
         </tbody>
     </table>
 
-    <div class="section-title">Entradas</div>
+    <div class="section-title" style="color: #198754;">Entradas</div>
     <table class="products-table">
         <thead>
             <tr>
