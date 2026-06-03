@@ -13,7 +13,7 @@
         }
 
         body {
-            font-family: DejaVu Sans, Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 11px;
             color: #1d252c;
             line-height: 1.3;
@@ -24,8 +24,8 @@
         .topbar {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
-            padding-bottom: 10px;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
             border-bottom: 1px solid #98A253;
         }
 
@@ -84,12 +84,12 @@
         .section-title {
             font-size: 9px;
             font-weight: bold;
-            color: #66736f;
+            color: black;
             text-transform: uppercase;
             letter-spacing: 0.8px;
             padding: 8px 0 4px;
-            border-top: 0.5px solid #d8dfdc;
-            margin-top: 8px;
+            border-bottom: 0.5px solid #2B85FF;
+            margin-bottom: 8px;
         }
 
         /* ── INFO GRID ── */
@@ -100,8 +100,7 @@
 
         .info-table td {
             width: 50%;
-            border: 0.5px solid #d8dfdc;
-            padding: 6px 8px;
+            padding: 4px 0px;
             vertical-align: top;
         }
 
@@ -116,17 +115,15 @@
         }
 
         .value {
-            font-size: 11px;
+            font-size: 10px;
             color: #1d252c;
             font-weight: bold;
         }
 
         /* ── OBSERVATIONS ── */
         .observations {
-            border: 0.5px solid #d8dfdc;
-            border-left: 2px solid #2f6b3f;
-            padding: 6px 8px;
-            min-height: 28px;
+            padding: 4px 0px;
+            min-height: 30px;
             background: #fbfcfb;
             font-size: 10.5px;
             color: #66736f;
@@ -151,9 +148,9 @@
 
         .products-table td {
             border: 0.5px solid #d8dfdc;
-            padding: 5px 7px;
+            padding: 4px;
             vertical-align: top;
-            font-size: 11px;
+            font-size: 10px;
         }
 
         .products-table tbody tr:nth-child(even) td {
@@ -354,11 +351,12 @@
     <table class="products-table">
         <thead>
             <tr>
-                <th style="width: 5%;"  class="text-center">#</th>
-                <th style="width: 40%;">Producto</th>
-                <th style="width: 20%;">Lote / Serie</th>
-                <th style="width: 23%;">Almacén destino</th>
-                <th style="width: 12%;" class="text-right">Cantidad</th>
+                <th  class="text-center">#</th>
+                <th >Producto</th>
+                <th >Lote / Serie</th>
+                <th >Almacén destino</th>
+                <th  class="text-right">Cantidad</th>
+                <th >Movimiento</th>
             </tr>
         </thead>
         <tbody>
@@ -369,8 +367,9 @@
                     <td>{{ $product['lot'] }}</td>
                     <td>{{ $product['warehouse'] }}</td>
                     <td class="text-right">
-                        {{ number_format((float) $product['amount'], 2) }} {{ $product['metric'] }}
+                        <b>{{ number_format((float) $product['amount'], 2) }}</b> {{ $product['metric'] }}
                     </td>
+                    <td>{{ $product['movement'] }}</td>
                 </tr>
             @empty
                 <tr>

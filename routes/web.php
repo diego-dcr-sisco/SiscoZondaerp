@@ -231,6 +231,7 @@ Route::prefix('stock')
         Route::get('/movement/{id}', [StockController::class, 'wMovement'])->name('movement');
         Route::get('/movement/search/{id}', [StockController::class, 'searchMovements'])->name('movement.search');
         Route::post('/movement/update/{id}', [StockController::class, 'updateMovement'])->name('movement.update');
+        Route::post('/movement/signature/{id}', [StockController::class, 'updateMovementSignature'])->name('movement.signature.update');
 
         Route::get('/stock/{id}', [StockController::class, 'stock'])->name('stock');
         Route::get('/destroy/movement/{id}', [StockController::class, 'destroyMovement'])->name('destroy.movement');

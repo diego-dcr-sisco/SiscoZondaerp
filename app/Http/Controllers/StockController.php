@@ -200,6 +200,22 @@ class StockController extends Controller
         return back();
     }
 
+    public function updateMovementSignature(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'technician_signature' => 'required|string',
+        ]);
+
+        $movement = WarehouseMovement::findOrFail($id);
+        $movement->technician_signature = $validated['technician_signature'];
+        $movement->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Firma guardada correctamente.',
+        ]);
+    }
+
 
     public function destroy(string $id)
     {
@@ -539,9 +555,93 @@ class StockController extends Controller
     {
         $navigation = $this->navigation;
         $warehouse = Warehouse::findOrFail($id);
-        $movements = WarehouseMovement::where('warehouse_id', $warehouse->id)->orWhere('destination_warehouse_id', $warehouse->id)->orderBy('date', 'DESC')->orderBy('time', 'DESC')->paginate($this->size);
-        $products = ProductCatalog::whereIn('id', MovementProduct::pluck('product_id')->unique())->get();
-        $lots = Lot::whereIn('product_id', $products->pluck('id')->unique())->get();
+        $direction = strtoupper($request->input('direction', 'DESC'));
+        $direction = in_array($direction, ['ASC', 'DESC']) ? $direction : 'DESC';
+        $size = (int) $request->input('size', $this->size);
+
+        $query = WarehouseMovement::with([
+            'warehouse',
+            'destinationWarehouse',
+            'products.product.metric',
+            'products.lot',
+            'products.movement',
+        ])->where(function ($q) use ($warehouse) {
+            $q->where('warehouse_id', $warehouse->id)
+                ->orWhere('destination_warehouse_id', $warehouse->id);
+        });
+
+        if ($request->filled('movement_id')) {
+            $query->whereHas('products', function ($q) use ($request, $warehouse) {
+                $q->where('warehouse_id', $warehouse->id)
+                    ->where('movement_id', $request->input('movement_id'));
+            });
+        }
+
+        if ($request->filled('product_id')) {
+            $query->whereHas('products', function ($q) use ($request, $warehouse) {
+                $q->where('warehouse_id', $warehouse->id)
+                    ->where('product_id', $request->input('product_id'));
+            });
+        }
+
+        if ($request->filled('lot_id')) {
+            $query->whereHas('products', function ($q) use ($request, $warehouse) {
+                $q->where('warehouse_id', $warehouse->id)
+                    ->where('lot_id', $request->input('lot_id'));
+            });
+        }
+
+        if ($request->filled('date_range')) {
+            $dates = explode(' - ', $request->input('date_range'));
+            if (count($dates) === 2) {
+                try {
+                    $startDate = Carbon::createFromFormat('d/m/Y', trim($dates[0]))->toDateString();
+                    $endDate = Carbon::createFromFormat('d/m/Y', trim($dates[1]))->toDateString();
+                    $query->whereBetween('date', [$startDate, $endDate]);
+                } catch (\Exception $e) {
+                    Log::warning('Invalid warehouse movement date range filter', [
+                        'date_range' => $request->input('date_range'),
+                        'warehouse_id' => $warehouse->id,
+                    ]);
+                }
+            }
+        }
+
+        $summaryQuery = clone $query;
+        $entryQuery = clone $query;
+        $exitQuery = clone $query;
+        $revertedQuery = clone $query;
+
+        $summary = [
+            'total' => (clone $summaryQuery)->count(),
+            'entries' => $entryQuery->whereHas('products', function ($q) use ($warehouse) {
+                $q->where('warehouse_id', $warehouse->id)
+                    ->where(function ($subQ) {
+                        $subQ->whereBetween('movement_id', [1, 4])
+                            ->orWhereHas('movement', fn($movementQ) => $movementQ->where('type', 'in'));
+                    });
+            })->count(),
+            'exits' => $exitQuery->whereHas('products', function ($q) use ($warehouse) {
+                $q->where('warehouse_id', $warehouse->id)
+                    ->where(function ($subQ) {
+                        $subQ->whereBetween('movement_id', [5, 10])
+                            ->orWhereHas('movement', fn($movementQ) => $movementQ->where('type', 'out'));
+                    });
+            })->count(),
+            'reverted' => $revertedQuery->where('is_active', false)->count(),
+        ];
+
+        $movements = $query
+            ->orderBy('date', $direction)
+            ->orderBy('time', $direction)
+            ->paginate($size > 0 ? $size : $this->size)
+            ->withQueryString();
+
+        $warehouseProductIds = MovementProduct::where('warehouse_id', $warehouse->id)
+            ->pluck('product_id')
+            ->unique();
+        $products = ProductCatalog::whereIn('id', $warehouseProductIds)->orderBy('name')->get();
+        $lots = Lot::whereIn('product_id', $warehouseProductIds)->orderBy('registration_number')->get();
 
         return view('stock.movements.warehouse', [
             'warehouse' => $warehouse,
@@ -550,6 +650,7 @@ class StockController extends Controller
             'products' => $products,
             'lots' => $lots,
             'navigation' => $navigation,
+            'summary' => $summary,
             'filters' => $request->all()
         ]);
     }
@@ -1915,13 +2016,16 @@ class StockController extends Controller
                 $technian_name = $movement->destinationWarehouse->technician?->user?->name ?? 'No asignado';
             }
 
+            $movement_options = $movement->warehouseProducts($movement->destination_warehouse_id);
+            $movement_type_value = implode(', ', MovementType::whereIn('id', $movement_options->pluck('movement_id')->unique())->pluck('name')->toArray());
+
             $data = [
                 'title' => 'Constancia de Movimiento',
                 'date' => $movement->date,
                 'time' => $movement->time,
                 'origin' => $movement->warehouse?->name ?? 'No Aplica',
                 'destination' => $movement->destinationWarehouse?->name ?? 'No Aplica',
-                'movement_type' => $movement->movement?->name ?? 'No asignado',
+                'movement_type' => $movement_type_value ?? 'No asignado',
                 'folio' => $movement->id,
                 'observations' => $movement->observations ?? 'Sin observaciones',
                 'created_by' => $movement->user?->name ?? 'No asignado',
