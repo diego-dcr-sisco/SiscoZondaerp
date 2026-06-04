@@ -13,14 +13,57 @@
             white-space: nowrap;
         }
 
-        .movement-empty {
-            padding: 3rem 1rem;
-            text-align: center;
-            color: #6c757d;
-        }
-
         .movement-products-list {
             min-width: 28rem;
+        }
+
+        .movement-products-table {
+            width: 100%;
+            min-width: 28rem;
+            border-collapse: collapse;
+            background: #fff;
+        }
+
+        .movement-products-table th,
+        .movement-products-table td {
+            border-bottom: 1px solid #dee2e6;
+            padding: .35rem .45rem;
+            vertical-align: middle;
+        }
+
+        .movement-products-table th {
+            color: #6c757d;
+            font-size: .75rem;
+            font-weight: 700;
+            background: #f8f9fa;
+        }
+
+        .movement-products-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .warehouse-summary-card {
+            border: 1px solid #dee2e6;
+            border-radius: .5rem;
+            background: #fff;
+            padding: .9rem 1rem;
+            height: 100%;
+        }
+
+        .warehouse-summary-label {
+            color: #6c757d;
+            font-size: .82rem;
+        }
+
+        .warehouse-summary-value {
+            font-size: 1.35rem;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .movement-status-badge {
+            min-width: 4.5rem;
+            text-align: center;
         }
     </style>
 
@@ -155,6 +198,44 @@
                 </div>
             </form>
 
+            <div class="row g-3 mb-3">
+                <div class="col-xl-3 col-sm-6 col-12">
+                    <div class="warehouse-summary-card">
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                            <div>
+                                <div class="warehouse-summary-label">Almacenes</div>
+                                <div class="warehouse-summary-value">{{ $summary['warehouses'] ?? $warehouses->count() }}</div>
+                            </div>
+                            <span class="badge text-bg-light border"><i class="bi bi-building"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-sm-6 col-12">
+                    <div class="warehouse-summary-card">
+                        <div class="warehouse-summary-label">Movimientos filtrados</div>
+                        <div class="warehouse-summary-value">{{ $summary['total'] ?? $movements->total() }}</div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-sm-6 col-12">
+                    <div class="warehouse-summary-card">
+                        <div class="warehouse-summary-label">Entradas</div>
+                        <div class="warehouse-summary-value text-success">{{ $summary['entries'] ?? 0 }}</div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-sm-6 col-12">
+                    <div class="warehouse-summary-card">
+                        <div class="warehouse-summary-label">Salidas</div>
+                        <div class="warehouse-summary-value text-danger">{{ $summary['exits'] ?? 0 }}</div>
+                    </div>
+                </div>
+                <div class="col-xl-2 col-sm-6 col-12">
+                    <div class="warehouse-summary-card">
+                        <div class="warehouse-summary-label">Revertidos</div>
+                        <div class="warehouse-summary-value text-secondary">{{ $summary['reverted'] ?? 0 }}</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table table-sm table-bordered table-striped caption-top">
                     <caption class="text-muted">
@@ -175,6 +256,9 @@
                         @forelse ($movements as $index => $movement)
                             @php
                                 $movementProducts = $movement->products()->get();
+                                $visibleProducts = $movementProducts->take(3);
+                                $hiddenProducts = $movementProducts->slice(3);
+                                $collapseId = 'movement-products-' . $movement->id;
                             @endphp
                             <tr class="{{ !$movement->is_active ? 'table-light text-muted' : '' }}">
                                 <th scope="row" class="fw-bold text-muted">
@@ -191,25 +275,76 @@
                                 </td>
                                 <td>
                                     <div class="movement-products-list">
-                                        @forelse ($movementProducts as $mp)
-                                            <div class="border-bottom py-1">
-                                                <div class="fw-semibold">{{ $mp->product->name ?? '-' }}</div>
-                                                <div class="small text-muted">
-                                                    Lote: {{ $mp->lot->registration_number ?? '-' }}
-                                                </div>
-                                                <div class="d-flex justify-content-between gap-3">
-                                                    <span class="{{ $mp->movementColorClass() }} fw-bold">
-                                                        {{ $mp->movement->name ?? '-' }}
-                                                    </span>
-                                                    <span class="{{ $mp->movementColorClass() }} fw-bold">
-                                                        {{ number_format((float) $mp->amount, 2) }}
-                                                        <small class="text-muted fw-normal">{{ $mp->product->metric->value ?? '-' }}</small>
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        @empty
+                                        @if ($movementProducts->isEmpty())
                                             <span class="text-muted">Sin productos</span>
-                                        @endforelse
+                                        @else
+                                            <table class="movement-products-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Producto</th>
+                                                        <th>Lote</th>
+                                                        <th>Almacén</th>
+                                                        <th>Tipo</th>
+                                                        <th>Movimiento</th>
+                                                        <th class="text-end">Cantidad</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach ($visibleProducts as $mp)
+                                                        <tr>
+                                                            <td class="fw-semibold">{{ $mp->product->name ?? '-' }}</td>
+                                                            <td>{{ $mp->lot->registration_number ?? '-' }}</td>
+                                                            <td>{{ $mp->warehouse->name ?? '-' }}</td>
+                                                            <td>
+                                                                <span class="badge {{ $mp->isEntry() ? 'text-bg-success' : 'text-bg-danger' }} movement-status-badge">
+                                                                    {{ $mp->isEntry() ? 'Entrada' : 'Salida' }}
+                                                                </span>
+                                                            </td>
+                                                            <td class="{{ $mp->movementColorClass() }} fw-bold">
+                                                                {{ $mp->movement->name ?? '-' }}
+                                                            </td>
+                                                            <td class="text-end {{ $mp->movementColorClass() }} fw-bold">
+                                                                {{ number_format((float) $mp->amount, 2) }}
+                                                                <small class="text-muted fw-normal">{{ $mp->product->metric->value ?? '-' }}</small>
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        @endif
+
+                                        @if ($hiddenProducts->isNotEmpty())
+                                            <div class="collapse" id="{{ $collapseId }}">
+                                                <table class="movement-products-table">
+                                                    <tbody>
+                                                        @foreach ($hiddenProducts as $mp)
+                                                            <tr>
+                                                                <td class="fw-semibold">{{ $mp->product->name ?? '-' }}</td>
+                                                                <td>{{ $mp->lot->registration_number ?? '-' }}</td>
+                                                                <td>{{ $mp->warehouse->name ?? '-' }}</td>
+                                                                <td>
+                                                                    <span class="badge {{ $mp->isEntry() ? 'text-bg-success' : 'text-bg-danger' }} movement-status-badge">
+                                                                        {{ $mp->isEntry() ? 'Entrada' : 'Salida' }}
+                                                                    </span>
+                                                                </td>
+                                                                <td class="{{ $mp->movementColorClass() }} fw-bold">
+                                                                    {{ $mp->movement->name ?? '-' }}
+                                                                </td>
+                                                                <td class="text-end {{ $mp->movementColorClass() }} fw-bold">
+                                                                    {{ number_format((float) $mp->amount, 2) }}
+                                                                    <small class="text-muted fw-normal">{{ $mp->product->metric->value ?? '-' }}</small>
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <button class="btn btn-link btn-sm p-0 mt-1" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}"
+                                                aria-expanded="false" aria-controls="{{ $collapseId }}">
+                                                Ver {{ $hiddenProducts->count() }} más
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                                 <td>{{ $movement->observations ?: '-' }}</td>
