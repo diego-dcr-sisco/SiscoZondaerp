@@ -112,7 +112,7 @@
     </style>
 
     @include('components.page-header', [
-        'title' => 'VISTA PREVIA DEL VOUCHER',
+        'title' => 'DETALLES DEL MOVIMIENTO - ' . ($movement->movement->name ?? '-'),
         'icon' => 'bi-file-pdf-fill',
         'iconColor' => 'text-danger',
         'backRoute' => route('stock.index'),
@@ -175,6 +175,7 @@
                         <table class="table table-striped table-bordered table-sm">
                             <thead>
                                 <tr>
+                                    <th class="fw-bold" scope="col">#</th>
                                     <th class="fw-bold" scope="col">Almacén afectado</th>
                                     <th class="fw-bold" scope="col">Producto</th>
                                     <th class="fw-bold" scope="col">Lote</th>
@@ -183,13 +184,14 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($movement->warehouseProducts($movement->warehouse_id) as $mp)
+                                @foreach ($movement->warehouseProducts($movement->warehouse_id) as $i => $mp)
                                     @php
                                         $isEntry = $mp->isEntry();
                                         $movementColorClass = $mp->movementColorClass();
                                     @endphp
                                     <tr>
-                                        <th scope="row"> {{ $mp->warehouse->name }} </th>
+                                        <th scope="row"> {{ $i + 1 }} </th>
+                                        <td> {{ $mp->warehouse->name ?? '' }} </td>
                                         <td>{{ $mp->product->name }}</td>
                                         <td>{{ $mp->lot->registration_number ?? '-' }}</td>
                                         <td class="{{ $movementColorClass }} fw-bold">
@@ -216,6 +218,7 @@
                         <table class="table table-striped table-bordered table-sm">
                             <thead>
                                 <tr>
+                                    <th class="fw-bold" scope="col">#</th>
                                     <th class="fw-bold" scope="col">Almacén afectado</th>
                                     <th class="fw-bold" scope="col">Producto</th>
                                     <th class="fw-bold" scope="col">Lote</th>
@@ -224,13 +227,14 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($movement->warehouseProducts($movement->destination_warehouse_id) as $mp)
+                                @foreach ($movement->warehouseProducts($movement->destination_warehouse_id) as $i => $mp)
                                     @php
                                         $isEntry = $mp->isEntry();
                                         $movementColorClass = $mp->movementColorClass();
                                     @endphp
                                     <tr>
-                                        <th scope="row"> {{ $mp->warehouse->name ?? '' }} </th>
+                                        <th scope="row"> {{ $i + 1 }} </th>
+                                        <td>{{ $mp->warehouse->name ?? '' }}</td>
                                         <td>{{ $mp->product->name }}</td>
                                         <td>{{ $mp->lot->registration_number }}</td>
                                         <td class="{{ $movementColorClass }} fw-bold">
@@ -350,11 +354,11 @@
             <input type="hidden" id="technician_signature" name="technician_signature" value="{{ $movement->technician_signature }}" />
 
             <button type="submit" class="btn btn-primary me-2 mb-3">
-               <i class="bi bi-pencil"></i> Actualizar
+               <i class="bi bi-pencil-fill  "></i> Actualizar
             </button>
 
             <a href="{{ route('stock.voucherPdfPreview', ['id' => $movement->id]) }}" class="btn btn-dark mb-3" target="_blank">
-                Generar voucher
+                <i class="bi bi-file-pdf-fill"></i> Generar voucher PDF
             </a>
         </form>
     </div>

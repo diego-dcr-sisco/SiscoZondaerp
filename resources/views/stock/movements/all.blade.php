@@ -167,7 +167,7 @@
                                         <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>
                                             ASC
                                         </option>
-                                    </select>
+                                    </select>   
                                     <span class="input-group-text"><i class="bi bi-list-ol"></i></span>
                                     <select class="form-select form-select-sm" id="size" name="size">
                                         <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>

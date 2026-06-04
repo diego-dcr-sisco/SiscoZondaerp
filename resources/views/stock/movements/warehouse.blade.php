@@ -342,9 +342,9 @@
                                     <td>
                                         <div class="movement-actions">
                                             <a href="{{ route('stock.movement', ['id' => $movement->id]) }}"
-                                                class="btn btn-dark btn-sm" data-bs-toggle="tooltip"
-                                                data-bs-placement="top" title="Generar voucher">
-                                                <i class="bi bi-file-pdf-fill"></i>
+                                                class="btn btn-info btn-sm" data-bs-toggle="tooltip"
+                                                data-bs-placement="top" title="Ver detalles">
+                                                <i class="bi bi-eye-fill"></i>
                                             </a>
 
                                             @if ($movement->is_active)

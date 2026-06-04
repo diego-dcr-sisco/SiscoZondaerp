@@ -6,6 +6,109 @@
             overflow-y: auto;
             border: 1px solid #dee2e6;
         }
+
+        .signature-section {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: .5rem;
+            box-shadow: 0 .35rem 1rem rgba(33, 37, 41, .06);
+        }
+
+        .signature-card {
+            border: 1px solid #dee2e6;
+            border-radius: .5rem;
+            background: #fff;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .signature-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            padding: .9rem 1rem;
+            border-bottom: 1px solid #dee2e6;
+            background: #f8f9fa;
+        }
+
+        .signature-title {
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .signature-icon {
+            width: 2rem;
+            height: 2rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .signature-stage {
+            min-height: 220px;
+            border: 1px dashed #adb5bd;
+            border-radius: .5rem;
+            background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .signature-stage img,
+        .signature-stage canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .signature-stage canvas {
+            position: absolute;
+            inset: 0;
+            background-color: #fff;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .signature-placeholder {
+            text-align: center;
+            color: #6c757d;
+            padding: 1rem;
+        }
+
+        .signature-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            flex-wrap: wrap;
+        }
+
+        .signature-file {
+            max-width: 18rem;
+        }
+
+        @media (max-width: 767.98px) {
+            .signature-toolbar,
+            .signature-card-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .signature-file {
+                max-width: 100%;
+            }
+        }
     </style>
 
     @include('components.page-header', [
@@ -100,52 +203,64 @@
                 </div>
             </div>
 
-            <div class="row justify-content-center">
+            <div class="signature-section p-3 mb-3">
+                <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
+                    <div>
+                        <div class="fw-bold fs-5">Firmas del movimiento</div>
+                        <div class="text-muted small">Validación del almacenista y confirmación del técnico/receptor.</div>
+                    </div>
+                    <span class="badge text-bg-light border">Salida de almacén</span>
+                </div>
+
+                <div class="row g-3">
                 <!-- Firma del Almacenista -->
-                <div class="col-lg-6 col-12 mb-4">
-                    <div class="card h-100 shadow">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i>Firma del almacenista <span class="text-warning">*</span></h5>
+                <div class="col-lg-6 col-12">
+                    <div class="signature-card">
+                        <div class="signature-card-header">
+                            <h5 class="signature-title">
+                                <span class="signature-icon"><i class="fas fa-user-shield"></i></span>
+                                Almacenista
+                            </h5>
+                            <span class="badge text-bg-warning">Obligatoria</span>
                         </div>
-                        <div class="card-body d-flex flex-column">
+                        <div class="p-3">
                             @if ($errors->has('warehouse_signature'))
                                 <div class="alert alert-danger">
                                     {{ $errors->first('warehouse_signature') }}
                                 </div>
                             @endif
-                            <div class="mb-3">
-                                <label for="almacenistaFileInput" class="form-label small text-muted">Subir imagen de
-                                    firma</label>
-                                <input type="file" id="almacenistaFileInput" class="form-control form-control-sm"
-                                    accept="image/*">
-                            </div>
-
-                            <div class="mb-3 position-relative bg-light rounded d-flex align-items-center justify-content-center"
-                                style="height: 200px;">
-                                <img id="almacenistaSignatureImg" src=""
-                                    class="img-fluid d-none w-100 h-100 object-fit-contain border rounded">
-                                <canvas id="almacenistaCanvas"
-                                    class="position-absolute w-100 h-100 border border-2 border-primary rounded d-none"
-                                    style="background-color: #f8f9fa; cursor: crosshair;"></canvas>
-                                <div id="almacenistaPlaceholder"
-                                    class="text-muted">Seleccione o
-                                    dibuje su firma</div>
-                            </div>
-
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-auto">
-                                <div>
-                                    <button type="button" id="clearAlmacenista"
-                                        class="btn btn-outline-danger btn-sm me-2" data-bs-toggle="tooltip"
-                                        data-bs-placement="top" title="Limpiar">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
-                                    <button type="button" id="drawAlmacenista" class="btn btn-outline-primary btn-sm"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Dibujar">
+                            <div class="signature-toolbar mb-3">
+                                <div class="signature-file">
+                                    <label for="almacenistaFileInput" class="form-label small fw-semibold mb-1">Imagen de firma</label>
+                                    <input type="file" id="almacenistaFileInput" class="form-control form-control-sm"
+                                        accept="image/*">
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de firma del almacenista">
+                                    <button type="button" id="drawAlmacenista" class="btn btn-outline-primary"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Dibujar firma">
                                         <i class="bi bi-pencil-fill"></i>
                                     </button>
+                                    <button type="button" id="clearAlmacenista"
+                                        class="btn btn-outline-danger" data-bs-toggle="tooltip"
+                                        data-bs-placement="top" title="Limpiar firma">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
                                 </div>
+                            </div>
+
+                            <div class="signature-stage mb-3">
+                                <img id="almacenistaSignatureImg" src="" class="d-none" alt="Firma del almacenista">
+                                <canvas id="almacenistaCanvas" class="d-none"></canvas>
+                                <div id="almacenistaPlaceholder" class="signature-placeholder">
+                                    <i class="bi bi-pen d-block fs-2 mb-2"></i>
+                                    Seleccione una imagen o dibuje la firma
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                                <small class="text-muted">Firma pendiente.</small>
                                 <button type="button" id="saveAlmacenista" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-save me-1"></i> Guardar
+                                    <i class="bi bi-check2-circle"></i> Aplicar firma
                                 </button>
                             </div>
                         </div>
@@ -153,48 +268,52 @@
                 </div>
 
                 <!-- Firma del Técnico/Receptor -->
-                <div class="col-lg-6 col-12 mb-4">
-                    <div class="card h-100 shadow">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="mb-0"><i class="fas fa-user-tie me-2"></i>Firma del técnico/receptor</h5>
+                <div class="col-lg-6 col-12">
+                    <div class="signature-card">
+                        <div class="signature-card-header">
+                            <h5 class="signature-title">
+                                <span class="signature-icon"><i class="fas fa-user-tie"></i></span>
+                                Técnico / receptor
+                            </h5>
+                            <span class="badge text-bg-light border">Opcional</span>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <div class="mb-3">
-                                <label for="tecnicoFileInput" class="form-label small text-muted">Subir imagen de
-                                    firma</label>
-                                <input type="file" id="tecnicoFileInput" class="form-control form-control-sm"
-                                    accept="image/*">
-                            </div>
-
-                            <div class="mb-3 position-relative bg-light rounded d-flex align-items-center justify-content-center"
-                                style="height: 200px;">
-                                <img id="tecnicoSignatureImg" src=""
-                                    class="img-fluid d-none w-100 h-100 object-fit-contain border rounded">
-                                <canvas id="tecnicoCanvas"
-                                    class="position-absolute w-100 h-100 border border-2 border-success rounded d-none"
-                                    style="background-color: #f8f9fa; cursor: crosshair;"></canvas>
-                                <div id="tecnicoPlaceholder"
-                                    class="text-muted">Seleccione o
-                                    dibuje su firma</div>
-                            </div>
-
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-auto">
-                                <div>
-                                    <button type="button" id="clearTecnico" class="btn btn-outline-danger btn-sm me-2"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Limpiar">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
-                                    <button type="button" id="drawTecnico" class="btn btn-outline-success btn-sm"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Dibujar">
+                        <div class="p-3">
+                            <div class="signature-toolbar mb-3">
+                                <div class="signature-file">
+                                    <label for="tecnicoFileInput" class="form-label small fw-semibold mb-1">Imagen de firma</label>
+                                    <input type="file" id="tecnicoFileInput" class="form-control form-control-sm"
+                                        accept="image/*">
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de firma del técnico">
+                                    <button type="button" id="drawTecnico" class="btn btn-outline-success"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Dibujar firma">
                                         <i class="bi bi-pencil-fill"></i>
                                     </button>
+                                    <button type="button" id="clearTecnico" class="btn btn-outline-danger"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Limpiar firma">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
                                 </div>
+                            </div>
+
+                            <div class="signature-stage mb-3">
+                                <img id="tecnicoSignatureImg" src="" class="d-none" alt="Firma del técnico/receptor">
+                                <canvas id="tecnicoCanvas" class="d-none"></canvas>
+                                <div id="tecnicoPlaceholder" class="signature-placeholder">
+                                    <i class="bi bi-pen d-block fs-2 mb-2"></i>
+                                    Seleccione una imagen o dibuje la firma
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                                <small class="text-muted">Firma pendiente.</small>
                                 <button type="button" id="saveTecnico" class="btn btn-success btn-sm">
-                                    <i class="fas fa-save me-1"></i> Guardar
+                                    <i class="bi bi-check2-circle"></i> Aplicar firma
                                 </button>
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
             

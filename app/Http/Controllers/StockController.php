@@ -2072,9 +2072,19 @@ class StockController extends Controller
                 'movement',
             ])->findOrFail($id);
 
-            $movementProducts = $movement->products()
-                ->with(['product.metric', 'lot', 'movement', 'warehouse'])
-                ->get();
+            $movementWarehouseIds = collect([$movement->warehouse_id, $movement->destination_warehouse_id])
+                ->filter()
+                ->unique()
+                ->values();
+
+            $movementProductsQuery = $movement->products()
+                ->with(['product.metric', 'lot', 'movement', 'warehouse']);
+
+            if ($movementWarehouseIds->isNotEmpty()) {
+                $movementProductsQuery->whereIn('warehouse_id', $movementWarehouseIds);
+            }
+
+            $movementProducts = $movementProductsQuery->get();
 
             // Procesar firma del almacenista si existe
             $storekeeperSignaturePath = null;
@@ -2092,8 +2102,7 @@ class StockController extends Controller
                 $technian_name = $movement->destinationWarehouse->technician?->user?->name ?? 'No asignado';
             }
 
-            $movement_options = $movement->warehouseProducts($movement->destination_warehouse_id);
-            $movement_type_value = implode(', ', MovementType::whereIn('id', $movement_options->pluck('movement_id')->unique())->pluck('name')->toArray());
+            $movement_type_value = implode(', ', MovementType::whereIn('id', $movementProducts->pluck('movement_id')->unique())->pluck('name')->toArray());
 
             $data = [
                 'title' => 'Constancia de Movimiento',
