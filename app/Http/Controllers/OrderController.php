@@ -228,13 +228,6 @@ class OrderController extends Controller
                 'contract_id' => null,
                 'setting_id' => null,
                 'text' => $service_data->description ?? null,
-                'custom_interval_enabled' => (bool) ($service_data->custom_interval_enabled ?? false),
-                'custom_interval_start_date' => !empty($service_data->custom_interval_start_date)
-                    ? $service_data->custom_interval_start_date
-                    : null,
-                'custom_interval_days' => !empty($service_data->custom_interval_days)
-                    ? (int) $service_data->custom_interval_days
-                    : null,
             ]);
         }
 
@@ -591,9 +584,6 @@ class OrderController extends Controller
                 $services_configuration[] = [
                     'service_id' => $service->id,
                     'description' => $order->propagateByService($service->id)->text ?? null,
-                    'custom_interval_enabled' => (bool) ($order->propagateByService($service->id)->custom_interval_enabled ?? false),
-                    'custom_interval_start_date' => $order->propagateByService($service->id)->custom_interval_start_date ?? null,
-                    'custom_interval_days' => $order->propagateByService($service->id)->custom_interval_days ?? null,
                 ];
 
                 $cost += $service->cost;
@@ -675,9 +665,6 @@ class OrderController extends Controller
                     'setting_id' => $order->setting_id,
                     'contract_id' => $order->contract_id,
                     'description' => $propagation->text ?? null,
-                    'custom_interval_enabled' => (bool) ($propagation->custom_interval_enabled ?? false),
-                    'custom_interval_start_date' => $propagation->custom_interval_start_date ?? null,
-                    'custom_interval_days' => $propagation->custom_interval_days ?? null,
                 ];
 
                 $cost += $service->cost;
@@ -791,13 +778,6 @@ class OrderController extends Controller
                     ],
                     [
                         'text' => $service_data->description ?? null,
-                        'custom_interval_enabled' => (bool) ($service_data->custom_interval_enabled ?? false),
-                        'custom_interval_start_date' => !empty($service_data->custom_interval_start_date)
-                            ? $service_data->custom_interval_start_date
-                            : null,
-                        'custom_interval_days' => !empty($service_data->custom_interval_days)
-                            ? (int) $service_data->custom_interval_days
-                            : null,
                         'updated_at' => now(),
                     ]
                 );
