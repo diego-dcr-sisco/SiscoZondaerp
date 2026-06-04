@@ -227,6 +227,7 @@ Route::prefix('stock')
         Route::get('/movements/warehouse/{id}', [StockController::class, 'movementsWarehouse'])->name('movements.warehouse');
         Route::get('/movements/orders', [StockController::class, 'movementsOrders'])->name('movements.orders');
         Route::get('/consumptions/by-customer', [StockController::class, 'consumptionsByCustomer'])->name('consumptions.by-customer');
+        Route::get('/consumptions/by-customer/export', [StockController::class, 'exportConsumptionsByCustomer'])->name('consumptions.by-customer.export');
 
         Route::get('/movement/{id}', [StockController::class, 'wMovement'])->name('movement');
         Route::get('/movement/search/{id}', [StockController::class, 'searchMovements'])->name('movement.search');

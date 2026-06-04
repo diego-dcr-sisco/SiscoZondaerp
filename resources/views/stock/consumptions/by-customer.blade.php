@@ -104,6 +104,73 @@
                 </div>
             </form>
 
+            <form action="{{ route('stock.consumptions.by-customer.export') }}" method="GET" class="mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <h5 class="card-title fw-bold mb-0">
+                                <i class="bi bi-file-earmark-excel-fill"></i> Excel por cliente y producto
+                            </h5>
+                            <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
+                                data-bs-target=".customer-consumption-export-collapse" aria-expanded="true"
+                                aria-controls="customerConsumptionExportFilters customerConsumptionExportFooter">
+                                <i class="bi bi-caret-down-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-body collapse show customer-consumption-export-collapse"
+                        id="customerConsumptionExportFilters">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-lg-4 col-12">
+                                <label for="date-range-export" class="form-label is-required">Rango de fecha</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+                                    <input type="text" class="form-control" id="date-range-export" name="date_range"
+                                        value="{{ request('date_range') }}" placeholder="Fecha de las ordenes"
+                                        autocomplete="off" required>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-8 col-12">
+                                <label class="form-label">Tipo de cliente</label>
+                                <div class="d-flex align-items-center gap-3 flex-wrap border rounded p-2 bg-white">
+                                    @php
+                                        $selectedServiceTypes = collect(request('service_type_ids', [1, 2, 3]))->map(fn ($value) => (string) $value);
+                                        $serviceTypeOptions = [
+                                            1 => 'Domestico',
+                                            2 => 'Comercial',
+                                            3 => 'Industrial/Planta',
+                                        ];
+                                    @endphp
+                                    @foreach ($serviceTypeOptions as $typeId => $typeLabel)
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" name="service_type_ids[]"
+                                                id="service-type-{{ $typeId }}" value="{{ $typeId }}"
+                                                {{ $selectedServiceTypes->contains((string) $typeId) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="service-type-{{ $typeId }}">
+                                                {{ $typeLabel }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-footer collapse show customer-consumption-export-collapse"
+                        id="customerConsumptionExportFooter">
+                        <div class="row justify-content-end">
+                            <div class="col-lg-2 col-md-3 col-12">
+                                <button type="submit" class="btn btn-success btn-sm w-100">
+                                    <i class="bi bi-file-earmark-excel-fill"></i> Generar Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
             <div class="row g-3 mb-3">
                 <div class="col-xl-5 col-12">
                     <div class="table-responsive bg-white border rounded h-100">
@@ -235,9 +302,9 @@
                 autoUpdateInput: false
             };
 
-            $('#date-range').daterangepicker(commonOptions);
+            $('#date-range, #date-range-export').daterangepicker(commonOptions);
 
-            $('#date-range').on('apply.daterangepicker', function(ev, picker) {
+            $('#date-range, #date-range-export').on('apply.daterangepicker', function(ev, picker) {
                 $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
                     'DD/MM/YYYY'));
             });

@@ -525,6 +525,190 @@ class StockController extends Controller
         ));
     }
 
+    public function exportConsumptionsByCustomer(Request $request)
+    {
+        $request->validate([
+            'date_range' => 'required|string',
+            'service_type_ids' => 'nullable|array',
+            'service_type_ids.*' => 'integer|in:1,2,3',
+        ], [
+            'date_range.required' => 'El rango de fecha es obligatorio.',
+        ]);
+
+        $dateRange = $this->parseStockConsumptionDateRange($request->input('date_range'));
+
+        if (!$dateRange) {
+            return back()->withErrors([
+                'date_range' => 'El rango de fecha no tiene un formato valido.',
+            ])->withInput();
+        }
+
+        $serviceTypeIds = collect($request->input('service_type_ids', [1, 2, 3]))
+            ->map(fn ($typeId) => (int) $typeId)
+            ->filter(fn ($typeId) => in_array($typeId, [1, 2, 3], true))
+            ->unique()
+            ->values();
+
+        if ($serviceTypeIds->isEmpty()) {
+            $serviceTypeIds = collect([1, 2, 3]);
+        }
+
+        $rows = $this->stockConsumptionRowsByCustomerAndProduct($dateRange, $serviceTypeIds->all());
+        $products = $rows
+            ->mapWithKeys(function ($row) {
+                $productKey = $row->product_id . '|' . $row->metric_name;
+
+                return [
+                    $productKey => $row->product_name . ' (' . $row->metric_name . ')',
+                ];
+            })
+            ->sort()
+            ->all();
+
+        $customers = [];
+
+        foreach ($rows as $row) {
+            $customerKey = $row->customer_id;
+
+            if (!isset($customers[$customerKey])) {
+                $customers[$customerKey] = [
+                    'matrix_id' => $row->matrix_id,
+                    'matrix_name' => $row->matrix_name,
+                    'customer_id' => $row->customer_id,
+                    'customer_name' => $row->customer_name,
+                    'products' => [],
+                ];
+            }
+
+            $productKey = $row->product_id . '|' . $row->metric_name;
+            $customers[$customerKey]['products'][$productKey] = (float) $row->total_quantity;
+        }
+
+        $properties = new Properties(
+            title: 'Consumos por cliente - ' . Carbon::now()->format('d-m-Y')
+        );
+        $options = new Options();
+        $options->setProperties($properties);
+
+        $writer = new Writer($options);
+        $fileName = 'consumos_por_cliente_' . Carbon::now()->format('Ymd_His') . '.xlsx';
+        $filePath = storage_path('app/public/' . $fileName);
+        $writer->openToFile($filePath);
+
+        $headerStyle = (new Style())
+            ->setBackgroundColor(Color::BLUE)
+            ->setFontColor(Color::WHITE)
+            ->setFontSize(12)
+            ->setFontBold();
+
+        $headers = array_merge(
+            ['Nombre matriz (id)', 'Nombre cliente (id)'],
+            array_values($products)
+        );
+
+        $autoFilter = new AutoFilter(0, 1, max(count($headers) - 1, 1), 1048576);
+        $writer->getCurrentSheet()->setAutoFilter($autoFilter);
+        $writer->addRow(Row::fromValues($headers, $headerStyle));
+
+        foreach ($customers as $customer) {
+            $rowData = [
+                $customer['matrix_name'] . ' (' . $customer['matrix_id'] . ')',
+                $customer['customer_name'] . ' (' . $customer['customer_id'] . ')',
+            ];
+
+            foreach (array_keys($products) as $productId) {
+                $rowData[] = $customer['products'][$productId] ?? 0;
+            }
+
+            $writer->addRow(Row::fromValues($rowData));
+        }
+
+        if (empty($customers)) {
+            $writer->addRow(Row::fromValues([
+                'Sin resultados',
+                'No hay consumos para los filtros seleccionados.',
+            ]));
+        }
+
+        $writer->close();
+
+        return response()->download($filePath)->deleteFileAfterSend(true);
+    }
+
+    private function stockConsumptionRowsByCustomerAndProduct(array $dateRange, array $serviceTypeIds)
+    {
+        $deviceProductTotals = DB::table('device_product')
+            ->join('order as orders', 'device_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->leftJoin('customer as matrices', 'customers.general_sedes', '=', 'matrices.id')
+            ->join('product_catalog as products', 'device_product.product_id', '=', 'products.id')
+            ->leftJoin('metric as metrics', 'products.metric_id', '=', 'metrics.id')
+            ->whereNotNull('orders.programmed_date')
+            ->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->whereIn('customers.service_type_id', $serviceTypeIds)
+            ->selectRaw('COALESCE(matrices.id, customers.id) as matrix_id')
+            ->selectRaw('COALESCE(matrices.name, customers.name) as matrix_name')
+            ->selectRaw('customers.id as customer_id')
+            ->selectRaw('customers.name as customer_name')
+            ->selectRaw('products.id as product_id')
+            ->selectRaw('COALESCE(products.name, "Sin producto") as product_name')
+            ->selectRaw('COALESCE(metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('device_product.quantity as quantity');
+
+        $chemicalApplicationTotals = DB::table('order_product')
+            ->join('order as orders', 'order_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->leftJoin('customer as matrices', 'customers.general_sedes', '=', 'matrices.id')
+            ->join('service', 'order_product.service_id', '=', 'service.id')
+            ->leftJoin('product_catalog as products', 'order_product.product_id', '=', 'products.id')
+            ->leftJoin('metric as order_metrics', 'order_product.metric_id', '=', 'order_metrics.id')
+            ->leftJoin('metric as product_metrics', 'products.metric_id', '=', 'product_metrics.id')
+            ->whereNotNull('orders.programmed_date')
+            ->whereIn('service.prefix', [2, 3])
+            ->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->whereIn('customers.service_type_id', $serviceTypeIds)
+            ->selectRaw('COALESCE(matrices.id, customers.id) as matrix_id')
+            ->selectRaw('COALESCE(matrices.name, customers.name) as matrix_name')
+            ->selectRaw('customers.id as customer_id')
+            ->selectRaw('customers.name as customer_name')
+            ->selectRaw('products.id as product_id')
+            ->selectRaw('COALESCE(products.name, "Sin producto") as product_name')
+            ->selectRaw('COALESCE(order_metrics.value, product_metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('order_product.amount as quantity');
+
+        $productTotals = $deviceProductTotals->unionAll($chemicalApplicationTotals);
+
+        return DB::query()
+            ->fromSub($productTotals, 'product_totals')
+            ->selectRaw('matrix_id')
+            ->selectRaw('matrix_name')
+            ->selectRaw('customer_id')
+            ->selectRaw('customer_name')
+            ->selectRaw('product_id')
+            ->selectRaw('product_name')
+            ->selectRaw('metric_name')
+            ->selectRaw('COALESCE(SUM(quantity), 0) as total_quantity')
+            ->groupBy(
+                'matrix_id',
+                'matrix_name',
+                'customer_id',
+                'customer_name',
+                'product_id',
+                'product_name',
+                'metric_name'
+            )
+            ->orderBy('matrix_name')
+            ->orderBy('customer_name')
+            ->orderBy('product_name')
+            ->get();
+    }
+
     private function parseStockConsumptionDateRange(?string $dateRange): ?array
     {
         if (!$dateRange || !str_contains($dateRange, ' - ')) {
