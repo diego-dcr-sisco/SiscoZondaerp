@@ -220,14 +220,98 @@ class StockController extends Controller
     ////////////////// FUNCIONES DE MOVIMIENTOS //////////////////
 
 
-    public function movementsAll()
+    public function movementsAll(Request $request)
     {
         $navigation = $this->navigation;
         $warehouses = Warehouse::all();
         $movement_types = MovementType::all();
-        $movements = WarehouseMovement::orderBy('date', 'DESC')->orderBy('time', 'DESC')->paginate($this->size);
-        $products = ProductCatalog::whereIn('id', MovementProduct::pluck('product_id')->unique())->get();
-        $lots = Lot::whereIn('product_id', $products->pluck('id')->unique())->get();
+        $direction = strtoupper($request->input('direction', 'DESC'));
+        $direction = in_array($direction, ['ASC', 'DESC']) ? $direction : 'DESC';
+        $size = (int) $request->input('size', $this->size);
+
+        $query = WarehouseMovement::with([
+            'warehouse',
+            'destinationWarehouse',
+            'products.product.metric',
+            'products.lot',
+            'products.movement',
+        ]);
+
+        if ($request->filled('warehouse')) {
+            $warehouseName = trim($request->input('warehouse'));
+            $warehouseIds = Warehouse::where('name', 'like', '%' . $warehouseName . '%')->pluck('id');
+
+            $query->where(function ($q) use ($warehouseIds) {
+                $q->whereIn('warehouse_id', $warehouseIds)
+                    ->orWhereIn('destination_warehouse_id', $warehouseIds);
+            });
+        }
+
+        if ($request->filled('movement_id')) {
+            $query->whereHas('products', function ($q) use ($request) {
+                $q->where('movement_id', $request->input('movement_id'));
+            });
+        }
+
+        if ($request->filled('product_id')) {
+            $query->whereHas('products', function ($q) use ($request) {
+                $q->where('product_id', $request->input('product_id'));
+            });
+        }
+
+        if ($request->filled('lot_id')) {
+            $query->whereHas('products', function ($q) use ($request) {
+                $q->where('lot_id', $request->input('lot_id'));
+            });
+        }
+
+        if ($request->filled('date_range')) {
+            $dates = explode(' - ', $request->input('date_range'));
+            if (count($dates) === 2) {
+                try {
+                    $startDate = Carbon::createFromFormat('d/m/Y', trim($dates[0]))->toDateString();
+                    $endDate = Carbon::createFromFormat('d/m/Y', trim($dates[1]))->toDateString();
+                    $query->whereBetween('date', [$startDate, $endDate]);
+                } catch (\Exception $e) {
+                    Log::warning('Invalid movement date range filter', [
+                        'date_range' => $request->input('date_range'),
+                    ]);
+                }
+            }
+        }
+
+        $summaryQuery = clone $query;
+        $entryQuery = clone $query;
+        $exitQuery = clone $query;
+        $revertedQuery = clone $query;
+
+        $summary = [
+            'warehouses' => Warehouse::count(),
+            'total' => (clone $summaryQuery)->count(),
+            'entries' => $entryQuery->whereHas('products', function ($q) {
+                $q->where(function ($subQ) {
+                    $subQ->whereBetween('movement_id', [1, 4])
+                        ->orWhereHas('movement', fn($movementQ) => $movementQ->where('type', 'in'));
+                });
+            })->count(),
+            'exits' => $exitQuery->whereHas('products', function ($q) {
+                $q->where(function ($subQ) {
+                    $subQ->whereBetween('movement_id', [5, 10])
+                        ->orWhereHas('movement', fn($movementQ) => $movementQ->where('type', 'out'));
+                });
+            })->count(),
+            'reverted' => $revertedQuery->where('is_active', false)->count(),
+        ];
+
+        $movements = $query
+            ->orderBy('date', $direction)
+            ->orderBy('time', $direction)
+            ->paginate($size > 0 ? $size : $this->size)
+            ->withQueryString();
+
+        $movementProductIds = MovementProduct::pluck('product_id')->unique();
+        $products = ProductCatalog::whereIn('id', $movementProductIds)->orderBy('name')->get();
+        $lots = Lot::whereIn('product_id', $movementProductIds)->orderBy('registration_number')->get();
 
 
         return view('stock.movements.all', compact(
@@ -236,7 +320,8 @@ class StockController extends Controller
             'navigation',
             'movement_types',
             'products',
-            'lots'
+            'lots',
+            'summary'
         ));
     }
 
