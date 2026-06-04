@@ -20,6 +20,28 @@
             border-radius: 10px;
             text-align: center;
         }
+
+        .order-technicians-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .order-technicians-list li {
+            display: flex;
+            align-items: center;
+            gap: .35rem;
+            padding: .12rem 0;
+            line-height: 1.25;
+        }
+
+        .order-technicians-list li + li {
+            border-top: 1px solid #f1f3f5;
+        }
+
+        .order-technicians-list i {
+            font-size: .8rem;
+        }
     </style>
 
     <div id="fullscreen-spinner" class="d-none">
@@ -283,7 +305,7 @@
                         @php
                             // Asegurarte que la cadena tiene el prefijo correcto
                             $signature =
-                                strpos($order->customer_signature, 'data:image') === 0
+                                strpos((string) $order->customer_signature, 'data:image') === 0
                                     ? $order->customer_signature
                                     : 'data:image/png;base64,' . $order->customer_signature;
 
@@ -319,11 +341,46 @@
                                 @endforeach
                             </td>
                             <td>
-                                <ul style="margin: 0; padding-left: 20px;">
-                                    @foreach ($order->getNameTechnicians() as $technician)
-                                        <li>{{ $technician->name }}</li>
-                                    @endforeach
-                                </ul>
+                                @php
+                                    $orderTechnicians = collect($order->getNameTechnicians());
+                                    $visibleTechnicians = $orderTechnicians->take(3);
+                                    $hiddenTechnicians = $orderTechnicians->slice(3);
+                                    $techniciansCollapseId = 'orderTechnicians' . $order->id;
+                                @endphp
+
+                                @if ($orderTechnicians->isNotEmpty())
+                                    <ul class="order-technicians-list">
+                                        @foreach ($visibleTechnicians as $technician)
+                                            <li>
+                                                <i class="bi bi-person-badge text-primary"></i>
+                                                <span>{{ $technician->name }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+
+                                    @if ($hiddenTechnicians->isNotEmpty())
+                                        <div class="collapse mt-1" id="{{ $techniciansCollapseId }}">
+                                            <ul class="order-technicians-list">
+                                                @foreach ($hiddenTechnicians as $technician)
+                                                    <li>
+                                                        <i class="bi bi-person-badge text-primary"></i>
+                                                        <span>{{ $technician->name }}</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                        <button class="btn btn-link btn-sm p-0 text-decoration-none text-start order-technicians-toggle"
+                                            type="button" data-bs-toggle="collapse"
+                                            data-bs-target="#{{ $techniciansCollapseId }}" aria-expanded="false"
+                                            aria-controls="{{ $techniciansCollapseId }}">
+                                            <span class="show-more-label">Ver {{ $hiddenTechnicians->count() }} mas</span>
+                                            <span class="show-less-label d-none">Ver menos</span>
+                                            <i class="bi bi-chevron-down ms-1"></i>
+                                        </button>
+                                    @endif
+                                @else
+                                    <span class="text-muted">Sin tecnicos</span>
+                                @endif
                             </td>
                             <td>
                                 {{ $order->closeUser->name ?? '-' }}
@@ -387,6 +444,29 @@
 
         $(document).ready(function() {
             $('.form-check-input').prop('checked', false);
+
+            document.querySelectorAll('.order-technicians-toggle').forEach(function(button) {
+                var icon = button.querySelector('i');
+                var showMoreLabel = button.querySelector('.show-more-label');
+                var showLessLabel = button.querySelector('.show-less-label');
+                var collapse = document.querySelector(button.dataset.bsTarget);
+
+                if (!collapse) {
+                    return;
+                }
+
+                collapse.addEventListener('shown.bs.collapse', function() {
+                    icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
+                    showMoreLabel.classList.add('d-none');
+                    showLessLabel.classList.remove('d-none');
+                });
+
+                collapse.addEventListener('hidden.bs.collapse', function() {
+                    icon.classList.replace('bi-chevron-up', 'bi-chevron-down');
+                    showLessLabel.classList.add('d-none');
+                    showMoreLabel.classList.remove('d-none');
+                });
+            });
         });
 
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))

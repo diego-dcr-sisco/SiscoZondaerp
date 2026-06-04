@@ -1,12 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
-    @php
-        $errors = $errors ?? new \Illuminate\Support\ViewErrorBag;
-    @endphp
-
     @include('components.page-header', [
-        'title' => 'EDITAR ZONA COMERCIAL',
+        'title' => 'CREAR ZONA COMERCIAL',
         'icon' => 'bi-geo-alt-fill',
         'iconColor' => 'text-primary',
         'backRoute' => route('comercial-zones.index'),
@@ -26,6 +22,7 @@
             gap: .75rem;
             padding: .75rem;
             border-bottom: 1px solid #f1f3f5;
+            transition: background-color .2s ease;
         }
 
         .customer-item:hover {
@@ -69,10 +66,8 @@
     </style>
 
     <div class="container-fluid p-0">
-        <form action="{{ route('comercial-zones.update', ['id' => $comercialZone->id]) }}" method="POST"
-            id="editComercialZoneForm" class="m-3">
+        <form action="{{ route('comercial-zones.store') }}" method="POST" id="createComercialZoneForm" class="m-3">
             @csrf
-            @method('PUT')
 
             <div class="row g-3 mb-3">
                 <div class="col-xl-3 col-lg-4 col-12">
@@ -86,7 +81,7 @@
                                 <div class="input-group input-group-sm">
                                     <span class="input-group-text"><i class="bi bi-tag"></i></span>
                                     <input type="text" class="form-control @error('name') is-invalid @enderror"
-                                        id="name" name="name" value="{{ old('name', $comercialZone->name) }}"
+                                        id="name" name="name" value="{{ old('name') }}"
                                         placeholder="Ej. Zona Centro" required>
                                 </div>
                                 @error('name')
@@ -95,28 +90,15 @@
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label" for="code">Codigo</label>
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text"><i class="bi bi-upc"></i></span>
-                                    <input type="text" class="form-control @error('code') is-invalid @enderror"
-                                        id="code" name="code" value="{{ old('code', $comercialZone->code) }}"
-                                        placeholder="Codigo interno">
-                                </div>
-                                @error('code')
-                                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
                                 <label for="description" class="form-label">Descripcion</label>
                                 <textarea class="form-control form-control-sm @error('description') is-invalid @enderror" id="description"
-                                    name="description" rows="7" placeholder="Notas internas o criterio de agrupacion">{{ old('description', $comercialZone->description) }}</textarea>
+                                    name="description" rows="8" placeholder="Notas internas o criterio de agrupacion">{{ old('description') }}</textarea>
                                 @error('description')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
-                            <input type="hidden" name="customer_ids" id="editCustomerIds"
+                            <input type="hidden" name="customer_ids" id="createCustomerIds"
                                 value="{{ old('customer_ids') }}">
                             @error('customer_ids')
                                 <div class="alert alert-danger small py-2">{{ $message }}</div>
@@ -129,24 +111,24 @@
                     <div class="card h-100">
                         <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center gap-2">
                             <span><i class="bi bi-search"></i> Buscar clientes</span>
-                            <div id="editSearchLoading" class="spinner-border spinner-border-sm text-primary"
+                            <div id="createSearchLoading" class="spinner-border spinner-border-sm text-primary"
                                 role="status" style="display:none;">
                                 <span class="visually-hidden">Buscando...</span>
                             </div>
                         </div>
                         <div class="card-body">
-                            <label class="form-label" for="editCustomerSearch">Cliente</label>
+                            <label class="form-label" for="createCustomerSearch">Cliente</label>
                             <div class="input-group input-group-sm mb-3">
                                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                <input type="text" class="form-control" id="editCustomerSearch"
+                                <input type="text" class="form-control" id="createCustomerSearch"
                                     placeholder="Nombre, telefono o direccion">
-                                <button type="button" class="btn btn-outline-secondary" id="editBtnSearchCustomer"
+                                <button type="button" class="btn btn-outline-secondary" id="createBtnSearchCustomer"
                                     data-bs-toggle="tooltip" title="Buscar">
                                     <i class="bi bi-search"></i>
                                 </button>
                             </div>
 
-                            <div id="editCustomerResults" class="customer-results border rounded">
+                            <div id="createCustomerResults" class="customer-results border rounded">
                                 <div class="text-muted small p-3">
                                     Escribe al menos 2 caracteres para buscar clientes.
                                 </div>
@@ -154,11 +136,11 @@
 
                             <div class="d-flex justify-content-end gap-2 mt-3">
                                 <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de seleccion">
-                                    <button type="button" class="btn btn-outline-primary" id="editSelectAllBtn"
+                                    <button type="button" class="btn btn-outline-primary" id="createSelectAllBtn"
                                         data-bs-toggle="tooltip" title="Seleccionar clientes visibles">
                                         <i class="bi bi-check2-square"></i> Seleccionar visibles
                                     </button>
-                                    <button type="button" class="btn btn-outline-danger" id="editDeselectAllBtn"
+                                    <button type="button" class="btn btn-outline-danger" id="createDeselectAllBtn"
                                         data-bs-toggle="tooltip" title="Quitar clientes visibles">
                                         <i class="bi bi-x-square"></i> Quitar visibles
                                     </button>
@@ -172,10 +154,10 @@
                     <div class="card h-100">
                         <div class="card-header bg-light fw-bold d-flex justify-content-between align-items-center gap-2">
                             <span><i class="bi bi-people-fill"></i> Clientes seleccionados</span>
-                            <span class="badge bg-primary" id="editSelectedCount">0</span>
+                            <span class="badge bg-primary" id="createSelectedCount">0</span>
                         </div>
                         <div class="card-body">
-                            <div id="editSelectedCustomersList"
+                            <div id="createSelectedCustomersList"
                                 class="selected-customers-box d-flex flex-column gap-2 border rounded p-2">
                                 <span class="text-muted small">No hay clientes seleccionados</span>
                             </div>
@@ -188,44 +170,32 @@
                 <i class="bi bi-x-circle"></i> Cancelar
             </a>
             <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check2-circle"></i> Actualizar zona
+                <i class="bi bi-check2-circle"></i> Guardar zona
             </button>
         </form>
     </div>
 
-    @php
-        $selectedCustomers = $comercialZone->customers->map(function ($customer) {
-            return [
-                'id' => $customer->id,
-                'name' => $customer->name,
-                'code' => $customer->code ?? null,
-                'type' => $customer->type ?? null,
-                'address' => $customer->address ?? null,
-            ];
-        })->values();
-    @endphp
-
     <script>
         $(document).ready(function() {
-            let editSelectedCustomers = @json($selectedCustomers);
-            let editDebounceTimer;
-            let editCurrentSearchResults = [];
+            let createSelectedCustomers = [];
+            let createDebounceTimer;
+            let createCurrentSearchResults = [];
 
-            function renderEditCustomerResults(customers) {
+            function renderCreateCustomerResults(customers) {
                 if (customers.length === 0) {
-                    $('#editCustomerResults').html(
+                    $('#createCustomerResults').html(
                         '<div class="text-muted small p-3">No se encontraron clientes.</div>');
                     return;
                 }
 
                 let html = '';
                 customers.forEach(function(customer) {
-                    const isSelected = editSelectedCustomers.some(c => c.id === customer.id);
+                    const isSelected = createSelectedCustomers.some(c => c.id === customer.id);
                     const selectedClass = isSelected ? 'customer-selected' : '';
 
                     html += `
                         <label class="customer-item ${selectedClass}" data-customer-id="${customer.id}">
-                            <input type="checkbox" class="form-check-input mt-1 edit-customer-checkbox"
+                            <input type="checkbox" class="form-check-input mt-1 create-customer-checkbox"
                                 data-customer='${JSON.stringify(customer)}' ${isSelected ? 'checked' : ''}>
                             <span class="flex-grow-1">
                                 <span class="fw-semibold d-block">${customer.name}</span>
@@ -236,21 +206,21 @@
                     `;
                 });
 
-                $('#editCustomerResults').html(html);
+                $('#createCustomerResults').html(html);
             }
 
-            function searchEditCustomers() {
-                const query = $('#editCustomerSearch').val().trim();
+            function searchCreateCustomers() {
+                const query = $('#createCustomerSearch').val().trim();
 
                 if (query.length < 2) {
-                    $('#editCustomerResults').html(
+                    $('#createCustomerResults').html(
                         '<div class="text-muted small p-3">Escribe al menos 2 caracteres para buscar clientes.</div>'
-                    );
-                    editCurrentSearchResults = [];
+                        );
+                    createCurrentSearchResults = [];
                     return;
                 }
 
-                $('#editSearchLoading').show();
+                $('#createSearchLoading').show();
 
                 const formData = new FormData();
                 formData.append('customer_name', query);
@@ -267,30 +237,30 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                     },
                     success: function(response) {
-                        editCurrentSearchResults = response.customers || [];
-                        renderEditCustomerResults(editCurrentSearchResults);
+                        createCurrentSearchResults = response.customers || [];
+                        renderCreateCustomerResults(createCurrentSearchResults);
                     },
                     error: function() {
-                        $('#editCustomerResults').html(
+                        $('#createCustomerResults').html(
                             '<div class="text-danger small p-3">Error en la busqueda.</div>');
                     },
                     complete: function() {
-                        $('#editSearchLoading').hide();
+                        $('#createSearchLoading').hide();
                     }
                 });
             }
 
-            function updateEditSelectedCustomers() {
-                const selectedList = $('#editSelectedCustomersList');
-                $('#editSelectedCount').text(editSelectedCustomers.length);
+            function updateCreateSelectedCustomers() {
+                const selectedList = $('#createSelectedCustomersList');
+                $('#createSelectedCount').text(createSelectedCustomers.length);
 
-                if (editSelectedCustomers.length === 0) {
+                if (createSelectedCustomers.length === 0) {
                     selectedList.html('<span class="text-muted small">No hay clientes seleccionados</span>');
-                    $('#editCustomerIds').val('');
+                    $('#createCustomerIds').val('');
                     return;
                 }
 
-                selectedList.html(editSelectedCustomers.map(function(customer) {
+                selectedList.html(createSelectedCustomers.map(function(customer) {
                     return `
                         <div class="customer-badge">
                             <span class="customer-badge-name">${customer.name}</span>
@@ -302,68 +272,68 @@
                     `;
                 }).join(''));
 
-                $('#editCustomerIds').val(JSON.stringify(editSelectedCustomers.map(c => c.id)));
+                $('#createCustomerIds').val(JSON.stringify(createSelectedCustomers.map(c => c.id)));
             }
 
-            $('#editCustomerSearch').on('keyup', function() {
-                clearTimeout(editDebounceTimer);
-                editDebounceTimer = setTimeout(searchEditCustomers, 300);
+            $('#createCustomerSearch').on('keyup', function() {
+                clearTimeout(createDebounceTimer);
+                createDebounceTimer = setTimeout(searchCreateCustomers, 300);
             });
 
-            $('#editBtnSearchCustomer').on('click', searchEditCustomers);
+            $('#createBtnSearchCustomer').on('click', searchCreateCustomers);
 
-            $(document).on('change', '.edit-customer-checkbox', function() {
+            $(document).on('change', '.create-customer-checkbox', function() {
                 const customerData = $(this).data('customer');
                 const isChecked = $(this).is(':checked');
                 const customerId = customerData.id;
 
-                if (isChecked && !editSelectedCustomers.some(c => c.id === customerId)) {
-                    editSelectedCustomers.push(customerData);
+                if (isChecked && !createSelectedCustomers.some(c => c.id === customerId)) {
+                    createSelectedCustomers.push(customerData);
                     $(this).closest('.customer-item').addClass('customer-selected');
                 }
 
                 if (!isChecked) {
-                    editSelectedCustomers = editSelectedCustomers.filter(c => c.id !== customerId);
+                    createSelectedCustomers = createSelectedCustomers.filter(c => c.id !== customerId);
                     $(this).closest('.customer-item').removeClass('customer-selected');
                 }
 
-                updateEditSelectedCustomers();
+                updateCreateSelectedCustomers();
             });
 
             $(document).on('click', '.remove-selected-customer', function() {
                 const customerId = $(this).data('customer-id');
-                editSelectedCustomers = editSelectedCustomers.filter(c => c.id !== customerId);
+                createSelectedCustomers = createSelectedCustomers.filter(c => c.id !== customerId);
 
-                $(`.customer-item[data-customer-id="${customerId}"] .edit-customer-checkbox`)
+                $(`.customer-item[data-customer-id="${customerId}"] .create-customer-checkbox`)
                     .prop('checked', false)
                     .closest('.customer-item').removeClass('customer-selected');
 
-                updateEditSelectedCustomers();
+                updateCreateSelectedCustomers();
             });
 
-            $('#editSelectAllBtn').on('click', function() {
-                editCurrentSearchResults.forEach(function(customer) {
-                    if (!editSelectedCustomers.some(c => c.id === customer.id)) {
-                        editSelectedCustomers.push(customer);
+            $('#createSelectAllBtn').on('click', function() {
+                createCurrentSearchResults.forEach(function(customer) {
+                    if (!createSelectedCustomers.some(c => c.id === customer.id)) {
+                        createSelectedCustomers.push(customer);
                     }
                 });
 
-                $('.edit-customer-checkbox').prop('checked', true);
+                $('.create-customer-checkbox').prop('checked', true);
                 $('.customer-item').addClass('customer-selected');
-                updateEditSelectedCustomers();
+                updateCreateSelectedCustomers();
             });
 
-            $('#editDeselectAllBtn').on('click', function() {
-                const currentIds = editCurrentSearchResults.map(c => c.id);
-                editSelectedCustomers = editSelectedCustomers.filter(c => !currentIds.includes(c.id));
+            $('#createDeselectAllBtn').on('click', function() {
+                const currentIds = createCurrentSearchResults.map(c => c.id);
+                createSelectedCustomers = createSelectedCustomers.filter(c => !currentIds.includes(c.id));
 
-                $('.edit-customer-checkbox').prop('checked', false);
+                $('.create-customer-checkbox').prop('checked', false);
                 $('.customer-item').removeClass('customer-selected');
-                updateEditSelectedCustomers();
+                updateCreateSelectedCustomers();
             });
 
-            $('#editComercialZoneForm').on('submit', function(e) {
-                if (editSelectedCustomers.length === 0) {
+            $('#createComercialZoneForm').on('submit', function(e) {
+                if (createSelectedCustomers.length === 0) {
                     e.preventDefault();
                     alert('Por favor, seleccione al menos un cliente.');
                     return false;
@@ -374,7 +344,7 @@
                 new bootstrap.Tooltip(element);
             });
 
-            updateEditSelectedCustomers();
+            updateCreateSelectedCustomers();
         });
     </script>
 @endsection
