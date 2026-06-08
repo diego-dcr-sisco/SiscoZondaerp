@@ -1,4 +1,5 @@
 <?php
+
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\ControlPointController;
@@ -63,7 +64,7 @@ Route::middleware(['auth', 'single.session'])->group(function () {
     Route::get('/RRHH/{section}', [PagesController::class, 'rrhh'])->name('rrhh');
     Route::get('/dashboard/stock', [PagesController::class, 'stock'])->name('dashboard.stock.');
 });
-    
+
 // CONTROL DE OPERACIONES
 Route::prefix('operations')
     ->name('operations.')
@@ -110,7 +111,6 @@ Route::prefix('planning')->name('planning.')->middleware(['auth', 'single.sessio
 
     Route::post('/update-order', [PagesController::class, 'updateOrder'])
         ->name('update-order');
-
 });
 
 // CALIDAD
@@ -162,7 +162,6 @@ Route::prefix('quality')
         // Ruta para el filtrado AJAX (misma URL pero diferente manejo)
         Route::get('/customer/{id}/analytics/filter-device-consumption', [QualityController::class, 'deviceConsumptionPrueba'])
             ->name('analytics.filterDeviceConsumption');
-
     });
 
 // CRM
@@ -284,7 +283,7 @@ Route::prefix('stock/analytics/charts')
 
 Route::prefix('inventory')
     ->middleware(['auth', 'single.session', 'can:integral'])
-    ->group(function () { });
+    ->group(function () {});
 
 //lot
 Route::prefix('lot')
@@ -347,9 +346,9 @@ Route::prefix('crm/chart')
 
         // views
         Route::get('/dashboard', [GraphicController::class, 'index'])->name('dashboard');
-    }); 
-    
-    // CRM CHARTS
+    });
+
+// CRM CHARTS
 Route::get('/crm/chart/customers-by-category', [GraphicController::class, 'customersByCategory'])
     ->name('crm.chart.customersByCategory');
 
@@ -436,14 +435,14 @@ Route::prefix('users')
         Route::get('/restore/{id}', [UserController::class, 'active'])->name('restore');
         Route::get('/search', [UserController::class, 'search'])->name('search');
         Route::post('/file/upload/{userId}', [UserController::class, 'uploadFile'])->name('file.upload');
-        Route::post('/file/uploadNew/{userId}', [UserController::class, 'uploadFileByName'])->name('file.uploadByName');//subir desde crear
+        Route::post('/file/uploadNew/{userId}', [UserController::class, 'uploadFileByName'])->name('file.uploadByName'); //subir desde crear
         Route::get('/file/destroy/{fileId}', [UserController::class, 'destroyFile'])->name('file.destroy');
         Route::get('/file/download/{id}', [UserController::class, 'downloadFile'])->name('file.download');
         Route::get('/export', [UserController::class, 'export'])->name('export');
 
         Route::post('/directories', [UserController::class, 'directories'])->name('directories');
         Route::post('/search/sedes', [UserController::class, 'searchSedes'])->name('search.sedes');
-        
+
         // Rutas para dashboard de ubicaciones GPS
         Route::get('/locations/dashboard', [UserController::class, 'locationsDashboard'])->name('locations.dashboard');
         Route::get('/locations/{id}', [UserController::class, 'userLocations'])->name('locations');
@@ -509,7 +508,7 @@ Route::prefix('customers')
 
         Route::get('/graphics/{id}', [CustomerController::class, 'showGraphics'])->name('graphics');
         Route::get('/graphics/{id}/export', [CustomerController::class, 'exportGraphics'])
-    ->name('graphics.export');
+            ->name('graphics.export');
     });
 
 // Leads, Clientes potenciales    
@@ -531,7 +530,7 @@ Route::prefix('floorplans')
         Route::get('/devices/{id}/{version}', [FloorplansController::class, 'editDevices'])->name('devices');
 
         //Route::post('/search/devices/{id}', [FloorplansController::class, 'searchDevicesbyVersion'])->name('search.devices');
-    
+
         Route::get('/print/{id}', [FloorplansController::class, 'print'])->name('print');
 
         Route::get('/QR/{id}', [FloorPlansController::class, 'getQR'])->name('qr');
@@ -547,13 +546,13 @@ Route::prefix('floorplans')
 
         // Gráficas de incidentes del plano
         Route::get('/graphic/incidents/{id}', [FloorPlansController::class, 'graphicIncidents'])->name('graphic.incidents');
-        
+
         // Estadísticas por dispositivo (vista individual)
         Route::get('/devices/{floorplan}/device/{device}/stats', [FloorPlansController::class, 'deviceStats'])->name('device.stats');
         Route::get('/devices/{floorplan}/device/{device}/stats/pdf', [FloorPlansController::class, 'deviceStatsPDF'])->name('device.stats.pdf');
 
         Route::get('/floorplans/show/{path}', [FloorPlansController::class, 'getImage'])->where('path', '.*')->name('image.show');
-        
+
         Route::post('/floorplan/{id}/search/version', [FloorPlansController::class, 'searchDevicesbyVersion'])->name('search.device.version');
 
         // Geolocalización de dispositivos en plano - logica se maneja en ControlPointController
@@ -675,6 +674,7 @@ Route::prefix('products')
         Route::post('/input/{id}', [ProductController::class, 'input'])->name('input');
         Route::get('/input/destroy/{id}', [ProductController::class, 'destroyInput'])->name('input.destroy');
         Route::post('/file/upload/{id}', [ProductController::class, 'storeFile'])->name('file.upload');
+        Route::get('/pests-by-category/{categoryId}', [ProductController::class, 'getPestsByCategory'])->name('pests.by.category');
     });
 
 
@@ -788,7 +788,7 @@ Route::prefix('report')
         Route::post('/set/incident/{orderId}', [ReportController::class, 'setIncident'])->name('set.incident');
 
         Route::post('/device', [ReportController::class, 'getDevices'])->name('device');
-        
+
         Route::post('/device/bulk', [ReportController::class, 'printBulk'])->name('bulk');
         Route::get('/device/bulk/download/{timer}', [ReportController::class, 'downloadBulk'])->name('bulk.download');
         Route::get('/device/bulk/delete/{timer}', [ReportController::class, 'deleteBulk'])->name('bulk.delete');
@@ -1114,7 +1114,6 @@ Route::prefix('invoices')
             Route::post('/store', [InvoiceController::class, 'storePayment'])->name('store');
             Route::get('/edit/{id}', [InvoiceController::class, 'editPayment'])->name('edit');
             Route::put('/update/{id}', [InvoiceController::class, 'updatePayment'])->name('update');
-
         });
 
 
@@ -1156,10 +1155,12 @@ Route::get('/google-drive/callback', [GoogleDriveController::class, 'handleGoogl
 Route::get('/google-drive/test', [GoogleDriveController::class, 'testConnection'])
     ->name('google.drive.test');
 
-    Route::get('/reportes/clientes', [ClientReportController::class, 'index'])
+Route::get('/reportes/clientes', [ClientReportController::class, 'index'])
     ->name('report.client.index');
 
-    Route::post('/reportes/clientes/export', [ClientReportController::class, 'export'])
+Route::post('/reportes/clientes/export', [ClientReportController::class, 'export'])
     ->name('report.client.export');
+
+Route::post('/products/update/{id}', [ProductController::class, 'updateInputs']);
 
 require __DIR__ . '/auth.php';

@@ -1,11 +1,14 @@
 @extends('layouts.app')
 @section('content')
-    @php
+ @php
+    if (!function_exists('formatPath')) {
         function formatPath($path)
         {
             return str_replace(['/', ' '], ['-', ''], $path);
         }
+    }
 
+    if (!function_exists('extractFileName')) {
         function extractFileName($filePath)
         {
             $fileNameWithExtension = basename($filePath);
@@ -13,7 +16,8 @@
 
             return $fileName;
         }
-    @endphp
+    }
+@endphp
 
     <div class="container-fluid p-0">
         <div class="d-flex align-items-center border-bottom ps-4 p-2">
@@ -25,7 +29,7 @@
             </span>
         </div>
 
-        <form class="m-3" method="POST" action="{{ route('product.update', ['id' => $product->id]) }}"
+        <form class="m-3" method="POST" action="{{ url('products/update/' . $product->id) }}"
             enctype="multipart/form-data">
             @csrf
             <div class="row">
@@ -144,12 +148,12 @@
                             <div class="col-lg-6 col-12 mb-3">
                                 <label for="description" class="form-label">{{ __('product.data.description') }}
                                 </label>
-                                <textarea class="form-control" name="description" id="description" rows="4"> {{ $product->description }} </textarea>
+                                <textarea class="form-control" name="description" id="description" rows="4">{{ $product->description }}</textarea>
                             </div>
                             <div class="col-lg-6 col-12 mb-3">
                                 <label for="execution_indications"
                                     class="form-label">{{ __('product.data.execution_indications') }}</label>
-                                <textarea class="form-control" name="execution_indications" id="execution_indications" rows="4"> {{ $product->execution_indications }} </textarea>
+                                <textarea class="form-control" name="execution_indications" id="execution_indications" rows="4">{{ $product->execution_indications }}</textarea>
                             </div>
                         </div>
                     </div>
