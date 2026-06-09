@@ -675,6 +675,7 @@ Route::prefix('products')
         Route::get('/input/destroy/{id}', [ProductController::class, 'destroyInput'])->name('input.destroy');
         Route::post('/file/upload/{id}', [ProductController::class, 'storeFile'])->name('file.upload');
         Route::get('/pests-by-category/{categoryId}', [ProductController::class, 'getPestsByCategory'])->name('pests.by.category');
+        Route::post('/products/update/{id}', [ProductController::class, 'updateInputs']);
     });
 
 
@@ -1160,7 +1161,5 @@ Route::get('/reportes/clientes', [ClientReportController::class, 'index'])
 
 Route::post('/reportes/clientes/export', [ClientReportController::class, 'export'])
     ->name('report.client.export');
-
-Route::post('/products/update/{id}', [ProductController::class, 'updateInputs']);
 
 require __DIR__ . '/auth.php';

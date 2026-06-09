@@ -19,9 +19,11 @@
                 <div class="modal-body p-4 text-start">
                     <div class="row g-3 mb-3">
                         <div class="col-md-12">
-                            <label class="form-label fw-bold small text-muted mb-2">Producto en configuración</label>
-                            <input type="text" class="form-control bg-light text-dark fw-bold border-0"
-                                value="{{ $product->name }}" readonly>
+                            <label for="product_name_display" class="form-label fw-bold small text-muted mb-2">Producto
+                                en configuración</label>
+                            <input type="text" id="product_name_display"
+                                class="form-control bg-light text-dark fw-bold border-0" value="{{ $product->name }}"
+                                readonly>
                         </div>
                     </div>
 
@@ -29,9 +31,9 @@
                         <div class="card-body p-3">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <span class="fw-bold text-primary small">📥 Configurar Método, Plaga y Dosis</span>
-                                <label class="form-label small fw-bold mb-1" style="color: red;">
-                                    Si no hay un método, agregar desde la barra lateral *
-                                </label>
+                                <span class="form-label small fw-bold mb-1" style="color: red;">
+                                    Si no hay un método de aplicación, agregar desde la barra lateral *
+                                </span>
                             </div>
 
                             <div class="row g-3 mb-3">
@@ -60,8 +62,7 @@
                                 </div>
 
                                 <div class="col-md-4">
-                                    <label class="form-label small text-muted fw-bold mb-1">Marca las Plagas Específicas
-                                        *</label>
+                                    <div class="small text-muted fw-bold mb-2">Marca las Plagas Específicas *</div>
                                     <div id="pest_specific_container"
                                         class="form-control form-control-sm bg-white overflow-auto p-2 border-secondary-subtle"
                                         style="max-height: 120px; min-height: 38px;">
@@ -97,7 +98,7 @@
 
                     <div class="table-responsive border rounded shadow-sm bg-white">
                         <table class="table table-sm table-striped table-hover mb-0" id="table-temporary-pests">
-                            <thead class="table-light small border-bottom">
+                            <thead class="table-light small">
                                 <tr>
                                     <th style="width: 45%;" class="ps-3 py-2">Plaga (Categoría)</th>
                                     <th style="width: 25%;" class="py-2">Método de Aplicación</th>
@@ -128,7 +129,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        window.metric = @json($shortMetric ?? '');
+        window.metric = @json($shortMetric ?? 'uds');
         window.pests = [];
 
         const amountInput = document.getElementById('amount');
@@ -147,19 +148,30 @@
         function traducirUnidad(rawMetric) {
             if (!rawMetric) return 'uds';
             const mapa = {
-                'units': 'uds', 'unit': 'uds', 'uds': 'uds',
-                'wt': 'g', 'weight': 'g', 'grams': 'g', 'gramos': 'g', 'g': 'g',
-                'vol': 'ml', 'volume': 'ml', 'mililiters': 'ml', 'mililitros': 'ml', 'ml': 'ml',
-                'l': 'l', 'kg': 'kg'
+                'units': 'uds',
+                'unit': 'uds',
+                'uds': 'uds',
+                'wt': 'g',
+                'weight': 'g',
+                'grams': 'g',
+                'gramos': 'g',
+                'g': 'g',
+                'vol': 'ml',
+                'volume': 'ml',
+                'mililiters': 'ml',
+                'mililitros': 'ml',
+                'ml': 'ml',
+                'l': 'l',
+                'kg': 'kg',
+                'gts': 'gts'
             };
-            const clave = rawMetric.toString().toLowerCase().trim();
+            const clave = rawMetric.toString().toLowerCase().trim().replace(/[\(\)]/g, '');
             return mapa[clave] || rawMetric;
         }
 
         const validateFormInputs = function () {
             if (hiddenMethodInput && hiddenMethodInput.value !== '') {
                 methodSelect.value = hiddenMethodInput.value;
-                methodSelect.disabled = true;
             }
 
             const isMethodSelected = methodSelect && methodSelect.value !== '';
@@ -198,26 +210,75 @@
                 : 'Asignado';
 
             window.pests.forEach(function (pest, index) {
+                // Separación estética limpia de la Categoría y Subplagas para los Badges del Modal
+                let fullCategoryText = pest.category || 'Sin categoría';
+                let mainName = fullCategoryText;
+                let extractedSubPest = '';
+
+                const match = fullCategoryText.match(/^([^(]+)\s*\((.+)\)$/);
+                if (match) {
+                    mainName = match[1].trim();
+                    extractedSubPest = match[2].trim();
+                }
+
+                let badgesHtml = '';
+                let namesArray = pest.subpest_names || [];
+
+                if (namesArray.length > 0) {
+                    namesArray.forEach(function (name) {
+                        badgesHtml += `<span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 0.72rem;">${name}</span>`;
+                    });
+                } else if (extractedSubPest && extractedSubPest.toLowerCase() !== mainName.toLowerCase()) {
+                    let individualNames = extractedSubPest.split(',').map(n => n.trim());
+                    individualNames.forEach(function (name) {
+                        badgesHtml += `<span class="badge bg-light text-secondary border px-2 py-1" style="font-size: 0.72rem;">${name}</span>`;
+                    });
+                }
+
                 const row = document.createElement('tr');
                 row.className = 'align-middle border-bottom';
+
                 row.innerHTML = `
-                    <td class="ps-3 py-2 text-dark"><strong>${pest.category}</strong></td>
-                    <td class="text-muted py-2">${currentMethodText}</td>
+                    <td class="ps-3 py-2">
+                        <div class="fw-bold text-dark mb-1">
+                            ${mainName}
+                        </div>
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            ${badgesHtml}
+                        </div>
+                    </td>
                     <td class="py-2">
-                        <span class="fw-bold text-primary">${parseFloat(pest.amount)}</span>
-                        <small class="text-muted ms-1">${traducirUnidad(window.metric)}</small>
+                        <span class="badge bg-light text-dark border">
+                            ${currentMethodText}
+                        </span>
+                    </td>
+                    <td class="py-2">
+                        <div class="d-flex align-items-center gap-1">
+                            <span class="fw-bold text-primary fs-6">
+                                ${parseFloat(pest.amount)}
+                            </span>
+                            <span class="text-muted small">
+                                ${traducirUnidad(window.metric)}
+                            </span>
+                        </div>
                     </td>
                     <td class="text-center py-2">
-                        <div class="btn-group btn-group-sm">
-                            <button type="button" class="btn btn-outline-warning btn-edit-pest" data-index="${index}">✏️</button>
-                            <button type="button" class="btn btn-outline-danger btn-delete-pest" data-index="${index}">🗑️</button>
+                        <div class="btn-group btn-group-sm shadow-sm">
+                            <button type="button" class="btn btn-outline-warning btn-edit-pest" data-index="${index}" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-delete-pest" data-index="${index}" title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
                         </div>
                     </td>
                 `;
                 tableBody.appendChild(row);
             });
 
-            if (selectedCategoriesField) selectedCategoriesField.value = JSON.stringify(window.pests);
+            if (selectedCategoriesField) {
+                selectedCategoriesField.value = JSON.stringify(window.pests);
+            }
         };
 
         const resetForm = function () {
@@ -306,7 +367,7 @@
             if (checkedBoxes.length === 0 || !amountValue || isNaN(parseFloat(amountValue))) return;
 
             const parsedAmount = parseFloat(amountValue);
-            const categoryId = pestCategorySelect.value;
+            const categoryId = parseInt(pestCategorySelect.value, 10);
             const categoryText = pestCategorySelect.options[pestCategorySelect.selectedIndex].text;
             const selectedPestIds = [];
             const selectedPestNames = [];
@@ -316,20 +377,38 @@
                 selectedPestNames.push(cb.dataset.name);
             });
 
+            selectedPestIds.sort((a, b) => a - b);
+
             const pestData = {
-                id: parseInt(categoryId, 10),
+                id: categoryId,
                 category: `${categoryText} (${selectedPestNames.join(', ')})`,
                 amount: parsedAmount,
                 pest_ids: selectedPestIds,
+                subpest_names: selectedPestNames
             };
 
-            if (editingIndex !== null && window.pests[editingIndex]) {
-                window.pests[editingIndex] = pestData;
-                editingIndex = null;
+            const existingIndex = window.pests.findIndex((item, idx) => {
+                if (editingIndex !== null && idx === editingIndex) return false;
+                if (item.id !== categoryId) return false;
+
+                const itemPestIds = [...(item.pest_ids || [])].sort((a, b) => a - b);
+                return JSON.stringify(itemPestIds) === JSON.stringify(selectedPestIds);
+            });
+
+            if (existingIndex !== -1) {
+                window.pests[existingIndex].amount += parsedAmount;
+                if (editingIndex !== null) {
+                    window.pests.splice(editingIndex, 1);
+                }
             } else {
-                window.pests.push(pestData);
+                if (editingIndex !== null && window.pests[editingIndex]) {
+                    window.pests[editingIndex] = pestData;
+                } else {
+                    window.pests.push(pestData);
+                }
             }
 
+            editingIndex = null;
             createPests();
             resetForm();
         };
@@ -347,6 +426,7 @@
                 category: p.category,
                 amount: parseFloat(p.amount) || 0,
                 pest_ids: Array.isArray(p.pest_ids) ? p.pest_ids.map(Number).filter(Boolean) : [],
+                subpest_names: Array.isArray(p.subpest_names) ? p.subpest_names : []
             }));
 
             createPests();

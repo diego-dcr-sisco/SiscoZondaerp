@@ -332,11 +332,15 @@ class ProductController extends Controller
         foreach ($inputsByMethod as $appMethodId => $inputsGroup) {
             $pestCategories = [];
 
+            // CORREGIDO: Un solo ciclo limpio por grupo de insumos
             foreach ($inputsGroup as $input) {
+                $raw = $input->metric ?? $product->metric->value ?? 'uds';
+
                 $pestCategories[] = [
                     'id' => $input->pest_category_id,
                     'category' => PestCategory::find($input->pest_category_id)?->category ?? 'Sin categoría',
                     'amount' => $input->amount,
+                    'display_metric' => $this->getCleanMetric($raw),
                     'pest_ids' => is_array($input->pest_ids)
                         ? $input->pest_ids
                         : (json_decode($input->pest_ids, true) ?? []),
@@ -804,5 +808,31 @@ class ProductController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'An error occurred while downloading the file.'], 500);
         }
+    }
+
+    private function getCleanMetric($rawMetric)
+    {
+        $cleanKey = strtolower(trim(preg_replace('/[\(\)]/', '', $rawMetric ?? '')));
+
+        $map = [
+            'units' => 'uds',
+            'unit' => 'uds',
+            'uds' => 'uds',
+            'wt' => 'g',
+            'weight' => 'g',
+            'grams' => 'g',
+            'gramos' => 'g',
+            'g' => 'g',
+            'vol' => 'ml',
+            'volume' => 'ml',
+            'mililiters' => 'ml',
+            'mililitros' => 'ml',
+            'ml' => 'ml',
+            'l' => 'l',
+            'kg' => 'kg',
+            'gts' => 'gts'
+        ];
+
+        return $map[$cleanKey] ?? $rawMetric ?? 'uds';
     }
 }
