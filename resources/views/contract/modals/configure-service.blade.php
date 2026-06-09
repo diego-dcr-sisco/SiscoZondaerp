@@ -290,6 +290,8 @@
     </div>
 </div>
 
+@include('components.quill-service-editor-tools')
+
 <script>
     const CUSTOM_INTERVAL_VALUE = 'custom';
 
@@ -1063,6 +1065,10 @@
         window.contractServiceQuillEditors[editorId] = quill;
 
         quill.on('text-change', () => {
+            configDescriptions[configId] = getContractServiceEditorHtml(configId);
+        });
+
+        addServiceEditorTableTools(quill, editorId, () => {
             configDescriptions[configId] = getContractServiceEditorHtml(configId);
         });
     }

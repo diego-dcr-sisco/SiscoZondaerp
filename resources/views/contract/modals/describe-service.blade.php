@@ -19,6 +19,7 @@
       </div>
   </div>
 
+  @include('components.quill-service-editor-tools')
 
   <script>
       $(document).ready(function() {
@@ -43,5 +44,7 @@
           window.setSummaryDescribeHtml = function(html) {
               summaryDescribeQuill.clipboard.dangerouslyPasteHTML(html || '');
           };
+
+          addServiceEditorTableTools(summaryDescribeQuill, 'summary-describe');
       });
   </script>

@@ -119,6 +119,8 @@
     </div>
 </div>
 
+@include('components.quill-service-editor-tools')
+
 <script>
     // Variable para almacenar la descripción
     let serviceDescription = '';
@@ -149,6 +151,9 @@
         }
 
         serviceDescriptionQuill.on('text-change', function() {
+            serviceDescription = getServiceDescriptionHtml();
+        });
+        addServiceEditorTableTools(serviceDescriptionQuill, 'service-description-editor', function() {
             serviceDescription = getServiceDescriptionHtml();
         });
 

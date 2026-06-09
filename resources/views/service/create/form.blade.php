@@ -122,6 +122,7 @@
 </form>
 
 <script src="{{ asset('js/handleSelect.js') }}"></script>
+@include('components.quill-service-editor-tools')
 
 <script>
     $(document).ready(function() {
@@ -145,6 +146,7 @@
         }
 
         serviceDescriptionEditor.on('text-change', syncServiceDescription);
+        addServiceEditorTableTools(serviceDescriptionEditor, 'summary-describe', syncServiceDescription);
         $('form').on('submit', syncServiceDescription);
 
         window.setServiceDescriptionHtml = function(html) {

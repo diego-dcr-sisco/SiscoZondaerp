@@ -85,6 +85,8 @@
         @endcan
     </div>
 
+    @include('components.quill-service-editor-tools')
+
     <script>
         $(document).ready(function() {
             const serviceDescriptionEditor = new Quill('#summary-describe', {
@@ -106,6 +108,7 @@
             }
 
             serviceDescriptionEditor.on('text-change', syncServiceDescription);
+            addServiceEditorTableTools(serviceDescriptionEditor, 'summary-describe', syncServiceDescription);
             $('form').on('submit', syncServiceDescription);
         });
     </script>
