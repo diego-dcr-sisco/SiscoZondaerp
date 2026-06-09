@@ -527,17 +527,16 @@
                         console.log(`Config ${config.config_id} no tiene órdenes o está vacío`);
                     }
 
-                    // Cargar la descripción en el editor Summernote si existe
+                    // Cargar la descripción en el editor Quill si existe
                     if (configDescriptions[config.config_id]) {
-                        $(`#config-summernote${config.config_id}`).summernote('code', configDescriptions[config.config_id]);
+                        setContractServiceEditorHtml(config.config_id, configDescriptions[config.config_id]);
                     }
                 }, 300); // Aumentar el timeout para asegurar que el DOM esté listo
 
-                // Cargar descripción después de inicializar Summernote
+                // Cargar descripción después de inicializar Quill
                 setTimeout(() => {
                     if (configDescriptions[config.config_id]) {
-                        $(`#config-summernote${config.config_id}`).summernote('code',
-                            configDescriptions[config.config_id]);
+                        setContractServiceEditorHtml(config.config_id, configDescriptions[config.config_id]);
                     }
                 }, 400);
             });
@@ -804,7 +803,7 @@
                 <!-- Editor de texto enriquecido para descripción -->
                 <div class="mb-3">
                     <label class="form-label">Descripción del servicio</label>
-                    <div id="config-summernote${configId}" class="summernote"></div>
+                    <div id="config-summernote${configId}" class="smnote contract-service-description-editor" style="height: 250px"></div>
                     <div class="form-text">
                         Describe los detalles específicos de esta configuración del servicio.
                     </div>
@@ -814,7 +813,7 @@
 
         $("#configurations-list").append(configHTML);
 
-        initializeSummernote(configId);
+        initializeContractServiceEditor(configId);
 
         // Pre-llenar con la descripción del servicio si es una configuración nueva sin descripción
         if (!configDescriptions[configId]) {
@@ -822,7 +821,7 @@
             const service = contain_selected_services.find(s => s.id == service_id);
             if (service && service.description) {
                 configDescriptions[configId] = service.description;
-                $(`#config-summernote${configId}`).summernote('code', service.description);
+                setContractServiceEditorHtml(configId, service.description);
             }
         }
 
@@ -1001,55 +1000,70 @@
         }
     }
 
-    function initializeSummernote(configId) {
-        $(`#config-summernote${configId}`).summernote({
-            height: 250,
-            lang: 'es-ES',
-            toolbar: [
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['font', ['fontsize', 'fontname']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['height', ['height']],
-                ['insert', ['table', 'link']],
-            ],
-            fontSize: ['8', '10', '12', '14', '16'],
-            lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
+    window.contractServiceQuillEditors = window.contractServiceQuillEditors || {};
 
-            cleaner: {
-                action: 'both', // 'both' | 'button' | 'paste'
-                newline: '<br>', // Formato para saltos de línea
-                notStyle: 'position:absolute;top:0;left:0;right:0', // Estilo de notificación
-                keepHtml: true, // Activa el modo de "lista blanca" (whitelist)
-                keepOnlyTags: ['<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>',
-                    '<strong>'
-                ], // Etiquetas permitidas
-                keepClasses: false, // Remueve todas las clases CSS
-                badTags: ['style', 'script', 'applet', 'embed', 'noframes',
-                    'noscript'
-                ], // Etiquetas prohibidas (se eliminan con su contenido)
-                badAttributes: ['style', 'start', 'dir',
-                    'class'
-                ] // Atributos prohibidos (se eliminan de las etiquetas restantes)
-            },
+    function getContractServiceEditorId(configId) {
+        return `config-summernote${configId}`;
+    }
 
-            callbacks: {
-                onPaste: function(e) {
-                    var thisNote = $(this);
-                    var updatePaste = function() {
-                        // Get the current HTML code FROM the Summernote editor
-                        var original = thisNote.summernote('code');
-                        var cleaned = original;
-                        // Set the cleaned code BACK to the editor
-                        thisNote.summernote('code', cleaned);
-                    };
-                    // Wait for Summernote to process the paste
-                    setTimeout(updatePaste, 10);
-                },
+    function getContractServiceEditor(configId) {
+        return window.contractServiceQuillEditors[getContractServiceEditorId(configId)] || null;
+    }
 
-                onChange: function(contents) {
-                    configDescriptions[configId] = contents;
-                }
+    function getContractServiceEditorHtml(configId) {
+        const quill = getContractServiceEditor(configId);
+
+        if (!quill) {
+            return configDescriptions[configId] || '';
+        }
+
+        const html = quill.root.innerHTML;
+        return html === '<p><br></p>' ? '' : html;
+    }
+
+    function setContractServiceEditorHtml(configId, html) {
+        const quill = getContractServiceEditor(configId);
+
+        if (!quill) {
+            configDescriptions[configId] = html || '';
+            return;
+        }
+
+        quill.clipboard.dangerouslyPasteHTML(html || '');
+        configDescriptions[configId] = getContractServiceEditorHtml(configId);
+    }
+
+    function initializeContractServiceEditor(configId) {
+        const editorId = getContractServiceEditorId(configId);
+        const editorElement = document.getElementById(editorId);
+
+        if (!editorElement || window.contractServiceQuillEditors[editorId]) {
+            return;
+        }
+
+        const quillToolbar = [
+            ['bold', 'italic', 'underline', 'strike'],
+            [{
+                list: 'ordered'
+            }, {
+                list: 'bullet'
+            }],
+            ['link', 'image'],
+            ['clean']
+        ];
+
+        const quill = new Quill(editorElement, {
+            theme: 'snow',
+            modules: {
+                toolbar: quillToolbar,
+                table: true
             }
+        });
+
+        window.contractServiceQuillEditors[editorId] = quill;
+
+        quill.on('text-change', () => {
+            configDescriptions[configId] = getContractServiceEditorHtml(configId);
         });
     }
 
@@ -1795,7 +1809,7 @@
             contract_configurations[contractConfigIndex].days = [days];
             contract_configurations[contractConfigIndex].dates = dates;
             contract_configurations[contractConfigIndex].orders = generatedOrders;
-            contract_configurations[contractConfigIndex].description = configDescriptions[configId] || null;
+            contract_configurations[contractConfigIndex].description = getContractServiceEditorHtml(configId) || null;
             contract_configurations[contractConfigIndex].generation_start_date = generationStartDate;
             contract_configurations[contractConfigIndex].generation_end_date = generationEndDate;
             contract_configurations[contractConfigIndex].custom_interval_enabled = customInterval.enabled;
@@ -1818,7 +1832,7 @@
                 days: [days],
                 dates: dates,
                 orders: generatedOrders,
-                description: configDescriptions[configId] || null,
+                description: getContractServiceEditorHtml(configId) || null,
                 generation_start_date: generationStartDate,
                 generation_end_date: generationEndDate,
                 quincenal_start_date: (!customInterval.enabled && frequency_id === 5 && interval_id === 7) ? startDate : null,
@@ -2431,7 +2445,7 @@
                     days: daysForPayload ? [daysForPayload] : [],
                     dates: generatedDates,
                     orders: generateOrdersFromDates(generatedDates, configId, existingOrders),
-                    description: configDescriptions[configId] || null,
+                    description: getContractServiceEditorHtml(configId) || null,
                     generation_start_date: generationStartDate,
                     generation_end_date: generationEndDate,
                     quincenal_start_date: (!customInterval.enabled && frequency_id === 5 && interval_id === 7) ? $(

@@ -7,8 +7,7 @@
               </div>
               <div class="modal-body">
                   <div class="mb-3">
-                      <textarea class="summernote" id="summary-describe" style="font-size:12px;">
-                    </textarea>
+                      <div class="smnote" id="summary-describe" style="height: 250px"></div>
                   </div>
               </div>
               <div class="modal-footer">
@@ -23,28 +22,26 @@
 
   <script>
       $(document).ready(function() {
-          $('.summernote').summernote({
-              height: 250, // altura del editor
-              toolbar: [
-                  ['style', ['bold', 'italic', 'underline', 'clear']],
-                  ['font', ['fontsize', 'fontname']],
-                  ['para', ['ul', 'ol', 'paragraph']],
-                  ['height', ['height']],
-                  ['insert', ['table', 'link']],
-              ],
-              fontSize: ['8', '10', '12', '14', '16'],
-              lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
-              callbacks: {
-                  onPaste: function(e) {
-                      var thisNote = $(this);
-                      var updatePaste = function() {
-                          var original = thisNote.summernote('code');
-                          var cleaned = cleanPaste(original);
-                          thisNote.summernote('code', cleaned);
-                      };
-                      setTimeout(updatePaste, 10);
-                  }
+          const summaryDescribeQuill = new Quill('#summary-describe', {
+              theme: 'snow',
+              modules: {
+                  toolbar: [
+                      ['bold', 'italic', 'underline', 'strike'],
+                      [{ list: 'ordered' }, { list: 'bullet' }],
+                      ['link', 'image'],
+                      ['clean']
+                  ],
+                  table: true
               }
           });
+
+          window.getSummaryDescribeHtml = function() {
+              const html = summaryDescribeQuill.root.innerHTML;
+              return html === '<p><br></p>' ? '' : html;
+          };
+
+          window.setSummaryDescribeHtml = function(html) {
+              summaryDescribeQuill.clipboard.dangerouslyPasteHTML(html || '');
+          };
       });
   </script>

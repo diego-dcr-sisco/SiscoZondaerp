@@ -55,7 +55,7 @@
 
                     <div class="col-12 mb-3">
                         <label for="description" class="form-label is-required">Descripción del servicio</label>
-                        <div class="summernote" style="font-size:12px;">
+                        <div id="summary-describe" class="smnote" style="height: 250px">
                             {!! $service->description !!}
                         </div>
                         <input type="hidden" id="description" name="description" value="{{ $service->description }}" />
@@ -87,74 +87,26 @@
 
     <script>
         $(document).ready(function() {
-            $('.summernote').summernote({
-                height: 250,
-                lang: 'es-ES',
-                toolbar: [
-                    ['style', ['bold', 'italic', 'underline', 'clear']],
-                    ['insert', ['table', 'link', 'picture']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['height', ['height']],
-                    ['fontsize', ['fontsize']],
-                ],
-                buttons: {
-                    imageSizeCustom: function(context) {
-                        const ui = $.summernote.ui;
-
-                        return ui.button({
-                            contents: '<span class="note-icon-magic"></span>',
-                            tooltip: 'Tamaño personalizado',
-                            click: function() {
-                                const editable = context.layoutInfo.editable;
-                                const target = editable.data('target');
-
-                                if (!target || target[0].tagName !== 'IMG') {
-                                    return;
-                                }
-
-                                const currentWidth = parseInt(target.css('width'), 10) ||
-                                    parseInt(target.attr('width'), 10) || 100;
-
-                                const input = prompt(
-                                    'Ingresa el ancho de la imagen (en px). Ejemplo: 320',
-                                    currentWidth
-                                );
-
-                                if (input === null) {
-                                    return;
-                                }
-
-                                const width = parseInt(input, 10);
-                                if (Number.isNaN(width) || width <= 0) {
-                                    alert('Ingresa un valor valido mayor a 0.');
-                                    return;
-                                }
-
-                                target.css({
-                                    width: width + 'px',
-                                    height: 'auto',
-                                    maxWidth: '100%'
-                                });
-                                target.attr('width', width);
-                            }
-                        }).render();
-                    }
-                },
-                popover: {
-                    image: [
-                        ['imagesize', ['resizeFull', 'resizeHalf', 'resizeQuarter', 'imageSizeCustom']],
-                        ['float', ['floatLeft', 'floatRight', 'floatNone']],
-                        ['remove', ['removeMedia']]
-                    ]
-                },
-                fontSize: ['8', '10', '12', '14', '16'],
-                lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
-                callbacks: {
-                    onChange: function(contents, $editable) {
-                        $('#description').val(contents);
-                    }
+            const serviceDescriptionEditor = new Quill('#summary-describe', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        ['link', 'image'],
+                        ['clean']
+                    ],
+                    table: true
                 }
             });
+
+            function syncServiceDescription() {
+                const html = serviceDescriptionEditor.root.innerHTML;
+                $('#description').val(html === '<p><br></p>' ? '' : html);
+            }
+
+            serviceDescriptionEditor.on('text-change', syncServiceDescription);
+            $('form').on('submit', syncServiceDescription);
         });
     </script>
 @endsection
