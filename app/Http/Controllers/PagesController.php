@@ -29,7 +29,9 @@ use App\Models\Lead;
 use App\Models\LineBusiness;
 use App\Models\OrderFrequency;
 use App\Models\ServiceType;
+use App\Models\Status;
 use App\Models\UserFile;
+use App\Models\WorkDepartment;
 use App\Models\Tracking;
 use App\Models\Lot;
 
@@ -724,30 +726,145 @@ return [
     public function rrhh(Request $request, $section)
     {
         $navigation = [
-            'Crear usuario' => '/users/create',
-            'Usuarios pendientes' => '/RRHH/1',
-            'Documentos pendientes' => '/RRHH/2',
-            'Documentos por vencer' => '/RRHH/3'
+            'Crear usuario' => route('user.create'),
+            'Personal' => route('rrhh', ['section' => 1]),
+            'Documentos faltantes' => route('rrhh', ['section' => 2]),
+            'Vencimientos' => route('rrhh', ['section' => 3])
         ];
 
+        $today = Carbon::today();
+        $expiresUntil = $today->copy()->addDays((int) $request->input('days', 30));
         $search = $request->input('search');
-        $usersQuery = User::orderBy('name');
+        $statusId = $request->input('status_id');
+        $departmentId = $request->input('work_department_id');
+        $documentState = $request->input('document_state');
 
-        if ($search) {
-            $usersQuery->where('name', 'like', '%' . $search . '%');
+        $missingFileConstraint = fn($query) => $query->where(function ($fileQuery) {
+            $fileQuery->whereNull('path')
+                ->orWhere('path', '');
+        });
+        $expiredFileConstraint = fn($query) => $query->where(function ($fileQuery) use ($today) {
+            $fileQuery->whereNotNull('expirated_at')
+                ->whereDate('expirated_at', '<=', $today);
+        });
+        $expiringFileConstraint = fn($query) => $query->where(function ($fileQuery) use ($today, $expiresUntil) {
+            $fileQuery->whereNotNull('expirated_at')
+                ->whereDate('expirated_at', '>', $today)
+                ->whereDate('expirated_at', '<=', $expiresUntil);
+        });
+
+        $employeesBase = User::query()
+            ->where('role_id', '!=', 4);
+
+        $filteredEmployees = (clone $employeesBase)
+            ->with(['status', 'simpleRole', 'workDepartment', 'roleData'])
+            ->withCount([
+                'files as total_files_count',
+                'files as missing_files_count' => $missingFileConstraint,
+                'files as expired_files_count' => $expiredFileConstraint,
+                'files as expiring_files_count' => $expiringFileConstraint,
+            ])
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($subQuery) use ($search) {
+                    $subQuery->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('email', 'like', '%' . $search . '%')
+                        ->orWhere('username', 'like', '%' . $search . '%');
+                });
+            })
+            ->when($statusId, fn($query) => $query->where('status_id', $statusId))
+            ->when($departmentId, fn($query) => $query->where('work_department_id', $departmentId))
+            ->when($documentState === 'missing', fn($query) => $query->whereHas('files', $missingFileConstraint))
+            ->when($documentState === 'expired', fn($query) => $query->whereHas('files', $expiredFileConstraint))
+            ->when($documentState === 'expiring', fn($query) => $query->whereHas('files', $expiringFileConstraint))
+            ->when($documentState === 'complete', function ($query) use ($missingFileConstraint, $expiredFileConstraint) {
+                $query->whereDoesntHave('files', $missingFileConstraint)
+                    ->whereDoesntHave('files', $expiredFileConstraint);
+            });
+
+        $users = $filteredEmployees
+            ->orderByRaw('CASE WHEN status_id = 1 THEN 0 WHEN status_id = 2 THEN 1 ELSE 2 END')
+            ->orderBy('name')
+            ->paginate(15, ['*'], 'users_page')
+            ->appends($request->query());
+
+        $filesBase = UserFile::query()
+            ->with(['filename', 'user.status', 'user.simpleRole', 'user.workDepartment'])
+            ->whereHas('user', fn($query) => $query->where('role_id', '!=', 4));
+
+        $documentRows = (clone $filesBase)
+            ->when($search, function ($query) use ($search) {
+                $query->whereHas('user', function ($userQuery) use ($search) {
+                    $userQuery->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('email', 'like', '%' . $search . '%')
+                        ->orWhere('username', 'like', '%' . $search . '%');
+                });
+            })
+            ->when($statusId, fn($query) => $query->whereHas('user', fn($userQuery) => $userQuery->where('status_id', $statusId)))
+            ->when($departmentId, fn($query) => $query->whereHas('user', fn($userQuery) => $userQuery->where('work_department_id', $departmentId)));
+
+        if ((int) $section === 2) {
+            $documentRows->where($missingFileConstraint);
+        } elseif ((int) $section === 3) {
+            $documentRows->where(function ($query) use ($expiredFileConstraint, $expiringFileConstraint) {
+                $query->where($expiredFileConstraint)
+                    ->orWhere($expiringFileConstraint);
+            });
+        } elseif (in_array($documentState, ['missing', 'expired', 'expiring'], true)) {
+            $constraints = [
+                'missing' => $missingFileConstraint,
+                'expired' => $expiredFileConstraint,
+                'expiring' => $expiringFileConstraint,
+            ];
+            $documentRows->where($constraints[$documentState]);
         }
 
-        $users = $usersQuery->paginate(20);
+        $files = $documentRows
+            ->orderByRaw('CASE WHEN path IS NULL OR path = "" THEN 0 WHEN expirated_at IS NOT NULL AND expirated_at <= ? THEN 1 ELSE 2 END', [$today->toDateString()])
+            ->orderBy('expirated_at')
+            ->paginate(15, ['*'], 'files_page')
+            ->appends($request->query());
 
-        foreach ($users as $user) {
-            $user->pendingFiles = $this->pendingFiles($user->id);
-        }
+        $stats = [
+            'employees' => (clone $employeesBase)->count(),
+            'active' => (clone $employeesBase)->where('status_id', 2)->count(),
+            'pending_users' => (clone $employeesBase)->where('status_id', 1)->count(),
+            'missing_files' => (clone $filesBase)->where($missingFileConstraint)->count(),
+            'expired_files' => (clone $filesBase)->where($expiredFileConstraint)->count(),
+            'expiring_files' => (clone $filesBase)->where($expiringFileConstraint)->count(),
+            'complete_users' => (clone $employeesBase)
+                ->whereDoesntHave('files', $missingFileConstraint)
+                ->whereDoesntHave('files', $expiredFileConstraint)
+                ->count(),
+        ];
 
-        $files = $section == 2
-            ? UserFile::whereNull('path')->get()
-            : UserFile::whereMonth('expirated_at', '<=', Carbon::now()->month)->get();
+        $upcomingFiles = (clone $filesBase)
+            ->where($expiringFileConstraint)
+            ->orderBy('expirated_at')
+            ->limit(6)
+            ->get();
 
-        return view('dashboard.rrhh.index', compact('users', 'files', 'section', 'navigation'));
+        $departmentStats = WorkDepartment::query()
+            ->withCount(['users' => fn($query) => $query->where('role_id', '!=', 4)])
+            ->having('users_count', '>', 0)
+            ->orderByDesc('users_count')
+            ->limit(6)
+            ->get();
+
+        $statuses = Status::orderBy('name')->get();
+        $workDepartments = WorkDepartment::where('id', '!=', 1)->orderBy('name')->get();
+
+        return view('dashboard.rrhh.index', compact(
+            'users',
+            'files',
+            'section',
+            'navigation',
+            'stats',
+            'upcomingFiles',
+            'departmentStats',
+            'statuses',
+            'workDepartments',
+            'expiresUntil'
+        ));
     }
 
     public function pendingFiles($userId)

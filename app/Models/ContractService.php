@@ -20,6 +20,8 @@ class ContractService extends Model
         'days',
         'total',
         'service_description',
+        'generation_start_date',
+        'generation_end_date',
         'custom_interval_enabled',
         'custom_interval_start_date',
         'custom_interval_days',

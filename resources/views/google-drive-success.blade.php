@@ -11,8 +11,7 @@
     <p><strong>Refresh Token:</strong></p>
     <textarea style="width: 100%; height: 100px; font-family: monospace;" readonly>{{ $refresh_token }}</textarea>
 
-    <p>Copia este refresh token y agrégalo a tu archivo .env:</p>
-    <code>GOOGLE_DRIVE_REFRESH_TOKEN={{ $refresh_token }}</code>
+    <p>Este refresh token ya fue guardado en base de datos.</p>
 
     <p><strong>Access Token:</strong> {{ $access_token }}</p>
     <p><strong>Expira en:</strong> {{ $expires_in }} segundos</p>

@@ -328,6 +328,76 @@
         return toDateKey(new Date());
     }
 
+    function getContractStartDate() {
+        return $("#startdate").val();
+    }
+
+    function getContractEndDate() {
+        return $("#enddate").val();
+    }
+
+    function getGenerationStartDate(configId) {
+        return $(`#generation-start-date-${configId}`).val() || getContractStartDate();
+    }
+
+    function getGenerationEndDate(configId) {
+        return $(`#generation-end-date-${configId}`).val() || getContractEndDate();
+    }
+
+    function applyGenerationDateBounds(configId, startValue = null, endValue = null) {
+        const contractStartDate = getContractStartDate();
+        const contractEndDate = getContractEndDate();
+        const startInput = $(`#generation-start-date-${configId}`);
+        const endInput = $(`#generation-end-date-${configId}`);
+
+        startInput.attr('min', contractStartDate || null);
+        startInput.attr('max', contractEndDate || null);
+        startInput.val(startValue || startInput.val() || contractStartDate);
+
+        endInput.attr('min', contractStartDate || null);
+        endInput.attr('max', contractEndDate || null);
+        endInput.val(endValue || endInput.val() || contractEndDate);
+    }
+
+    function validateGenerationDateRange(configId) {
+        const generationStartDate = getGenerationStartDate(configId);
+        const generationEndDate = getGenerationEndDate(configId);
+        const contractStartDate = getContractStartDate();
+        const contractEndDate = getContractEndDate();
+
+        if (!generationStartDate || !generationEndDate || !contractStartDate || !contractEndDate) {
+            alert("Incluye la fecha de inicio y/o finalización del contrato");
+            return false;
+        }
+
+        if (generationStartDate < contractStartDate || generationStartDate > contractEndDate) {
+            alert(`La fecha de generación debe estar entre ${contractStartDate} y ${contractEndDate}`);
+            return false;
+        }
+
+        if (generationEndDate < contractStartDate || generationEndDate > contractEndDate) {
+            alert(`La fecha de cierre de generación debe estar entre ${contractStartDate} y ${contractEndDate}`);
+            return false;
+        }
+
+        if (generationEndDate < generationStartDate) {
+            alert('La fecha de cierre de generación no puede ser menor a la fecha de inicio de generación');
+            return false;
+        }
+
+        return true;
+    }
+
+    function filterDatesByGenerationRange(dates, configId) {
+        const generationStartDate = getGenerationStartDate(configId);
+        const generationEndDate = getGenerationEndDate(configId);
+
+        return (dates || []).filter(date => {
+            const dateKey = toDateKey(date);
+            return dateKey && dateKey >= generationStartDate && dateKey <= generationEndDate;
+        });
+    }
+
     $('#configureServiceModal').on('show.bs.modal', function(event) {
         configDates = {};
         configDescriptions = {};
@@ -371,13 +441,15 @@
                         interval: parseInt(config.interval_id, 10),
                         days: config.days.filter(d => d !== ''),
                         index: config.config_id,
+                        generation_start_date: config.generation_start_date || $("#startdate").val(),
+                        generation_end_date: config.generation_end_date || $("#enddate").val(),
                         custom_interval_enabled: !!config.custom_interval_enabled,
                         custom_interval_start_date: config.custom_interval_start_date,
                         custom_interval_days: config.custom_interval_days
                     };
 
-                    const startDate = $("#startdate").val();
-                    const endDate = $("#enddate").val();
+                    const startDate = config.generation_start_date || $("#startdate").val();
+                    const endDate = config.generation_end_date || $("#enddate").val();
 
                     // Verificar que las fechas existan
                     if (startDate && endDate) {
@@ -399,6 +471,11 @@
                         'change');
                 }
                 $(`#service-days-${config.config_id}`).val(config.days);
+                applyGenerationDateBounds(
+                    config.config_id,
+                    config.generation_start_date || $("#startdate").val(),
+                    config.generation_end_date || $("#enddate").val()
+                );
 
                 // Cargar fecha para quincenal o día específico
                 if (config.frequency_id == 1 || config.frequency_id == 5) {
@@ -486,6 +563,28 @@
         addConfiguration();
     });
 
+    $("#startdate, #enddate").on("change input", function() {
+        $('.configuration-item').each(function() {
+            const configId = $(this).data('config-id');
+            const currentStartValue = getGenerationStartDate(configId);
+            const currentEndValue = getGenerationEndDate(configId);
+            const contractStartDate = getContractStartDate();
+            const contractEndDate = getContractEndDate();
+            let nextStartValue = currentStartValue;
+            let nextEndValue = currentEndValue;
+
+            if (!nextStartValue || nextStartValue < contractStartDate || nextStartValue > contractEndDate) {
+                nextStartValue = contractStartDate;
+            }
+
+            if (!nextEndValue || nextEndValue < contractStartDate || nextEndValue > contractEndDate || nextEndValue < nextStartValue) {
+                nextEndValue = contractEndDate;
+            }
+
+            applyGenerationDateBounds(configId, nextStartValue, nextEndValue);
+        });
+    });
+
     // Manejar clic en el botón de guardar
     $("#save-configurations").on("click", function() {
         saveAllConfigurations();
@@ -560,6 +659,23 @@
                 </div>
                 <div class="schedule-panel mb-3">
                     <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Generar a partir de</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+                            <input type="date" class="form-control generation-start-date" id="generation-start-date-${configId}">
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Generar hasta</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+                            <input type="date" class="form-control generation-end-date" id="generation-end-date-${configId}">
+                        </div>
+                        <div class="form-text">
+                            El rango debe estar dentro de la duración del contrato.
+                        </div>
+                    </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Frecuencia</label>
                         <div class="input-group">
@@ -737,6 +853,7 @@
         });
 
         $(`#custom-interval-start-date-${configId}`).val($("#startdate").val());
+        applyGenerationDateBounds(configId);
 
         $(`#datesCollapse${configId}`).removeClass('show');
         $(`#ordersCollapse${configId}`).removeClass('show');
@@ -814,6 +931,17 @@
     function handleManualDateInput(configId, newDate) {
         const dateObj = parseLocalDate(newDate);
         if (!isNaN(dateObj.getTime())) {
+            const dateKey = toDateKey(dateObj);
+
+            if (!validateGenerationDateRange(configId)) {
+                return;
+            }
+
+            if (dateKey < getGenerationStartDate(configId) || dateKey > getGenerationEndDate(configId)) {
+                showErrorMessage('La fecha manual debe estar dentro del rango de generación de esta configuración');
+                return;
+            }
+
             // Inicializar configDates[configId] si no existe
             if (!configDates[configId]) {
                 configDates[configId] = [];
@@ -827,7 +955,6 @@
 
             if (!dateExists) {
                 // Guardar fecha en formato YYYY-MM-DD para evitar desfases por zona horaria
-                const dateKey = toDateKey(dateObj);
                 configDates[configId].push(dateKey);
 
                 // Buscar configuración existente
@@ -1497,6 +1624,12 @@
         const effectiveIntervalId = customInterval.enabled && (!interval_id || interval_id === 0) ? 1 : interval_id;
         const frequency = frequencies.find(f => f.id === effectiveFrequencyId);
         const interval = customInterval.enabled ? 'Personalizado' : (effectiveIntervalId > 0 ? intervals[effectiveIntervalId - 1] : '');
+        const generationStartDate = getGenerationStartDate(configId);
+        const generationEndDate = getGenerationEndDate(configId);
+
+        if (!validateGenerationDateRange(configId)) {
+            return;
+        }
 
         // Para quincenal, obtener la fecha del selector de fecha individual
         let daysValue;
@@ -1567,6 +1700,8 @@
             interval: effectiveIntervalId,
             days: days.split(',').filter(d => d !== ''),
             index: configId,
+            generation_start_date: generationStartDate,
+            generation_end_date: generationEndDate,
             custom_interval_enabled: customInterval.enabled,
             custom_interval_start_date: customInterval.startDate,
             custom_interval_days: customInterval.days
@@ -1582,7 +1717,7 @@
         }
 
         // Para frecuencia quincenal, usar la fecha específica seleccionada
-        let startDate = customInterval.enabled ? customInterval.startDate : contractStartDate;
+        let startDate = customInterval.enabled ? customInterval.startDate : generationStartDate;
         if (!customInterval.enabled && frequency_id === 5 && interval_id === 7) {
             const quincenalStartDate = $(`#service-date-${configId}`).val();
             if (quincenalStartDate) {
@@ -1594,7 +1729,10 @@
         }
 
         // Llamar a la función createDates
-        const dates = createDates(service, startDate, contractEndDate, configId);
+        const dates = filterDatesByGenerationRange(
+            createDates(service, startDate, generationEndDate, configId),
+            configId
+        );
 
         // Guardar fechas para esta configuración
         configDates[configId] = dates;
@@ -1619,6 +1757,8 @@
                 days: [days],
                 dates: dates, // Agregar dates
                 orders: generatedOrders,
+                generation_start_date: generationStartDate,
+                generation_end_date: generationEndDate,
                 quincenal_start_date: (!customInterval.enabled && frequency_id === 5 && interval_id === 7) ? startDate : null,
                 custom_interval_enabled: customInterval.enabled,
                 custom_interval_start_date: customInterval.enabled ? customInterval.startDate : null,
@@ -1632,6 +1772,8 @@
             config.days = [days];
             config.dates = dates; // Actualizar dates
             config.orders = generatedOrders;
+            config.generation_start_date = generationStartDate;
+            config.generation_end_date = generationEndDate;
             config.custom_interval_enabled = customInterval.enabled;
             config.custom_interval_start_date = customInterval.enabled ? customInterval.startDate : null;
             config.custom_interval_days = customInterval.enabled ? customInterval.days : null;
@@ -1654,6 +1796,8 @@
             contract_configurations[contractConfigIndex].dates = dates;
             contract_configurations[contractConfigIndex].orders = generatedOrders;
             contract_configurations[contractConfigIndex].description = configDescriptions[configId] || null;
+            contract_configurations[contractConfigIndex].generation_start_date = generationStartDate;
+            contract_configurations[contractConfigIndex].generation_end_date = generationEndDate;
             contract_configurations[contractConfigIndex].custom_interval_enabled = customInterval.enabled;
             contract_configurations[contractConfigIndex].custom_interval_start_date = customInterval.enabled ? customInterval.startDate : null;
             contract_configurations[contractConfigIndex].custom_interval_days = customInterval.enabled ? customInterval.days : null;
@@ -1675,6 +1819,8 @@
                 dates: dates,
                 orders: generatedOrders,
                 description: configDescriptions[configId] || null,
+                generation_start_date: generationStartDate,
+                generation_end_date: generationEndDate,
                 quincenal_start_date: (!customInterval.enabled && frequency_id === 5 && interval_id === 7) ? startDate : null,
                 custom_interval_enabled: customInterval.enabled,
                 custom_interval_start_date: customInterval.enabled ? customInterval.startDate : null,
@@ -2209,6 +2355,7 @@
     function saveAllConfigurations() {
         const configElements = $('.configuration-item');
         const service_id = $('#service-id').val();
+        let hasInvalidConfiguration = false;
 
         // Array temporal para las nuevas configuraciones de ESTE servicio
         const newConfigurationsForThisService = [];
@@ -2225,18 +2372,34 @@
             const interval = customInterval.enabled ? 'Personalizado' : (effectiveIntervalId > 0 ? intervals[effectiveIntervalId - 1] : null);
             const days = $(`#service-days-${configId}`).val();
             const daysForPayload = customInterval.enabled ? customInterval.startDate : days;
-            const contractEndDate = $("#enddate").val();
+            const generationStartDate = getGenerationStartDate(configId);
+            const generationEndDate = getGenerationEndDate(configId);
+
+            if (!validateGenerationDateRange(configId)) {
+                hasInvalidConfiguration = true;
+                return false;
+            }
+
             const service = {
                 frequency: effectiveFrequencyId,
                 interval: effectiveIntervalId,
                 days: daysForPayload ? daysForPayload.split(',').filter(d => d !== '') : [],
                 index: configId,
+                generation_start_date: generationStartDate,
+                generation_end_date: generationEndDate,
                 custom_interval_enabled: customInterval.enabled,
                 custom_interval_start_date: customInterval.startDate,
                 custom_interval_days: customInterval.days
             };
-            const generatedDates = customInterval.enabled && customInterval.startDate && customInterval.days
-                ? createDates(service, customInterval.startDate, contractEndDate, configId)
+            const shouldRegenerateDates = customInterval.enabled ||
+                (effectiveFrequencyId && effectiveFrequencyId !== 0 && daysForPayload && daysForPayload.trim() !== '');
+            const generatedDates = shouldRegenerateDates
+                ? filterDatesByGenerationRange(createDates(
+                    service,
+                    customInterval.enabled ? customInterval.startDate : generationStartDate,
+                    generationEndDate,
+                    configId
+                ), configId)
                 : (configDates[configId] || []);
 
             // Verificar si tiene fechas manuales O configuración de frecuencia
@@ -2265,6 +2428,8 @@
                     orders: generateOrdersFromDates(generatedDates, configId, c_config ?
                         c_config.orders : []),
                     description: configDescriptions[configId] || null,
+                    generation_start_date: generationStartDate,
+                    generation_end_date: generationEndDate,
                     quincenal_start_date: (!customInterval.enabled && frequency_id === 5 && interval_id === 7) ? $(
                         `#service-date-${configId}`).val() : null,
                     custom_interval_enabled: customInterval.enabled,
@@ -2275,6 +2440,10 @@
                 newConfigurationsForThisService.push(newConfig);
             }
         });
+
+        if (hasInvalidConfiguration) {
+            return;
+        }
 
         // PRESERVAR configuraciones de otros servicios y actualizar solo las de este servicio
         const otherServicesConfigs = contract_configurations.filter(c => c.service_id != service_id);

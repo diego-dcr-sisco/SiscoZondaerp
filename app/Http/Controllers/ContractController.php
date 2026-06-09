@@ -151,6 +151,44 @@ class ContractController extends Controller
         ];
     }
 
+    private function contractServiceGenerationStartDate($data, Contract $contract): string
+    {
+        $generationStartDate = ($data->generation_start_date ?? null) ?: $contract->startdate;
+        $generationStartDate = Carbon::parse($generationStartDate)->format('Y-m-d');
+        $contractStartDate = Carbon::parse($contract->startdate)->format('Y-m-d');
+        $contractEndDate = Carbon::parse($contract->enddate)->format('Y-m-d');
+
+        if ($generationStartDate < $contractStartDate || $generationStartDate > $contractEndDate) {
+            throw new \InvalidArgumentException(
+                "La fecha de generación debe estar entre {$contractStartDate} y {$contractEndDate}."
+            );
+        }
+
+        return $generationStartDate;
+    }
+
+    private function contractServiceGenerationEndDate($data, Contract $contract, string $generationStartDate): string
+    {
+        $generationEndDate = ($data->generation_end_date ?? null) ?: $contract->enddate;
+        $generationEndDate = Carbon::parse($generationEndDate)->format('Y-m-d');
+        $contractStartDate = Carbon::parse($contract->startdate)->format('Y-m-d');
+        $contractEndDate = Carbon::parse($contract->enddate)->format('Y-m-d');
+
+        if ($generationEndDate < $contractStartDate || $generationEndDate > $contractEndDate) {
+            throw new \InvalidArgumentException(
+                "La fecha de cierre de generación debe estar entre {$contractStartDate} y {$contractEndDate}."
+            );
+        }
+
+        if ($generationEndDate < $generationStartDate) {
+            throw new \InvalidArgumentException(
+                "La fecha de cierre de generación no puede ser menor a la fecha de inicio de generación."
+            );
+        }
+
+        return $generationEndDate;
+    }
+
     public function store(Request $request): RedirectResponse
     {
         //dd($request->all());
@@ -191,6 +229,13 @@ class ContractController extends Controller
         }
 
         foreach ($configurations as $data) {
+            try {
+                $generationStartDate = $this->contractServiceGenerationStartDate($data, $contract);
+                $generationEndDate = $this->contractServiceGenerationEndDate($data, $contract, $generationStartDate);
+            } catch (\InvalidArgumentException $exception) {
+                return redirect()->back()->withErrors(['error' => $exception->getMessage()]);
+            }
+
             $contract_service = ContractService::create([
                 'contract_id' => $contract->id,
                 'service_id' => $data->service_id,
@@ -199,6 +244,8 @@ class ContractController extends Controller
                 'days' => json_encode($data->days),
                 'total' => count($data->dates),
                 'service_description' => $data->description ?? null,
+                'generation_start_date' => $generationStartDate,
+                'generation_end_date' => $generationEndDate,
                 'created_at' => now(),
             ] + $this->contractServiceCustomIntervalAttributes($data, $contract->startdate));
 
@@ -517,6 +564,8 @@ class ContractController extends Controller
                     ];
                 })->toArray(), // ← Convertir a array
                 'description' => $cs->service_description ?? ($service ? $service->description : null),
+                'generation_start_date' => $cs->generation_start_date ?? $contract->startdate,
+                'generation_end_date' => $cs->generation_end_date ?? $contract->enddate,
                 'custom_interval_enabled' => (bool) $cs->custom_interval_enabled,
                 'custom_interval_start_date' => $cs->custom_interval_start_date,
                 'custom_interval_days' => $cs->custom_interval_days,
@@ -582,6 +631,13 @@ class ContractController extends Controller
             //dd($aux_configurations);
 
             foreach ($aux_configurations as $data) {
+                try {
+                    $generationStartDate = $this->contractServiceGenerationStartDate($data, $contract);
+                    $generationEndDate = $this->contractServiceGenerationEndDate($data, $contract, $generationStartDate);
+                } catch (\InvalidArgumentException $exception) {
+                    return redirect()->back()->withErrors(['error' => $exception->getMessage()]);
+                }
+
                 $contract_service = ContractService::find($data->setting_id);
                 //dd($contract_service);
                 //$allSettingsIds = array_column($configurations, 'setting_id');
@@ -596,6 +652,8 @@ class ContractController extends Controller
                         'days' => json_encode($data->days),
                         'total' => count($data->dates),
                         'service_description' => $data->description ?? null,
+                        'generation_start_date' => $generationStartDate,
+                        'generation_end_date' => $generationEndDate,
                         'created_at' => now(),
                     ] + $this->contractServiceCustomIntervalAttributes($data, $contract->startdate));
                 }
@@ -606,6 +664,8 @@ class ContractController extends Controller
                     'days' => json_encode($data->days),
                     'total' => count($data->dates),
                     'service_description' => $data->description ?? null,
+                    'generation_start_date' => $generationStartDate,
+                    'generation_end_date' => $generationEndDate,
                 ] + $this->contractServiceCustomIntervalAttributes($data, $contract->startdate));
 
                 // Proteger órdenes no pendientes aunque no lleguen en el payload del frontend.
@@ -770,6 +830,8 @@ class ContractController extends Controller
     {
         // Primero buscamos coincidencia exacta
         $contract_service = ContractService::find($setting->id);
+        $generationStartDate = $this->contractServiceGenerationStartDate($setting, $contract);
+        $generationEndDate = $this->contractServiceGenerationEndDate($setting, $contract, $generationStartDate);
 
         if (!$contract_service) {
             $contract_service = ContractService::create([
@@ -779,6 +841,8 @@ class ContractController extends Controller
                 'interval' => $setting->interval,
                 'days' => json_encode($setting->days),
                 'service_description' => $setting->description ?? null,
+                'generation_start_date' => $generationStartDate,
+                'generation_end_date' => $generationEndDate,
                 'total' => count($setting->dates),
                 'created_at' => now(),
                 'updated_at' => now()
@@ -787,6 +851,8 @@ class ContractController extends Controller
             $contract_service->update([
                 'total' => count($setting->dates),
                 'service_description' => $setting->description ?? null,
+                'generation_start_date' => $generationStartDate,
+                'generation_end_date' => $generationEndDate,
                 'updated_at' => now()
             ] + $this->contractServiceCustomIntervalAttributes($setting, $contract->startdate));
         }

@@ -1701,7 +1701,7 @@ class StockController extends Controller
             ]);
         }
 
-        return redirect()->route('stock.index')
+        return redirect()->route('stock.movements.warehouse', ['id' => $wm->destination_warehouse_id])
             ->with('success', 'Movimiento de entrada registrado exitosamente');
     }
 
@@ -1811,7 +1811,7 @@ class StockController extends Controller
             }
         }
 
-        return redirect()->route('stock.index')
+        return redirect()->route('stock.movements.warehouse', ['id' => $wm->destination_warehouse_id])
             ->with('success', 'Movimiento de salida registrado exitosamente');
     }
 

@@ -35,7 +35,7 @@ class GoogleDriveClientFactory
         $config ??= config('filesystems.disks.google');
 
         $client = $this->makeClient($config);
-        $refreshToken = $config['refreshToken'] ?? null;
+        $refreshToken = app(GoogleDriveTokenStore::class)->getRefreshToken();
 
         if (empty($refreshToken)) {
             Log::warning('Google Drive disk loaded without refresh token.');

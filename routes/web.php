@@ -1121,8 +1121,6 @@ Route::prefix('invoices')
 
         });
 
-
-
         Route::post('/ajax/search', [InvoiceController::class, 'searchInvoices'])->name('ajax.search');
     });
 

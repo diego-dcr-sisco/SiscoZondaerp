@@ -90,133 +90,174 @@
         </form>
 
         @php
-            $traceabilityNodes = $orders->getCollection()->groupBy('order_id');
+            $traceabilityTableRows = $orders->getCollection()->sortByDesc(function ($item) {
+                return optional($item->order)->created_at ?? $item->created_at;
+            })->values();
+            $traceabilityRowOffset = ($orders->currentPage() - 1) * $orders->perPage();
+            $traceabilityNodeNumbers = collect();
+            $traceabilityTableRows->each(function ($record, $index) use ($traceabilityNodeNumbers, $traceabilityRowOffset) {
+                if (!$traceabilityNodeNumbers->has($record->order_id)) {
+                    $traceabilityNodeNumbers->put($record->order_id, $traceabilityRowOffset + $index + 1);
+                }
+            });
+            $traceabilityNodes = $traceabilityTableRows->groupBy('order_id');
+            $traceabilityNodeChunks = $traceabilityNodes->values()->chunk(4);
+            $carouselId = 'traceabilityCarousel' . $lot->id;
         @endphp
 
         <div class="card mb-3">
             <div class="card-header">
-                <h5 class="card-title fw-bold mb-0">
-                    <i class="bi bi-diagram-3-fill"></i> Recorrido del producto
-                </h5>
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                    <h5 class="card-title fw-bold mb-0">
+                        <i class="bi bi-diagram-3-fill"></i> Recorrido del producto
+                    </h5>
+                    @if ($traceabilityNodeChunks->count() > 1)
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Navegacion de nodos">
+                            <button class="btn btn-outline-secondary" type="button" data-bs-target="#{{ $carouselId }}"
+                                data-bs-slide="prev" title="Anterior">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" type="button" data-bs-target="#{{ $carouselId }}"
+                                data-bs-slide="next" title="Siguiente">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                    @endif
+                </div>
             </div>
             <div class="card-body">
                 @if ($traceabilityNodes->isNotEmpty())
-                    <div class="row align-items-center justify-content-between g-3 traceability-flow">
-                        @foreach ($traceabilityNodes as $orderId => $items)
-                            @php
-                                $firstItem = $items->first();
-                                $nodeOrder = $firstItem->order;
-                                $createdAt = $nodeOrder->created_at ?? $firstItem->created_at ?? null;
-                                $metric = $firstItem->metric->value ?? '';
-                                $services = $items
-                                    ->map(fn($item) => $item->service->name ?? null)
-                                    ->filter()
-                                    ->unique()
-                                    ->values();
-                                $methods = $items
-                                    ->map(fn($item) => $item->appMethod->name ?? null)
-                                    ->filter()
-                                    ->unique()
-                                    ->values();
-                            @endphp
+                    <div id="{{ $carouselId }}" class="carousel slide traceability-animated-carousel" data-bs-ride="false">
+                        <div class="carousel-inner">
+                            @foreach ($traceabilityNodeChunks as $chunkIndex => $chunk)
+                                <div class="carousel-item {{ $loop->first ? 'active' : '' }}">
+                                    <div class="row g-3 traceability-flow">
+                                        @foreach ($chunk as $items)
+                                            @php
+                                                $firstItem = $items->first();
+                                                $nodeNumber =
+                                                    $traceabilityNodeNumbers->get($firstItem->order_id) ??
+                                                    $traceabilityRowOffset + $chunkIndex * 4 + $loop->iteration;
+                                                $nodeOrder = $firstItem->order;
+                                                $createdAt = $nodeOrder->created_at ?? $firstItem->created_at ?? null;
+                                                $metric = $firstItem->metric->value ?? '';
+                                                $services = $items
+                                                    ->map(fn($item) => $item->service->name ?? null)
+                                                    ->filter()
+                                                    ->unique()
+                                                    ->values();
+                                                $methods = $items
+                                                    ->map(fn($item) => $item->appMethod->name ?? null)
+                                                    ->filter()
+                                                    ->unique()
+                                                    ->values();
+                                            @endphp
 
-                            <div class="traceability-node col-lg-5 p-0 card">
-                                <div class="card-header">
-                                    <div class="d-flex justify-content-between align-items-center gap-2">
-                                        <h6 class="card-title fw-bold mb-0">
-                                            <i class="bi bi-circle-fill text-primary"></i>
-                                            Nodo {{ $loop->iteration }}
-                                        </h6>
-                                        <div class="small text-muted">
-                                            {{ $createdAt ? \Carbon\Carbon::parse($createdAt)->format('d/m/Y H:i') : '-' }}
-                                        </div>
+                                            <div class="col-xl-3 col-lg-4 col-md-6 col-12">
+                                                <div class="traceability-node card h-100">
+                                                    <div class="card-header py-2 bg-light">
+                                                        <div class="d-flex justify-content-between align-items-center gap-2">
+                                                            <h6 class="card-title fw-bold mb-0 small">
+                                                                <i class="bi bi-circle-fill text-primary"></i>
+                                                                Nodo {{ $nodeNumber }}
+                                                            </h6>
+                                                            <div class="traceability-node-amount text-success text-end">
+                                                                {{ number_format($items->sum('amount'), 2) }}
+                                                                <span>{{ $metric }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="card-body p-2">
+                                                        <div class="traceability-row">
+                                                            <span class="traceability-label">
+                                                                <i class="bi bi-person-fill"></i> Cliente
+                                                            </span>
+                                                            <span class="traceability-value" title="{{ $nodeOrder->customer->name ?? 'N/A' }}">
+                                                                {{ $nodeOrder->customer->name ?? 'N/A' }}
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="traceability-row">
+                                                            <span class="traceability-label">
+                                                                <i class="bi bi-file-earmark-text"></i> Orden
+                                                            </span>
+                                                            <span class="traceability-value">
+                                                                {{ $nodeOrder->folio ?? $nodeOrder->id ?? '-' }}
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="traceability-row">
+                                                            <span class="traceability-label">
+                                                                <i class="bi bi-calendar-event"></i> Fecha
+                                                            </span>
+                                                            <span class="traceability-value">
+                                                                {{ $createdAt ? \Carbon\Carbon::parse($createdAt)->format('d/m/Y H:i') : '-' }}
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="traceability-compact-section">
+                                                            <div class="traceability-section-title">Servicio(s)</div>
+                                                            <div class="traceability-list-box">
+                                                                @forelse ($services->take(3) as $service)
+                                                                    <div class="traceability-list-item" title="{{ $service }}">
+                                                                        {{ $service }}
+                                                                    </div>
+                                                                @empty
+                                                                    <div class="text-muted">-</div>
+                                                                @endforelse
+                                                                @if ($services->count() > 3)
+                                                                    <div class="text-muted small">+{{ $services->count() - 3 }} mas</div>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="traceability-compact-section">
+                                                            <div class="traceability-section-title">Metodo</div>
+                                                            <div class="traceability-list-box">
+                                                                @forelse ($methods->take(2) as $method)
+                                                                    <div class="traceability-list-item" title="{{ $method }}">
+                                                                        {{ $method }}
+                                                                    </div>
+                                                                @empty
+                                                                    <div class="text-muted">-</div>
+                                                                @endforelse
+                                                                @if ($methods->count() > 2)
+                                                                    <div class="text-muted small">+{{ $methods->count() - 2 }} mas</div>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="card-footer py-1 bg-white">
+                                                        <div class="d-flex align-items-center justify-content-between small text-muted">
+                                                            <span>Registro</span>
+                                                            <span>
+                                                                #{{ $nodeNumber }} / {{ $orders->total() }}
+                                                                @if ($nodeNumber === $orders->total())
+                                                                    <i class="bi bi-check-circle-fill text-success ms-1"></i>
+                                                                @endif
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     </div>
                                 </div>
+                            @endforeach
+                        </div>
 
-                                <div class="card-body">
-                                    <div class="row g-2">
-                                        <div class="col-lg-3 col-sm-6 col-12">
-                                            <label class="form-label">Cantidad</label>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text"><i class="bi bi-box-seam"></i></span>
-                                                <div class="form-control bg-light">
-                                                    {{ number_format($items->sum('amount'), 2) }}
-                                                    <span class="text-muted">{{ $metric }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-lg-3 col-sm-6 col-12">
-                                            <label class="form-label">Cliente</label>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
-                                                <div class="form-control bg-light">
-                                                    {{ $nodeOrder->customer->name ?? 'N/A' }}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-lg-3 col-sm-6 col-12">
-                                            <label class="form-label">Order</label>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text"><i class="bi bi-file-earmark-text"></i></span>
-                                                <div class="form-control bg-light">
-                                                    {{ $nodeOrder->folio ?? $nodeOrder->id ?? '-' }}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-lg-3 col-sm-6 col-12">
-                                            <label class="form-label">Creado en</label>
-                                            <div class="input-group input-group-sm">
-                                                <span class="input-group-text"><i class="bi bi-calendar-event"></i></span>
-                                                <div class="form-control bg-light">
-                                                    {{ $createdAt ? \Carbon\Carbon::parse($createdAt)->format('d/m/Y H:i') : '-' }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="row g-2 mt-1">
-                                        <div class="col-lg-6 col-12">
-                                            <label class="form-label">Servicio(s)</label>
-                                            <div class="traceability-list-box">
-                                                @forelse ($services as $service)
-                                                    <div class="traceability-list-item">
-                                                        <i class="bi bi-chevron-right"></i> {{ $service }}
-                                                    </div>
-                                                @empty
-                                                    <div class="text-muted">-</div>
-                                                @endforelse
-                                            </div>
-                                        </div>
-
-                                        <div class="col-lg-6 col-12">
-                                            <label class="form-label">Metodo de aplicacion</label>
-                                            <div class="traceability-list-box">
-                                                @forelse ($methods as $method)
-                                                    <div class="traceability-list-item">
-                                                        <i class="bi bi-chevron-right"></i> {{ $method }}
-                                                    </div>
-                                                @empty
-                                                    <div class="text-muted">-</div>
-                                                @endforelse
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                        @if ($traceabilityNodeChunks->count() > 1)
+                            <div class="carousel-indicators traceability-carousel-indicators">
+                                @foreach ($traceabilityNodeChunks as $chunk)
+                                    <button type="button" data-bs-target="#{{ $carouselId }}"
+                                        data-bs-slide-to="{{ $loop->index }}" class="{{ $loop->first ? 'active' : '' }}"
+                                        aria-current="{{ $loop->first ? 'true' : 'false' }}"
+                                        aria-label="Grupo {{ $loop->iteration }}"></button>
+                                @endforeach
                             </div>
-
-                            @if (!$loop->last)
-                                <div class="traceability-arrow col-lg-1 col-12">
-                                    <i class="bi bi-arrow-right"></i>
-                                </div>
-                            @else
-                                <div class="traceability-end col-lg-1 col-12">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                </div>
-                            @endif
-                        @endforeach
+                        @endif
                     </div>
                 @else
                     <div class="text-center text-muted py-4">
@@ -227,59 +268,201 @@
             </div>
         </div>
 
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="card-title fw-bold mb-0">
+                    <i class="bi bi-table"></i> Registros del lote
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered table-striped table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Fecha</th>
+                                <th scope="col">Orden</th>
+                                <th scope="col">Cliente</th>
+                                <th scope="col">Servicio</th>
+                                <th scope="col">Metodo</th>
+                                <th scope="col" class="text-end">Cantidad</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($traceabilityTableRows as $record)
+                                @php
+                                    $recordOrder = $record->order;
+                                    $recordDate = $recordOrder->created_at ?? $record->created_at ?? null;
+                                @endphp
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        {{ $traceabilityRowOffset + $loop->iteration }}
+                                    </td>
+                                    <td>
+                                        {{ $recordDate ? \Carbon\Carbon::parse($recordDate)->format('d/m/Y H:i') : '-' }}
+                                    </td>
+                                    <td>
+                                        <span class="fw-semibold">{{ $recordOrder->folio ?? $recordOrder->id ?? '-' }}</span>
+                                        <span class="text-muted small d-block">ID {{ $recordOrder->id ?? '-' }}</span>
+                                    </td>
+                                    <td>{{ $recordOrder->customer->name ?? 'N/A' }}</td>
+                                    <td>{{ $record->service->name ?? '-' }}</td>
+                                    <td>{{ $record->appMethod->name ?? '-' }}</td>
+                                    <td class="text-end fw-bold">
+                                        {{ number_format($record->amount, 2) }}
+                                        <span class="text-muted">{{ $record->metric->value ?? '' }}</span>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        No hay registros para mostrar.
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         {{ $orders->links('pagination::bootstrap-5') }}
     </div>
 
     <style>
         .traceability-node {
             border-radius: 0.375rem;
+            border-color: #dee2e6;
         }
 
-        .traceability-arrow {
-            display: flex;
+        .traceability-flow {
+            padding-bottom: 1.5rem;
+        }
+
+        .traceability-animated-carousel .carousel-inner {
+            overflow: hidden;
+        }
+
+        .traceability-animated-carousel .carousel-item {
+            transition: transform .75s cubic-bezier(.22, .61, .36, 1), opacity .55s ease-in-out;
+        }
+
+        .traceability-animated-carousel .carousel-item.active .traceability-node {
+            animation: traceability-node-enter .65s cubic-bezier(.22, .61, .36, 1) both;
+        }
+
+        .traceability-animated-carousel .carousel-item.active .traceability-flow > :nth-child(2) .traceability-node {
+            animation-delay: .1s;
+        }
+
+        .traceability-animated-carousel .carousel-item.active .traceability-flow > :nth-child(3) .traceability-node {
+            animation-delay: .2s;
+        }
+
+        .traceability-animated-carousel .carousel-item.active .traceability-flow > :nth-child(4) .traceability-node {
+            animation-delay: .3s;
+        }
+
+        @keyframes traceability-node-enter {
+            from {
+                opacity: 0;
+                transform: translateY(24px) scale(.93);
+            }
+
+            65% {
+                opacity: 1;
+                transform: translateY(-3px) scale(1.02);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .traceability-carousel-indicators {
+            position: static;
+            margin: .75rem 0 0;
+        }
+
+        .traceability-carousel-indicators [data-bs-target] {
+            width: .55rem;
+            height: .55rem;
+            border-radius: 50%;
+            background-color: #6c757d;
+        }
+
+        .traceability-row {
+            display: grid;
+            grid-template-columns: minmax(76px, auto) minmax(0, 1fr);
+            gap: .5rem;
             align-items: center;
-            justify-content: center;
-            color: #0d6efd;
-            font-size: 1.75rem;
-            line-height: 1;
+            padding: .25rem 0;
+            border-bottom: 1px solid #f1f3f5;
         }
 
-        .traceability-end {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #198754;
-            font-size: 1.5rem;
-            line-height: 1;
+        .traceability-label {
+            color: #6c757d;
+            font-size: .75rem;
+            font-weight: 700;
+            white-space: nowrap;
         }
 
-        .traceability-node .form-control {
-            min-height: 31px;
+        .traceability-value {
+            color: #212529;
+            font-size: .82rem;
+            font-weight: 600;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .traceability-node-amount {
+            flex: 0 0 auto;
+            font-size: 1.05rem;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        .traceability-node-amount span {
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .traceability-compact-section {
+            margin-top: .5rem;
+        }
+
+        .traceability-section-title {
+            color: #6c757d;
+            font-size: .75rem;
+            font-weight: 700;
+            margin-bottom: .2rem;
         }
 
         .traceability-list-box {
             border: 1px solid #dee2e6;
             border-radius: 0.25rem;
             background: #f8f9fa;
-            min-height: 31px;
             padding: 0.25rem 0.5rem;
+            min-height: 2rem;
         }
 
         .traceability-list-item {
-            font-size: 0.875rem;
-            line-height: 1.5;
+            font-size: .8rem;
+            line-height: 1.35;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        @media (max-width: 991.98px) {
-            .traceability-end {
-                padding-top: 0.25rem;
+        @media (prefers-reduced-motion: reduce) {
+            .traceability-animated-carousel .carousel-item {
+                transition: none;
             }
 
-            .traceability-arrow i {
-                transform: rotate(90deg);
+            .traceability-animated-carousel .carousel-item.active .traceability-node {
+                animation: none;
             }
         }
     </style>
