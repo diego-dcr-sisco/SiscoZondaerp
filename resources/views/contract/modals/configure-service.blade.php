@@ -2391,8 +2391,12 @@
                 custom_interval_start_date: customInterval.startDate,
                 custom_interval_days: customInterval.days
             };
-            const shouldRegenerateDates = customInterval.enabled ||
-                (effectiveFrequencyId && effectiveFrequencyId !== 0 && daysForPayload && daysForPayload.trim() !== '');
+            const currentConfig = configurations.find(c => c.config_id == configId);
+            const currentDates = Array.isArray(configDates[configId]) ? configDates[configId] : [];
+            const shouldRegenerateDates = !currentConfig && currentDates.length === 0 && (
+                customInterval.enabled ||
+                (effectiveFrequencyId && effectiveFrequencyId !== 0 && daysForPayload && daysForPayload.trim() !== '')
+            );
             const generatedDates = shouldRegenerateDates
                 ? filterDatesByGenerationRange(createDates(
                     service,
@@ -2400,7 +2404,7 @@
                     generationEndDate,
                     configId
                 ), configId)
-                : (configDates[configId] || []);
+                : currentDates;
 
             // Verificar si tiene fechas manuales O configuración de frecuencia
             const hasManualDates = generatedDates.length > 0;
@@ -2413,6 +2417,7 @@
                 // Crear nueva configuración para este servicio
                 const c_config = contract_configurations.find(c => c.config_id == configId && c.service_id ==
                     service_id) ?? null;
+                const existingOrders = currentConfig ? (currentConfig.orders || []) : (c_config ? c_config.orders : []);
                 const newConfig = {
                     config_id: configId,
                     setting_id: c_config ? c_config.setting_id : null,
@@ -2425,8 +2430,7 @@
                     1, // Intervalo por defecto: 1
                     days: daysForPayload ? [daysForPayload] : [],
                     dates: generatedDates,
-                    orders: generateOrdersFromDates(generatedDates, configId, c_config ?
-                        c_config.orders : []),
+                    orders: generateOrdersFromDates(generatedDates, configId, existingOrders),
                     description: configDescriptions[configId] || null,
                     generation_start_date: generationStartDate,
                     generation_end_date: generationEndDate,
