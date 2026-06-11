@@ -141,6 +141,32 @@
         background: #f8f9fa;
     }
 
+    .report-image-tools {
+        display: none;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.35rem;
+        border: 1px solid #dee2e6;
+        border-top: 0;
+        background: #fff;
+    }
+
+    .report-image-tools.is-active {
+        display: flex;
+    }
+
+    .report-image-tools .tool-label {
+        font-size: 0.78rem;
+        color: #6c757d;
+        margin-right: 0.25rem;
+    }
+
+    .smnote .ql-editor img.report-selected-image {
+        outline: 2px solid #0d6efd;
+        outline-offset: 2px;
+    }
+
     .smnote .ql-editor table {
         display: table;
         width: max-content;
@@ -972,6 +998,69 @@
         $(quill.container).after(tools);
     }
 
+    function applyImageSize(image, size, quill, editorId) {
+        if (!image) {
+            return;
+        }
+
+        image.style.width = size;
+        image.style.maxWidth = '100%';
+        image.style.height = 'auto';
+        image.style.objectFit = 'contain';
+        image.style.display = 'block';
+        image.style.margin = '6px auto';
+        image.removeAttribute('height');
+
+        if (size === '100%') {
+            image.removeAttribute('width');
+        }
+
+        quill.update('user');
+        triggerReportEditorChange(editorId);
+    }
+
+    function addImageTools(quill, editorId) {
+        const tools = $(`
+            <div class="report-image-tools" id="${editorId}-image-tools">
+                <span class="tool-label">Tamaño de imagen</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-image-size="25%">25%</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-image-size="50%">50%</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-image-size="75%">75%</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-image-size="100%">100%</button>
+            </div>
+        `);
+
+        let selectedImage = null;
+
+        tools.on('mousedown', function(event) {
+            event.preventDefault();
+        });
+
+        tools.on('click', 'button[data-image-size]', function() {
+            applyImageSize(selectedImage, $(this).data('image-size'), quill, editorId);
+        });
+
+        $(quill.container).after(tools);
+
+        $(quill.root).on('click', 'img', function(event) {
+            event.preventDefault();
+            selectedImage = this;
+            $(quill.root).find('img').removeClass('report-selected-image');
+            $(this).addClass('report-selected-image');
+            tools.addClass('is-active');
+        });
+
+        $(document).on(`click.${editorId}-image-tools`, function(event) {
+            if ($(event.target).closest(quill.container).length || $(event.target).closest(tools).length) {
+                return;
+            }
+
+            selectedImage = null;
+            $(quill.root).find('img').removeClass('report-selected-image');
+            tools.removeClass('is-active');
+        });
+    }
+
     $(document).ready(function() {
         const quillToolbar = [
             ['bold', 'italic', 'underline', 'strike'],
@@ -999,6 +1088,7 @@
 
             window.reportQuillEditors[this.id] = quill;
             addTableTools(quill, this.id);
+            addImageTools(quill, this.id);
 
             quill.on('text-change', () => triggerReportEditorChange(this.id));
         });

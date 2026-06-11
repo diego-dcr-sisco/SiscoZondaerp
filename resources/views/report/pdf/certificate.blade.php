@@ -242,7 +242,6 @@
         .render-html img {
             display: block;
             max-width: 100% !important;
-            width: auto;
             height: auto !important;
             max-height: 165px !important;
             object-fit: contain !important;
