@@ -244,9 +244,10 @@
             max-width: 100% !important;
             width: auto;
             height: auto !important;
-            max-height: none !important;
+            max-height: 165px !important;
             object-fit: contain !important;
-            margin: 4px auto;
+            margin: 6px auto 8px auto;
+            page-break-inside: avoid;
         }
 
         .render-html p,
