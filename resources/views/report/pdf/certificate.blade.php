@@ -225,13 +225,23 @@
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            border-collapse: separate;
-            border-spacing: 15px 5px;
-            border: none !important;
+            border: 1px solid #333;
+            margin: 6px 0;
         }
 
+        .render-html th,
         .render-html td {
+            border: 1px solid #333;
+            padding: 4px 5px;
+            vertical-align: top;
             word-break: break-word;
+            font-size: 9px;
+        }
+
+        .render-html th {
+            background-color: #d9e1f2;
+            font-weight: bold;
+            text-align: center;
         }
 
         .render-html td[data-row="27"],
