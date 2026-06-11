@@ -243,7 +243,7 @@
             display: block;
             max-width: 100% !important;
             height: auto !important;
-            max-height: 165px !important;
+            max-height: 780px !important;
             object-fit: contain !important;
             margin: 6px auto 8px auto;
             page-break-inside: avoid;
