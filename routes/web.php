@@ -641,11 +641,10 @@ Route::prefix('trackings')
         Route::post('/set', [CRMController::class, 'setTracking'])->name('set');
     });
 
-
 // PRODUCTOS
 Route::prefix('products')
     ->name('product.')
-    ->middleware(['auth', 'single.session', 'can:integral']) // Aplica el middleware de autenticación
+    ->middleware(['auth', 'single.session', 'can:integral'])
     ->group(function () {
         Route::get('/', [ProductController::class, 'index'])->name('index');
 
@@ -654,7 +653,6 @@ Route::prefix('products')
 
         Route::get('/create', [ProductController::class, 'create'])->name('create');
         Route::get('/show/{id}', [ProductController::class, 'show'])->name('show');
-
 
         Route::get('/edit/{id}', [ProductController::class, 'edit'])->name('edit');
         Route::get('/edit/{id}/appMethods', [ProductController::class, 'editAppMethods'])->name('edit.appMethods');
@@ -667,7 +665,7 @@ Route::prefix('products')
         Route::get('/download/file/{id}', [ProductController::class, 'downloadFile'])->name('download.file');
         Route::get('/destroy/file/{id}', [ProductController::class, 'destroyFile'])->name('destroy.file');
 
-        Route::post('/update/{id}', [ProductController::class, 'update'])->name('update');
+        Route::post('/update/{id}', [ProductController::class, 'updateInputs'])->name('update');
         Route::get('/delete/{id}', [ProductController::class, 'destroy'])->name('destroy');
         Route::get('/search', [ProductController::class, 'search'])->name('search');
 
@@ -675,7 +673,6 @@ Route::prefix('products')
         Route::get('/input/destroy/{id}', [ProductController::class, 'destroyInput'])->name('input.destroy');
         Route::post('/file/upload/{id}', [ProductController::class, 'storeFile'])->name('file.upload');
         Route::get('/pests-by-category/{categoryId}', [ProductController::class, 'getPestsByCategory'])->name('pests.by.category');
-        Route::post('/products/update/{id}', [ProductController::class, 'updateInputs']);
     });
 
 
@@ -1161,5 +1158,11 @@ Route::get('/reportes/clientes', [ClientReportController::class, 'index'])
 
 Route::post('/reportes/clientes/export', [ClientReportController::class, 'export'])
     ->name('report.client.export');
+
+Route::get('/product/{id}/edit-treatments', [ProductController::class, 'editTreatments'])
+    ->name('product.edit.treatment');
+
+Route::post('/product/{id}/treatments', [ProductController::class, 'storeTreatment'])
+    ->name('product.treatments.store');
 
 require __DIR__ . '/auth.php';

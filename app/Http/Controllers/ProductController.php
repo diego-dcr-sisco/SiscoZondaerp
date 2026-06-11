@@ -28,6 +28,8 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Models\ProductTreatment;
+
 
 class ProductController extends Controller
 {
@@ -441,7 +443,8 @@ class ProductController extends Controller
 
     public function editTreatments(string $id)
     {
-        $product = ProductCatalog::find($id);
+        // Carga el producto del catálogo junto con sus tratamientos asociados
+        $product = ProductCatalog::with('treatments')->findOrFail($id);
 
         $navigation = [
             'Producto' => route('product.edit', ['id' => $product->id]),
@@ -453,9 +456,9 @@ class ProductController extends Controller
             'Movimientos' => route('product.edit.movements', ['id' => $product->id])
         ];
 
-
-        return view('product.edit.treatments', compact('navigation'));
+        return view('product.edit.treatments', compact('product', 'navigation'));
     }
+
 
     public function editMovements(string $id)
     {
@@ -834,5 +837,32 @@ class ProductController extends Controller
         ];
 
         return $map[$cleanKey] ?? $rawMetric ?? 'uds';
+    }
+
+    public function storeTreatment(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'nullable|numeric|min:0',
+        ]);
+
+        ProductTreatment::create([
+            'product_id' => $id,
+            'name'       => $validated['name'],
+            'description' => $validated['description'],
+            'price'      => $validated['price'],
+        ]);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'nullable|numeric|min:0',
+        ]);
+
+        $product = ProductCatalog::findOrFail($id);
+
+        return redirect()->route('product.edit.treatment', ['id' => $id])
+            ->with('success', 'Tratamiento agregado correctamente.');
     }
 }
