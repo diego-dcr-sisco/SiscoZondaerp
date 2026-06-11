@@ -435,6 +435,9 @@
     <!-- SERVICIOS con evidencias -->
     <div class="row">
         <div class="bg-blue">SERVICIOS</div>
+        @php
+            $hasServiceImages = collect($services)->contains(fn($service) => !empty($service['images']));
+        @endphp
         @foreach ($services as $service)
             <div style="margin-top: 10px;">
                 <span class="square"></span>
@@ -468,6 +471,10 @@
             @endif
         @endforeach
     </div>
+
+    @if ($hasServiceImages)
+        <div class="page-break"></div>
+    @endif
 
     <div class="row">
         <div class="bg-blue">PRODUCTOS</div>
