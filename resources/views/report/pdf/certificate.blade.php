@@ -239,6 +239,23 @@
             white-space: normal !important;
         }
 
+        .render-html img {
+            display: block;
+            max-width: 100% !important;
+            width: auto;
+            height: auto !important;
+            max-height: none !important;
+            object-fit: contain !important;
+            margin: 4px auto;
+        }
+
+        .render-html p,
+        .render-html div {
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+
         .watermark {
             position: fixed;
             top: 0;
