@@ -441,19 +441,18 @@ class ProductController extends Controller
         return $this->updateInputs($request, $id);
     }
 
-    public function editTreatments(string $id)
+    public function editTreatments($id)
     {
-        // Carga el producto del catálogo junto con sus tratamientos asociados
         $product = ProductCatalog::with('treatments')->findOrFail($id);
 
         $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
+            'Producto'              => route('product.edit', ['id' => $product->id]),
             'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
+            'Plagas'                => route('product.edit.pests', ['id' => $product->id]),
+            'Insumos'               => route('product.edit.inputs', ['id' => $product->id]),
+            'Archivos'              => route('product.edit.files', ['id' => $product->id]),
+            'Tratamientos'          => route('product.edit.treatment', ['id' => $product->id]),
+            'Movimientos'           => route('product.edit.movements', ['id' => $product->id])
         ];
 
         return view('product.edit.treatments', compact('product', 'navigation'));
@@ -842,27 +841,40 @@ class ProductController extends Controller
     public function storeTreatment(Request $request, $id)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
-            'price' => 'nullable|numeric|min:0',
+            'price'       => 'nullable|numeric|min:0',
         ]);
 
         ProductTreatment::create([
-            'product_id' => $id,
-            'name'       => $validated['name'],
+            'product_id'  => $id,
+            'name'        => $validated['name'],
             'description' => $validated['description'],
-            'price'      => $validated['price'],
+            'price'       => $validated['price'] ?? 0.00,
         ]);
 
+        return back()->with('success', 'Tratamiento registrado correctamente.');
+    }
+
+    public function destroyTreatment($id, $treatmentId)
+    {
+        $treatment = ProductTreatment::where('product_id', $id)->findOrFail($treatmentId);
+        $treatment->delete();
+
+        return back()->with('success', 'Tratamiento eliminado correctamente.');
+    }
+
+    public function updateTreatment(Request $request, $id, $treatmentId)
+    {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name'        => 'required|string|max:255',
             'description' => 'nullable|string',
-            'price' => 'nullable|numeric|min:0',
+            'price'       => 'nullable|numeric|min:0',
         ]);
 
-        $product = ProductCatalog::findOrFail($id);
+        $treatment = ProductTreatment::where('product_id', $id)->findOrFail($treatmentId);
+        $treatment->update($validated);
 
-        return redirect()->route('product.edit.treatment', ['id' => $id])
-            ->with('success', 'Tratamiento agregado correctamente.');
+        return back()->with('success', 'Tratamiento actualizado correctamente.');
     }
 }

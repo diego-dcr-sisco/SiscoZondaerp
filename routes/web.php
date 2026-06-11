@@ -673,6 +673,8 @@ Route::prefix('products')
         Route::get('/input/destroy/{id}', [ProductController::class, 'destroyInput'])->name('input.destroy');
         Route::post('/file/upload/{id}', [ProductController::class, 'storeFile'])->name('file.upload');
         Route::get('/pests-by-category/{categoryId}', [ProductController::class, 'getPestsByCategory'])->name('pests.by.category');
+
+        Route::delete('/edit/{id}/treatment/{treatmentId}', [ProductController::class, 'destroyTreatment'])->name('treatments.destroy');
     });
 
 
@@ -1164,5 +1166,8 @@ Route::get('/product/{id}/edit-treatments', [ProductController::class, 'editTrea
 
 Route::post('/product/{id}/treatments', [ProductController::class, 'storeTreatment'])
     ->name('product.treatments.store');
+
+Route::delete('/product/{id}/treatments/{treatmentId}', [ProductController::class, 'destroyTreatment'])
+    ->name('product.treatments.destroy');
 
 require __DIR__ . '/auth.php';

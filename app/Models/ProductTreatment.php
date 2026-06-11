@@ -10,8 +10,18 @@ class ProductTreatment extends Model
 {
     use HasFactory;
 
+    /**
+     * La tabla asociada al modelo en la base de datos de SiscoZonda.
+     *
+     * @var string
+     */
     protected $table = 'product_treatments';
 
+    /**
+     * Los atributos que son asignables masivamente (Mass Assignment).
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'product_id',
         'name',
@@ -20,8 +30,14 @@ class ProductTreatment extends Model
     ];
 
     /**
-     * Obtener el producto del catálogo al que pertenece este tratamiento.
+     * Los atributos que deben ser convertidos a tipos nativos.
+     *
+     * @var array<string, string>
      */
+    protected $casts = [
+        'price' => 'decimal:2',
+    ];
+
     public function productCatalog(): BelongsTo
     {
         return $this->belongsTo(ProductCatalog::class, 'product_id');
