@@ -249,6 +249,26 @@
             page-break-inside: avoid;
         }
 
+        .render-html .report-pdf-image {
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin: 8px 0 12px 0;
+            page-break-inside: avoid;
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+
+        .render-html .report-pdf-image+.report-pdf-image {
+            page-break-before: always;
+        }
+
+        .render-html .report-pdf-image img {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
         .render-html p,
         .render-html div {
             overflow: visible !important;

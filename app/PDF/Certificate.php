@@ -152,6 +152,15 @@ class Certificate
             $html
         );
 
+        // DOMPDF renderiza mejor las imagenes cuando no quedan atrapadas dentro de parrafos de Quill.
+        $html = preg_replace_callback('/<p\b[^>]*>\s*(<img\b[^>]*>)\s*<\/p>/i', function ($matches) {
+            return '<div class="report-pdf-image">' . $matches[1] . '</div>';
+        }, $html);
+
+        $html = preg_replace_callback('/(?<!<div class="report-pdf-image">)<img\b[^>]*>/i', function ($matches) {
+            return '<div class="report-pdf-image">' . $matches[0] . '</div>';
+        }, $html);
+
         // DOMPDF renderiza mejor el ancho de imagen cuando existe atributo width en px.
         $html = preg_replace_callback('/<img\b[^>]*>/i', function ($matches) {
             $imgTag = $matches[0];
