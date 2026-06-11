@@ -269,6 +269,23 @@
             margin-right: auto;
         }
 
+        .service-image-page {
+            page-break-before: always;
+            page-break-inside: avoid;
+            text-align: center;
+            margin: 0;
+        }
+
+        .service-image-page img {
+            display: block;
+            max-width: 100% !important;
+            max-height: 760px !important;
+            width: auto;
+            height: auto !important;
+            object-fit: contain !important;
+            margin: 0 auto;
+        }
+
         .render-html p,
         .render-html div {
             overflow: visible !important;
@@ -424,6 +441,12 @@
                 <span class="square-title">{{ $service['name'] }}</span>
             </div>
             <div class="render-html">{!! $service['text'] !!}</div>
+
+            @foreach ($service['images'] ?? [] as $serviceImage)
+                <div class="service-image-page">
+                    {!! $serviceImage !!}
+                </div>
+            @endforeach
 
             <!-- Evidencias del área "servicio" para este servicio específico -->
             @if (isset($photo_evidences['servicio']) && count($photo_evidences['servicio']) > 0)

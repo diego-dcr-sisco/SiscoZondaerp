@@ -195,6 +195,29 @@ class Certificate
         return trim($html);
     }
 
+    private function extractImagesFromHtml(?string $html): array
+    {
+        if (empty($html)) {
+            return [];
+        }
+
+        preg_match_all('/<img\b[^>]*>/i', $html, $matches);
+
+        return $matches[0] ?? [];
+    }
+
+    private function removeImagesFromHtml(?string $html): string
+    {
+        if (empty($html)) {
+            return '';
+        }
+
+        $html = preg_replace('/<p\b[^>]*>\s*<img\b[^>]*>\s*<\/p>/i', '', $html);
+        $html = preg_replace('/<img\b[^>]*>/i', '', $html);
+
+        return $html ?? '';
+    }
+
     public function order()
     {
         $this->data['order'] = [
@@ -267,9 +290,16 @@ class Certificate
     {
         $services_data = [];
         foreach ($this->order->services()->get() as $service) {
+            $rawText = $this->order->propagateByService($service->id)->text ?? '';
+            $serviceImages = array_map(
+                fn($imageTag) => $this->normalizeHtmlForPdf($imageTag),
+                $this->extractImagesFromHtml($rawText)
+            );
+
             $services_data[] = [
                 'name' => $service->name,
-                'text' => $this->normalizeHtmlForPdf($this->order->propagateByService($service->id)->text ?? ''),
+                'text' => $this->normalizeHtmlForPdf($this->removeImagesFromHtml($rawText)),
+                'images' => $serviceImages,
                 //'text' =>  $this->order->propagateByService($service->id)->text ?? ''
             ];
         }
