@@ -267,7 +267,12 @@ class ReportController extends Controller
         $incidents = OrderIncidents::where('order_id', $order->id)->get();
 
         // Obtener todos los dispositivos asociados a la orden según versión del floorplan
+        // e incluir dispositivos agregados manualmente al reporte.
         $found_devices = $this->getDevicesByVersion($id);
+        $assigned_device_ids = DeviceStates::where('order_id', $order->id)
+            ->pluck('device_id')
+            ->toArray();
+        $found_devices = array_unique(array_merge($found_devices, $assigned_device_ids));
         $all_devices = Device::whereIn('id', $found_devices)->orderBy('nplan', 'ASC')->get();
 
         // Separar dispositivos revisados y no revisados
@@ -1619,12 +1624,30 @@ class ReportController extends Controller
     public function assignDevices(Request $request)
     {
         $devices_data = [];
-        $device_ids = json_decode($request->devices, true);
+        $device_ids = collect(json_decode($request->devices, true) ?? [])
+            ->filter()
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->toArray();
         $order_id = $request->order_id;
         $answers = json_decode(file_get_contents(public_path($this->file_answers_path)), true);
 
-        $order = Order::find($order_id);
+        $order = Order::findOrFail($order_id);
         $devices = Device::whereIn('id', $device_ids)->get();
+
+        foreach ($devices as $device) {
+            DeviceStates::firstOrCreate(
+                [
+                    'order_id' => $order->id,
+                    'device_id' => $device->id,
+                ],
+                [
+                    'is_scanned' => false,
+                    'is_checked' => false,
+                ]
+            );
+        }
 
         foreach ($devices as $device) {
             $questions_data = [];
@@ -1688,6 +1711,7 @@ class ReportController extends Controller
                         'name' => $dp->pest->name,
                         'device_id' => $dp->device_id,
                         'total' => $dp->total,
+                        'quantity' => $dp->total,
                     ];
                 })->toArray() ?? null,
 
