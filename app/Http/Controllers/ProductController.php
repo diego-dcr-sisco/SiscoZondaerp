@@ -459,9 +459,71 @@ class ProductController extends Controller
     }
 
 
-    public function editMovements(string $id)
+    public function editMovements(Request $request, $id)
     {
-        $product = ProductCatalog::find($id);
+        $product = ProductCatalog::findOrFail($id);
+
+        // 1. Inicializamos la consulta base cargando de manera estricta todas las relaciones requeridas
+        $query = \App\Models\MovementProduct::where('product_id', $id)
+            ->with(['warehouseMovement', 'movement', 'warehouse', 'lot', 'product']);
+
+        // 2. Filtro: Rango de Fechas
+        if ($request->filled('start_date') && $request->filled('end_date')) {
+            $query->whereBetween('created_at', [
+                $request->start_date . ' 00:00:00',
+                $request->end_date . ' 23:59:59'
+            ]);
+        }
+
+        // 3. Filtro: Almacén
+        if ($request->filled('warehouse_id')) {
+            $query->where('warehouse_id', $request->warehouse_id);
+        }
+
+        // 4. Filtro: Lote
+        if ($request->filled('lot_id')) {
+            $query->where('lot_id', $request->lot_id);
+        }
+
+        // 5. Filtro Seguro: Tipo de Movimiento (Busca de forma elástica en las relaciones maestras)
+        if ($request->filled('type')) {
+            $typeSelected = strtolower($request->type);
+            $query->where(function ($q) use ($typeSelected) {
+                $q->whereHas('movement', function ($sub) use ($typeSelected) {
+                    $sub->where('type', 'like', '%' . $typeSelected . '%')
+                        ->orWhere('name', 'like', '%' . $typeSelected . '%');
+                })->orWhereHas('warehouseMovement', function ($sub) use ($typeSelected) {
+                    $sub->where('type', 'like', '%' . $typeSelected . '%');
+                });
+            });
+        }
+
+        $totalsQuery = clone $query;
+        $allFilteredMovements = $totalsQuery->get();
+
+        $totalEntries = 0;
+        $totalExits = 0;
+
+        foreach ($allFilteredMovements as $mv) {
+            $movementType = strtolower($mv->type ?? $mv->movement->type ?? $mv->movement->name ?? $mv->warehouseMovement->type ?? '');
+
+            if (str_contains($movementType, 'ingreso') || str_contains($movementType, 'entrada') || str_contains($movementType, 'compra')) {
+                $totalEntries += $mv->quantity ?? 0;
+            } else {
+                $totalExits += $mv->quantity ?? 0;
+            }
+        }
+
+        $netBalance = $totalEntries - $totalExits;
+
+        $movements = $query->orderBy('created_at', 'DESC')
+            ->paginate(15)
+            ->withQueryString();
+
+        $warehouses = \App\Models\Warehouse::orderBy('name')->get(['id', 'name']);
+
+        // Obtenemos los lotes asociados al producto de manera segura sin invocar columnas inexistentes
+        $lots = \App\Models\Lot::where('product_id', $id)->get();
 
         $navigation = [
             'Producto' => route('product.edit', ['id' => $product->id]),
@@ -473,7 +535,16 @@ class ProductController extends Controller
             'Movimientos' => route('product.edit.movements', ['id' => $product->id])
         ];
 
-        return view('product.edit.treatments', compact('navigation'));
+        return view('product.edit.movements', compact(
+            'product',
+            'movements',
+            'navigation',
+            'totalEntries',
+            'totalExits',
+            'netBalance',
+            'warehouses',
+            'lots'
+        ));
     }
 
     public function search(Request $request)
