@@ -76,8 +76,6 @@ class ReportController extends Controller
 
     private $file_answers_path = 'datas/json/answers.json';
     private $bulkPrint_path = 'bulk_print/';
-    private const INCIDENT_QUEUE_OPERATION_LIMIT = 25;
-
 
     private $recommendations = [
         'Mantener puertas, accesos cerrados, cuando la operación no lo requiera, para evitar el ingreso de organismos al interior.',
@@ -168,16 +166,6 @@ class ReportController extends Controller
                 'message' => 'Error al procesar la autorevisión: ' . $e->getMessage()
             ], 500);
         }
-    }
-
-    private function shouldQueueIncident(array $review): bool
-    {
-        $operationCount = count($review['questions'] ?? [])
-            + count($review['pests'] ?? [])
-            + count($review['products'] ?? [])
-            + 1;
-
-        return $operationCount > self::INCIDENT_QUEUE_OPERATION_LIMIT;
     }
 
     private function getOrderProductsResponse(int $orderId)
@@ -585,17 +573,6 @@ class ReportController extends Controller
             Order::findOrFail($orderId);
 
             $user = Auth::user();
-
-            if ($this->shouldQueueIncident($review)) {
-                SetIncidentJob::dispatch($orderId, $review, $user->id);
-
-                return response()->json([
-                    'success' => true,
-                    'queued' => true,
-                    'message' => 'La revisión es pesada y fue enviada a segundo plano.',
-                    'data' => $review,
-                ], 202);
-            }
 
             (new SetIncidentJob($orderId, $review, $user->id))
                 ->handle(app(ReportStockService::class));
