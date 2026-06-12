@@ -35,8 +35,8 @@
             <div class="row">
                 <div class="col-3 mb-3">
                     <div class="card border rounded shadow" style="height: 100%;">
-                        <div class="card-header">Imagen</div>
-                        <img src="{{ $product->image_path ? route('image.show', $product->image_path) : asset('img/default.jpg') }}"
+                        <div class="card-header"></div>
+                        <img src="{{ $product->image_path ? route('image.show', $product->image_path) : asset('images/default.png') }}"
                             alt="product-img">
                         <div class="card-body">
 
