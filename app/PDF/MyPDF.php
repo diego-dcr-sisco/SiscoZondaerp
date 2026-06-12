@@ -603,6 +603,8 @@ class MyPDF extends TCPDF
         $floorplans = FloorPlans::where('customer_id', $order->customer->id)
             ->whereIn('service_id', $services->pluck('id')->toArray())
             ->get();
+        $assignedDeviceIds = DeviceStates::where('order_id', $this->orderId)
+            ->pluck('device_id');
 
         $step = 10; // Reduced step for minimal row height
         $startX = $this->GetX();
@@ -634,7 +636,13 @@ class MyPDF extends TCPDF
                 if (!$version)
                     continue;
 
-                $devices = $floorplan->devices($version)
+                $versionDeviceIds = $floorplan->devices($version)->pluck('id');
+                $manualDeviceIds = Device::where('floorplan_id', $floorplan->id)
+                    ->whereIn('id', $assignedDeviceIds)
+                    ->pluck('id');
+                $deviceIds = $versionDeviceIds->merge($manualDeviceIds)->unique()->values();
+
+                $devices = Device::whereIn('id', $deviceIds)
                     ->with([
                         'applicationArea:id,name',
                         'controlPoint:id,name,code',

@@ -13,6 +13,7 @@ use App\Models\ControlPoint;
 use App\Models\Question;
 use App\Models\ControlPointQuestion;
 use App\Models\DeviceProduct;
+use App\Models\DeviceStates;
 use App\Models\OrderProduct;
 use App\Models\OrderIncidents;
 use App\Models\OrderRecommendation;
@@ -428,8 +429,12 @@ class Certificate
         $services = $this->order->services;
         $incidents = OrderIncidents::where('order_id', $this->order->id)->get();
 
-        // Obtener dispositivos con version correcta
+        // Obtener dispositivos con version correcta e incluir agregados manualmente al reporte.
         $found_device_ids = $this->getDevicesByVersion($this->order_id);
+        $assigned_device_ids = DeviceStates::where('order_id', $this->order->id)
+            ->pluck('device_id')
+            ->toArray();
+        $found_device_ids = array_unique(array_merge($found_device_ids, $assigned_device_ids));
 
         // Obtener todos los dispositivos necesarios con sus relaciones
         $devices = Device::whereIn('id', $found_device_ids)
