@@ -567,23 +567,21 @@ class ProductController extends Controller
         return view('product.edit.treatments', compact('product', 'navigation', 'productNavigation'));
     }
 
-    /**
-     * Versión legacy de upstream/main para actualizar insumos.
-     * Se conserva para no romper rutas antiguas que apunten a este nombre.
-     *
-     * @deprecated Usar updateInputs() directamente en rutas nuevas.
-     */
     public function input(Request $request, string $id)
     {
-        $selected_categories = json_decode($request->input('selected_categories'));
+        $selected_categories = json_decode($request->input('selected_categories'), true);
         $appMethod_id        = $request->input('application_method_id');
 
-        $pest_categories   = ProductInput::where('product_id', $id)
+        if (!is_array($selected_categories)) {
+            $selected_categories = [];
+        }
+
+        $pest_categories = ProductInput::where('product_id', $id)
             ->where('application_method_id', $appMethod_id)
             ->get()
             ->pluck('pest_category_id');
 
-        $categoryIds       = array_column((array) $selected_categories, 'category_id');
+        $categoryIds       = array_column($selected_categories, 'id');
         $delete_categories = array_diff($pest_categories->toArray(), $categoryIds);
 
         ProductInput::where('product_id', $id)
@@ -593,20 +591,38 @@ class ProductController extends Controller
 
         if (!empty($selected_categories)) {
             foreach ($selected_categories as $pest) {
+                $categoryId = isset($pest['id']) ? intval($pest['id']) : null;
+
+                if (empty($categoryId)) {
+                    continue;
+                }
+
+                $rawAmount = $pest['amount'] ?? 0;
+                $amount    = is_string($rawAmount)
+                    ? floatval(str_replace(',', '.', $rawAmount))
+                    : floatval($rawAmount);
+
+                $pestIdsRaw = $pest['pest_ids'] ?? [];
+                if (is_string($pestIdsRaw)) {
+                    $decoded    = json_decode($pestIdsRaw, true);
+                    $pestIdsRaw = is_array($decoded) ? $decoded : [];
+                }
+                $pestIds = is_array($pestIdsRaw) ? array_values(array_filter(array_map('intval', $pestIdsRaw))) : [];
+
                 ProductInput::updateOrCreate(
                     [
                         'product_id'            => $id,
                         'application_method_id' => $appMethod_id,
-                        'pest_category_id'      => $pest->category_id,
+                        'pest_category_id'      => $categoryId,
                     ],
                     [
-                        'amount'   => $pest->amount,
-                        'pest_ids' => json_encode($pest->pest_ids),
+                        'amount'   => $amount,
+                        'pest_ids' => $pestIds, // Se guarda mapeado correctamente
                     ]
                 );
             }
 
-            return back()->with('success', 'Configuración de insumos actualizada.');
+            return back()->with('success', 'Configuración de insumos actualizada correctamente.');
         }
 
         return back()->with('error', 'Error al procesar la solicitud.');
