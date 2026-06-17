@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    @php
+    @include('components.page-header', [
+        'title' => 'EDITAR PLAGA',
+        'icon' => 'bi-bug',
+        'backRoute' => url()->previous(),
+    ])
+@php
         function formatPath($path)
         {
             return str_replace(['/', ' '], ['-', ''], $path);
@@ -8,16 +13,7 @@
     @endphp
 
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('pest.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                EDITAR PLAGA <span class="ms-2 fs-4"> {{ $pest->name }}</span>
-            </span>
-        </div>
-
-        <form class="m-3" method="POST" action="{{ route('pest.update', $pest->id) }}" enctype="multipart/form-data">
+<form class="m-3" method="POST" action="{{ route('pest.update', $pest->id) }}" enctype="multipart/form-data">
             @csrf
             <div class="row">
                 <div class="col-3 mb-3">
@@ -77,5 +73,13 @@
                 {{ __('buttons.store') }}
             </button>
         </form>
+        @can('write_product')
+            @include('components.danger-action', [
+                'actionRoute' => route('pest.destroy', ['id' => $pest->id]),
+                'title' => 'Zona de peligro',
+                'description' => 'Elimina esta plaga desde su pantalla de edición.',
+                'buttonText' => 'Eliminar plaga',
+            ])
+        @endcan
     </div>
 @endsection

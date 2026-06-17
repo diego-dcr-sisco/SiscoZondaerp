@@ -4,122 +4,153 @@
         $offset = ($orders->currentPage() - 1) * $orders->perPage();
     @endphp
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="#" onclick="history.back(); return false;" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                ORDENES DE SERVICIO <span class="ms-2 fs-4"> Contrato: {{ $contract->customer->name }} [{{ $contract->id }}]</span>
-            </span>
-        </div>
+        @include('components.page-header', [
+            'title' => 'ORDENES DE SERVICIO - Contrato: ' . ($contract->customer->name ?? 'Cliente desconocido') . ' [' . $contract->id . ']',
+            'icon' => 'bi-journal-check',
+            'iconColor' => 'text-primary',
+            'backRoute' => url()->previous(),
+        ])
 
         <div class="m-3">
-            <table class="table table-bordered table-striped table-sm caption-top">
-                <caption class="border rounded-top p-3 text-dark bg-white">
-                    <form id="filter-form" action="{{ route('contract.search.orders', ['id' => $contract->id, 'customerId' => $contract->customer->id]) }}" method="GET">
-                        <div class="row g-2 mb-0">
-                            <!-- Cliente -->
-                            <div class="col-lg-4">
+            <form id="filter-form" action="{{ route('contract.search.orders', ['id' => $contract->id, 'customerId' => $contract->customer->id]) }}" method="GET" class="mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <h5 class="card-title fw-bold mb-0">
+                                <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
+                            </h5>
+                            <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
+                                data-bs-target=".contract-orders-search-collapse" aria-expanded="true"
+                                aria-controls="contractOrdersSearchFilters contractOrdersSearchFooter">
+                                <i class="bi bi-caret-down-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-body collapse show contract-orders-search-collapse" id="contractOrdersSearchFilters">
+                        <div class="row g-3 mb-3">
+                            <div class="col-lg-4 col-sm-6 col-12">
                                 <label for="customer" class="form-label">Cliente</label>
-                                <input type="text" class="form-control form-control-sm" id="customer" name="customer"
-                                    value="{{ $contract->customer->name }}" placeholder="Buscar cliente" readonly>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                    <input type="text" class="form-control" id="customer" name="customer"
+                                        value="{{ $contract->customer->name }}" placeholder="Buscar cliente" readonly>
+                                </div>
                             </div>
 
-                            <!-- Rango de Fechas -->
-                            <div class="col-auto">
-                                <label for="date_range" class="form-label">Rango de Fechas</label>
-                                <input type="text" class="form-control form-control-sm date-range-picker" id="date-range"
-                                    name="date_range" value="{{ request('date_range') }}" placeholder="Selecciona un rango"
-                                    autocomplete="off">
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <label for="date-range" class="form-label">Rango de Fechas</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-calendar-range-fill"></i></span>
+                                    <input type="text" class="form-control date-range-picker" id="date-range"
+                                        name="date_range" value="{{ request('date_range') }}"
+                                        placeholder="Selecciona un rango" autocomplete="off">
+                                </div>
                             </div>
 
-                            <!-- Hora -->
-                            <div class="col-auto">
+                            <div class="col-lg-2 col-sm-6 col-12">
                                 <label for="time" class="form-label">Hora Programada</label>
-                                <input type="time" class="form-control form-control-sm" id="time" name="time"
-                                    value="{{ request('time') }}">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-clock-fill"></i></span>
+                                    <input type="time" class="form-control" id="time" name="time"
+                                        value="{{ request('time') }}">
+                                </div>
                             </div>
 
-                            <!-- Servicio -->
-                            <div class="col-lg-4">
+                            <div class="col-lg-3 col-sm-6 col-12">
                                 <label for="service" class="form-label">Servicio</label>
-                                <input type="text" class="form-control form-control-sm" id="service" name="service"
-                                    value="{{ request('service') }}" placeholder="Buscar servicio">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-briefcase-fill"></i></span>
+                                    <input type="text" class="form-control" id="service" name="service"
+                                        value="{{ request('service') }}" placeholder="Buscar servicio">
+                                </div>
                             </div>
 
-                            <!-- Estado -->
-                            <div class="col-auto">
+                            <div class="col-lg-2 col-sm-6 col-12">
                                 <label for="status" class="form-label">Estado</label>
-                                <select class="form-select form-select-sm" id="status" name="status">
-                                    <option value="">Todos</option>
-                                    @foreach ($order_status as $status)
-                                        <option value="{{ $status->id }}"
-                                            {{ request('status') == $status->id ? 'selected' : '' }}>
-                                            {{ $status->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-flag-fill"></i></span>
+                                    <select class="form-select" id="status" name="status">
+                                        <option value="">Todos</option>
+                                        @foreach ($order_status as $status)
+                                            <option value="{{ $status->id }}"
+                                                {{ request('status') == $status->id ? 'selected' : '' }}>
+                                                {{ $status->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
 
-                            <!-- Tipo de Orden -->
-                            <div class="col-auto">
+                            <div class="col-lg-2 col-sm-6 col-12">
                                 <label for="order_type" class="form-label">Tipo de Orden</label>
-                                <select class="form-select form-select-sm" id="order_type" name="order_type">
-                                    <option value="">Todos</option>
-                                    <option value="MIP" {{ request('order_type') == 'MIP' ? 'selected' : '' }}>MIP
-                                    </option>
-                                    <option value="Seguimiento"
-                                        {{ request('order_type') == 'Seguimiento' ? 'selected' : '' }}>
-                                        Seguimiento</option>
-                                </select>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-journal-text"></i></span>
+                                    <select class="form-select" id="order_type" name="order_type">
+                                        <option value="">Todos</option>
+                                        <option value="MIP" {{ request('order_type') == 'MIP' ? 'selected' : '' }}>MIP</option>
+                                        <option value="Seguimiento" {{ request('order_type') == 'Seguimiento' ? 'selected' : '' }}>
+                                            Seguimiento
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
 
-                            <!-- Firma -->
-                            <div class="col-auto">
+                            <div class="col-lg-2 col-sm-6 col-12">
                                 <label for="signature_status" class="form-label">Estado de Firma</label>
-                                <select class="form-select form-select-sm" id="signature_status" name="signature_status">
-                                    <option value="">Todos</option>
-                                    <option value="signed" {{ request('signature_status') == 'signed' ? 'selected' : '' }}>
-                                        Firmadas</option>
-                                    <option value="unsigned"
-                                        {{ request('signature_status') == 'unsigned' ? 'selected' : '' }}>
-                                        No Firmadas</option>
-                                </select>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-pen-fill"></i></span>
+                                    <select class="form-select" id="signature_status" name="signature_status">
+                                        <option value="">Todos</option>
+                                        <option value="signed" {{ request('signature_status') == 'signed' ? 'selected' : '' }}>
+                                            Firmadas
+                                        </option>
+                                        <option value="unsigned" {{ request('signature_status') == 'unsigned' ? 'selected' : '' }}>
+                                            No Firmadas
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
 
-                            <!-- Direccion y orden -->
-                            <div class="col-auto">
-                                <label for="signature_status" class="form-label">Dirección</label>
-                                <input type="text" class="form-control form-control-sm"
-                                    value="{{ request('direction', 'ASC') }}" readonly>
+                            <div class="col-lg-3 col-sm-6 col-12">
+                                <label for="direction" class="form-label">Ordenar / Mostrar</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text"><i class="bi bi-arrow-down-up"></i></span>
+                                    <input type="text" class="form-control" value="{{ request('direction', 'ASC') }}" readonly>
+                                    <span class="input-group-text"><i class="bi bi-list-ol"></i></span>
+                                    <select class="form-select" id="size" name="size">
+                                        <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
+                                        <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
+                                        <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
+                                        <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
+                                        <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
+                                    </select>
+                                </div>
                             </div>
 
-                            <div class="col-auto">
-                                <label for="order_type" class="form-label">Total</label>
-                                <select class="form-select form-select-sm" id="size" name="size">
-                                    <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
-                                    <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
-                                    <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
-                                    <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
-                                    <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
-                                </select>
-                            </div>
+                            <input type="hidden" id="direction" name="direction" value="{{ request('direction', 'ASC') }}" readonly>
+                        </div>
+                    </div>
 
-                            <input type="hidden" id="direction" name="direction" value="{{ request('direction', 'ASC') }}"
-                                readonly>
-
-                            <!-- Botones -->
-                            <div class="col-lg-12 d-flex justify-content-end">
-                                <button type="submit" class="btn btn-primary btn-sm m-0">
+                    <div class="card-footer collapse show contract-orders-search-collapse" id="contractOrdersSearchFooter">
+                        <div class="row justify-content-end g-2">
+                            <div class="col-lg-1 col-6">
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
                                     <i class="bi bi-funnel-fill"></i> Filtrar
                                 </button>
-                                <a href="{{ route('order.index') }}" class="btn btn-secondary btn-sm">
+                            </div>
+                            <div class="col-lg-1 col-6">
+                                <a href="{{ route('contract.show', ['id' => $contract->id, 'section' => 1]) }}"
+                                    class="btn btn-secondary btn-sm w-100">
                                     <i class="bi bi-arrow-counterclockwise"></i> Limpiar
                                 </a>
                             </div>
                         </div>
-                    </form>
-                </caption>
+                    </div>
+                </div>
+            </form>
+
+            <table class="table table-bordered table-striped table-sm">
                 <thead>
                     <tr>
                         <th scope="col">
@@ -157,7 +188,7 @@
                         @php
                             // Asegurarte que la cadena tiene el prefijo correcto
                             $signature =
-                                strpos($order->customer_signature, 'data:image') === 0
+                                strpos((string) $order->customer_signature, 'data:image') === 0
                                     ? $order->customer_signature
                                     : 'data:image/png;base64,' . $order->customer_signature;
 

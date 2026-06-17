@@ -30,7 +30,7 @@
 
                     <div class="mb-3">
                         <div id="service{{ $service->id }}-text" class="smnote smnote-service"
-                            data-autosave-type="service" data-service-id="{{ $service->id }}" style="height: 300px">
+                            data-change-type="service" data-service-id="{{ $service->id }}" style="height: 300px">
                             @if ($order->propagateByService($service->id) && $order->propagateByService($service->id)->text)
                                 {!! cleanHtmlSimple($order->propagateByService($service->id)->text) !!}
                             @elseif ($order->setting && $order->setting->service_description)
@@ -42,7 +42,7 @@
                     </div>
 
                     <div class="section-action-bar">
-                        <span id="autosave-status-service-{{ $service->id }}" class="autosave-status">Sin cambios</span>
+                        <span id="change-status-service-{{ $service->id }}" class="change-status">Sin cambios</span>
                         <div class="section-action-buttons">
                             <button type="button" class="btn btn-primary btn-sm report-save-btn"
                                 onclick="updateDescription({{ $service->id }})">

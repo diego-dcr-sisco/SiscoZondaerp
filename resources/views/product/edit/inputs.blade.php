@@ -1,68 +1,83 @@
 @extends('layouts.app')
 @section('content')
 
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom bg-white ps-4 p-3 shadow-sm">
-            <a href="{{ route('product.index') }}" class="text-decoration-none pe-3 text-secondary">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-dark fw-bold fs-4">
-                Insumos del Producto: <span
-                    class="badge bg-warning text-dark fs-5 ms-2 px-3 py-1 shadow-sm">{{ $product->name }}</span>
-            </span>
-        </div>
+    @include('components.page-header', [
+        'title' => 'EDITAR PRODUCTO - INSUMOS',
+        'icon' => 'bi-box-seam',
+        'backRoute' => route('product.index'),
+    ])
+    @include('product.edit.navigation-tabs')
 
-        <div class="p-4">
-            <div class="mb-3 d-flex justify-content-between align-items-center">
-                @php
-                    $allDataForModal = [];
-                    if (!empty($inputs)) {
-                        foreach ($inputs as $method) {
-                            $allDataForModal[$method['application_method_id']] = [
-                                'method_name' => $method['application_method_name'],
-                                'pests' => array_map(function ($p) {
-                                    $pestIds = is_array($p['pest_ids'] ?? null)
-                                        ? $p['pest_ids']
-                                        : (json_decode($p['pest_ids'] ?? '[]', true) ?? []);
+    @php
+        if (!function_exists('formatPath')) {
+            function formatPath($path)
+            {
+                return str_replace(['/', ' '], ['-', ''], $path);
+            }
+        }
 
-                                    // Buscamos los nombres reales de las subplagas para enviárselos listos al Modal
-                                    $subpestNames = [];
-                                    foreach ($pestIds as $subPestId) {
-                                        $pestModel = null;
-                                        if (class_exists('\App\Models\PestCatalog')) {
-                                            $pestModel = \App\Models\PestCatalog::find($subPestId);
-                                        } elseif (class_exists('\App\Models\Plaga')) {
-                                            $pestModel = \App\Models\Plaga::find($subPestId);
-                                        } elseif (class_exists('\App\Models\Pest')) {
-                                            $pestModel = \App\Models\Pest::find($subPestId);
-                                        }
-                                        if ($pestModel) {
-                                            $subpestNames[] = $pestModel->name ?? $pestModel->nombre;
-                                        }
-                                    }
+        if (!function_exists('extractFileName')) {
+            function extractFileName($filePath)
+            {
+                $fileNameWithExtension = basename($filePath);
+                $fileName = pathinfo($fileNameWithExtension, PATHINFO_FILENAME);
 
-                                    return [
-                                        'id' => (int) ($p['id'] ?? 0),
-                                        'category' => $p['category'] ?? 'Sin categoría',
-                                        'amount' => (float) ($p['amount'] ?? 0),
-                                        'pest_ids' => $pestIds,
-                                        'subpest_names' => $subpestNames // <-- Enviado al JS del modal
-                                    ];
-                                }, $method['pestCategories']),
-                            ];
+                return $fileName;
+            }
+        }
+
+        $allDataForModal = [];
+        if (!empty($inputs)) {
+            foreach ($inputs as $method) {
+                $allDataForModal[$method['application_method_id']] = [
+                    'method_name' => $method['application_method_name'],
+                    'pests' => array_map(function ($p) {
+                        $pestIds = is_array($p['pest_ids'] ?? null)
+                            ? $p['pest_ids']
+                            : (json_decode($p['pest_ids'] ?? '[]', true) ?? []);
+
+                        $subpestNames = [];
+                        foreach ($pestIds as $subPestId) {
+                            $pestModel = null;
+                            if (class_exists('\App\Models\PestCatalog')) {
+                                $pestModel = \App\Models\PestCatalog::find($subPestId);
+                            } elseif (class_exists('\App\Models\Plaga')) {
+                                $pestModel = \App\Models\Plaga::find($subPestId);
+                            } elseif (class_exists('\App\Models\Pest')) {
+                                $pestModel = \App\Models\Pest::find($subPestId);
+                            }
+                            if ($pestModel) {
+                                $subpestNames[] = $pestModel->name ?? $pestModel->nombre;
+                            }
                         }
-                    }
-                @endphp
 
-                <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3 shadow-sm" data-bs-toggle="modal"
-                    data-bs-target="#inputModal" data-action="edit" data-all-data="{{ json_encode($allDataForModal) }}">
-                    ✏️ Editar insumos
-                </button>
+                        return [
+                            'id' => (int) ($p['id'] ?? 0),
+                            'category' => $p['category'] ?? 'Sin categoría',
+                            'amount' => (float) ($p['amount'] ?? 0),
+                            'pest_ids' => $pestIds,
+                            'subpest_names' => $subpestNames
+                        ];
+                    }, $method['pestCategories']),
+                ];
+            }
+        }
+    @endphp
 
-                <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm fw-bold" id="btn-add-input"
-                    data-bs-toggle="modal" data-bs-target="#inputModal" data-action="new">
-                    <i class="bi bi-plus-lg me-1"></i> Actualizar insumos*
-                </button>
+    <div class="container-fluid p-0">
+        <div class="m-3">
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+                <div>
+                    <button type="button" class="btn btn-outline-primary btn-sm fw-bold px-3 shadow-sm me-2" data-bs-toggle="modal"
+                        data-bs-target="#inputModal" data-action="edit" data-all-data="{{ json_encode($allDataForModal) }}">
+                        ✏️ Editar insumos
+                    </button>
+
+                    <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm fw-bold" id="btn-add-input"
+                        data-bs-toggle="modal" data-bs-target="#inputModal" data-action="new">
+                        <i class="bi bi-plus-lg me-1"></i> Actualizar insumos*
+                    </button>
+                </div>
             </div>
 
             <div class="card border rounded shadow-sm overflow-hidden">
@@ -178,7 +193,7 @@
     </div>
 
     <form id="input-backend-form"
-        action="{{ action([App\Http\Controllers\ProductController::class, 'input'], ['id' => $product->id]) }}"
+        action="{{ action([App\Http\Controllers\ProductController::class, 'updateInputs'], ['id' => $product->id]) }}"
         method="POST" style="display: none;">
         @csrf
         <input type="hidden" name="application_method_id" id="backend-method-id">

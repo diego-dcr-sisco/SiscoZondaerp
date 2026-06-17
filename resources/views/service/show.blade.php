@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    @php
+    @include('components.page-header', [
+        'title' => 'VER SERVICIO',
+        'icon' => 'bi-tools',
+        'backRoute' => url()->previous(),
+    ])
+@php
         $time_types = ['Segundo(s)', 'Minuto(s)', 'Hora(s)'];
         $i = 1;
     @endphp
@@ -37,12 +42,7 @@
 
 
         <div class="col-11">
-            <div class="row p-3 border-bottom">
-                <a href="{{ route('service.index', ['page' => 1]) }}" class="col-auto btn-primary p-0 fs-3"><i
-                        class="bi bi-arrow-left m-3"></i></a>
-                <h1 class="col-auto fs-2 m-0">{{ __('service.title.show') }} <span class="fw-bold"> [{{ $service->name }}] </span></h1>
-            </div>
-            <div class="row p-5 pt-3">
+<div class="row p-5 pt-3">
                 @switch($section)
                     @case(1)
                         <div class="row">

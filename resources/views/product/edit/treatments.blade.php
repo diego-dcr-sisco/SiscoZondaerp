@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
+<<<<<<< HEAD
     <div class="container-fluid p-0">
         {{-- Encabezado idéntico al de Insumos --}}
         <div class="d-flex align-items-center border-bottom bg-white ps-4 p-3 shadow-sm">
@@ -97,3 +98,13 @@
         </div>
     </div>
 @endsection
+=======
+    @include('components.page-header', [
+        'title' => 'EDITAR PRODUCTO - TRATAMIENTOS',
+        'icon' => 'bi-box-seam',
+        'backRoute' => url()->previous(),
+    ])
+    @include('product.edit.navigation-tabs')
+<span class="m-3"> En desarollo </span>
+@endsection
+>>>>>>> upstream/main

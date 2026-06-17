@@ -225,18 +225,82 @@
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            border-collapse: separate;
-            border-spacing: 15px 5px;
-            border: none !important;
+            border: 1px solid #333;
+            margin: 6px 0;
         }
 
+        .render-html th,
         .render-html td {
+            border: 1px solid #333;
+            padding: 4px 5px;
+            vertical-align: top;
             word-break: break-word;
+            font-size: 9px;
+        }
+
+        .render-html th {
+            background-color: #d9e1f2;
+            font-weight: bold;
+            text-align: center;
         }
 
         .render-html td[data-row="27"],
         .render-html td[data-row="12"] {
             white-space: normal !important;
+        }
+
+        .render-html img {
+            display: block;
+            max-width: 100% !important;
+            height: auto !important;
+            max-height: 780px !important;
+            object-fit: contain !important;
+            margin: 6px auto 8px auto;
+            page-break-inside: avoid;
+        }
+
+        .render-html .report-pdf-image {
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin: 8px 0 12px 0;
+            page-break-inside: avoid;
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+
+        .render-html .report-pdf-image+.report-pdf-image {
+            page-break-before: always;
+        }
+
+        .render-html .report-pdf-image img {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .service-image-page {
+            page-break-before: always;
+            page-break-inside: avoid;
+            text-align: center;
+            margin: 0;
+        }
+
+        .service-image-page img {
+            display: block;
+            max-width: 100% !important;
+            max-height: 760px !important;
+            width: auto;
+            height: auto !important;
+            object-fit: contain !important;
+            margin: 0 auto;
+        }
+
+        .render-html p,
+        .render-html div {
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
         }
 
         .watermark {
@@ -381,12 +445,21 @@
     <!-- SERVICIOS con evidencias -->
     <div class="row">
         <div class="bg-blue">SERVICIOS</div>
+        @php
+            $hasServiceImages = collect($services)->contains(fn($service) => !empty($service['images']));
+        @endphp
         @foreach ($services as $service)
             <div style="margin-top: 10px;">
                 <span class="square"></span>
                 <span class="square-title">{{ $service['name'] }}</span>
             </div>
             <div class="render-html">{!! $service['text'] !!}</div>
+
+            @foreach ($service['images'] ?? [] as $serviceImage)
+                <div class="service-image-page">
+                    {!! $serviceImage !!}
+                </div>
+            @endforeach
 
             <!-- Evidencias del área "servicio" para este servicio específico -->
             @if (isset($photo_evidences['servicio']) && count($photo_evidences['servicio']) > 0)
@@ -408,6 +481,10 @@
             @endif
         @endforeach
     </div>
+
+    @if ($hasServiceImages)
+        <div class="page-break"></div>
+    @endif
 
     <div class="row">
         <div class="bg-blue">PRODUCTOS</div>

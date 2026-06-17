@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    @php
+    @include('components.page-header', [
+        'title' => 'EDITAR USUARIO',
+        'icon' => 'bi-person',
+        'backRoute' => url()->previous(),
+    ])
+@php
         function formatPath($path)
         {
             return str_replace(['/', ' '], ['-', ''], $path);
@@ -24,16 +29,7 @@
     </style>
 
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('user.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                EDITAR USUARIO TIPO CLIENTE <span class="fs-5 fw-bold bg-warning p-1 rounded">{{ $user->name }}</span>
-            </span>
-        </div>
-
-        <form class="form m-3" method="POST" action="{{ route('user.update', ['id' => $user->id]) }}"
+<form class="form m-3" method="POST" action="{{ route('user.update', ['id' => $user->id]) }}"
             enctype="multipart/form-data">
             @csrf
             <div class="border rounded shadow p-3 mb-3">
@@ -129,6 +125,15 @@
             <input type="hidden" id="sedes" name="sedes" value="" />
             <button class="btn btn-primary my-3">{{ __('buttons.update') }}</button>
         </form>
+        @can('write_user')
+            @include('components.danger-action', [
+                'actionRoute' => route('user.destroy', ['id' => $user->id]),
+                'title' => 'Zona de peligro',
+                'description' => 'Elimina este usuario desde su pantalla de edición.',
+                'buttonText' => 'Eliminar usuario',
+                'confirmMessage' => '¿Estás seguro de eliminar este usuario?',
+            ])
+        @endcan
     </div>
 
     @include('user.modals.customer.select')

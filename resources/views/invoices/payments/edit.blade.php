@@ -1,16 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="row m-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <span class="text-black fw-bold fs-4">
-                EDITAR COMPLEMENTO DE PAGO - Folio: {{ $paymentComplement->folio }}
-                <span class="badge text-bg-warning" id="selectedInvoicesBadge">
-                    SIN PAGOS AGREGADOS
-                </span>
-            </span>
-        </div>
-
-        <form class="form p-3" action="{{ route('invoices.payments.update', $paymentComplement->id) }}" method="POST" enctype="">
+    @include('components.page-header', [
+        'title' => 'EDITAR FACTURA',
+        'icon' => 'bi-receipt',
+        'backRoute' => url()->previous(),
+    ])
+<div class="row m-0">
+<form class="form p-3" action="{{ route('invoices.payments.update', $paymentComplement->id) }}" method="POST" enctype="">
             @csrf
             @method('PUT')
             <input type="hidden" id="selected_invoices_data" name="selected_invoices_data">

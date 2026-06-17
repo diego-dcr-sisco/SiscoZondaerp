@@ -1,16 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="#" onclick="history.back(); return false;" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                PLANO <span class="fs-5 fw-bold bg-warning p-1 rounded">{{ $floorplan->filename }}</span>
-            </span>
-        </div>
-
-        <form class="m-3" method="POST" action="{{ route('floorplan.update', ['id' => $floorplan->id]) }}" enctype="multipart/form-data">
+    @include('components.page-header', [
+        'title' => 'EDITAR PLANO',
+        'icon' => 'bi-map',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
+<form class="m-3" method="POST" action="{{ route('floorplan.update', ['id' => $floorplan->id]) }}" enctype="multipart/form-data">
             @csrf
             <div class="border rounded shadow p-3">
                 <div class="row">

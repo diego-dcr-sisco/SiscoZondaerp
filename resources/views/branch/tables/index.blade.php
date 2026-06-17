@@ -26,9 +26,6 @@
                     <a href="{{ route('branch.edit', ['id' => $branch->id, 'section' => 1]) }}"
                         class="btn btn-secondary btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
                         title="Editar sucursal"><i class="bi bi-pencil-square"></i></a>
-                    <a href="{{ route('branch.destroy', ['id' => $branch->id]) }}" class="btn btn-danger btn-sm"
-                        onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')" data-bs-toggle="tooltip"
-                        data-bs-placement="top" title="Eliminar sucursal"><i class="bi bi-trash-fill"></i></a>
                 </td>
             </tr>
         @empty

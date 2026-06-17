@@ -1,16 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom px-4 py-3">
-            <a href="{{ route('branch.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                EDITAR SUCURSAL <span class="ms-2 fs-4"> {{ $branch->name }}</span>
-            </span>
-        </div>
-
-        <div class="px-3 mt-3">
+    @include('components.page-header', [
+        'title' => 'EDITAR SUCURSAL',
+        'icon' => 'bi-diagram-3',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
+<div class="px-3 mt-3">
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-2">
                     <div class="d-flex gap-2 flex-wrap">
@@ -55,5 +51,11 @@
                 <i class="bi bi-save"></i> {{ __('buttons.store') }}
             </button>
         </form>
+        @include('components.danger-action', [
+            'actionRoute' => route('branch.destroy', ['id' => $branch->id]),
+            'title' => 'Zona de peligro',
+            'description' => 'Elimina esta sucursal desde su pantalla de edición.',
+            'buttonText' => 'Eliminar sucursal',
+        ])
     </div>
 @endsection

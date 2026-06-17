@@ -19,20 +19,20 @@ class ComercialZone extends Model
      */
     protected $fillable = [
         'id',
+        'code',
         'name',
         'description',
         'created_at',
-        'updateed_at'
+        'updated_at'
     ];
 
-    public function customers() {
-        return $this->hasManyThrough(
-            Customer::class,            // Modelo final (Clientes)
-            ComercialZoneCustomer::class, // Modelo intermedio
-            'comercial_zone_id',        // FK en la tabla intermedia que referencia a ComercialZone
-            'id',                       // FK en la tabla Customer que referencia a la tabla intermedia
-            'id',                       // Clave local en ComercialZone
-            'customer_id'               // FK en la tabla intermedia que referencia a Customer
-        );
+    public function customers()
+    {
+        return $this->belongsToMany(
+            Customer::class,
+            'comercial_zone_customers',
+            'comercial_zone_id',
+            'customer_id'
+        )->withTimestamps();
     }
 }

@@ -346,8 +346,9 @@ class OrderController extends Controller
         }
 
         if ($service) {
-            $orders->whereHas('services', function ($query) use ($service) {
-                $query->where('service.name', 'LIKE', $service . '%');
+            $serviceTerm = '%' . trim($service) . '%';
+            $orders->whereHas('services', function ($query) use ($serviceTerm) {
+                $query->where('service.name', 'LIKE', $serviceTerm);
             });
         }
 
@@ -411,7 +412,8 @@ class OrderController extends Controller
             $request->validate([
                 'search_service_input' => 'required|string',
             ]);
-            $serviceIdsArray = Service::where('name', 'like', $request->input('search_service_input') . '%')
+            $serviceName = '%' . trim($request->input('search_service_input')) . '%';
+            $serviceIdsArray = Service::where('name', 'like', $serviceName)
                 ->limit(25)
                 ->pluck('id');
         }
@@ -645,6 +647,8 @@ class OrderController extends Controller
             $customer = $order->customer; // Ya viene cargado con with()
 
             foreach ($order->services as $service) {
+                $propagation = $order->propagateByService($service->id);
+
                 $selected_services[] = [
                     'id' => $service->id,
                     'prefix' => $service->prefix,
@@ -653,14 +657,14 @@ class OrderController extends Controller
                     'type' => [$service->serviceType->name],
                     'line' => [$service->businessLine->name],
                     'cost' => $service->cost,
-                    'propagate_description' => $order->propagateByService($service->id)->text ?? null,
+                    'propagate_description' => $propagation->text ?? null,
                 ];
 
                 $services_configuration[] = [
                     'service_id' => $service->id,
                     'setting_id' => $order->setting_id,
                     'contract_id' => $order->contract_id,
-                    'description' => $order->propagateByService($service->id)->text ?? null,
+                    'description' => $propagation->text ?? null,
                 ];
 
                 $cost += $service->cost;

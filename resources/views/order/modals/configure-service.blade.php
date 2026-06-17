@@ -30,6 +30,7 @@
         padding: 1rem;
         margin-top: 1rem;
     }
+
 </style>
 
 <!-- Modal para Configurar Servicio -->
@@ -98,7 +99,7 @@
                 </h6>
 
                 <div class="description-container">
-                    <div id="service-description-editor" class="summernote"></div>
+                    <div id="service-description-editor" class="smnote" style="height: 250px"></div>
                     <div class="form-text mt-2">
                         Describe los detalles específicos del servicio a realizar.
                     </div>
@@ -118,60 +119,42 @@
     </div>
 </div>
 
+@include('components.quill-service-editor-tools')
+
 <script>
     // Variable para almacenar la descripción
     let serviceDescription = '';
 
-    // Inicializar Summernote
+    // Inicializar Quill
     $(document).ready(function() {
-        $('#service-description-editor').summernote({   
-            height: 250,
-            lang: 'es-ES',
-            toolbar: [
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['font', ['fontsize', 'fontname']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['height', ['height']],
-                ['insert', ['table', 'link']],
-            ],
-            fontSize: ['8', '10', '12', '14', '16'],
-            lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
-
-            cleaner: {
-                action: 'both', // 'both' | 'button' | 'paste'
-                newline: '<br>', // Formato para saltos de línea
-                notStyle: 'position:absolute;top:0;left:0;right:0', // Estilo de notificación
-                keepHtml: true, // Activa el modo de "lista blanca" (whitelist)
-                keepOnlyTags: ['<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>',
-                    '<strong>'
-                ], // Etiquetas permitidas
-                keepClasses: false, // Remueve todas las clases CSS
-                badTags: ['style', 'script', 'applet', 'embed', 'noframes',
-                    'noscript'
-                ], // Etiquetas prohibidas (se eliminan con su contenido)
-                badAttributes: ['style', 'start', 'dir',
-                    'class'
-                ] // Atributos prohibidos (se eliminan de las etiquetas restantes)
-            },
-
-            callbacks: {
-                onPaste: function(e) {
-                    var thisNote = $(this);
-                    var updatePaste = function() {
-                        // Get the current HTML code FROM the Summernote editor
-                        var original = thisNote.summernote('code');
-                        var cleaned = original;
-                        // Set the cleaned code BACK to the editor
-                        thisNote.summernote('code', cleaned);
-                    };
-                    // Wait for Summernote to process the paste
-                    setTimeout(updatePaste, 10);
-                },
-
-                onChange: function(contents) {
-                    serviceDescription = contents;
-                }
+        const serviceDescriptionQuill = new Quill('#service-description-editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ list: 'ordered' }, { list: 'bullet' }],
+                    ['link', 'image'],
+                    ['clean']
+                ],
+                table: true
             }
+        });
+
+        function getServiceDescriptionHtml() {
+            const html = serviceDescriptionQuill.root.innerHTML;
+            return html === '<p><br></p>' ? '' : html;
+        }
+
+        function setServiceDescriptionHtml(html) {
+            serviceDescriptionQuill.clipboard.dangerouslyPasteHTML(html || '');
+            serviceDescription = getServiceDescriptionHtml();
+        }
+
+        serviceDescriptionQuill.on('text-change', function() {
+            serviceDescription = getServiceDescriptionHtml();
+        });
+        addServiceEditorTableTools(serviceDescriptionQuill, 'service-description-editor', function() {
+            serviceDescription = getServiceDescriptionHtml();
         });
 
         // Manejar clic en el botón de guardar
@@ -183,13 +166,15 @@
         $('#configureServiceModal').on('show.bs.modal', function(event) {
             let service_id = $('#service-id').val();
             let config = services_configuration.find(sc => sc.service_id == service_id);
-            $("#service-description-editor").summernote('code', config.description);
+            serviceDescription = config?.description || '';
+            setServiceDescriptionHtml(serviceDescription);
         });
     });
 
     // Función para guardar la descripción
     function saveServiceDescription() {
         const service_id = $('#service-id').val();
+
         let config = services_configuration.find(sc => sc.service_id == service_id);
         if (config) {
             config.description = serviceDescription;
@@ -198,10 +183,10 @@
                 service_id: service_id,
                 setting_id: null,
                 contract_id: null,
-                description: serviceDescription
+                description: serviceDescription,
             });
         }
-        alert('Descripción guardada correctamente.');
+        alert('Configuración guardada correctamente.');
         $('#configureServiceModal').modal('hide');
 
         console.log(services_configuration);

@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    <style>
+    @include('components.page-header', [
+        'title' => 'EDITAR CLIENTE',
+        'icon' => 'bi-people',
+        'backRoute' => url()->previous(),
+    ])
+<style>
         .sidebar {
             color: white;
             text-decoration: none
@@ -16,13 +21,7 @@
             @include('customer.navigation')
 
         <div class="col-11">
-            <div class="row p-3 border-bottom">
-                <a href="javascript:history.back()" class="col-auto btn-primary p-0 fs-3"><i
-                        class="bi bi-arrow-left m-3"></i></a>
-                <h1 class="col-auto fs-2 m-0">Editar zona <span class="fw-bold">{{$zone->name}}</span></h1>
-            </div>
-            
-            <div class="container" >
+<div class="container" >
             @include('messages.alert')
                 <form class="modal-content" id="area-form" action="{{ route('quality.zone.update', ['id' => $zone->id]) }}"
                     method="POST" enctype="multipart/form-data">

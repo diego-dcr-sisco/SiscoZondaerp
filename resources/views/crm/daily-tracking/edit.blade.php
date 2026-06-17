@@ -1,18 +1,15 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container-fluid p-0">
+    @include('components.page-header', [
+        'title' => 'EDITAR CRM',
+        'icon' => 'bi-graph-up',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
 
         {{-- Header --}}
-        <div class="d-flex align-items-center border-bottom ps-4 p-2 mb-3">
-            <a href="{{ route('crm.daily-tracking.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-5">EDITAR REGISTRO DE ACTIVIDAD DIARIA</span>
-            <span class="ms-3 text-muted">#{{ $dailyTracking->id }}</span>
-        </div>
-
-        <div class="px-4 pb-4">
+<div class="px-4 pb-4">
             @if ($errors->any())
                 <div class="alert alert-danger mb-3">
                     <strong>Corrige los siguientes errores:</strong>

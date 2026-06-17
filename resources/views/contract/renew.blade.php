@@ -35,7 +35,7 @@
         let configDescriptions = {};
         let intervals = @json($intervals);
         let frequencies = @json($frequencies);
-        const can_renew = false;
+        const can_renew = @json($can_renew);
         const prefixes = @json($prefixes);
         const contain_selected_services = @json($selected_services);
         const view = @json($view);

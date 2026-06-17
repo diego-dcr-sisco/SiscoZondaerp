@@ -327,7 +327,7 @@ class PurchaseRequisitionController extends Controller
             switch ($product->type) {
                 case 'directo':
                     $product_id = ProductCatalog::where('name', $product->description)->first()->id;
-                    $lots = Lot::where('product_id', $product_id)->get();
+                    $lots = Lot::active()->where('product_id', $product_id)->get();
                     $total_warehouse_amount = 0;
                     foreach ($lots as $lot) {
                         $total_warehouse_amount += $lot->ammount;

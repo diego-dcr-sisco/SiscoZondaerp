@@ -1,7 +1,12 @@
 @extends('layouts.app')
 @section('content')
 
-    @if (!auth()->check())
+    @include('components.page-header', [
+        'title' => 'VER PUNTO DE CONTROL',
+        'icon' => 'bi-geo-alt',
+        'backRoute' => url()->previous(),
+    ])
+@if (!auth()->check())
         <?php header('Location: /login');
         exit(); ?>
     @endif
@@ -33,13 +38,7 @@
         </div>
 
         <div class="col-11">
-            <div class="row p-3 border-bottom">
-                <a href="{{ route('point.index') }}" class="col-auto btn-primary p-0 fs-3"><i
-                        class="bi bi-arrow-left m-3"></i></a>
-                <h1 class="col-auto fs-2 fw-bold m-0">Ver punto de control [{{ $point->id }}] {{ $point->name }}
-                </h1>
-            </div>
-            <div class="row p-5 pt-3">
+<div class="row p-5 pt-3">
                 @switch($section)
                     @case(1)
                         <div class="col-12">

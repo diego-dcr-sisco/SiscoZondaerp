@@ -6,13 +6,13 @@
             <div class="d-flex justify-content-between align-items-center gap-2">
                 <h5 class="card-title fw-bold mb-0"><i class="bi bi-funnel-fill"></i> Busqueda Avanzada</h5>
                 <button class="btn btn-outline-dark btn-sm p-collapse-button" type="button" data-bs-toggle="collapse"
-                    data-bs-target=".multi-collapse" aria-expanded="false"
+                    data-bs-target=".multi-collapse" aria-expanded="true"
                     aria-controls="multiCollapseExample1 multiCollapseExample2">
                     <i class="bi bi-caret-down-fill"></i>
                 </button>
             </div>
         </div>
-        <div class="card-body collapse multi-collapse">
+        <div class="card-body collapse show multi-collapse">
             <div class="row g-3 mb-3">
                 {{-- Nombre --}}
                 <div class="col-lg-3 col-sm-6">
@@ -105,7 +105,7 @@
                 </div>
             </div>
         </div>
-        <div class="card-footer collapse multi-collapse">
+        <div class="card-footer collapse show multi-collapse">
             <div class="row justify-content-end">
                 <div class="col-lg-1 col-6">
                     <button type="submit" class="btn btn-primary btn-sm w-100">

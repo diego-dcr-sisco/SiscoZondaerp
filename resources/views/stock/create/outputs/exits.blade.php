@@ -6,17 +6,126 @@
             overflow-y: auto;
             border: 1px solid #dee2e6;
         }
+
+        .signature-section {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: .5rem;
+            box-shadow: 0 .35rem 1rem rgba(33, 37, 41, .06);
+        }
+
+        .signature-card {
+            border: 1px solid #dee2e6;
+            border-radius: .5rem;
+            background: #fff;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .signature-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            padding: .9rem 1rem;
+            border-bottom: 1px solid #dee2e6;
+            background: #f8f9fa;
+        }
+
+        .signature-title {
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .signature-icon {
+            width: 2rem;
+            height: 2rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .signature-stage {
+            min-height: 220px;
+            border: 1px dashed #adb5bd;
+            border-radius: .5rem;
+            background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .signature-stage img,
+        .signature-stage canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .signature-stage canvas {
+            position: absolute;
+            inset: 0;
+            background-color: #fff;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .signature-placeholder {
+            text-align: center;
+            color: #6c757d;
+            padding: 1rem;
+        }
+
+        .signature-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+            flex-wrap: wrap;
+        }
+
+        .signature-file {
+            max-width: 18rem;
+        }
+
+        @media (max-width: 767.98px) {
+            .signature-toolbar,
+            .signature-card-header {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .signature-file {
+                max-width: 100%;
+            }
+        }
     </style>
 
+    @include('components.page-header', [
+        'title' => 'MOVIMIENTO DE SALIDA - ' . $warehouse->name,
+        'icon' => 'bi-box-arrow-up-left',
+        'backRoute' => route('stock.index'),
+    ])
+
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('stock.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                MOVIMIENTO DE SALIDA <span class="fs-5 fw-bold bg-warning p-1 rounded">{{ $warehouse->name }}</span>
-            </span>
-        </div>
+        @if ($errors->any())
+            <div class="alert alert-danger m-3 mb-0">
+                <div class="fw-bold mb-1">No se pudo registrar la salida</div>
+                @foreach ($errors->all() as $error)
+                    <div>{{ $error }}</div>
+                @endforeach
+            </div>
+        @endif
 
         <form class="m-3" id="form-stock-entry" action="{{ route('stock.exit.store') }}" method="POST">
             @csrf
@@ -82,6 +191,7 @@
                                     <th>Cantidad</th>
                                     <th>Unidades</th>
                                     <th>Lote</th>
+                                    <th>Estado lote</th>
                                     <th></th>
                                 </tr>
                             </thead>
@@ -93,52 +203,64 @@
                 </div>
             </div>
 
-            <div class="row justify-content-center">
+            <div class="signature-section p-3 mb-3">
+                <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap mb-3">
+                    <div>
+                        <div class="fw-bold fs-5">Firmas del movimiento</div>
+                        <div class="text-muted small">Validación del almacenista y confirmación del técnico/receptor.</div>
+                    </div>
+                    <span class="badge text-bg-light border">Salida de almacén</span>
+                </div>
+
+                <div class="row g-3">
                 <!-- Firma del Almacenista -->
-                <div class="col-lg-6 col-12 mb-4">
-                    <div class="card h-100 shadow">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i>Firma del almacenista <span class="text-warning">*</span></h5>
+                <div class="col-lg-6 col-12">
+                    <div class="signature-card">
+                        <div class="signature-card-header">
+                            <h5 class="signature-title">
+                                <span class="signature-icon"><i class="fas fa-user-shield"></i></span>
+                                Almacenista
+                            </h5>
+                            <span class="badge text-bg-warning">Obligatoria</span>
                         </div>
-                        <div class="card-body d-flex flex-column">
+                        <div class="p-3">
                             @if ($errors->has('warehouse_signature'))
                                 <div class="alert alert-danger">
                                     {{ $errors->first('warehouse_signature') }}
                                 </div>
                             @endif
-                            <div class="mb-3">
-                                <label for="almacenistaFileInput" class="form-label small text-muted">Subir imagen de
-                                    firma</label>
-                                <input type="file" id="almacenistaFileInput" class="form-control form-control-sm"
-                                    accept="image/*">
-                            </div>
-
-                            <div class="mb-3 position-relative bg-light rounded d-flex align-items-center justify-content-center"
-                                style="height: 200px;">
-                                <img id="almacenistaSignatureImg" src=""
-                                    class="img-fluid d-none w-100 h-100 object-fit-contain border rounded">
-                                <canvas id="almacenistaCanvas"
-                                    class="position-absolute w-100 h-100 border border-2 border-primary rounded d-none"
-                                    style="background-color: #f8f9fa; cursor: crosshair;"></canvas>
-                                <div id="almacenistaPlaceholder"
-                                    class="text-muted">Seleccione o
-                                    dibuje su firma</div>
-                            </div>
-
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-auto">
-                                <div>
-                                    <button type="button" id="clearAlmacenista"
-                                        class="btn btn-outline-danger btn-sm me-2" data-bs-toggle="tooltip"
-                                        data-bs-placement="top" title="Limpiar">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
-                                    <button type="button" id="drawAlmacenista" class="btn btn-outline-primary btn-sm"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Dibujar">
+                            <div class="signature-toolbar mb-3">
+                                <div class="signature-file">
+                                    <label for="almacenistaFileInput" class="form-label small fw-semibold mb-1">Imagen de firma</label>
+                                    <input type="file" id="almacenistaFileInput" class="form-control form-control-sm"
+                                        accept="image/*">
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de firma del almacenista">
+                                    <button type="button" id="drawAlmacenista" class="btn btn-outline-primary"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Dibujar firma">
                                         <i class="bi bi-pencil-fill"></i>
                                     </button>
+                                    <button type="button" id="clearAlmacenista"
+                                        class="btn btn-outline-danger" data-bs-toggle="tooltip"
+                                        data-bs-placement="top" title="Limpiar firma">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
                                 </div>
+                            </div>
+
+                            <div class="signature-stage mb-3">
+                                <img id="almacenistaSignatureImg" src="" class="d-none" alt="Firma del almacenista">
+                                <canvas id="almacenistaCanvas" class="d-none"></canvas>
+                                <div id="almacenistaPlaceholder" class="signature-placeholder">
+                                    <i class="bi bi-pen d-block fs-2 mb-2"></i>
+                                    Seleccione una imagen o dibuje la firma
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                                <small class="text-muted">Firma pendiente.</small>
                                 <button type="button" id="saveAlmacenista" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-save me-1"></i> Guardar
+                                    <i class="bi bi-check2-circle"></i> Aplicar firma
                                 </button>
                             </div>
                         </div>
@@ -146,48 +268,52 @@
                 </div>
 
                 <!-- Firma del Técnico/Receptor -->
-                <div class="col-lg-6 col-12 mb-4">
-                    <div class="card h-100 shadow">
-                        <div class="card-header bg-success text-white">
-                            <h5 class="mb-0"><i class="fas fa-user-tie me-2"></i>Firma del técnico/receptor</h5>
+                <div class="col-lg-6 col-12">
+                    <div class="signature-card">
+                        <div class="signature-card-header">
+                            <h5 class="signature-title">
+                                <span class="signature-icon"><i class="fas fa-user-tie"></i></span>
+                                Técnico / receptor
+                            </h5>
+                            <span class="badge text-bg-light border">Opcional</span>
                         </div>
-                        <div class="card-body d-flex flex-column">
-                            <div class="mb-3">
-                                <label for="tecnicoFileInput" class="form-label small text-muted">Subir imagen de
-                                    firma</label>
-                                <input type="file" id="tecnicoFileInput" class="form-control form-control-sm"
-                                    accept="image/*">
-                            </div>
-
-                            <div class="mb-3 position-relative bg-light rounded d-flex align-items-center justify-content-center"
-                                style="height: 200px;">
-                                <img id="tecnicoSignatureImg" src=""
-                                    class="img-fluid d-none w-100 h-100 object-fit-contain border rounded">
-                                <canvas id="tecnicoCanvas"
-                                    class="position-absolute w-100 h-100 border border-2 border-success rounded d-none"
-                                    style="background-color: #f8f9fa; cursor: crosshair;"></canvas>
-                                <div id="tecnicoPlaceholder"
-                                    class="text-muted">Seleccione o
-                                    dibuje su firma</div>
-                            </div>
-
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-auto">
-                                <div>
-                                    <button type="button" id="clearTecnico" class="btn btn-outline-danger btn-sm me-2"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Limpiar">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </button>
-                                    <button type="button" id="drawTecnico" class="btn btn-outline-success btn-sm"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Dibujar">
+                        <div class="p-3">
+                            <div class="signature-toolbar mb-3">
+                                <div class="signature-file">
+                                    <label for="tecnicoFileInput" class="form-label small fw-semibold mb-1">Imagen de firma</label>
+                                    <input type="file" id="tecnicoFileInput" class="form-control form-control-sm"
+                                        accept="image/*">
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Acciones de firma del técnico">
+                                    <button type="button" id="drawTecnico" class="btn btn-outline-success"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Dibujar firma">
                                         <i class="bi bi-pencil-fill"></i>
                                     </button>
+                                    <button type="button" id="clearTecnico" class="btn btn-outline-danger"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Limpiar firma">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
                                 </div>
+                            </div>
+
+                            <div class="signature-stage mb-3">
+                                <img id="tecnicoSignatureImg" src="" class="d-none" alt="Firma del técnico/receptor">
+                                <canvas id="tecnicoCanvas" class="d-none"></canvas>
+                                <div id="tecnicoPlaceholder" class="signature-placeholder">
+                                    <i class="bi bi-pen d-block fs-2 mb-2"></i>
+                                    Seleccione una imagen o dibuje la firma
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                                <small class="text-muted">Firma pendiente.</small>
                                 <button type="button" id="saveTecnico" class="btn btn-success btn-sm">
-                                    <i class="fas fa-save me-1"></i> Guardar
+                                    <i class="bi bi-check2-circle"></i> Aplicar firma
                                 </button>
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
             </div>
             
@@ -201,11 +327,11 @@
            {{ __('buttons.cancel') }}
         </a> --}} 
 
-            <button type="submit" class="btn btn-primary" id="submit-btn"
-                onclick="return validateForm()">
+            <button type="submit" class="btn btn-primary" id="submit-btn">
                 Registrar Salida
             </button>
         </form>
+
     </div>
 
     <script>
@@ -243,6 +369,40 @@
             let movementProducts = []; // Array para almacenar los productos del movimiento
             let rowCount = 0;
 
+            function setLotStatus(row, type = null) {
+                const badge = row.find('.lot-status-badge');
+
+                if (type === 'registered') {
+                    badge.removeClass('bg-secondary').addClass('bg-warning text-dark').text('Lote registrado');
+                    return;
+                }
+
+                badge.removeClass('bg-warning text-dark').addClass('bg-secondary').text('Sin lote');
+            }
+
+            function validateOutputRow(row) {
+                const lotSelect = row.find('.lot-select');
+                const amountInput = row.find('.amount-output');
+                const amount = parseFloat(amountInput.val());
+                const selectedLot = lotSelect.find('option:selected');
+                const available = parseFloat(selectedLot.data('current-amount')) || 0;
+                let message = '';
+
+                if (!lotSelect.val()) {
+                    message = 'Seleccione un lote disponible.';
+                } else if (isNaN(amount) || amount <= 0) {
+                    message = 'La cantidad debe ser mayor a 0.';
+                } else if (amount > available) {
+                    message = `La cantidad no puede ser mayor al disponible (${available}).`;
+                }
+
+                row.find('.amount-error').text(message);
+                amountInput.toggleClass('is-invalid', message !== '');
+                lotSelect.toggleClass('is-invalid', !lotSelect.val());
+
+                return message === '';
+            }
+
             // Función para agregar una nueva fila
             function addProductRow(selectedProduct = null, selectedLot = null) {
                 rowCount++;
@@ -260,8 +420,7 @@
                         `<option value="${product.id}" 
                                                                                                                                         data-presentation="${product.presentation}"
                                                                                                                                         data-metric="${product.metric}"
-                                                                                                                                        data-lots='${JSON.stringify(product.lots)}'
-                                                                                                                                        data-allow-null-lot="${product.allow_null_lot || false}">
+                                                                                                                                        data-lots='${JSON.stringify(product.lots)}'>
                                                                                                                                         ${product.name}
                                                                                                                                     </option>`
                     ).join('')}
@@ -270,19 +429,20 @@
             <td>
                 <input type="number" class="form-control amount-output" 
                        name="products[${rowCount}][amount]" value="0" min="0" step="0.01" required>
+                <div class="invalid-feedback amount-error"></div>
             </td>
             <td>
                 <input type="text" class="form-control metric-output" 
                        name="products[${rowCount}][metric]" readonly>
             </td>
             <td>
-                <select class="form-control lot-select" name="products[${rowCount}][lot_id]">
-                    <option value="">Sin lote (0.00)</option>
+                <select class="form-control lot-select" name="products[${rowCount}][lot_id]" required>
+                    <option value="">Seleccionar lote</option>
                     <!-- Lotes se llenarán dinámicamente -->
                 </select>
-                <small class="form-text text-muted null-lot-message" style="display:none;">
-                    Este producto permite registro sin lote
-                </small>
+            </td>
+            <td class="text-center">
+                <span class="badge bg-secondary lot-status-badge">Sin lote</span>
             </td>
             <td>
                 <button type="button" class="btn btn-danger btn-sm remove-row" data-row="${rowId}">
@@ -310,34 +470,27 @@
                     const selectedOption = $(this).find('option:selected');
                     const lotSelect = $(this).closest('tr').find('.lot-select');
                     const metricoutput = $(this).closest('tr').find('.metric-output');
-                    const allowNullLot = selectedOption.data('allow-null-lot') === true;
-                    const nullLotMessage = $(this).closest('tr').find('.null-lot-message');
-
-                    // Mostrar/ocultar mensaje de lote nulo permitido
-                    if (allowNullLot) {
-                        nullLotMessage.show();
-                        //lotSelect.prop('required', false);
-                    } else {
-                        nullLotMessage.hide();
-                        //lotSelect.prop('required', true);
-                    }
 
                     // Actualizar la métrica
                     metricoutput.val(selectedOption.data('metric') || '-');
+                    setLotStatus($(this).closest('tr'));
 
                     // Limpiar y cargar los lotes
-                    lotSelect.empty().append('<option value="">Sin lote (0.00)</option>');
+                    lotSelect.empty().append('<option value="">Seleccionar lote</option>');
 
                     if (productId) {
                         const lots = selectedOption.data('lots') || [];
+                        const unit = selectedOption.data('metric') || '';
                         lots.forEach(lot => {
                             lotSelect.append(
                                 `<option value="${lot.id}" data-current-amount="${lot.current_amount}">
-                            ${lot.registration_number} (Disp.: ${lot.current_amount})
+                            ${lot.registration_number} (Disp.: ${lot.current_amount} ${unit})
                         </option>`
                             );
                         });
                     }
+
+                    validateOutputRow($(this).closest('tr'));
                 });
 
                 // Evento para cuando se selecciona un lote
@@ -345,22 +498,27 @@
                     const selectedOption = $(this).find('option:selected');
                     const currentAmount = selectedOption.data('current-amount') || 0;
                     const amountoutput = $(this).closest('tr').find('.amount-output');
+                    const row = $(this).closest('tr');
 
                     if (selectedOption.val()) {
+                        setLotStatus(row, 'registered');
                         // Si se seleccionó un lote (no es NULL)
                         amountoutput.attr('max', currentAmount);
-
-                        if (parseInt(amountoutput.val()) > currentAmount) {
-                            amountoutput.val(currentAmount);
-                        }
                     } else {
+                        setLotStatus(row);
                         // Si se seleccionó NULL, quitar cualquier restricción
                         amountoutput.removeAttr('max');
                     }
+
+                    validateOutputRow(row);
+                });
+
+                $(`#${rowId} .amount-output`).on('input change', function() {
+                    validateOutputRow($(this).closest('tr'));
                 });
 
                 // Evento para actualizar movementProducts cuando cambian los valores
-                $(`#${rowId} select, #${rowId} output`).change(function() {
+                $(`#${rowId} select, #${rowId} input`).change(function() {
                     updateMovementProducts();
                 });
             }
@@ -407,6 +565,61 @@
                 console.log('Movement Products:', movementProducts);
             }
 
+            window.stockOutputState = {
+                updateMovementProducts,
+                getMovementProducts: () => movementProducts,
+                validateRows: function() {
+                    let isValid = true;
+                    let firstInvalid = null;
+                    const lotTotals = {};
+                    const lotRows = {};
+
+                    $('#products-container tr').each(function() {
+                        const row = $(this);
+                        if (!validateOutputRow(row)) {
+                            isValid = false;
+                            firstInvalid = firstInvalid || row;
+                        }
+
+                        const lotId = row.find('.lot-select').val();
+                        const amount = parseFloat(row.find('.amount-output').val());
+                        const available = parseFloat(row.find('.lot-select option:selected').data('current-amount')) || 0;
+
+                        if (lotId && !isNaN(amount) && amount > 0) {
+                            lotTotals[lotId] = (lotTotals[lotId] || 0) + amount;
+                            lotRows[lotId] = lotRows[lotId] || {
+                                rows: [],
+                                available,
+                            };
+                            lotRows[lotId].rows.push(row);
+                        }
+                    });
+
+                    Object.keys(lotTotals).forEach(function(lotId) {
+                        const total = lotTotals[lotId];
+                        const available = lotRows[lotId].available;
+
+                        if (total > available) {
+                            isValid = false;
+
+                            lotRows[lotId].rows.forEach(function(row) {
+                                row.find('.amount-error').text(
+                                    `La suma de este lote (${total}) supera el disponible (${available}).`
+                                );
+                                row.find('.amount-output').addClass('is-invalid');
+                                firstInvalid = firstInvalid || row;
+                            });
+                        }
+                    });
+
+                    if (firstInvalid) {
+                        firstInvalid.find('.is-invalid:first').focus();
+                    }
+
+                    return isValid;
+                },
+            };
+
             // Evento para agregar una nueva fila
             $('#add-product-row').click(function() {
                 addProductRow();
@@ -442,58 +655,6 @@
 
             // Ejemplo de cómo cargar productos iniciales
             // loadInitialProducts([]);
-
-
-            function confirmAndSubmit(event) {
-                // Actualizar el array movementProducts por última vez
-                updateMovementProducts();
-
-                // Validar que haya al menos un producto
-                if (movementProducts.length === 0) {
-                    alert('Debe agregar al menos un producto');
-                    return false;
-                }
-
-                // Validar que todos los productos tengan cantidad válida
-                let isValid = true;
-                $('.amount-output').each(function() {
-                    const amount = parseInt($(this).val());
-                    if (isNaN(amount)) {
-                        isValid = false;
-                        $(this).addClass('is-invalid');
-                    } else {
-                        $(this).removeClass('is-invalid');
-                    }
-                });
-
-                if (!isValid) {
-                    alert('Por favor complete todas las cantidades correctamente');
-                    return false;
-                }
-
-
-                if (!confirm('¿Está seguro de registrar el movimiento con ' + movementProducts.length +
-                        ' producto(s)?')) {
-                    return false;
-                }
-
-                // Crear o actualizar el output hidden con los datos
-                let $hiddenoutput = $('output[name="products"]');
-                if ($hiddenoutput.length === 0) {
-                    $hiddenoutput = $('<input>')
-                        .attr('type', 'hidden')
-                        .attr('name', 'products')
-                        .appendTo('form');
-                }
-
-                // Convertir a JSON y asignar al output
-                $hiddenoutput.val(JSON.stringify(movementProducts));
-
-                // Continuar con el envío del formulario
-                return true;
-            }
-
-            $('form').on('submit', confirmAndSubmit);
         });
 
         $(document).ready(function() {
@@ -661,7 +822,8 @@
                 }
 
                 // Actualizar el array movementProducts por última vez
-                updateMovementProducts();
+                window.stockOutputState?.updateMovementProducts();
+                const movementProducts = window.stockOutputState?.getMovementProducts() || [];
 
                 // Validar que haya al menos un producto
                 if (movementProducts.length === 0) {
@@ -669,20 +831,8 @@
                     return false;
                 }
 
-                // Validar que todos los productos tengan cantidad válida
-                let isValid = true;
-                $('.amount-output').each(function() {
-                    const amount = parseInt($(this).val());
-                    if (isNaN(amount)) {
-                        isValid = false;
-                        $(this).addClass('is-invalid');
-                    } else {
-                        $(this).removeClass('is-invalid');
-                    }
-                });
-
-                if (!isValid) {
-                    alert('Por favor complete todas las cantidades correctamente');
+                if (!window.stockOutputState?.validateRows()) {
+                    alert('Revise las cantidades: deben ser mayores a 0 y no superar el disponible del lote.');
                     return false;
                 }
 
@@ -692,7 +842,7 @@
                     $hiddenInput = $('<input>')
                         .attr('type', 'hidden')
                         .attr('name', 'products')
-                        .appendTo('form');
+                        .appendTo('#form-stock-entry');
                 }
 
                 // Convertir a JSON y asignar al input

@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    <style>
+    @include('components.page-header', [
+        'title' => 'VER ORDEN DE SERVICIO',
+        'icon' => 'bi-clipboard-check',
+        'backRoute' => url()->previous(),
+    ])
+<style>
         .sidebar {
             color: white;
             text-decoration: none
@@ -40,14 +45,7 @@
         </div>
 
         <div class="col-11">
-            <div class="row p-3 border-bottom">
-                <a href="{{ route('order.index', ['page' => 1]) }}" class="col-auto btn-primary p-0 fs-3"><i
-                        class="bi bi-arrow-left m-3"></i></a>
-                <h1 class="col-auto fs-2 fw-bold m-0">Ver orden de servicio {{ $order->id }}
-                </h1>
-            </div>
-
-            <div class="row p-5 pt-3">
+<div class="row p-5 pt-3">
                 @if ($section == 1)
                     <div class="row ">
                         <span class="col fw-bold">{{ __('order.data.managed_by') }}:</span>

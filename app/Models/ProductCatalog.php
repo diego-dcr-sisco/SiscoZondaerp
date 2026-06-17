@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class ProductCatalog extends Model
 {
     use HasFactory;
+
+    private const REGISTER_NUMBER_REPORT_PATTERN = '/^[A-Z0-9]{4}-[A-Z0-9]{3}-[A-Z0-9]{4}-[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]{3}-[A-Z0-9]$/i';
+    private const REGISTER_NUMBER_REPORT_GROUPS = [4, 3, 4, 3, 3, 3, 1];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -52,6 +56,41 @@ class ProductCatalog extends Model
         'is_toxic',
         'is_selling'
     ];
+
+    public static function formatRegisterNumberForReport(?string $registerNumber): string
+    {
+        $value = trim((string) $registerNumber);
+
+        if ($value === '') {
+            return '-';
+        }
+
+        if (preg_match(self::REGISTER_NUMBER_REPORT_PATTERN, $value)) {
+            return $value;
+        }
+
+        $normalized = strtoupper(preg_replace('/[^A-Z0-9]/i', '', $value));
+        $expectedLength = array_sum(self::REGISTER_NUMBER_REPORT_GROUPS);
+
+        if (strlen($normalized) !== $expectedLength) {
+            return $value;
+        }
+
+        $offset = 0;
+        $parts = [];
+
+        foreach (self::REGISTER_NUMBER_REPORT_GROUPS as $length) {
+            $parts[] = substr($normalized, $offset, $length);
+            $offset += $length;
+        }
+
+        return implode('-', $parts);
+    }
+
+    public function getReportRegisterNumberAttribute(): string
+    {
+        return self::formatRegisterNumberForReport($this->register_number);
+    }
 
     public function lineBusiness()
     {
@@ -145,6 +184,7 @@ class ProductCatalog extends Model
     public function selectedLots($date)
     {
         return $this->lots()
+            ->active()
             ->whereDate('start_date', '<=', $date)
             ->whereDate('end_date', '>=', $date)
             ->get();

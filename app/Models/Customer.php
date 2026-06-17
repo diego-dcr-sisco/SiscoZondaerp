@@ -236,4 +236,14 @@ class Customer extends Model
                     ->withTimestamps();
     }
 
+    public function comercialZones()
+    {
+        return $this->belongsToMany(
+            ComercialZone::class,
+            'comercial_zone_customers',
+            'customer_id',
+            'comercial_zone_id'
+        )->withTimestamps();
+    }
+
 }

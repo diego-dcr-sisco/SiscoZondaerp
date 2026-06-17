@@ -164,19 +164,19 @@
         <div class="row">
             <div class="fw-bold mb-0 fs-5">Información para la ejecución</div>
 
-            <div class="col-4 mb-3">
+            <div class="col-lg-4 mb-3">
                 <label class="mb-2">{{ __('order.data.execution') }}</label>
                 <textarea class="form-control" id="execution" name="execution"
                     placeholder="Describe cómo se llevó a cabo el servicio o procedimiento." style="height: 200px"></textarea>
             </div>
 
-            <div class="col-4 mb-3">
+            <div class="col-lg-4 mb-3">
                 <label class="mb-2">{{ __('order.data.areas') }}</label>
                 <textarea class="form-control" id="areas" name="areas"
                     placeholder="Indica las áreas o zonas donde se realizó el trabajo." style="height: 200px"></textarea>
             </div>
 
-            <div class="col-4 mb-3">
+            <div class="col-lg-4 mb-3">
                 <label class="mb-2">{{ __('order.data.comments') }}</label>
                 <textarea class="form-control" id="additional_comments" name="additional_comments"
                     placeholder="Agrega observaciones relevantes o detalles adicionales." style="height: 200px"></textarea>

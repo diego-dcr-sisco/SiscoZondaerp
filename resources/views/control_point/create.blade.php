@@ -1,15 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('point.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                CREAR PUNTO DE CONTROL
-            </span>
-        </div>
-        <form method="POST" class="m-3" action="{{ route('point.store') }}" enctype="multipart/form-data">
+    @include('components.page-header', [
+        'title' => 'CREAR PUNTO DE CONTROL',
+        'icon' => 'bi-geo-alt',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
+<form method="POST" class="m-3" action="{{ route('point.store') }}" enctype="multipart/form-data">
             @csrf
             <div class="row">
                 <div class="col-lg-4 col-12 mb-3">

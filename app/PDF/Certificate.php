@@ -13,6 +13,7 @@ use App\Models\ControlPoint;
 use App\Models\Question;
 use App\Models\ControlPointQuestion;
 use App\Models\DeviceProduct;
+use App\Models\DeviceStates;
 use App\Models\OrderProduct;
 use App\Models\OrderIncidents;
 use App\Models\OrderRecommendation;
@@ -152,6 +153,15 @@ class Certificate
             $html
         );
 
+        // DOMPDF renderiza mejor las imagenes cuando no quedan atrapadas dentro de parrafos de Quill.
+        $html = preg_replace_callback('/<p\b[^>]*>\s*(<img\b[^>]*>)\s*<\/p>/i', function ($matches) {
+            return '<div class="report-pdf-image">' . $matches[1] . '</div>';
+        }, $html);
+
+        $html = preg_replace_callback('/(?<!<div class="report-pdf-image">)<img\b[^>]*>/i', function ($matches) {
+            return '<div class="report-pdf-image">' . $matches[0] . '</div>';
+        }, $html);
+
         // DOMPDF renderiza mejor el ancho de imagen cuando existe atributo width en px.
         $html = preg_replace_callback('/<img\b[^>]*>/i', function ($matches) {
             $imgTag = $matches[0];
@@ -184,6 +194,29 @@ class Certificate
         }, $html);
 
         return trim($html);
+    }
+
+    private function extractImagesFromHtml(?string $html): array
+    {
+        if (empty($html)) {
+            return [];
+        }
+
+        preg_match_all('/<img\b[^>]*>/i', $html, $matches);
+
+        return $matches[0] ?? [];
+    }
+
+    private function removeImagesFromHtml(?string $html): string
+    {
+        if (empty($html)) {
+            return '';
+        }
+
+        $html = preg_replace('/<p\b[^>]*>\s*<img\b[^>]*>\s*<\/p>/i', '', $html);
+        $html = preg_replace('/<img\b[^>]*>/i', '', $html);
+
+        return $html ?? '';
     }
 
     public function order()
@@ -258,9 +291,16 @@ class Certificate
     {
         $services_data = [];
         foreach ($this->order->services()->get() as $service) {
+            $rawText = $this->order->propagateByService($service->id)->text ?? '';
+            $serviceImages = array_map(
+                fn($imageTag) => $this->normalizeHtmlForPdf($imageTag),
+                $this->extractImagesFromHtml($rawText)
+            );
+
             $services_data[] = [
                 'name' => $service->name,
-                'text' => $this->normalizeHtmlForPdf($this->order->propagateByService($service->id)->text ?? ''),
+                'text' => $this->normalizeHtmlForPdf($this->removeImagesFromHtml($rawText)),
+                'images' => $serviceImages,
                 //'text' =>  $this->order->propagateByService($service->id)->text ?? ''
             ];
         }
@@ -325,7 +365,7 @@ class Certificate
             $products_data[] = [
                 'name' => $order_product->product->name,
                 'active_ingredient' => $order_product->product->active_ingredient ?? '-',
-                'no_register' => $order_product->product->register_number ?? '-',
+                'no_register' => $order_product->product->report_register_number ?? '-',
                 'safety_period' => $order_product->product->safety_period ?? '-',
                 'application_method' => $order_product->appMethod->name ?? '-',
                 'dosage' => $order_product->dosage ?? $order_product->product->dosage ?? '-',
@@ -389,8 +429,12 @@ class Certificate
         $services = $this->order->services;
         $incidents = OrderIncidents::where('order_id', $this->order->id)->get();
 
-        // Obtener dispositivos con version correcta
+        // Obtener dispositivos con version correcta e incluir agregados manualmente al reporte.
         $found_device_ids = $this->getDevicesByVersion($this->order_id);
+        $assigned_device_ids = DeviceStates::where('order_id', $this->order->id)
+            ->pluck('device_id')
+            ->toArray();
+        $found_device_ids = array_unique(array_merge($found_device_ids, $assigned_device_ids));
 
         // Obtener todos los dispositivos necesarios con sus relaciones
         $devices = Device::whereIn('id', $found_device_ids)

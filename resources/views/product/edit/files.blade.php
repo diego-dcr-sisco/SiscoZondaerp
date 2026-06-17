@@ -1,6 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    @php
+    @include('components.page-header', [
+        'title' => 'EDITAR PRODUCTO - ARCHIVOS',
+        'icon' => 'bi-box-seam',
+        'backRoute' => url()->previous(),
+    ])
+    @include('product.edit.navigation-tabs')
+@php
         function extractFileName($filePath)
         {
             $fileNameWithExtension = basename($filePath);
@@ -10,16 +16,7 @@
         }
     @endphp
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('product.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                ARCHIVOS DEL PRODUCTO </span> <span class="ms-2 fs-4"> {{ $product->name }}</span>
-            </span>
-        </div>
-
-        <div class="m-3">
+<div class="m-3">
             <div class="mb-3">
                 <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#filesModal">
                     <i class="bi bi-plus-lg"></i> Agregar archivo </button>

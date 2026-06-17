@@ -1,15 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('point.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                EDITAR PUNTO DE CONTROL
-            </span>
-        </div>
-        <form method="POST" class="m-3" action="{{ route('point.update', ['id' => $point->id]) }}"
+    @include('components.page-header', [
+        'title' => 'EDITAR PUNTO DE CONTROL',
+        'icon' => 'bi-geo-alt',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
+<form method="POST" class="m-3" action="{{ route('point.update', ['id' => $point->id]) }}"
             enctype="multipart/form-data">
             @csrf
             <div class="row">
@@ -75,6 +72,12 @@
             <input type="hidden" class="form-control" id="questions" name="questions" required>
             <button type="submit" class="btn btn-primary my-3">Actualizar</button>
         </form>
+        @include('components.danger-action', [
+            'actionRoute' => route('point.destroy', ['id' => $point->id]),
+            'title' => 'Zona de peligro',
+            'description' => 'Elimina este punto de control desde su pantalla de edición.',
+            'buttonText' => 'Eliminar punto de control',
+        ])
     </div>
 
     @include('control_point.modals.questions')

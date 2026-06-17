@@ -5,12 +5,13 @@ use Carbon\Carbon;
 @extends('layouts.app')
 
 @section('content')
+    @include('components.page-header', [
+        'title' => 'MOVIMIENTO DE ALMACEN: SALIDA',
+        'icon' => 'bi-box-arrow-up-left',
+        'backRoute' => route('stock.index'),
+    ])
+
     <div class="col-11 m-0">
-        <div class="row border-bottom p-3 justify-content-start ">
-            <a href="{{ route('stock.index') }}" class="col-auto btn-primary fs-3"><i
-                    class="bi bi-arrow-left m-3"></i></a>
-            <h1 class="col-auto fs-2 fw-bold m-0">Movimiento de almacen: Salida. </h1>
-        </div>
     </div>
     <div class="container-fluid p-5">
 

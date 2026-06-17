@@ -1,17 +1,13 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('invoices.customers') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                CREAR CONTRIBUYENTE
-            </span>
-        </div>
-
-        <form class="p-3" method="POST" action="{{ route('invoices.customer.store') }}" enctype="multipart/form-data">
+    @include('components.page-header', [
+        'title' => 'CREAR FACTURA',
+        'icon' => 'bi-receipt',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
+<form class="p-3" method="POST" action="{{ route('invoices.customer.store') }}" enctype="multipart/form-data">
             @csrf
 
             <!-- Buscador de Cliente -->

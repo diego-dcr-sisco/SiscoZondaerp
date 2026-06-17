@@ -1,16 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('service.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                EDITAR SERVICIO <span class="ms-2 fs-4"> {{ $service->name }}</span>
-            </span>
-        </div>
-
-        <form class="m-3" method="POST" action="{{ route('service.update', ['id' => $service->id]) }}"
+    @include('components.page-header', [
+        'title' => 'EDITAR SERVICIO',
+        'icon' => 'bi-tools',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
+<form class="m-3" method="POST" action="{{ route('service.update', ['id' => $service->id]) }}"
             enctype="multipart/form-data">
             @csrf
             <div class="border rounded shadow p-3">
@@ -59,7 +55,7 @@
 
                     <div class="col-12 mb-3">
                         <label for="description" class="form-label is-required">Descripción del servicio</label>
-                        <div class="summernote" style="font-size:12px;">
+                        <div id="summary-describe" class="smnote" style="height: 250px">
                             {!! $service->description !!}
                         </div>
                         <input type="hidden" id="description" name="description" value="{{ $service->description }}" />
@@ -79,78 +75,41 @@
                 {{ __('buttons.update') }}
             </button>
         </form>
+        @can('write_service')
+            @include('components.danger-action', [
+                'actionRoute' => route('service.destroy', ['id' => $service->id]),
+                'title' => 'Zona de peligro',
+                'description' => 'Elimina este servicio desde su pantalla de edición.',
+                'buttonText' => 'Eliminar servicio',
+            ])
+        @endcan
     </div>
+
+    @include('components.quill-service-editor-tools')
 
     <script>
         $(document).ready(function() {
-            $('.summernote').summernote({
-                height: 250,
-                lang: 'es-ES',
-                toolbar: [
-                    ['style', ['bold', 'italic', 'underline', 'clear']],
-                    ['insert', ['table', 'link', 'picture']],
-                    ['para', ['ul', 'ol', 'paragraph']],
-                    ['height', ['height']],
-                    ['fontsize', ['fontsize']],
-                ],
-                buttons: {
-                    imageSizeCustom: function(context) {
-                        const ui = $.summernote.ui;
-
-                        return ui.button({
-                            contents: '<span class="note-icon-magic"></span>',
-                            tooltip: 'Tamaño personalizado',
-                            click: function() {
-                                const editable = context.layoutInfo.editable;
-                                const target = editable.data('target');
-
-                                if (!target || target[0].tagName !== 'IMG') {
-                                    return;
-                                }
-
-                                const currentWidth = parseInt(target.css('width'), 10) ||
-                                    parseInt(target.attr('width'), 10) || 100;
-
-                                const input = prompt(
-                                    'Ingresa el ancho de la imagen (en px). Ejemplo: 320',
-                                    currentWidth
-                                );
-
-                                if (input === null) {
-                                    return;
-                                }
-
-                                const width = parseInt(input, 10);
-                                if (Number.isNaN(width) || width <= 0) {
-                                    alert('Ingresa un valor valido mayor a 0.');
-                                    return;
-                                }
-
-                                target.css({
-                                    width: width + 'px',
-                                    height: 'auto',
-                                    maxWidth: '100%'
-                                });
-                                target.attr('width', width);
-                            }
-                        }).render();
-                    }
-                },
-                popover: {
-                    image: [
-                        ['imagesize', ['resizeFull', 'resizeHalf', 'resizeQuarter', 'imageSizeCustom']],
-                        ['float', ['floatLeft', 'floatRight', 'floatNone']],
-                        ['remove', ['removeMedia']]
-                    ]
-                },
-                fontSize: ['8', '10', '12', '14', '16'],
-                lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
-                callbacks: {
-                    onChange: function(contents, $editable) {
-                        $('#description').val(contents);
-                    }
+            const serviceDescriptionEditor = new Quill('#summary-describe', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        ['link', 'image'],
+                        ['clean']
+                    ],
+                    table: true
                 }
             });
+
+            function syncServiceDescription() {
+                const html = serviceDescriptionEditor.root.innerHTML;
+                $('#description').val(html === '<p><br></p>' ? '' : html);
+            }
+
+            serviceDescriptionEditor.on('text-change', syncServiceDescription);
+            addServiceEditorTableTools(serviceDescriptionEditor, 'summary-describe', syncServiceDescription);
+            $('form').on('submit', syncServiceDescription);
         });
     </script>
 @endsection

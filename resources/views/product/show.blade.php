@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    <!-- Formulario para ver un pesticida-->
+    @include('components.page-header', [
+        'title' => 'VER PRODUCTO',
+        'icon' => 'bi-box-seam',
+        'backRoute' => url()->previous(),
+    ])
+<!-- Formulario para ver un pesticida-->
     @if (!auth()->check())
         <?php header('Location: /login');
         exit(); ?>
@@ -49,13 +54,7 @@
         </div>
 
         <div class="col-11">
-            <div class="row p-3 border-bottom">
-                <a href="{{ route('product.index') }}" class="col-auto btn-primary p-0 fs-3"><i
-                        class="bi bi-arrow-left m-3"></i></a>
-                <h1 class="col-auto fs-2 m-0">{{ __('product.title.show') }} <span
-                        class="fw-bold">[{{ $product->name }}]</span></h1>
-            </div>
-            @if ($section == 1)
+@if ($section == 1)
                 <div class="row p-3">
                     <div class="col-3 p-3">
                         @if ($product->image_path)

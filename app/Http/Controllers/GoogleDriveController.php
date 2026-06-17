@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\GoogleDriveCachedService;
 use App\Services\GoogleDriveClientFactory;
+use App\Services\GoogleDriveTokenStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -62,8 +63,8 @@ class GoogleDriveController extends Controller
                 $token = $client->fetchAccessTokenWithAuthCode($request->code);
                 
                 if (isset($token['refresh_token'])) {
-                    // Guardar refresh token en .env, DB, o cache
                     $refreshToken = $token['refresh_token'];
+                    app(GoogleDriveTokenStore::class)->saveRefreshToken($refreshToken);
                     
                     return view('google-drive-success', [
                         'refresh_token' => $refreshToken,

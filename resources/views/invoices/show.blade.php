@@ -1,16 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2 no-print">
-            <a href="{{ route('invoices.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                DETALLE DE FACTURA
-            </span>
-        </div>
-
-        <div class="row p-4">
+    @include('components.page-header', [
+        'title' => 'VER FACTURA',
+        'icon' => 'bi-receipt',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid p-0">
+<div class="row p-4">
             @if (!isset($invoice))
                 <div class="container no-print">
                     <div class="alert alert-info alert-dismissible fade show">

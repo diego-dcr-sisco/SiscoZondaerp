@@ -45,20 +45,12 @@ class StockController extends Controller
 
     private $size = 50;
 
-    public $navigation = [
-        'Almacenes' => '/stock',
-        'Lotes' => '/lot/index',
-        'Productos' => '/products',
-        'Movimientos' => '/stock/movements',
-        // 'Zonas' => '/customer-zones',
-        'Consumos en ordenes' => '/stock/movements/orders',
-        //'Consumos' => '/consumptions/',
-        // 'Estadisticas' => '/stock/analytics',
-        // 'Pedidos' => '/consumptions',
-        // 'Productos en ordenes' => '/stock/orders-products',
-        // 'Estadisticas' => '/stock/analytics',
-        // 'Compras' => '/purchase-requisition/purchases',
-    ];
+    public $navigation = [];
+
+    public function __construct()
+    {
+        $this->navigation = config('stock_navigation.items');
+    }
 
 
     ///////////////// FUNCIONES DE ALMACENES /////////////////
@@ -70,14 +62,31 @@ class StockController extends Controller
 
         $products = ProductCatalog::all();
         $branches = Branch::all();
-        $lots = Lot::all();
+        $lots = Lot::active()->get();
         $metrics = Metric::all();
         $navigation = $this->navigation;
 
-        $warehouses = Warehouse::orderBy('is_matrix', 'desc')->get();
+        $warehouses = Warehouse::leftJoin('branch', 'warehouse.branch_id', '=', 'branch.id')
+            ->select('warehouse.*')
+            ->orderBy('warehouse.is_matrix', 'desc')
+            ->orderBy('branch.id', 'asc')
+            ->orderBy('warehouse.name', 'asc')
+            ->get();
 
         foreach ($warehouses as $warehouse) {
-            $warehouse->products_count = $warehouse->products()->count();
+            $warehouseProducts = MovementProduct::where('warehouse_id', $warehouse->id)
+                ->select('product_id')
+                ->selectRaw('
+                    SUM(CASE WHEN movement_id BETWEEN 1 AND 4 THEN amount ELSE 0 END)
+                    - SUM(CASE WHEN movement_id BETWEEN 5 AND 10 THEN amount ELSE 0 END) as net_amount
+                ')
+                ->groupBy('product_id')
+                ->get();
+
+            $warehouse->products_with_quantity_count = $warehouseProducts
+                ->where('net_amount', '>', 0)
+                ->count();
+            $warehouse->products_total_count = $warehouseProducts->count();
         }
 
         $input_movements = MovementType::whereBetween('id', [1, 4])->get();
@@ -182,6 +191,22 @@ class StockController extends Controller
         return back();
     }
 
+    public function updateMovementSignature(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'technician_signature' => 'required|string',
+        ]);
+
+        $movement = WarehouseMovement::findOrFail($id);
+        $movement->technician_signature = $validated['technician_signature'];
+        $movement->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Firma guardada correctamente.',
+        ]);
+    }
+
 
     public function destroy(string $id)
     {
@@ -195,14 +220,98 @@ class StockController extends Controller
     ////////////////// FUNCIONES DE MOVIMIENTOS //////////////////
 
 
-    public function movementsAll()
+    public function movementsAll(Request $request)
     {
         $navigation = $this->navigation;
         $warehouses = Warehouse::all();
         $movement_types = MovementType::all();
-        $movements = WarehouseMovement::orderBy('date', 'DESC')->orderBy('time', 'DESC')->paginate($this->size);
-        $products = ProductCatalog::whereIn('id', MovementProduct::pluck('product_id')->unique())->get();
-        $lots = Lot::whereIn('product_id', $products->pluck('id')->unique())->get();
+        $direction = strtoupper($request->input('direction', 'DESC'));
+        $direction = in_array($direction, ['ASC', 'DESC']) ? $direction : 'DESC';
+        $size = (int) $request->input('size', $this->size);
+
+        $query = WarehouseMovement::with([
+            'warehouse',
+            'destinationWarehouse',
+            'products.product.metric',
+            'products.lot',
+            'products.movement',
+        ]);
+
+        if ($request->filled('warehouse')) {
+            $warehouseName = trim($request->input('warehouse'));
+            $warehouseIds = Warehouse::where('name', 'like', '%' . $warehouseName . '%')->pluck('id');
+
+            $query->where(function ($q) use ($warehouseIds) {
+                $q->whereIn('warehouse_id', $warehouseIds)
+                    ->orWhereIn('destination_warehouse_id', $warehouseIds);
+            });
+        }
+
+        if ($request->filled('movement_id')) {
+            $query->whereHas('products', function ($q) use ($request) {
+                $q->where('movement_id', $request->input('movement_id'));
+            });
+        }
+
+        if ($request->filled('product_id')) {
+            $query->whereHas('products', function ($q) use ($request) {
+                $q->where('product_id', $request->input('product_id'));
+            });
+        }
+
+        if ($request->filled('lot_id')) {
+            $query->whereHas('products', function ($q) use ($request) {
+                $q->where('lot_id', $request->input('lot_id'));
+            });
+        }
+
+        if ($request->filled('date_range')) {
+            $dates = explode(' - ', $request->input('date_range'));
+            if (count($dates) === 2) {
+                try {
+                    $startDate = Carbon::createFromFormat('d/m/Y', trim($dates[0]))->toDateString();
+                    $endDate = Carbon::createFromFormat('d/m/Y', trim($dates[1]))->toDateString();
+                    $query->whereBetween('date', [$startDate, $endDate]);
+                } catch (\Exception $e) {
+                    Log::warning('Invalid movement date range filter', [
+                        'date_range' => $request->input('date_range'),
+                    ]);
+                }
+            }
+        }
+
+        $summaryQuery = clone $query;
+        $entryQuery = clone $query;
+        $exitQuery = clone $query;
+        $revertedQuery = clone $query;
+
+        $summary = [
+            'warehouses' => Warehouse::count(),
+            'total' => (clone $summaryQuery)->count(),
+            'entries' => $entryQuery->whereHas('products', function ($q) {
+                $q->where(function ($subQ) {
+                    $subQ->whereBetween('movement_id', [1, 4])
+                        ->orWhereHas('movement', fn($movementQ) => $movementQ->where('type', 'in'));
+                });
+            })->count(),
+            'exits' => $exitQuery->whereHas('products', function ($q) {
+                $q->where(function ($subQ) {
+                    $subQ->whereBetween('movement_id', [5, 10])
+                        ->orWhereHas('movement', fn($movementQ) => $movementQ->where('type', 'out'));
+                });
+            })->count(),
+            'reverted' => $revertedQuery->where('is_active', false)->count(),
+        ];
+
+        $movements = $query
+            ->orderBy('date', $direction)
+            ->orderBy('time', $direction)
+            ->paginate($size > 0 ? $size : $this->size)
+            ->withQueryString();
+
+        $movementProductIds = MovementProduct::pluck('product_id')->unique();
+        $products = ProductCatalog::whereIn('id', $movementProductIds)->orderBy('name')->get();
+        $lots = Lot::whereIn('product_id', $movementProductIds)->orderBy('registration_number')->get();
 
 
         return view('stock.movements.all', compact(
@@ -211,7 +320,8 @@ class StockController extends Controller
             'navigation',
             'movement_types',
             'products',
-            'lots'
+            'lots',
+            'summary'
         ));
     }
 
@@ -265,6 +375,608 @@ class StockController extends Controller
         return view('stock.movements.order', compact('navigation', 'wos', 'products', 'lots'));
     }
 
+    public function consumptionsByCustomer(Request $request)
+    {
+        $navigation = $this->navigation;
+        $dateRange = $this->parseStockConsumptionDateRange($request->input('date_range'));
+        $availableDivisions = $this->stockConsumptionAvailableDivisions($dateRange);
+        $division = $this->resolveStockConsumptionDivision($request->input('division', 'month'), $availableDivisions);
+        $hasAppliedFilters = collect($request->query())->except('page')->isNotEmpty();
+
+        if (!$hasAppliedFilters) {
+            $deviceSummaries = collect();
+            $serviceSummaries = collect();
+            $productSummaries = collect();
+            $matchedCustomers = collect();
+            $deviceDetailsByType = collect();
+            $productOrderDetailsByKey = collect();
+
+            return view('stock.consumptions.by-customer', compact(
+                'navigation',
+                'deviceSummaries',
+                'serviceSummaries',
+                'productSummaries',
+                'matchedCustomers',
+                'deviceDetailsByType',
+                'productOrderDetailsByKey',
+                'division',
+                'availableDivisions',
+                'hasAppliedFilters'
+            ));
+        }
+
+        $request->validate([
+            'customer' => 'required|string',
+            'date_range' => 'required|string',
+        ], [
+            'customer.required' => 'El cliente es obligatorio.',
+            'date_range.required' => 'El rango de fecha es obligatorio.',
+        ]);
+
+        $baseQuery = DB::table('device_product')
+            ->join('order as orders', 'device_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->join('product_catalog as products', 'device_product.product_id', '=', 'products.id')
+            ->leftJoin('metric as metrics', 'products.metric_id', '=', 'metrics.id')
+            ->leftJoin('lot as lots', 'device_product.lot_id', '=', 'lots.id')
+            ->leftJoin('device as devices', 'device_product.device_id', '=', 'devices.id')
+            ->leftJoin('control_point as control_points', 'devices.type_control_point_id', '=', 'control_points.id')
+            ->whereNotNull('orders.programmed_date');
+
+        if ($request->filled('customer')) {
+            $customerName = trim($request->input('customer'));
+            $baseQuery->where('customers.name', 'like', '%' . $customerName . '%');
+        }
+
+        if ($dateRange) {
+            $baseQuery->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ]);
+        }
+
+        $deviceSummaries = (clone $baseQuery)
+            ->selectRaw('COALESCE(control_points.name, "Sin dispositivo") as device_type')
+            ->selectRaw('COALESCE(metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('COUNT(DISTINCT device_product.device_id) as devices_count')
+            ->selectRaw('COUNT(*) as consumptions_count')
+            ->selectRaw('COALESCE(SUM(device_product.quantity), 0) as total_quantity')
+            ->groupBy('control_points.name', 'metrics.value')
+            ->orderBy('control_points.name')
+            ->orderBy('metrics.value')
+            ->get();
+
+        $deviceDetailsByType = (clone $baseQuery)
+            ->leftJoin('floorplans', 'devices.floorplan_id', '=', 'floorplans.id')
+            ->whereNotNull('device_product.device_id')
+            ->selectRaw('COALESCE(control_points.name, "Sin dispositivo") as device_type')
+            ->selectRaw('devices.id as device_id')
+            ->selectRaw('COALESCE(devices.code, devices.nplan, devices.itemnumber, "-") as device_code')
+            ->selectRaw('COALESCE(control_points.name, "Sin tipo") as control_point_type')
+            ->selectRaw('COALESCE(control_points.code, "-") as control_point_code')
+            ->selectRaw('COALESCE(devices.version, "-") as device_version')
+            ->selectRaw('COALESCE(floorplans.filename, "-") as floorplan_name')
+            ->selectRaw('COALESCE(devices.nplan, "-") as device_nplan')
+            ->selectRaw('COUNT(DISTINCT orders.id) as orders_count')
+            ->groupBy(
+                'control_points.name',
+                'devices.id',
+                'devices.code',
+                'devices.nplan',
+                'devices.itemnumber',
+                'control_points.code',
+                'devices.version',
+                'floorplans.filename'
+            )
+            ->orderBy('control_points.name')
+            ->orderBy('devices.code')
+            ->get()
+            ->groupBy('device_type');
+
+        $serviceSummaries = DB::table('order_product')
+            ->join('order as orders', 'order_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->leftJoin('service', 'order_product.service_id', '=', 'service.id')
+            ->leftJoin('product_catalog as products', 'order_product.product_id', '=', 'products.id')
+            ->leftJoin('metric as order_metrics', 'order_product.metric_id', '=', 'order_metrics.id')
+            ->leftJoin('metric as product_metrics', 'products.metric_id', '=', 'product_metrics.id')
+            ->whereNotNull('orders.programmed_date')
+            ->where('customers.name', 'like', '%' . trim($request->input('customer')) . '%')
+            ->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->selectRaw('COALESCE(service.name, "Sin servicio") as service_name')
+            ->selectRaw('service.prefix as service_prefix')
+            ->selectRaw('COALESCE(products.name, "Sin producto") as product_name')
+            ->selectRaw('COALESCE(order_metrics.value, product_metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('COALESCE(SUM(order_product.amount), 0) as total_quantity')
+            ->selectRaw('COUNT(DISTINCT orders.id) as orders_count')
+            ->groupBy('service.id', 'service.name', 'service.prefix', 'products.id', 'products.name', 'order_metrics.value', 'product_metrics.value')
+            ->orderBy('service.name')
+            ->orderBy('products.name')
+            ->get();
+
+        $deviceProductTotals = (clone $baseQuery)
+            ->selectRaw('products.id as product_id')
+            ->selectRaw('products.name as product_name')
+            ->selectRaw('COALESCE(lots.registration_number, device_product.possible_lot, "Sin lote") as lot_name')
+            ->selectRaw('COALESCE(metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('device_product.quantity as quantity')
+            ->selectRaw('orders.id as order_id');
+
+        $chemicalApplicationTotals = DB::table('order_product')
+            ->join('order as orders', 'order_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->join('service', 'order_product.service_id', '=', 'service.id')
+            ->leftJoin('product_catalog as products', 'order_product.product_id', '=', 'products.id')
+            ->leftJoin('lot as lots', 'order_product.lot_id', '=', 'lots.id')
+            ->leftJoin('metric as order_metrics', 'order_product.metric_id', '=', 'order_metrics.id')
+            ->leftJoin('metric as product_metrics', 'products.metric_id', '=', 'product_metrics.id')
+            ->whereNotNull('orders.programmed_date')
+            ->whereIn('service.prefix', [2, 3])
+            ->where('customers.name', 'like', '%' . trim($request->input('customer')) . '%')
+            ->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->selectRaw('products.id as product_id')
+            ->selectRaw('COALESCE(products.name, "Sin producto") as product_name')
+            ->selectRaw('COALESCE(lots.registration_number, order_product.possible_lot, "Sin lote") as lot_name')
+            ->selectRaw('COALESCE(order_metrics.value, product_metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('order_product.amount as quantity')
+            ->selectRaw('orders.id as order_id');
+
+        $productTotals = $deviceProductTotals->unionAll($chemicalApplicationTotals);
+
+        $productSummaries = DB::query()
+            ->fromSub($productTotals, 'product_totals')
+            ->selectRaw('product_id')
+            ->selectRaw('product_name')
+            ->selectRaw('lot_name')
+            ->selectRaw('metric_name')
+            ->selectRaw('COALESCE(SUM(quantity), 0) as total_quantity')
+            ->selectRaw('COUNT(DISTINCT order_id) as orders_count')
+            ->groupBy(
+                'product_id',
+                'product_name',
+                'lot_name',
+                'metric_name'
+            )
+            ->orderBy('product_name')
+            ->orderBy('lot_name')
+            ->get();
+
+        $deviceProductOrderDetails = (clone $baseQuery)
+            ->selectRaw('products.id as product_id')
+            ->selectRaw('products.name as product_name')
+            ->selectRaw('COALESCE(lots.registration_number, device_product.possible_lot, "Sin lote") as lot_name')
+            ->selectRaw('COALESCE(metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('orders.id as order_id')
+            ->selectRaw('orders.folio as order_folio')
+            ->selectRaw('orders.programmed_date as programmed_date')
+            ->selectRaw('customers.id as customer_id')
+            ->selectRaw('customers.name as customer_name')
+            ->selectRaw('SUM(device_product.quantity) as quantity')
+            ->groupBy(
+                'products.id',
+                'products.name',
+                'lots.registration_number',
+                'device_product.possible_lot',
+                'metrics.value',
+                'orders.id',
+                'orders.folio',
+                'orders.programmed_date',
+                'customers.id',
+                'customers.name'
+            );
+
+        $chemicalProductOrderDetails = DB::table('order_product')
+            ->join('order as orders', 'order_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->join('service', 'order_product.service_id', '=', 'service.id')
+            ->leftJoin('product_catalog as products', 'order_product.product_id', '=', 'products.id')
+            ->leftJoin('lot as lots', 'order_product.lot_id', '=', 'lots.id')
+            ->leftJoin('metric as order_metrics', 'order_product.metric_id', '=', 'order_metrics.id')
+            ->leftJoin('metric as product_metrics', 'products.metric_id', '=', 'product_metrics.id')
+            ->whereNotNull('orders.programmed_date')
+            ->whereIn('service.prefix', [2, 3])
+            ->where('customers.name', 'like', '%' . trim($request->input('customer')) . '%')
+            ->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->selectRaw('products.id as product_id')
+            ->selectRaw('COALESCE(products.name, "Sin producto") as product_name')
+            ->selectRaw('COALESCE(lots.registration_number, order_product.possible_lot, "Sin lote") as lot_name')
+            ->selectRaw('COALESCE(order_metrics.value, product_metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('orders.id as order_id')
+            ->selectRaw('orders.folio as order_folio')
+            ->selectRaw('orders.programmed_date as programmed_date')
+            ->selectRaw('customers.id as customer_id')
+            ->selectRaw('customers.name as customer_name')
+            ->selectRaw('SUM(order_product.amount) as quantity')
+            ->groupBy(
+                'products.id',
+                'products.name',
+                'lots.registration_number',
+                'order_product.possible_lot',
+                'order_metrics.value',
+                'product_metrics.value',
+                'orders.id',
+                'orders.folio',
+                'orders.programmed_date',
+                'customers.id',
+                'customers.name'
+            );
+
+        $productOrderDetailsByKey = DB::query()
+            ->fromSub($deviceProductOrderDetails->unionAll($chemicalProductOrderDetails), 'product_order_details')
+            ->selectRaw('product_id')
+            ->selectRaw('product_name')
+            ->selectRaw('lot_name')
+            ->selectRaw('metric_name')
+            ->selectRaw('order_id')
+            ->selectRaw('order_folio')
+            ->selectRaw('programmed_date')
+            ->selectRaw('customer_id')
+            ->selectRaw('customer_name')
+            ->selectRaw('SUM(quantity) as quantity')
+            ->groupBy(
+                'product_id',
+                'product_name',
+                'lot_name',
+                'metric_name',
+                'order_id',
+                'order_folio',
+                'programmed_date',
+                'customer_id',
+                'customer_name'
+            )
+            ->orderBy('programmed_date')
+            ->orderBy('order_folio')
+            ->get()
+            ->groupBy(fn ($row) => implode('|', [
+                $row->product_id,
+                $row->lot_name,
+                $row->metric_name,
+            ]));
+
+        $deviceMatchedCustomers = (clone $baseQuery)
+            ->leftJoin('customer as matrices', 'customers.general_sedes', '=', 'matrices.id')
+            ->selectRaw('customers.id as customer_id')
+            ->selectRaw('customers.name as customer_name')
+            ->selectRaw('COALESCE(matrices.id, customers.id) as matrix_id')
+            ->selectRaw('COALESCE(matrices.name, customers.name) as matrix_name')
+            ->selectRaw('COUNT(DISTINCT orders.id) as orders_count')
+            ->selectRaw('COUNT(*) as consumptions_count')
+            ->groupBy('customers.id', 'customers.name', 'matrices.id', 'matrices.name');
+
+        $chemicalMatchedCustomers = DB::table('order_product')
+            ->join('order as orders', 'order_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->leftJoin('customer as matrices', 'customers.general_sedes', '=', 'matrices.id')
+            ->join('service', 'order_product.service_id', '=', 'service.id')
+            ->whereNotNull('orders.programmed_date')
+            ->whereIn('service.prefix', [2, 3])
+            ->where('customers.name', 'like', '%' . trim($request->input('customer')) . '%')
+            ->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->selectRaw('customers.id as customer_id')
+            ->selectRaw('customers.name as customer_name')
+            ->selectRaw('COALESCE(matrices.id, customers.id) as matrix_id')
+            ->selectRaw('COALESCE(matrices.name, customers.name) as matrix_name')
+            ->selectRaw('COUNT(DISTINCT orders.id) as orders_count')
+            ->selectRaw('COUNT(*) as consumptions_count')
+            ->groupBy('customers.id', 'customers.name', 'matrices.id', 'matrices.name');
+
+        $matchedCustomers = DB::query()
+            ->fromSub($deviceMatchedCustomers->unionAll($chemicalMatchedCustomers), 'matched_customers')
+            ->selectRaw('customer_id')
+            ->selectRaw('customer_name')
+            ->selectRaw('matrix_id')
+            ->selectRaw('matrix_name')
+            ->selectRaw('SUM(orders_count) as orders_count')
+            ->selectRaw('SUM(consumptions_count) as consumptions_count')
+            ->groupBy('customer_id', 'customer_name', 'matrix_id', 'matrix_name')
+            ->orderBy('matrix_name')
+            ->orderBy('customer_name')
+            ->get();
+
+        return view('stock.consumptions.by-customer', compact(
+            'navigation',
+            'deviceSummaries',
+            'serviceSummaries',
+            'productSummaries',
+            'matchedCustomers',
+            'deviceDetailsByType',
+            'productOrderDetailsByKey',
+            'division',
+            'availableDivisions',
+            'hasAppliedFilters'
+        ));
+    }
+
+    public function exportConsumptionsByCustomer(Request $request)
+    {
+        $request->validate([
+            'date_range' => 'required|string',
+            'service_type_ids' => 'nullable|array',
+            'service_type_ids.*' => 'integer|in:1,2,3',
+        ], [
+            'date_range.required' => 'El rango de fecha es obligatorio.',
+        ]);
+
+        $dateRange = $this->parseStockConsumptionDateRange($request->input('date_range'));
+
+        if (!$dateRange) {
+            return back()->withErrors([
+                'date_range' => 'El rango de fecha no tiene un formato valido.',
+            ])->withInput();
+        }
+
+        $serviceTypeIds = collect($request->input('service_type_ids', [1, 2, 3]))
+            ->map(fn ($typeId) => (int) $typeId)
+            ->filter(fn ($typeId) => in_array($typeId, [1, 2, 3], true))
+            ->unique()
+            ->values();
+
+        if ($serviceTypeIds->isEmpty()) {
+            $serviceTypeIds = collect([1, 2, 3]);
+        }
+
+        $rows = $this->stockConsumptionRowsByCustomerAndProduct($dateRange, $serviceTypeIds->all());
+        $products = $rows
+            ->mapWithKeys(function ($row) {
+                $productKey = $row->product_id . '|' . $row->metric_name;
+
+                return [
+                    $productKey => $row->product_name . ' (' . $row->metric_name . ')',
+                ];
+            })
+            ->sort()
+            ->all();
+
+        $customers = [];
+
+        foreach ($rows as $row) {
+            $customerKey = $row->customer_id;
+
+            if (!isset($customers[$customerKey])) {
+                $customers[$customerKey] = [
+                    'matrix_id' => $row->matrix_id,
+                    'matrix_name' => $row->matrix_name,
+                    'customer_id' => $row->customer_id,
+                    'customer_name' => $row->customer_name,
+                    'products' => [],
+                ];
+            }
+
+            $productKey = $row->product_id . '|' . $row->metric_name;
+            $customers[$customerKey]['products'][$productKey] = (float) $row->total_quantity;
+        }
+
+        $properties = new Properties(
+            title: 'Consumos por cliente - ' . Carbon::now()->format('d-m-Y')
+        );
+        $options = new Options();
+        $options->setProperties($properties);
+
+        $writer = new Writer($options);
+        $fileName = 'consumos_por_cliente_' . Carbon::now()->format('Ymd_His') . '.xlsx';
+        $filePath = storage_path('app/public/' . $fileName);
+        $writer->openToFile($filePath);
+
+        $headerStyle = (new Style())
+            ->setBackgroundColor(Color::BLUE)
+            ->setFontColor(Color::WHITE)
+            ->setFontSize(12)
+            ->setFontBold();
+
+        $headers = array_merge(
+            ['Nombre matriz (id)', 'Nombre cliente (id)'],
+            array_values($products)
+        );
+
+        $autoFilter = new AutoFilter(0, 1, max(count($headers) - 1, 1), 1048576);
+        $writer->getCurrentSheet()->setAutoFilter($autoFilter);
+        $writer->addRow(Row::fromValues($headers, $headerStyle));
+
+        foreach ($customers as $customer) {
+            $rowData = [
+                $customer['matrix_name'] . ' (' . $customer['matrix_id'] . ')',
+                $customer['customer_name'] . ' (' . $customer['customer_id'] . ')',
+            ];
+
+            foreach (array_keys($products) as $productId) {
+                $rowData[] = $customer['products'][$productId] ?? 0;
+            }
+
+            $writer->addRow(Row::fromValues($rowData));
+        }
+
+        if (empty($customers)) {
+            $writer->addRow(Row::fromValues([
+                'Sin resultados',
+                'No hay consumos para los filtros seleccionados.',
+            ]));
+        }
+
+        $writer->close();
+
+        return response()->download($filePath)->deleteFileAfterSend(true);
+    }
+
+    private function stockConsumptionRowsByCustomerAndProduct(array $dateRange, array $serviceTypeIds)
+    {
+        $deviceProductTotals = DB::table('device_product')
+            ->join('order as orders', 'device_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->leftJoin('customer as matrices', 'customers.general_sedes', '=', 'matrices.id')
+            ->join('product_catalog as products', 'device_product.product_id', '=', 'products.id')
+            ->leftJoin('metric as metrics', 'products.metric_id', '=', 'metrics.id')
+            ->whereNotNull('orders.programmed_date')
+            ->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->whereIn('customers.service_type_id', $serviceTypeIds)
+            ->selectRaw('COALESCE(matrices.id, customers.id) as matrix_id')
+            ->selectRaw('COALESCE(matrices.name, customers.name) as matrix_name')
+            ->selectRaw('customers.id as customer_id')
+            ->selectRaw('customers.name as customer_name')
+            ->selectRaw('products.id as product_id')
+            ->selectRaw('COALESCE(products.name, "Sin producto") as product_name')
+            ->selectRaw('COALESCE(metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('device_product.quantity as quantity');
+
+        $chemicalApplicationTotals = DB::table('order_product')
+            ->join('order as orders', 'order_product.order_id', '=', 'orders.id')
+            ->join('customer as customers', 'orders.customer_id', '=', 'customers.id')
+            ->leftJoin('customer as matrices', 'customers.general_sedes', '=', 'matrices.id')
+            ->join('service', 'order_product.service_id', '=', 'service.id')
+            ->leftJoin('product_catalog as products', 'order_product.product_id', '=', 'products.id')
+            ->leftJoin('metric as order_metrics', 'order_product.metric_id', '=', 'order_metrics.id')
+            ->leftJoin('metric as product_metrics', 'products.metric_id', '=', 'product_metrics.id')
+            ->whereNotNull('orders.programmed_date')
+            ->whereIn('service.prefix', [2, 3])
+            ->whereBetween('orders.programmed_date', [
+                $dateRange['start']->toDateString(),
+                $dateRange['end']->toDateString(),
+            ])
+            ->whereIn('customers.service_type_id', $serviceTypeIds)
+            ->selectRaw('COALESCE(matrices.id, customers.id) as matrix_id')
+            ->selectRaw('COALESCE(matrices.name, customers.name) as matrix_name')
+            ->selectRaw('customers.id as customer_id')
+            ->selectRaw('customers.name as customer_name')
+            ->selectRaw('products.id as product_id')
+            ->selectRaw('COALESCE(products.name, "Sin producto") as product_name')
+            ->selectRaw('COALESCE(order_metrics.value, product_metrics.value, "Sin unidad") as metric_name')
+            ->selectRaw('order_product.amount as quantity');
+
+        $productTotals = $deviceProductTotals->unionAll($chemicalApplicationTotals);
+
+        return DB::query()
+            ->fromSub($productTotals, 'product_totals')
+            ->selectRaw('matrix_id')
+            ->selectRaw('matrix_name')
+            ->selectRaw('customer_id')
+            ->selectRaw('customer_name')
+            ->selectRaw('product_id')
+            ->selectRaw('product_name')
+            ->selectRaw('metric_name')
+            ->selectRaw('COALESCE(SUM(quantity), 0) as total_quantity')
+            ->groupBy(
+                'matrix_id',
+                'matrix_name',
+                'customer_id',
+                'customer_name',
+                'product_id',
+                'product_name',
+                'metric_name'
+            )
+            ->orderBy('matrix_name')
+            ->orderBy('customer_name')
+            ->orderBy('product_name')
+            ->get();
+    }
+
+    private function parseStockConsumptionDateRange(?string $dateRange): ?array
+    {
+        if (!$dateRange || !str_contains($dateRange, ' - ')) {
+            return null;
+        }
+
+        try {
+            [$startDate, $endDate] = array_map(function ($date) {
+                return Carbon::createFromFormat('d/m/Y', trim($date));
+            }, explode(' - ', $dateRange));
+
+            return [
+                'start' => $startDate->startOfDay(),
+                'end' => $endDate->endOfDay(),
+            ];
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    private function stockConsumptionAvailableDivisions(?array $dateRange): array
+    {
+        if (!$dateRange) {
+            return ['day', 'week', 'month', 'year'];
+        }
+
+        $days = $dateRange['start']->diffInDays($dateRange['end']) + 1;
+        $divisions = ['day'];
+
+        if ($days >= 7) {
+            $divisions[] = 'week';
+        }
+
+        if ($days >= 28) {
+            $divisions[] = 'month';
+        }
+
+        if ($days >= 365) {
+            $divisions[] = 'year';
+        }
+
+        return $divisions;
+    }
+
+    private function resolveStockConsumptionDivision(?string $division, array $availableDivisions): string
+    {
+        $division = strtolower((string) $division);
+        $allowedDivisions = ['day', 'week', 'month', 'year'];
+
+        if (!in_array($division, $allowedDivisions, true)) {
+            $division = 'month';
+        }
+
+        return in_array($division, $availableDivisions, true)
+            ? $division
+            : $availableDivisions[0];
+    }
+
+    private function stockConsumptionPeriodSql(string $division): string
+    {
+        return match ($division) {
+            'day' => 'DATE_FORMAT(orders.programmed_date, "%Y-%m-%d")',
+            'week' => 'DATE_FORMAT(orders.programmed_date, "%x-W%v")',
+            'year' => 'DATE_FORMAT(orders.programmed_date, "%Y")',
+            default => 'DATE_FORMAT(orders.programmed_date, "%Y-%m")',
+        };
+    }
+
+    private function formatStockConsumptionPeriodLabel(string $period, string $division): string
+    {
+        try {
+            return match ($division) {
+                'day' => Carbon::createFromFormat('Y-m-d', $period)->format('d/m/Y'),
+                'week' => $this->formatStockConsumptionWeekLabel($period),
+                'month' => Carbon::createFromFormat('Y-m', $period)->format('m/Y'),
+                default => $period,
+            };
+        } catch (\Exception $e) {
+            return $period;
+        }
+    }
+
+    private function formatStockConsumptionWeekLabel(string $period): string
+    {
+        if (!preg_match('/^(\d{4})-W(\d{1,2})$/', $period, $matches)) {
+            return $period;
+        }
+
+        $start = Carbon::now()->setISODate((int) $matches[1], (int) $matches[2])->startOfDay();
+        $end = $start->copy()->addDays(6);
+
+        return $start->format('d/m/Y') . ' - ' . $end->format('d/m/Y');
+    }
+
     public function wMovement(string $id)
     {
         $navigation = $this->navigation;
@@ -277,9 +989,93 @@ class StockController extends Controller
     {
         $navigation = $this->navigation;
         $warehouse = Warehouse::findOrFail($id);
-        $movements = WarehouseMovement::where('warehouse_id', $warehouse->id)->orWhere('destination_warehouse_id', $warehouse->id)->orderBy('date', 'DESC')->orderBy('time', 'DESC')->paginate($this->size);
-        $products = ProductCatalog::whereIn('id', MovementProduct::pluck('product_id')->unique())->get();
-        $lots = Lot::whereIn('product_id', $products->pluck('id')->unique())->get();
+        $direction = strtoupper($request->input('direction', 'DESC'));
+        $direction = in_array($direction, ['ASC', 'DESC']) ? $direction : 'DESC';
+        $size = (int) $request->input('size', $this->size);
+
+        $query = WarehouseMovement::with([
+            'warehouse',
+            'destinationWarehouse',
+            'products.product.metric',
+            'products.lot',
+            'products.movement',
+        ])->where(function ($q) use ($warehouse) {
+            $q->where('warehouse_id', $warehouse->id)
+                ->orWhere('destination_warehouse_id', $warehouse->id);
+        });
+
+        if ($request->filled('movement_id')) {
+            $query->whereHas('products', function ($q) use ($request, $warehouse) {
+                $q->where('warehouse_id', $warehouse->id)
+                    ->where('movement_id', $request->input('movement_id'));
+            });
+        }
+
+        if ($request->filled('product_id')) {
+            $query->whereHas('products', function ($q) use ($request, $warehouse) {
+                $q->where('warehouse_id', $warehouse->id)
+                    ->where('product_id', $request->input('product_id'));
+            });
+        }
+
+        if ($request->filled('lot_id')) {
+            $query->whereHas('products', function ($q) use ($request, $warehouse) {
+                $q->where('warehouse_id', $warehouse->id)
+                    ->where('lot_id', $request->input('lot_id'));
+            });
+        }
+
+        if ($request->filled('date_range')) {
+            $dates = explode(' - ', $request->input('date_range'));
+            if (count($dates) === 2) {
+                try {
+                    $startDate = Carbon::createFromFormat('d/m/Y', trim($dates[0]))->toDateString();
+                    $endDate = Carbon::createFromFormat('d/m/Y', trim($dates[1]))->toDateString();
+                    $query->whereBetween('date', [$startDate, $endDate]);
+                } catch (\Exception $e) {
+                    Log::warning('Invalid warehouse movement date range filter', [
+                        'date_range' => $request->input('date_range'),
+                        'warehouse_id' => $warehouse->id,
+                    ]);
+                }
+            }
+        }
+
+        $summaryQuery = clone $query;
+        $entryQuery = clone $query;
+        $exitQuery = clone $query;
+        $revertedQuery = clone $query;
+
+        $summary = [
+            'total' => (clone $summaryQuery)->count(),
+            'entries' => $entryQuery->whereHas('products', function ($q) use ($warehouse) {
+                $q->where('warehouse_id', $warehouse->id)
+                    ->where(function ($subQ) {
+                        $subQ->whereBetween('movement_id', [1, 4])
+                            ->orWhereHas('movement', fn($movementQ) => $movementQ->where('type', 'in'));
+                    });
+            })->count(),
+            'exits' => $exitQuery->whereHas('products', function ($q) use ($warehouse) {
+                $q->where('warehouse_id', $warehouse->id)
+                    ->where(function ($subQ) {
+                        $subQ->whereBetween('movement_id', [5, 10])
+                            ->orWhereHas('movement', fn($movementQ) => $movementQ->where('type', 'out'));
+                    });
+            })->count(),
+            'reverted' => $revertedQuery->where('is_active', false)->count(),
+        ];
+
+        $movements = $query
+            ->orderBy('date', $direction)
+            ->orderBy('time', $direction)
+            ->paginate($size > 0 ? $size : $this->size)
+            ->withQueryString();
+
+        $warehouseProductIds = MovementProduct::where('warehouse_id', $warehouse->id)
+            ->pluck('product_id')
+            ->unique();
+        $products = ProductCatalog::whereIn('id', $warehouseProductIds)->orderBy('name')->get();
+        $lots = Lot::whereIn('product_id', $warehouseProductIds)->orderBy('registration_number')->get();
 
         return view('stock.movements.warehouse', [
             'warehouse' => $warehouse,
@@ -288,6 +1084,7 @@ class StockController extends Controller
             'products' => $products,
             'lots' => $lots,
             'navigation' => $navigation,
+            'summary' => $summary,
             'filters' => $request->all()
         ]);
     }
@@ -754,7 +1551,7 @@ class StockController extends Controller
         $navigation = $this->navigation;
         $warehouse = Warehouse::find($id);
         $all_warehouses = Warehouse::where('id', '!=', $id)->get();
-        $products = $warehouse->products()->get();//ProductCatalog::all();
+        $products = ProductCatalog::orderBy('name')->get();
 
         $input_movements = MovementType::whereBetween('id', [1, 4])->get();
 
@@ -764,7 +1561,7 @@ class StockController extends Controller
                 'name' => $product->name,
                 'presentation' => $product->presentation ? $product->presentation->name : '-',
                 'metric' => $product->metric ? $product->metric->value : '-',
-                'lots' => $product->lots->map(function ($lot) use ($warehouse) {
+                'lots' => $product->lots()->active()->where('warehouse_id', $warehouse->id)->get()->map(function ($lot) use ($warehouse) {
                     $current_amount = $lot->countProductsByWarehouse($warehouse->id);
                     return [
                         'id' => $lot->id,
@@ -776,7 +1573,7 @@ class StockController extends Controller
             ];
         }
 
-        session()->flash('warning', 'Antes de agregar un movimiento de entrada, asegurate de haber registrado los lotes correspondientes en el almacén.');
+        session()->flash('warning', 'Si el lote no existe, puedes crearlo desde el botón + en la columna Lote.');
 
         return view('stock.create.inputs.entries', compact('warehouse', 'all_warehouses', 'products_data', 'input_movements', 'navigation'));
     }
@@ -788,7 +1585,7 @@ class StockController extends Controller
         $navigation = $this->navigation;
         $warehouse = Warehouse::find($id);
         $all_warehouses = Warehouse::where('id', '!=', $id)->get();
-        $products = $warehouse->products()->get();
+        $products = ProductCatalog::orderBy('name')->get();
         $output_movements = MovementType::whereBetween('id', [5, 10])->get();
 
         foreach ($products as $product) {
@@ -797,7 +1594,7 @@ class StockController extends Controller
                 'name' => $product->name,
                 'presentation' => $product->presentation ? $product->presentation->name : '-',
                 'metric' => $product->metric ? $product->metric->value : '-',
-                'lots' => $product->lots->map(function ($lot) use ($warehouse) {
+                'lots' => $product->lots()->active()->where('warehouse_id', $warehouse->id)->get()->map(function ($lot) use ($warehouse) {
                     $current_amount = $lot->countProductsByWarehouse($warehouse->id);
                     return [
                         'id' => $lot->id,
@@ -809,15 +1606,69 @@ class StockController extends Controller
             ];
         }
 
-        session()->flash('warning', 'Antes de agregar un movimiento de salida, asegurate de haber registrado los lotes correspondientes en el almacén.');
-
         return view('stock.create.outputs.exits', compact('warehouse', 'all_warehouses', 'products_data', 'output_movements', 'navigation'));
+    }
+
+    public function quickStoreLot(Request $request)
+    {
+        $validated = $request->validate([
+            'product_id' => 'required|exists:product_catalog,id',
+            'warehouse_id' => 'required|exists:warehouse,id',
+            'registration_number' => 'required|string|max:255',
+            'amount' => 'required|numeric|min:0',
+            'expiration_date' => 'nullable|date',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'create_initial_stock' => 'nullable|boolean',
+        ]);
+
+        $lot = Lot::create([
+            'product_id' => $validated['product_id'],
+            'warehouse_id' => $validated['warehouse_id'],
+            'registration_number' => $validated['registration_number'],
+            'expiration_date' => $validated['expiration_date'] ?? null,
+            'start_date' => $validated['start_date'] ?? null,
+            'end_date' => $validated['end_date'] ?? null,
+            'amount' => $validated['amount'],
+            'is_active' => true,
+        ]);
+
+        if ($request->boolean('create_initial_stock')) {
+            $movement = WarehouseMovement::create([
+                'warehouse_id' => null,
+                'destination_warehouse_id' => $validated['warehouse_id'],
+                'movement_id' => 2,
+                'user_id' => Auth::id(),
+                'date' => now()->format('Y-m-d'),
+                'time' => now()->format('H:i:s'),
+                'observations' => 'Alta rápida de lote desde movimiento de almacén',
+                'is_active' => true,
+            ]);
+
+            MovementProduct::create([
+                'warehouse_movement_id' => $movement->id,
+                'movement_id' => 2,
+                'warehouse_id' => $validated['warehouse_id'],
+                'product_id' => $validated['product_id'],
+                'lot_id' => $lot->id,
+                'amount' => $validated['amount'],
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'lot' => [
+                'id' => $lot->id,
+                'registration_number' => $lot->registration_number,
+                'amount' => (float) $lot->amount,
+                'current_amount' => $lot->countProductsByWarehouse($validated['warehouse_id']),
+            ],
+        ]);
     }
 
 
     public function storeInMovement(Request $request)
     {
-        dd($request->all());
         $products = json_decode($request->input('products'), true);
         $movement_id = $request->input('movement_id');
 
@@ -827,12 +1678,12 @@ class StockController extends Controller
             'warehouse_id' => $request->input('warehouse_id'),
             'destination_warehouse_id' => $request->input('destination_warehouse_id'),
             'movement_id' => $movement_id,
-            'description' => $request->input('description'),
-            'date' => $request->input['date'] ?? now()->format('Y-m-d'),
+            'observations' => $request->input('observations'),
+            'date' => $request->input('date') ?? now()->format('Y-m-d'),
             'time' => now()->format('H:i:s'),
             'user_id' => Auth::id(),
-            'warehouse_signature' => $request->input('storekeeper_signature_base64'),
-            'technician_signature' => $request->input('technician_signature_base64')
+            'warehouse_signature' => $request->input('warehouse_signature'),
+            'technician_signature' => $request->input('technician_signature')
         ]);
 
         // Procesar cada producto
@@ -850,7 +1701,7 @@ class StockController extends Controller
             ]);
         }
 
-        return redirect()->route('stock.index')
+        return redirect()->route('stock.movements.warehouse', ['id' => $wm->destination_warehouse_id])
             ->with('success', 'Movimiento de entrada registrado exitosamente');
     }
 
@@ -861,16 +1712,71 @@ class StockController extends Controller
         $products = json_decode($request->input('products'), true);
         $movement_id = $request->input('movement_id');
 
+        if (!is_array($products) || count($products) === 0) {
+            return back()->withInput()->withErrors(['products' => 'Debe agregar al menos un producto a la salida.']);
+        }
+
+        $lotTotals = [];
+        $validatedLots = [];
+
+        foreach ($products as $index => $product) {
+            $amount = isset($product['amount']) ? (float) $product['amount'] : 0;
+            $productId = $product['product_id'] ?? null;
+            $lotId = $product['lot_id'] ?? null;
+
+            if (!$productId || !$lotId || $amount <= 0) {
+                return back()->withInput()->withErrors([
+                    'products' => 'Cada producto debe tener lote seleccionado y una cantidad mayor a 0.',
+                ]);
+            }
+
+            $lot = Lot::active()
+                ->where('id', $lotId)
+                ->where('product_id', $productId)
+                ->where('warehouse_id', $request->input('warehouse_id'))
+                ->first();
+
+            if (!$lot) {
+                return back()->withInput()->withErrors([
+                    'products' => 'Uno de los lotes seleccionados no pertenece al producto o almacén de salida.',
+                ]);
+            }
+
+            $available = (float) $lot->countProductsByWarehouse($request->input('warehouse_id'));
+
+            if ($amount > $available) {
+                return back()->withInput()->withErrors([
+                    'products' => "La cantidad del lote {$lot->registration_number} no puede ser mayor al disponible ({$available}).",
+                ]);
+            }
+
+            $lotTotals[$lot->id] = ($lotTotals[$lot->id] ?? 0) + $amount;
+            $validatedLots[$lot->id] = [
+                'registration_number' => $lot->registration_number,
+                'available' => $available,
+            ];
+        }
+
+        foreach ($lotTotals as $lotId => $totalAmount) {
+            $available = $validatedLots[$lotId]['available'];
+
+            if ($totalAmount > $available) {
+                return back()->withInput()->withErrors([
+                    'products' => "La suma del lote {$validatedLots[$lotId]['registration_number']} ({$totalAmount}) no puede ser mayor al disponible ({$available}).",
+                ]);
+            }
+        }
+
         $wm = WarehouseMovement::create([
             'warehouse_id' => $request->input('warehouse_id'),
             'destination_warehouse_id' => $request->input('destination_warehouse_id'),
             'movement_id' => $movement_id,
-            'description' => $request->input('description'),
-            'date' => $request->input['date'] ?? now()->format('Y-m-d'),
+            'observations' => $request->input('observations'),
+            'date' => $request->input('date') ?? now()->format('Y-m-d'),
             'time' => now()->format('H:i:s'),
             'user_id' => Auth::id(),
-            'warehouse_signature' => $request->warehouse_signature,
-            'technician_signature' => $request->technician_signature
+            'warehouse_signature' => $request->input('warehouse_signature'),
+            'technician_signature' => $request->input('technician_signature')
         ]);
 
 
@@ -905,7 +1811,7 @@ class StockController extends Controller
             }
         }
 
-        return redirect()->route('stock.index')
+        return redirect()->route('stock.movements.warehouse', ['id' => $wm->destination_warehouse_id])
             ->with('success', 'Movimiento de salida registrado exitosamente');
     }
 
@@ -1512,10 +2418,31 @@ class StockController extends Controller
 
     public function voucherPdfPreview($id)
     {
+        $movement = null;
+
         try {
             $data = [];
             $technian_name = 'No asignado';
-            $movement = WarehouseMovement::with(['user', 'warehouse', 'destinationWarehouse', 'movement'])->findOrFail($id);
+            $movement = WarehouseMovement::with([
+                'user',
+                'warehouse',
+                'destinationWarehouse.technician.user',
+                'movement',
+            ])->findOrFail($id);
+
+            $movementWarehouseIds = collect([$movement->warehouse_id, $movement->destination_warehouse_id])
+                ->filter()
+                ->unique()
+                ->values();
+
+            $movementProductsQuery = $movement->products()
+                ->with(['product.metric', 'lot', 'movement', 'warehouse']);
+
+            if ($movementWarehouseIds->isNotEmpty()) {
+                $movementProductsQuery->whereIn('warehouse_id', $movementWarehouseIds);
+            }
+
+            $movementProducts = $movementProductsQuery->get();
 
             // Procesar firma del almacenista si existe
             $storekeeperSignaturePath = null;
@@ -1530,27 +2457,36 @@ class StockController extends Controller
             }
 
             if ($movement->destinationWarehouse) {
-                $technian_name = $movement->destinationWarehouse->technician ? $movement->destinationWarehouse->technician->user->name : 'No asignado';
+                $technian_name = $movement->destinationWarehouse->technician?->user?->name ?? 'No asignado';
             }
+
+            $movement_type_value = implode(', ', MovementType::whereIn('id', $movementProducts->pluck('movement_id')->unique())->pluck('name')->toArray());
 
             $data = [
                 'title' => 'Constancia de Movimiento',
                 'date' => $movement->date,
                 'time' => $movement->time,
-                'origin' => $movement->warehouse->name,
-                'destination' => $movement->destinationWarehouse ? $movement->destinationWarehouse->name : 'No Aplica',
-                'movement_type' => $movement->movement->name,
+                'origin' => $movement->warehouse?->name ?? 'No Aplica',
+                'destination' => $movement->destinationWarehouse?->name ?? 'No Aplica',
+                'movement_type' => $movement_type_value ?? 'No asignado',
                 'folio' => $movement->id,
-                'observations' => $movement->description ?? 'Sin observaciones',
-                'created_by' => $movement->user->name,
+                'observations' => $movement->observations ?? 'Sin observaciones',
+                'created_by' => $movement->user?->name ?? 'No asignado',
                 'storekeeper_signature' => $storekeeperSignaturePath,
                 'technician_signature' => $technicianSignaturePath,
                 'technician_name' => $technian_name,
-                'products' => $movement->products->map(function ($mp) {
+                'products' => $movementProducts->map(function ($mp) {
+                    $isEntry = $mp->movement?->type === 'in' || ((int) $mp->movement_id >= 1 && (int) $mp->movement_id <= 4);
+
                     return [
-                        'product' => $mp->product->name,
-                        'lot' => $mp->lot->registration_number ?? '-',
+                        'product' => $mp->product?->name ?? '-',
+                        'lot' => $mp->lot?->registration_number ?? '-',
                         'amount' => $mp->amount,
+                        'metric' => $mp->product?->metric?->value ?? '-',
+                        'movement' => $mp->movement?->name ?? '-',
+                        'direction' => $isEntry ? 'Entrada' : 'Salida',
+                        'direction_class' => $isEntry ? 'entry' : 'exit',
+                        'warehouse' => $mp->warehouse?->name ?? '-',
                     ];
                 })->toArray(),
             ];
@@ -1558,9 +2494,12 @@ class StockController extends Controller
             $pdf = Pdf::loadView('stock.movements.show.voucher-pdf', $data);
             return $pdf->stream('movimiento_' . $movement->id . '.pdf');
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Limpiar archivos temporales en caso de error
-            $this->cleanTempFiles($movement->id);
+            if ($movement) {
+                $this->cleanTempFiles($movement->id);
+            }
+
             throw $e;
         }
     }
@@ -1568,23 +2507,39 @@ class StockController extends Controller
     // Método para procesar imágenes base64
     private function processSignature($base64Image, $filename)
     {
+        if (!is_string($base64Image) || trim($base64Image) === '') {
+            return null;
+        }
+
         // Extraer la parte base64 de la cadena
         if (strpos($base64Image, 'base64,') !== false) {
             $base64Image = explode('base64,', $base64Image)[1];
         }
 
+        $base64Image = preg_replace('/\s+/', '', $base64Image);
+
         // Decodificar la imagen base64
-        $imageData = base64_decode($base64Image);
+        $imageData = base64_decode($base64Image, true);
+
+        if ($imageData === false) {
+            return null;
+        }
 
         // Crear directorio temporal si no existe
         $tempDir = storage_path('app/temp/signatures/');
         if (!file_exists($tempDir)) {
-            mkdir($tempDir, 0755, true);
+            @mkdir($tempDir, 0755, true);
+        }
+
+        if (!is_dir($tempDir) || !is_writable($tempDir)) {
+            return null;
         }
 
         // Guardar la imagen temporalmente
         $filePath = $tempDir . $filename . '.png';
-        file_put_contents($filePath, $imageData);
+        if (file_put_contents($filePath, $imageData) === false) {
+            return null;
+        }
 
         return $filePath;
     }
@@ -1622,7 +2577,7 @@ class StockController extends Controller
     {
         $navigation = $this->navigation;
         $movement = WarehouseMovement::with(['user', 'warehouse', 'destinationWarehouse', 'movementType'])->findOrFail($id);
-        $products = MovementProduct::with(['product', 'lot'])->where('movement_id', $id)->get();
+        $products = MovementProduct::with(['product', 'lot'])->where('warehouse_movement_id', $id)->get();
 
         return view('stock.movements.show.voucher-preview', compact('movement', 'products', 'navigation'));
     }

@@ -1,20 +1,25 @@
 @extends('layouts.app')
 @section('content')
-    @if (!auth()->check())
+    @include('components.page-header', [
+        'title' => 'EDITAR CONTRATO',
+        'icon' => 'bi-file-earmark-text',
+        'backRoute' => url()->previous(),
+    ])
+@if (!auth()->check())
         <?php header('Location: /login');
         exit(); ?>
     @endif
 
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="#" onclick="history.back(); return false;" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                EDITAR CONTRATO <span class="ms-2 fs-4"> {{ $contract->customer->name }} [{{ $contract->id }}]</span>
-            </span>
-        </div>
-        @include('contract.edit.form')
+@include('contract.edit.form')
+        @can('write_order')
+            @include('components.danger-action', [
+                'actionRoute' => route('contract.destroy', ['id' => $contract->id]),
+                'title' => 'Zona de peligro',
+                'description' => 'Elimina este contrato desde su pantalla de edición.',
+                'buttonText' => 'Eliminar contrato',
+            ])
+        @endcan
         @include('contract.modals.configure-service')
         @include('contract.modals.preview')
         @include('contract.modals.service')

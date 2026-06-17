@@ -1,16 +1,16 @@
 @extends('layouts.app')
 @section('content')
-    @php
+    @include('components.page-header', [
+        'title' => 'VER DASHBOARD',
+        'icon' => 'bi-speedometer2',
+        'backRoute' => url()->previous(),
+    ])
+@php
         $offset = ($opportunity_areas->currentPage() - 1) * $opportunity_areas->perPage();
     @endphp
 
     <div class="container-fluid">
-        <div class="row border-bottom p-3 mb-3">
-            <a href="javascript:history.back()" class="col-auto btn-primary p-0 fs-3"><i class="bi bi-arrow-left m-3"></i></a>
-            <h1 class="col-auto fs-2 fw-bold m-0 fw-bold">{{ $customer->name }}</h1>
-        </div>
-
-        <div class="row mb-3">
+<div class="row mb-3">
             <div class="col-auto">
                 @can('write_order')
                     <a class="btn btn-primary" href="{{ route('opportunity-area.create', ['customerId' => $customer->id]) }}">

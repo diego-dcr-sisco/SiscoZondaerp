@@ -2,271 +2,432 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte de Movimiento</title>
+    <title>Voucher de Movimiento</title>
     <style>
+        @page {
+            margin: 20px 24px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 11px;
-            color: #000;
+            color: #1d252c;
             line-height: 1.3;
             margin: 0;
-            padding: 15px;
         }
 
-        .header {
-            display: table;
+        /* ── HEADER ── */
+        .topbar {
             width: 100%;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 0.5px solid #000;
+            border-collapse: collapse;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #98A253;
         }
 
-        .header-row {
-            display: table-row;
+        .logo-cell {
+            width: 34%;
+            vertical-align: middle;
         }
 
-        .logo-container {
-            display: table-cell;
-            width: 30%;
-            vertical-align: top;
-            text-align: left;
+        .logo {
+            width: 240px;
+            max-height: 50px;
         }
 
-        .logo-placeholder {
-            width: 120px;
-            height: 60px;
-            border: 1px dashed #999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-style: italic;
-            color: #666;
-        }
-
-        .document-info {
-            display: table-cell;
-            width: 70%;
-            vertical-align: top;
+        .title-cell {
+            width: 66%;
             text-align: right;
+            vertical-align: middle;
         }
 
-        .company-name {
-            font-size: 16px;
+        .document-title {
+            font-size: 13px;
             font-weight: bold;
+            color: #193524;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+        }
+
+        .document-subtitle {
+            font-size: 9px;
+            color: #66736f;
             margin-bottom: 5px;
         }
 
-        .report-title {
-            font-size: 14px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .document-details {
-            font-size: 11px;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        .info-item {
+        .folio-box {
+            display: inline-block;
+            /*border: 0.5px solid #2f6b3f;
+            padding: 2px;*/
             margin-bottom: 5px;
         }
 
-        .info-label {
+        .folio-label {
+            font-size: 9px;
+            color: #66736f;
+            text-transform: uppercase;
+            margin-right: 5px;
+        }
+
+        .folio-value {
+            font-size: 12px;
             font-weight: bold;
-            display: inline-block;
-            width: 110px;
+            color: #193524;
         }
 
-        .info-value {
-            display: inline-block;
+        /* ── SECTION TITLES ── */
+        .section-title {
+            font-size: 9px;
+            font-weight: bold;
+            color: black;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 8px 0 4px;
+            border-bottom: 0.5px solid #2B85FF;
+            margin-bottom: 8px;
         }
 
+        /* ── INFO GRID ── */
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .info-table td {
+            width: 50%;
+            padding: 4px 0px;
+            vertical-align: top;
+        }
+
+        .label {
+            display: block;
+            margin-bottom: 1px;
+            color: #66736f;
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            font-weight: bold;
+        }
+
+        .value {
+            font-size: 10px;
+            color: #1d252c;
+            font-weight: bold;
+        }
+
+        /* ── OBSERVATIONS ── */
         .observations {
-            margin: 10px 0;
-            padding: 8px;
-            background-color: #f0f0f0;
-            border-left: 2px solid #666;
+            padding: 4px 0px;
+            min-height: 30px;
+            background: #fbfcfb;
+            font-size: 10.5px;
+            color: #66736f;
         }
 
+        /* ── PRODUCTS TABLE ── */
         .products-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 15px 0;
-            page-break-inside: avoid;
         }
 
         .products-table th {
-            background-color: #ddd;
-            padding: 2px;
+            background: #f0f3f1;
+            color: #193524;
+            border: 0.5px solid #d8dfdc;
+            padding: 5px 7px;
+            font-size: 8.5px;
             text-align: left;
-            border: 0.5px solid #000;
-            font-weight: bold;
-            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
 
         .products-table td {
-            font-size: 11px;
-            padding: 2px;
-            border: 0.5px solid #000;
-        }
-
-        .signatures-container {
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .signatures {
-            display: table;
-            width: 100%;
-            table-layout: fixed;
-        }
-
-        .signature-box {
-            display: table-cell;
-            width: 50%;
+            border: 0.5px solid #d8dfdc;
+            padding: 4px;
             vertical-align: top;
-            padding-top: 10px;
+            font-size: 10px;
         }
 
-        .signature-content {
-            width: 80%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 15px 10px;
-            margin: 0 auto;
-            text-align: center;
-            min-height: 100px;
+        .products-table tbody tr:nth-child(even) td {
+            background: #f8faf9;
         }
 
-        .signature-title {
+        .text-center { text-align: center; }
+        .text-right  { text-align: right; }
+
+        .muted {
+            color: #66736f;
+            font-size: 10px;
+        }
+
+        /* ── SUMMARY ── */
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 5px;
-            font-weight: bold;
-            text-align: center;
-            width: 100%;
         }
 
-        .signature-name {
-            margin-top: 4px;
-            text-align: center;
+        .summary-table td {
+            padding: 3px 0;
+            font-size: 9.5px;
+            color: #66736f;
+        }
+
+        /* ── SIGNATURES ── */
+        .signature-table {
             width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin-top: 4px;
+        }
+
+        .signature-table td {
+            width: 50%;
+            padding: 0 8px;
+            vertical-align: bottom;
+            text-align: center;
+        }
+
+        .signature-table td:first-child {
+            padding-left: 0;
+        }
+
+        .signature-table td:last-child {
+            padding-right: 0;
+        }
+
+        .signature-card {
+            border: 0.5px solid #d8dfdc;
+            padding: 8px 10px;
         }
 
         .signature-image {
-            margin-top: 5px;
+            height: 52px;
+            margin-bottom: 6px;
             text-align: center;
+            border-bottom: 0.5px solid #d8dfdc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .footer {
-            margin-top: 10px;
-            text-align: center;
+        .signature-image img {
+            max-height: 48px;
+            max-width: 180px;
+        }
+
+        .signature-role {
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #1d252c;
+            margin-top: 6px;
+        }
+
+        .signature-name {
+            margin-top: 2px;
+            color: #66736f;
             font-size: 10px;
-            color: #666;
-            border-top: 0.5px solid #000;
-            padding-top: 8px;
         }
 
-        @page {
-            margin: 1cm;
+        /* ── FOOTER ── */
+        .footer {
+            position: fixed;
+            left: 24px;
+            right: 24px;
+            bottom: 10px;
+            border-top: 0.5px solid #d8dfdc;
+            padding-top: 5px;
+            color: #66736f;
+            font-size: 9px;
+            display: flex;
+            justify-content: space-between;
         }
     </style>
 </head>
-
 <body>
-    <div class="header">
-        <div class="header-row">
-            <div class="logo-container">
-                <img src="file://{{ public_path('images/logo.png') }}" style="width: 300px; margin: 0;">
-            </div>
-            <div class="document-info">
-                <div class="company-name">Sistema de Inventarios</div>
-                <div class="report-title">Reporte de Movimiento</div>
-                <div class="document-details">
-                    <div>Folio: <strong>{{ $folio }}</strong></div>
-                    <div>Fecha: {{ $date }} | Hora: {{ $time }}</div>
+
+    {{-- ── HEADER ── --}}
+    <table class="topbar">
+        <tr>
+            <td class="logo-cell">
+                <img class="logo" src="file://{{ public_path('images/siscoplagas/landscape_logo.png') }}" alt="Logo">
+            </td>
+            <td class="title-cell">
+                <div class="document-title">Voucher de Movimiento</div>
+                <div class="document-subtitle">Control de almacén e inventario</div>
+                <div class="folio-box">
+                    <span class="folio-label">Folio</span>
+                    <span class="folio-value">#{{ str_pad((string) $folio, 5, '0', STR_PAD_LEFT) }}</span>
                 </div>
-            </div>
-        </div>
-    </div>
+            </td>
+        </tr>
+    </table>
 
-    <div class="info-grid">
-        <div class="info-item">
-            <span class="info-label">Origen:</span>
-            <span class="info-value">{{ $origin }}</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Destino:</span>
-            <span class="info-value">{{ $destination }}</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Tipo movimiento:</span>
-            <span class="info-value">{{ $movement_type }}</span>
-        </div>
-        <div class="info-item">
-            <span class="info-label">Registrado por:</span>
-            <span class="info-value">{{ $created_by }}</span>
-        </div>
-    </div>
+    {{-- ── DATOS DEL MOVIMIENTO ── --}}
+    <div class="section-title">Datos del Movimiento</div>
+    <table class="info-table">
+        <tr>
+            <td>
+                <span class="label">Fecha y hora</span>
+                <span class="value">{{ $date }}{{ $time ? ' — ' . $time : '' }}</span>
+            </td>
+            <td>
+                <span class="label">Tipo de movimiento</span>
+                <span class="value">{{ $movement_type }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="label">Almacén origen</span>
+                <span class="value">{{ $origin }}</span>
+            </td>
+            <td>
+                <span class="label">Almacén destino</span>
+                <span class="value">{{ $destination }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span class="label">Registrado por</span>
+                <span class="value">{{ $created_by }}</span>
+            </td>
+            <td>
+                <span class="label">Técnico / receptor</span>
+                <span class="value">{{ $technician_name }}</span>
+            </td>
+        </tr>
+    </table>
 
+    {{-- ── OBSERVACIONES ── --}}
+    <div class="section-title">Observaciones</div>
     <div class="observations">
-        <div><strong>Observaciones:</strong> {{ $observations }}</div>
+        {{ $observations ?: 'Sin observaciones' }}
     </div>
 
+    {{-- ── PRODUCTOS ── --}}
+    @php
+        $exitProducts = collect($products)->where('direction', 'Salida')->values();
+        $entryProducts = collect($products)->where('direction', 'Entrada')->values();
+    @endphp
+
+    <div class="section-title" style="color: #dc3545;">Salidas</div>
     <table class="products-table">
         <thead>
             <tr>
+                <th class="text-center">#</th>
                 <th>Producto</th>
-                <th>Lote/Serie</th>
-                <th>Cantidad</th>
+                <th>Lote / Serie</th>
+                <th>Almacén origen</th>
+                <th class="text-right">Cantidad</th>
+                <th>Movimiento</th>p
             </tr>
         </thead>
         <tbody>
-            @foreach ($products as $product)
+            @forelse ($exitProducts as $index => $product)
                 <tr>
+                    <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $product['product'] }}</td>
                     <td>{{ $product['lot'] }}</td>
-                    <td>{{ $product['amount'] }}</td>
+                    <td>{{ $product['warehouse'] }}</td>
+                    <td class="text-right">
+                        <b>{{ number_format((float) $product['amount'], 2) }}</b> {{ $product['metric'] }}
+                    </td>
+                    <td>{{ $product['movement'] }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr>
+                    <td colspan="6" class="text-center muted">Sin salidas registradas para este movimiento.</td>
+                </tr>
+            @endforelse
         </tbody>
     </table>
 
-    <div class="signatures-container">
-        <div class="signatures">
-            <div class="signature-box">
-                <div class="signature-content">
-                    <div class="signature-title">Firma del Almacenista</div>
-                    @if ($storekeeper_signature)
-                        <div class="signature-image">
-                            <img src="file://{{ $storekeeper_signature }}" alt="Firma almacenista" style="max-height: 100px;">
-                        </div>
-                    @endif
+    <div class="section-title" style="color: #198754;">Entradas</div>
+    <table class="products-table">
+        <thead>
+            <tr>
+                <th  class="text-center">#</th>
+                <th >Producto</th>
+                <th >Lote / Serie</th>
+                <th >Almacén destino</th>
+                <th  class="text-right">Cantidad</th>
+                <th >Movimiento</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse ($entryProducts as $index => $product)
+                <tr>
+                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td>{{ $product['product'] }}</td>
+                    <td>{{ $product['lot'] }}</td>
+                    <td>{{ $product['warehouse'] }}</td>
+                    <td class="text-right">
+                        <b>{{ number_format((float) $product['amount'], 2) }}</b> {{ $product['metric'] }}
+                    </td>
+                    <td>{{ $product['movement'] }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="6" class="text-center muted">Sin entradas registradas para este movimiento.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <table class="summary-table">
+        <tr>
+            <td>
+                Salidas: <strong>{{ $exitProducts->count() }}</strong>
+                &nbsp;|&nbsp;
+                Entradas: <strong>{{ $entryProducts->count() }}</strong>
+                &nbsp;|&nbsp;
+                Total de partidas: <strong>{{ count($products) }}</strong>
+            </td>
+            <td class="text-right">Documento generado: {{ date('d/m/Y H:i') }}</td>
+        </tr>
+    </table>
+
+    {{-- ── FIRMAS ── --}}
+    <div class="section-title">Firmas</div>
+    <table class="signature-table">
+        <tr>
+            <td>
+                <div class="signature-card">
+                    <div class="signature-image">
+                        @if ($storekeeper_signature)
+                            <img src="file://{{ $storekeeper_signature }}" alt="Firma almacenista">
+                        @endif
+                    </div>
+                    <div class="signature-role">Almacenista</div>
+                    <div class="signature-name">{{ $created_by }}</div>
                 </div>
-            </div>
-            <div class="signature-box">
-                <div class="signature-content">
-                    <div class="signature-title">Firma del Técnico</div>
+            </td>
+            <td>
+                <div class="signature-card">
+                    <div class="signature-image">
+                        @if ($technician_signature)
+                            <img src="file://{{ $technician_signature }}" alt="Firma técnico">
+                        @endif
+                    </div>
+                    <div class="signature-role">Técnico / Receptor</div>
                     <div class="signature-name">{{ $technician_name }}</div>
-                    @if ($technician_signature)
-                        <div class="signature-image">
-                            <img src="file://{{ $technician_signature }}" alt="Firma técnico" style="max-height: 100px;">
-                        </div>
-                    @endif
                 </div>
-            </div>
-        </div>
+            </td>
+        </tr>
+    </table>
+
+    {{-- ── FOOTER ── --}}
+    <div class="footer">
+        <span>Sistema de Inventarios</span>
+        <span>Voucher de movimiento #{{ $folio }}</span>
     </div>
 
-    <div class="footer">
-        Documento generado el {{ date('d/m/Y H:i') }} | Sistema de Inventarios
-    </div>
 </body>
 </html>

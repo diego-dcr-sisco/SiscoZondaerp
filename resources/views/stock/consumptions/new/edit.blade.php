@@ -1,21 +1,18 @@
 @extends('layouts.app')
 
 @section('content')
+    @include('components.page-header', [
+        'title' => 'EDITAR CONSUMO',
+        'icon' => 'bi-pencil-square',
+        'backRoute' => route('consumptions.index'),
+    ])
+
     <div class="row w-100 h-100 m-0">
         @include('dashboard.stock.navigation')
 
         <div class="col-11 p-3 m-0">
             
             <div class="row">
-                <div class="col-12 mb-3">
-                    <div class="d-flex align-items-center">
-                        <a href="{{ route('consumptions.index') }}" class="col-auto btn-primary p-0 fs-3">
-                            <i class="bi bi-arrow-left m-3"></i>
-                        </a>
-                        <h1 class="h3 mb-0">Editar Consumo</h1>
-                    </div>
-                </div>
-
                 <div class="row">
                     <div class="row mb-3 p-3">
                         <div class="col-lg-12">

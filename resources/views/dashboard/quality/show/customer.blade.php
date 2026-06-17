@@ -1,14 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid">
-        <div class="row border-bottom p-3 mb-4">
-            <a href="{{ route('quality.customers') }}" class="col-auto btn-primary p-0"><i
-                    class="bi bi-arrow-left m-3 fs-4"></i></a>
-            <h1 class="col-auto fs-2 fw-bold m-0">{{ $customer->name }}</h1>
-
-        </div>
-
-         <!-- comienza  -->
+    @include('components.page-header', [
+        'title' => 'VER DASHBOARD',
+        'icon' => 'bi-speedometer2',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid">
+<!-- comienza  -->
              <div class="d-flex">
             <div class="mb-3">
                 @can('write_order')

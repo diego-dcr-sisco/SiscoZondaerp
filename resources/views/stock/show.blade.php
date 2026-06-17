@@ -6,30 +6,23 @@
         exit(); ?>
     @endif
 
+    @include('components.page-header', [
+        'title' => 'STOCK - ALMACEN ' . $warehouse->name,
+        'icon' => 'bi-building',
+        'backRoute' => route('stock.index'),
+    ])
+
     <div class="container-fluid py-4">
-
-        {{-- HEADER --}}
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="#" onclick="window.history.back(); return false;" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                STOCK - ALMACÉN <span class="fs-5 fw-bold bg-warning p-1 rounded ms-2">{{ $warehouse->name }}</span>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <span class="badge bg-{{ $warehouse->is_active ? 'success' : 'danger' }}">
+                {{ $warehouse->is_active ? 'Activo' : 'Inactivo' }}
             </span>
-
-            <div class="ms-auto d-flex gap-2 align-items-center">
-                <span class="badge bg-{{ $warehouse->is_active ? 'success' : 'danger' }}">
-                    {{ $warehouse->is_active ? 'Activo' : 'Inactivo' }}
-                </span>
-
-                <span class="badge bg-warning text-dark">
-                    {{ $warehouse->is_matrix ? 'Matriz' : 'Regular' }}
-                </span>
-
-                <span class="badge bg-info">
-                    {{ $warehouse->allow_material_receipts ? 'Recibos permitidos' : 'Sin recibos' }}
-                </span>
-            </div>
+            <span class="badge bg-warning text-dark">
+                {{ $warehouse->is_matrix ? 'Matriz' : 'Regular' }}
+            </span>
+            <span class="badge bg-info">
+                {{ $warehouse->allow_material_receipts ? 'Recibos permitidos' : 'Sin recibos' }}
+            </span>
         </div>
 
         <div class="row">

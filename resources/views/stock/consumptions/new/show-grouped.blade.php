@@ -1,6 +1,12 @@
 @extends('layouts.app')
 
 @section('content')
+@include('components.page-header', [
+    'title' => 'DETALLES DEL CONSUMO',
+    'icon' => 'bi-clipboard-data',
+    'backRoute' => route('consumptions.index'),
+])
+
 <div class="row w-100 h-100 m-0">
     @include('dashboard.stock.navigation')
 
@@ -8,16 +14,6 @@
         
         
         <div class="row mb-3">
-            <div class="col-lg-8">
-                <div class="d-flex align-items-center">
-                    <a href="{{ route('consumptions.index') }}" class="col-auto btn-primary p-0 fs-3">
-                        <i class="bi bi-arrow-left m-3"></i>
-                    </a>
-                    <div>
-                        <h1 class="h3 mb-0">Detalles del Consumo</h1>
-                    </div>
-                </div>
-            </div>
             <!-- <div class="col-lg-4 text-end">
                 <span class="badge bg-{{ $groupedConsumption->status == 'approved' ? 'success' : ($groupedConsumption->status == 'rejected' ? 'danger' : 'warning') }} fs-6">
                     {{ $groupedConsumption->status_formatted }}

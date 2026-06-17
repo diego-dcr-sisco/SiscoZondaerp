@@ -54,12 +54,6 @@
                                         class="btn btn-secondary btn-sm">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
-                                    <a href="{{ route('service.destroy', ['id' => $service->id]) }}"
-                                        class="btn btn-danger btn-sm" data-bs-toggle="tooltip" data-bs-placement="top"
-                                        data-bs-title="Eliminar servicio"
-                                        onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')">
-                                        <i class="bi bi-trash-fill"></i>
-                                    </a>
                                 @endcan
                             </td>
                         </tr>

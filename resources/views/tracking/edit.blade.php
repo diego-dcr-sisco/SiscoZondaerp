@@ -1,18 +1,15 @@
 @extends('layouts.app')
 @section('content')
-    @php
+    @include('components.page-header', [
+        'title' => 'EDITAR SEGUIMIENTO',
+        'icon' => 'bi-crosshair',
+        'backRoute' => url()->previous(),
+    ])
+@php
         $range = json_decode($tracking->range);
     @endphp
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{-- route('customer.quote', ['id' => $quote->model_id, 'class' => $class]) --}} javascript:history.back();" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                EDITAR SEGUIMIENTO
-            </span>
-        </div>
-        <form class="p-3" action="{{ route('crm.tracking.update', ['id' => $tracking->id]) }}" method="POST">
+<form class="p-3" action="{{ route('crm.tracking.update', ['id' => $tracking->id]) }}" method="POST">
             @csrf
             <div class="row">
                 <div class="col-6">

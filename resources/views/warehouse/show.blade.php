@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    @if (!auth()->check())
+    @include('components.page-header', [
+        'title' => 'VER ALMACEN',
+        'icon' => 'bi-building',
+        'backRoute' => url()->previous(),
+    ])
+@if (!auth()->check())
         <?php
         header('Location: /login');
         exit();
@@ -19,12 +24,7 @@
     </style>
 
 <div class="container-fluid">
-    <div class="row border-bottom p-3 mb-3">
-        <a href="{{ route('warehouse.index', ['is_active' =>  $warehouse->active ? 1 : 0]) }}" class="col-auto btn-primary p-0 fs-3"><i
-                class="bi bi-arrow-left m-3"></i></a>
-        <h1 class="col-auto fs-2 fw-bold m-0"> Ver almacen: {{ $warehouse->name }} </h1>
-    </div>
-    <div class="row justify-content-center">
+<div class="row justify-content-center">
         <div class="col-11">
             <div class="row">
                 <span class="col fw-bold">ID</span>

@@ -1,6 +1,12 @@
 @extends('layouts.app')
 @section('content')
-    @if (!auth()->check())
+    @include('components.page-header', [
+        'title' => 'CREAR REPORTE',
+        'icon' => 'bi-file-earmark-bar-graph',
+        'iconColor' => 'text-success',
+        'backRoute' => url()->previous(),
+    ])
+@if (!auth()->check())
         <?php header('Location: /login');
         exit(); ?>
     @endif
@@ -111,7 +117,7 @@
             order: 1;
         }
 
-        .report-certificate-ui .autosave-status {
+        .report-certificate-ui .change-status {
             font-size: 0.78rem;
             color: var(--cert-muted);
             background: #f2f6fa;
@@ -122,19 +128,19 @@
             order: 2;
         }
 
-        .report-certificate-ui .autosave-status.is-saving {
+        .report-certificate-ui .change-status.is-saving {
             color: #925f00;
             background: #fff8e1;
             border-color: #ffd970;
         }
 
-        .report-certificate-ui .autosave-status.is-saved {
+        .report-certificate-ui .change-status.is-saved {
             color: #176538;
             background: #eafaf1;
             border-color: #7cd3a6;
         }
 
-        .report-certificate-ui .autosave-status.is-error {
+        .report-certificate-ui .change-status.is-error {
             color: #8b1a1a;
             background: #ffefef;
             border-color: #f3a6a6;
@@ -169,19 +175,6 @@
     </style>
 
     <div class="container-fluid p-0 report-certificate-ui">
-        <div class="d-flex align-items-center ps-4 p-2 report-topbar">
-            <a href="#" onclick="history.back(); return false;" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                REVISION DEL REPORTE <span class="ms-2 fs-4"> {{ $order->folio }} [{{ $order->id }}]</span>
-            </span>
-            <span id="approved-badge" class="badge bg-success ms-3 fs-6" style="{{ $order->status_id == 5 ? '' : 'display: none;' }}">
-                <i class="bi bi-check-circle-fill me-1"></i>
-                Aprobado
-            </span>
-        </div>
-
         @include('report.create.form')
     </div>
 

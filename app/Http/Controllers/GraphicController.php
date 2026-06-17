@@ -1224,54 +1224,254 @@ class GraphicController extends Controller
 
     //////////////////////// MÉTODOS JSON PARA AJAX ////////////////////////////////
 
+    private function chartDateRange(Request $request): array
+    {
+        $dateRange = $request->input('date_range');
+        $year = (int) $request->input('year', Carbon::now()->year);
+
+        if ($dateRange && preg_match('/^\s*(\d{2}\/\d{2}\/\d{4})\s*-\s*(\d{2}\/\d{2}\/\d{4})\s*$/', $dateRange, $matches)) {
+            $start = Carbon::createFromFormat('d/m/Y', $matches[1])->startOfDay();
+            $end = Carbon::createFromFormat('d/m/Y', $matches[2])->endOfDay();
+        } else {
+            $start = Carbon::create($year, 1, 1)->startOfDay();
+            $end = Carbon::create($year, 12, 31)->endOfDay();
+        }
+
+        if ($start->greaterThan($end)) {
+            [$start, $end] = [$end->copy()->startOfDay(), $start->copy()->endOfDay()];
+        }
+
+        return [$start, $end];
+    }
+
+    private function chartPeriodDivision(Request $request): string
+    {
+        $division = $request->input('period_division', 'monthly');
+        $allowed = ['weekly', 'monthly', 'bimonthly', 'quarterly', 'four_monthly', 'semiannual', 'annual'];
+
+        return in_array($division, $allowed, true) ? $division : 'monthly';
+    }
+
+    private function chartPeriodMonths(string $division): ?int
+    {
+        return match ($division) {
+            'monthly' => 1,
+            'bimonthly' => 2,
+            'quarterly' => 3,
+            'four_monthly' => 4,
+            'semiannual' => 6,
+            'annual' => 12,
+            default => null,
+        };
+    }
+
+    private function chartPeriodLabel(Carbon $start, Carbon $end, string $division): string
+    {
+        if ($division === 'weekly') {
+            return $start->format('d/m/Y') . ' - ' . $end->format('d/m/Y');
+        }
+
+        if ($division === 'annual') {
+            return $start->year === $end->year
+                ? (string) $start->year
+                : $start->year . ' - ' . $end->year;
+        }
+
+        if ($start->isSameMonth($end)) {
+            return $this->months[$start->month - 1] . ' ' . $start->year;
+        }
+
+        $startLabel = $this->months[$start->month - 1];
+        $endLabel = $this->months[$end->month - 1];
+
+        if ($start->year !== $end->year) {
+            $startLabel .= ' ' . $start->year;
+        }
+
+        return $startLabel . ' - ' . $endLabel . ' ' . $end->year;
+    }
+
+    private function chartPeriods(Carbon $start, Carbon $end, string $division): array
+    {
+        $periods = [];
+        $cursor = $start->copy();
+        $months = $this->chartPeriodMonths($division);
+
+        while ($cursor->lte($end)) {
+            $periodStart = $cursor->copy();
+            $periodEnd = $months
+                ? $cursor->copy()->addMonthsNoOverflow($months)->subDay()->endOfDay()
+                : $cursor->copy()->addWeek()->subDay()->endOfDay();
+
+            if ($periodEnd->greaterThan($end)) {
+                $periodEnd = $end->copy();
+            }
+
+            $periods[] = [
+                'label' => $this->chartPeriodLabel($periodStart, $periodEnd, $division),
+                'start' => $periodStart,
+                'end' => $periodEnd,
+            ];
+
+            $cursor = $periodEnd->copy()->addDay()->startOfDay();
+        }
+
+        return $periods;
+    }
+
+    private function serviceTypeCountForPeriod(string $modelClass, Carbon $start, Carbon $end, int $serviceTypeId): int
+    {
+        $query = $modelClass::whereBetween('created_at', [$start, $end])
+            ->where('service_type_id', $serviceTypeId);
+
+        if ($modelClass === Customer::class && in_array($serviceTypeId, [2, 3], true)) {
+            $query->where(function ($query) {
+                $query->whereNotNull('general_sedes')
+                    ->where('general_sedes', '!=', 0);
+            });
+        }
+
+        return $query->count();
+    }
+
+    private function periodicServiceTypeSeries(Request $request, string $modelClass): array
+    {
+        [$start, $end] = $this->chartDateRange($request);
+        $division = $this->chartPeriodDivision($request);
+        $periods = $this->chartPeriods($start, $end, $division);
+        $series = [
+            1 => [],
+            2 => [],
+            3 => [],
+        ];
+
+        foreach ($periods as $period) {
+            foreach ([1, 2, 3] as $serviceTypeId) {
+                $series[$serviceTypeId][] = $this->serviceTypeCountForPeriod(
+                    $modelClass,
+                    $period['start'],
+                    $period['end'],
+                    $serviceTypeId
+                );
+            }
+        }
+
+        return [
+            'labels' => collect($periods)->pluck('label')->values()->all(),
+            'domestics' => $series[1],
+            'comercials' => $series[2],
+            'industrials' => $series[3],
+            'period_division' => $division,
+            'start_date' => $start->toDateString(),
+            'end_date' => $end->toDateString(),
+        ];
+    }
+
+    private function orderServiceTypeCountForPeriod(Carbon $start, Carbon $end, int $serviceTypeId): int
+    {
+        return Order::whereBetween('programmed_date', [$start, $end])
+            ->whereHas('customer', function ($query) use ($serviceTypeId) {
+                $query->where('service_type_id', $serviceTypeId);
+            })
+            ->count();
+    }
+
+    private function periodicOrderServiceTypeSeries(Request $request): array
+    {
+        [$start, $end] = $this->chartDateRange($request);
+        $division = $this->chartPeriodDivision($request);
+        $periods = $this->chartPeriods($start, $end, $division);
+        $series = [
+            1 => [],
+            2 => [],
+            3 => [],
+        ];
+
+        foreach ($periods as $period) {
+            foreach ([1, 2, 3] as $serviceTypeId) {
+                $series[$serviceTypeId][] = $this->orderServiceTypeCountForPeriod(
+                    $period['start'],
+                    $period['end'],
+                    $serviceTypeId
+                );
+            }
+        }
+
+        return [
+            'labels' => collect($periods)->pluck('label')->values()->all(),
+            'domestics' => $series[1],
+            'comercials' => $series[2],
+            'industrials' => $series[3],
+            'period_division' => $division,
+            'start_date' => $start->toDateString(),
+            'end_date' => $end->toDateString(),
+        ];
+    }
+
+    private function trackingServiceTypeCountForPeriod(Carbon $start, Carbon $end, int $serviceTypeId): int
+    {
+        return DB::table('tracking')
+            ->whereBetween('next_date', [$start->toDateString(), $end->toDateString()])
+            ->where(function ($query) use ($serviceTypeId) {
+                $query->where(function ($query) use ($serviceTypeId) {
+                    $query->where('trackable_type', Customer::class)
+                        ->whereExists(function ($query) use ($serviceTypeId) {
+                            $query->select(DB::raw(1))
+                                ->from('customer')
+                                ->whereColumn('customer.id', 'tracking.trackable_id')
+                                ->where('customer.service_type_id', $serviceTypeId);
+                        });
+                })->orWhere(function ($query) use ($serviceTypeId) {
+                    $query->where('trackable_type', Lead::class)
+                        ->whereExists(function ($query) use ($serviceTypeId) {
+                            $query->select(DB::raw(1))
+                                ->from('lead')
+                                ->whereColumn('lead.id', 'tracking.trackable_id')
+                                ->where('lead.service_type_id', $serviceTypeId);
+                        });
+                });
+            })
+            ->count();
+    }
+
+    private function periodicTrackingServiceTypeSeries(Request $request): array
+    {
+        [$start, $end] = $this->chartDateRange($request);
+        $division = $this->chartPeriodDivision($request);
+        $periods = $this->chartPeriods($start, $end, $division);
+        $series = [
+            1 => [],
+            2 => [],
+            3 => [],
+        ];
+
+        foreach ($periods as $period) {
+            foreach ([1, 2, 3] as $serviceTypeId) {
+                $series[$serviceTypeId][] = $this->trackingServiceTypeCountForPeriod(
+                    $period['start'],
+                    $period['end'],
+                    $serviceTypeId
+                );
+            }
+        }
+
+        return [
+            'labels' => collect($periods)->pluck('label')->values()->all(),
+            'domestics' => $series[1],
+            'comercials' => $series[2],
+            'industrials' => $series[3],
+            'period_division' => $division,
+            'start_date' => $start->toDateString(),
+            'end_date' => $end->toDateString(),
+        ];
+    }
+
     /**
      * Devuelve datos de clientes por mes en formato JSON
      */
     public function customersByMonthJson(Request $request)
     {
-        $year = $request->input('year', Carbon::now()->year);
-        $domestics = [];
-        $comercials = [];
-        $industrials = [];
-
-        for ($month = 1; $month <= 12; $month++) {
-            $domestics[] = Customer::whereMonth('created_at', $month)
-                ->whereYear('created_at', $year)
-                ->where('service_type_id', 1)
-                /*->where(function($query) {
-                    $query->whereNotNull('general_sedes')
-                        ->where('general_sedes', '!=', 0);
-                })*/
-                ->count();
-
-            $comercials[] = Customer::whereMonth('created_at', $month)
-                ->whereYear('created_at', $year)
-                ->where('service_type_id', 2)
-                ->where(function($query) {
-                    $query->whereNotNull('general_sedes')
-                        ->where('general_sedes', '!=', 0);
-                })
-                ->count();
-
-            $industrials[] = Customer::whereMonth('created_at', $month)
-                ->whereYear('created_at', $year)
-                ->where('service_type_id', 3)
-                ->where(function($query) {
-                    $query->whereNotNull('general_sedes')
-                        ->where('general_sedes', '!=', 0);
-                })
-                ->count();
-        }
-
-        return response()->json([
-            'labels' => [
-                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-            ],
-            'domestics' => $domestics,
-            'comercials' => $comercials,
-            'industrials' => $industrials,
-        ]);
+        return response()->json($this->periodicServiceTypeSeries($request, Customer::class));
     }
 
     /**
@@ -1279,37 +1479,7 @@ class GraphicController extends Controller
      */
     public function leadsByMonthJson(Request $request)
     {
-        $year = $request->input('year', Carbon::now()->year);
-        $domestics = [];
-        $comercials = [];
-        $industrials = [];
-
-        for ($month = 1; $month <= 12; $month++) {
-            $domestics[] = Lead::whereMonth('created_at', $month)
-                ->whereYear('created_at', $year)
-                ->where('service_type_id', 1)
-                ->count();
-
-            $comercials[] = Lead::whereMonth('created_at', $month)
-                ->whereYear('created_at', $year)
-                ->where('service_type_id', 2)
-                ->count();
-
-            $industrials[] = Lead::whereMonth('created_at', $month)
-                ->whereYear('created_at', $year)
-                ->where('service_type_id', 3)
-                ->count();
-        }
-
-        return response()->json([
-            'labels' => [
-                'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-            ],
-            'domestics' => $domestics,
-            'comercials' => $comercials,
-            'industrials' => $industrials,
-        ]);
+        return response()->json($this->periodicServiceTypeSeries($request, Lead::class));
     }
 
     /**
@@ -1317,6 +1487,10 @@ class GraphicController extends Controller
      */
     public function servicesByTypeJson(Request $request)
     {
+        if ($request->filled('date_range') || $request->filled('period_division')) {
+            return response()->json($this->periodicOrderServiceTypeSeries($request));
+        }
+
         $month = $request->input('month', Carbon::now()->month);
         $year = $request->input('year', Carbon::now()->year);
 
@@ -1383,6 +1557,10 @@ class GraphicController extends Controller
      */
     public function trackingsByMonthJson(Request $request)
     {
+        if ($request->filled('date_range') || $request->filled('period_division')) {
+            return response()->json($this->periodicTrackingServiceTypeSeries($request));
+        }
+
         $year = $request->input('year', Carbon::now()->year);
         $trackings = [];
 
@@ -1409,6 +1587,56 @@ class GraphicController extends Controller
      */
     public function pestsByCustomerJson(Request $request)
     {
+        if ($request->filled('date_range') || $request->filled('period_division')) {
+            [$start, $end] = $this->chartDateRange($request);
+            $division = $this->chartPeriodDivision($request);
+            $periods = $this->chartPeriods($start, $end, $division);
+
+            $pestsData = DB::table('device_pest')
+                ->join('order', 'device_pest.order_id', '=', 'order.id')
+                ->join('pest_catalog', 'device_pest.pest_id', '=', 'pest_catalog.id')
+                ->select('pest_catalog.id', 'pest_catalog.name', DB::raw('SUM(device_pest.total) as total_count'))
+                ->whereBetween('order.programmed_date', [$start->toDateString(), $end->toDateString()])
+                ->groupBy('pest_catalog.id', 'pest_catalog.name')
+                ->orderBy('total_count', 'desc')
+                ->limit(10)
+                ->get();
+
+            $periodRows = [];
+
+            foreach ($pestsData as $pest) {
+                $periodCounts = [];
+
+                foreach ($periods as $period) {
+                    $periodCounts[] = (int) DB::table('device_pest')
+                        ->join('order', 'device_pest.order_id', '=', 'order.id')
+                        ->where('device_pest.pest_id', $pest->id)
+                        ->whereBetween('order.programmed_date', [
+                            $period['start']->toDateString(),
+                            $period['end']->toDateString(),
+                        ])
+                        ->sum('device_pest.total');
+                }
+
+                $periodRows[] = [
+                    'id' => $pest->id,
+                    'name' => $pest->name,
+                    'total' => (int) $pest->total_count,
+                    'periods' => $periodCounts,
+                ];
+            }
+
+            return response()->json([
+                'labels' => $pestsData->pluck('name')->toArray(),
+                'data' => $pestsData->pluck('total_count')->map(fn ($value) => (int) $value)->toArray(),
+                'period_labels' => collect($periods)->pluck('label')->values()->all(),
+                'rows' => $periodRows,
+                'period_division' => $division,
+                'start_date' => $start->toDateString(),
+                'end_date' => $end->toDateString(),
+            ]);
+        }
+
         $month = $request->input('month', Carbon::now()->month);
         $year = $request->input('year', Carbon::now()->year);
 

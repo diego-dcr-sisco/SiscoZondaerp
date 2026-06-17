@@ -1,11 +1,127 @@
 <style>
+    #configureServiceModal .modal-content {
+        border: 0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    #configureServiceModal .modal-header {
+        border-bottom: 0;
+        padding: 1rem 1.25rem;
+    }
+
+    #configureServiceModal .modal-body {
+        background: #f8f9fa;
+        padding: 1rem 1.25rem;
+    }
+
+    #configureServiceModal .modal-footer {
+        background: #fff;
+        border-top: 1px solid #dee2e6;
+        padding: 0.75rem 1.25rem;
+    }
+
+    .service-config-section {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+
+    .service-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .service-meta-item {
+        min-width: 0;
+        border: 1px solid #e9ecef;
+        border-radius: 0.375rem;
+        padding: 0.65rem 0.75rem;
+        background: #fff;
+    }
+
+    .service-meta-label {
+        display: block;
+        color: #6c757d;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .service-meta-value {
+        display: block;
+        color: #212529;
+        font-size: 0.95rem;
+        font-weight: 600;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .service-meta-wide {
+        grid-column: span 2;
+    }
+
     .configuration-item {
-        border-left: 3px solid #0d6efd;
-        transition: all 0.3s ease;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-left: 4px solid #0d6efd;
+        border-radius: 0.5rem;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
     .configuration-item:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+        border-color: #b6d4fe;
+        box-shadow: 0 0.35rem 0.9rem rgba(13, 110, 253, 0.08);
+    }
+
+    .configuration-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .configuration-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .configuration-summary .badge {
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .schedule-panel {
+        border: 1px solid #e9ecef;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        background: #fbfcfd;
+    }
+
+    .custom-interval-panel {
+        border: 1px solid #dbeafe;
+        border-radius: 0.5rem;
+        background: #f8fbff;
+        padding: 1rem;
+    }
+
+    .configuration-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        align-items: center;
+        border-top: 1px solid #e9ecef;
+        padding-top: 0.75rem;
+        margin-top: 0.75rem;
     }
 
     .day-pill {
@@ -17,26 +133,6 @@
     .day-pill.active {
         background-color: #0d6efd;
         color: white;
-    }
-
-    /*.configurations-container {
-                max-height: 300px;
-                overflow-y: auto;
-            }*/
-    .modal-content {
-        border-radius: 0.5rem;
-    }
-
-    .modal-header {
-        border-top-left-radius: 0.5rem;
-        border-top-right-radius: 0.5rem;
-    }
-
-    .config-actions {
-        display: flex;
-        justify-content: end;
-        gap: 10px;
-        margin-top: 15px;
     }
 
     .dates-list {
@@ -67,6 +163,40 @@
         color: #6c757d;
         font-style: italic;
     }
+
+    .configurations-container {
+        border: 1px dashed #ced4da;
+        border-radius: 0.5rem;
+        background: #fff;
+        padding: 0.75rem;
+    }
+
+    .orders-table {
+        margin-bottom: 0;
+        vertical-align: middle;
+    }
+
+    @media (max-width: 992px) {
+        .service-meta-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 576px) {
+        .service-meta-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .service-meta-wide {
+            grid-column: span 1;
+        }
+
+        .configuration-header,
+        .configuration-toolbar {
+            align-items: stretch;
+            flex-direction: column;
+        }
+    }
 </style>
 
 <!-- Modal -->
@@ -75,65 +205,61 @@
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-secondary text-light">
-                <h5 class="modal-title" id="configureServiceModalLabel">
-                    Configurar Servicio
-                </h5>
+                <div>
+                    <h5 class="modal-title mb-1" id="configureServiceModalLabel">
+                        Configurar servicio del contrato
+                    </h5>
+                    <small class="text-light opacity-75">Frecuencia, fechas, órdenes y descripción operativa</small>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                     aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <h6 class="mb-3 border-bottom fw-bold pb-2">
-                    <i class="bi bi-info-circle me-1"></i> Información del Servicio
-                </h6>
-
-                <div class="row mb-4">
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Prefijo</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-hash"></i></span>
-                            <input type="text" class="form-control" id="serviceModal-prefix" value="SRV-001"
-                                disabled>
-                        </div>
+                <div class="service-config-section mb-3">
+                    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                        <h6 class="fw-bold mb-0">
+                            <i class="bi bi-info-circle me-1"></i> Información del servicio
+                        </h6>
                     </div>
-                    <div class="col-md-8 mb-3">
-                        <label class="form-label">Servicio</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-card-text"></i></span>
-                            <input type="text" class="form-control" id="serviceModal-service"
-                                value="Mantenimiento Preventivo" disabled>
+                    <div class="service-meta-grid">
+                        <div class="service-meta-item">
+                            <span class="service-meta-label">Prefijo</span>
+                            <span class="service-meta-value" id="serviceModal-prefix-text">SRV-001</span>
+                            <input type="hidden" id="serviceModal-prefix" value="SRV-001">
                         </div>
-                    </div>
-
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Tipo</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-tag"></i></span>
-                            <input type="text" class="form-control" id="serviceModal-type" value="Preventivo"
-                                disabled>
+                        <div class="service-meta-item service-meta-wide">
+                            <span class="service-meta-label">Servicio</span>
+                            <span class="service-meta-value" id="serviceModal-service-text">Mantenimiento Preventivo</span>
+                            <input type="hidden" id="serviceModal-service" value="Mantenimiento Preventivo">
                         </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Línea de negocio</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
-                            <input type="text" class="form-control" id="serviceModal-bsline" value="Mantenimiento"
-                                disabled>
+                        <div class="service-meta-item">
+                            <span class="service-meta-label">Tipo</span>
+                            <span class="service-meta-value" id="serviceModal-type-text">Preventivo</span>
+                            <input type="hidden" id="serviceModal-type" value="Preventivo">
                         </div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Costo</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
-                            <input type="text" class="form-control" id="serviceModal-cost" value="$150.00" disabled>
+                        <div class="service-meta-item">
+                            <span class="service-meta-label">Línea</span>
+                            <span class="service-meta-value" id="serviceModal-bsline-text">Mantenimiento</span>
+                            <input type="hidden" id="serviceModal-bsline" value="Mantenimiento">
+                        </div>
+                        <div class="service-meta-item">
+                            <span class="service-meta-label">Costo</span>
+                            <span class="service-meta-value" id="serviceModal-cost-text">$150.00</span>
+                            <input type="hidden" id="serviceModal-cost" value="$150.00">
                         </div>
                     </div>
                 </div>
 
-                <h6 class="mb-3 border-bottom fw-bold pb-2">
-                    <i class="bi bi-list-check me-1"></i> Configuraciones del Servicio
-                </h6>
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+                    <h6 class="fw-bold mb-0">
+                        <i class="bi bi-list-check me-1"></i> Configuraciones del servicio
+                    </h6>
+                    <button type="button" class="btn btn-sm btn-primary" id="add-configuration">
+                        <i class="bi bi-plus-circle me-1"></i> Nueva configuración
+                    </button>
+                </div>
 
-                <div class="configurations-container mb-4 p-2 border rounded">
+                <div class="configurations-container mb-3">
                     <div id="configurations-list">
                         <!-- Las configuraciones se agregarán aquí dinámicamente -->
                     </div>
@@ -144,15 +270,9 @@
                     </div>
                 </div>
 
-                <div class="d-grid mb-4">
-                    <button type="button" class="btn btn-outline-primary" id="add-configuration">
-                        <i class="bi bi-plus-circle me-1"></i> Agregar Nueva Configuración
-                    </button>
-                </div>
-
                 <input type="hidden" id="service-id" value="" />
 
-                <div class="alert alert-info mt-3 mb-0" role="alert">
+                <div class="alert alert-info mb-0" role="alert">
                     <i class="bi bi-shield-check me-1"></i>
                     Al guardar, solo se actualizan las órdenes en estado <strong>Pendiente</strong>. Las órdenes con
                     otro estado se conservan sin cambios.
@@ -170,7 +290,11 @@
     </div>
 </div>
 
+@include('components.quill-service-editor-tools')
+
 <script>
+    const CUSTOM_INTERVAL_VALUE = 'custom';
+
     function toDateKey(value) {
         if (!value) {
             return null;
@@ -206,12 +330,82 @@
         return toDateKey(new Date());
     }
 
+    function getContractStartDate() {
+        return $("#startdate").val();
+    }
+
+    function getContractEndDate() {
+        return $("#enddate").val();
+    }
+
+    function getGenerationStartDate(configId) {
+        return $(`#generation-start-date-${configId}`).val() || getContractStartDate();
+    }
+
+    function getGenerationEndDate(configId) {
+        return $(`#generation-end-date-${configId}`).val() || getContractEndDate();
+    }
+
+    function applyGenerationDateBounds(configId, startValue = null, endValue = null) {
+        const contractStartDate = getContractStartDate();
+        const contractEndDate = getContractEndDate();
+        const startInput = $(`#generation-start-date-${configId}`);
+        const endInput = $(`#generation-end-date-${configId}`);
+
+        startInput.attr('min', contractStartDate || null);
+        startInput.attr('max', contractEndDate || null);
+        startInput.val(startValue || startInput.val() || contractStartDate);
+
+        endInput.attr('min', contractStartDate || null);
+        endInput.attr('max', contractEndDate || null);
+        endInput.val(endValue || endInput.val() || contractEndDate);
+    }
+
+    function validateGenerationDateRange(configId) {
+        const generationStartDate = getGenerationStartDate(configId);
+        const generationEndDate = getGenerationEndDate(configId);
+        const contractStartDate = getContractStartDate();
+        const contractEndDate = getContractEndDate();
+
+        if (!generationStartDate || !generationEndDate || !contractStartDate || !contractEndDate) {
+            alert("Incluye la fecha de inicio y/o finalización del contrato");
+            return false;
+        }
+
+        if (generationStartDate < contractStartDate || generationStartDate > contractEndDate) {
+            alert(`La fecha de generación debe estar entre ${contractStartDate} y ${contractEndDate}`);
+            return false;
+        }
+
+        if (generationEndDate < contractStartDate || generationEndDate > contractEndDate) {
+            alert(`La fecha de cierre de generación debe estar entre ${contractStartDate} y ${contractEndDate}`);
+            return false;
+        }
+
+        if (generationEndDate < generationStartDate) {
+            alert('La fecha de cierre de generación no puede ser menor a la fecha de inicio de generación');
+            return false;
+        }
+
+        return true;
+    }
+
+    function filterDatesByGenerationRange(dates, configId) {
+        const generationStartDate = getGenerationStartDate(configId);
+        const generationEndDate = getGenerationEndDate(configId);
+
+        return (dates || []).filter(date => {
+            const dateKey = toDateKey(date);
+            return dateKey && dateKey >= generationStartDate && dateKey <= generationEndDate;
+        });
+    }
+
     $('#configureServiceModal').on('show.bs.modal', function(event) {
         configDates = {};
         configDescriptions = {};
 
         const service_id = $('#service-id').val();
-        //setServiceVisualData(service_id);
+        setServiceVisualData(service_id);
 
         // Reiniciar configurations solo para este servicio
         configurations = contract_configurations.filter(c => c.service_id == service_id);
@@ -245,14 +439,19 @@
                 // (depende de la lógica de negocio)
                 if (can_renew) {
                     const service = {
-                        frequency: config.frequency_id,
-                        interval: config.interval_id,
+                        frequency: parseInt(config.frequency_id, 10),
+                        interval: parseInt(config.interval_id, 10),
                         days: config.days.filter(d => d !== ''),
-                        index: config.config_id
+                        index: config.config_id,
+                        generation_start_date: config.generation_start_date || $("#startdate").val(),
+                        generation_end_date: config.generation_end_date || $("#enddate").val(),
+                        custom_interval_enabled: !!config.custom_interval_enabled,
+                        custom_interval_start_date: config.custom_interval_start_date,
+                        custom_interval_days: config.custom_interval_days
                     };
 
-                    const startDate = $("#startdate").val();
-                    const endDate = $("#enddate").val();
+                    const startDate = config.generation_start_date || $("#startdate").val();
+                    const endDate = config.generation_end_date || $("#enddate").val();
 
                     // Verificar que las fechas existan
                     if (startDate && endDate) {
@@ -269,10 +468,16 @@
                 // Cargar valores en los formularios
                 $(`#service-frequency-${config.config_id}`).val(config.frequency_id).trigger('change');
                 if (config.frequency_id == 3 || config.frequency_id == 5) {
-                    $(`#service-interval-${config.config_id}`).val(config.interval_id).trigger(
+                    const intervalValue = config.custom_interval_enabled ? CUSTOM_INTERVAL_VALUE : config.interval_id;
+                    $(`#service-interval-${config.config_id}`).val(intervalValue).trigger(
                         'change');
                 }
                 $(`#service-days-${config.config_id}`).val(config.days);
+                applyGenerationDateBounds(
+                    config.config_id,
+                    config.generation_start_date || $("#startdate").val(),
+                    config.generation_end_date || $("#enddate").val()
+                );
 
                 // Cargar fecha para quincenal o día específico
                 if (config.frequency_id == 1 || config.frequency_id == 5) {
@@ -291,6 +496,10 @@
                         $(`#service-date-${config.config_id}`).val(config.days);
                     }
                 }
+
+                $(`#custom-interval-start-date-${config.config_id}`).val(config.custom_interval_start_date || $("#startdate").val());
+                $(`#custom-interval-days-${config.config_id}`).val(config.custom_interval_days || '');
+                toggleCustomIntervalFields(config.config_id);
 
                 // Guardar referencia a config.orders en configurations local
                 const localConfig = configurations.find(c => c.config_id === config.config_id);
@@ -320,17 +529,16 @@
                         console.log(`Config ${config.config_id} no tiene órdenes o está vacío`);
                     }
 
-                    // Cargar la descripción en el editor Summernote si existe
+                    // Cargar la descripción en el editor Quill si existe
                     if (configDescriptions[config.config_id]) {
-                        $(`#config-summernote${config.config_id}`).summernote('code', configDescriptions[config.config_id]);
+                        setContractServiceEditorHtml(config.config_id, configDescriptions[config.config_id]);
                     }
                 }, 300); // Aumentar el timeout para asegurar que el DOM esté listo
 
-                // Cargar descripción después de inicializar Summernote
+                // Cargar descripción después de inicializar Quill
                 setTimeout(() => {
                     if (configDescriptions[config.config_id]) {
-                        $(`#config-summernote${config.config_id}`).summernote('code',
-                            configDescriptions[config.config_id]);
+                        setContractServiceEditorHtml(config.config_id, configDescriptions[config.config_id]);
                     }
                 }, 400);
             });
@@ -356,6 +564,28 @@
         addConfiguration();
     });
 
+    $("#startdate, #enddate").on("change input", function() {
+        $('.configuration-item').each(function() {
+            const configId = $(this).data('config-id');
+            const currentStartValue = getGenerationStartDate(configId);
+            const currentEndValue = getGenerationEndDate(configId);
+            const contractStartDate = getContractStartDate();
+            const contractEndDate = getContractEndDate();
+            let nextStartValue = currentStartValue;
+            let nextEndValue = currentEndValue;
+
+            if (!nextStartValue || nextStartValue < contractStartDate || nextStartValue > contractEndDate) {
+                nextStartValue = contractStartDate;
+            }
+
+            if (!nextEndValue || nextEndValue < contractStartDate || nextEndValue > contractEndDate || nextEndValue < nextStartValue) {
+                nextEndValue = contractEndDate;
+            }
+
+            applyGenerationDateBounds(configId, nextStartValue, nextEndValue);
+        });
+    });
+
     // Manejar clic en el botón de guardar
     $("#save-configurations").on("click", function() {
         saveAllConfigurations();
@@ -377,14 +607,24 @@
         }
     });
 
-    /*function setServiceVisualData(service_id) {
+    function setServiceVisualData(service_id) {
         var contain_ss = contain_selected_services.find(contain_service => contain_service.id == service_id);
-        $('#serviceModal-prefix').val(prefixes[contain_ss.prefix]);
-        $('#serviceModal-service').val(contain_ss.name);
-        $('#serviceModal-type').val(contain_ss.type);
-        $('#serviceModal-bsline').val(contain_ss.line);
-        $('#serviceModal-cost').val(contain_ss.cost);
-    }*/
+        if (!contain_ss) return;
+
+        const serviceMeta = {
+            prefix: typeof prefixes !== 'undefined' ? prefixes[contain_ss.prefix] : contain_ss.prefix,
+            service: contain_ss.name,
+            type: contain_ss.type,
+            bsline: contain_ss.line,
+            cost: contain_ss.cost
+        };
+
+        Object.entries(serviceMeta).forEach(([key, value]) => {
+            const displayValue = value ?? '';
+            $(`#serviceModal-${key}`).val(displayValue);
+            $(`#serviceModal-${key}-text`).text(displayValue).attr('title', displayValue);
+        });
+    }
 
     function addConfiguration() {
         configCounter++;
@@ -398,12 +638,45 @@
         if (emptyState.length) emptyState.hide();
 
         const configHTML = `
-            <div class="configuration-item mb-3 p-3 bg-light rounded" data-config-id="${configId}" >
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="text-primary mb-0">Configuración ${configId}</h6>
-                    <button type="button" class="btn-close" aria-label="Eliminar" onclick="removeConfiguration(${configId})"></button>
+            <div class="configuration-item mb-3 p-3" data-config-id="${configId}" >
+                <div class="configuration-header">
+                    <div>
+                        <h6 class="text-primary mb-1">Configuración ${configId}</h6>
+                        <div class="configuration-summary">
+                            <span class="badge text-bg-light border">
+                                <i class="bi bi-calendar3 me-1"></i><span id="dates-count-${configId}">0</span> fechas
+                            </span>
+                            <span class="badge text-bg-light border">
+                                <i class="bi bi-list-check me-1"></i><span id="orders-summary-count-${configId}">0</span> órdenes
+                            </span>
+                            <span class="badge text-bg-light border d-none" id="custom-interval-badge-${configId}">
+                                <i class="bi bi-repeat me-1"></i>Personalizado
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" aria-label="Eliminar" onclick="removeConfiguration(${configId})">
+                        <i class="bi bi-trash-fill"></i>
+                    </button>
                 </div>
-                <div class="row">
+                <div class="schedule-panel mb-3">
+                    <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Generar a partir de</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+                            <input type="date" class="form-control generation-start-date" id="generation-start-date-${configId}">
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Generar hasta</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+                            <input type="date" class="form-control generation-end-date" id="generation-end-date-${configId}">
+                        </div>
+                        <div class="form-text">
+                            El rango debe estar dentro de la duración del contrato.
+                        </div>
+                    </div>
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Frecuencia</label>
                         <div class="input-group">
@@ -461,17 +734,32 @@
                                 <input type="date" class="form-control service-date" id="service-date-${configId}">
                             </div>
                         </div>
+
+                        <div class="row g-3 mt-1 d-none" id="custom-interval-fields-${configId}">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha inicial</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-calendar2-week"></i></span>
+                                    <input type="date" class="form-control" id="custom-interval-start-date-${configId}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Repetir cada</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-repeat"></i></span>
+                                    <input type="number" min="1" step="1" class="form-control" id="custom-interval-days-${configId}" placeholder="Ej. 21">
+                                    <span class="input-group-text">días</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     </div>
                 </div>
                 
-                <!-- Botón para agregar fecha manualmente -->
-                <div class="mb-3">
+                <div class="configuration-toolbar">
                     <button class="btn btn-sm btn-outline-primary" onclick="addManualDate(${configId})">
                         <i class="bi bi-plus-circle me-1"></i> Agregar fecha manualmente
                     </button>
-                </div>
-
-                <div class="config-actions">
                     <button class="btn btn-sm btn-outline-danger"
                             onclick="clearAllDates(${configId})">
                         <i class="bi bi-trash-fill me-1"></i> Eliminar todas las fechas
@@ -482,18 +770,18 @@
                 </div>
 
                 <!-- Collapse para órdenes -->
-                <div class="accordion my-3" id="accordionOrders">
+                <div class="accordion my-3" id="accordionOrders-${configId}">
                     <div class="accordion-item">
                         <h2 class="accordion-header">
                         <button class="accordion-button" id="orders-accordion-btn${configId}" type="button" data-bs-toggle="collapse" aria-expanded="false" onclick="handleOrdersAccordion(this, ${configId})">
                             <i class="bi bi-list-check me-1"></i> Ver órdenes generadas (<span id="orders-count-${configId}">0</span>)
                         </button>
                         </h2>
-                        <div id="ordersCollapse${configId}" class="accordion-collapse collapse show" data-bs-parent="#accordionOrders">
+                        <div id="ordersCollapse${configId}" class="accordion-collapse collapse show" data-bs-parent="#accordionOrders-${configId}">
                             <div class="accordion-body">
                                 <h6 class="mb-2 fw-bold">Órdenes de servicio</h6>
                                 <div class="overflow-auto w-100">
-                                    <table class="table table-sm table-striped">
+                                    <table class="table table-sm table-striped table-hover orders-table">
                                         <thead>
                                             <tr>
                                                 <th>Folio</th>
@@ -517,7 +805,7 @@
                 <!-- Editor de texto enriquecido para descripción -->
                 <div class="mb-3">
                     <label class="form-label">Descripción del servicio</label>
-                    <div id="config-summernote${configId}" class="summernote"></div>
+                    <div id="config-summernote${configId}" class="smnote contract-service-description-editor" style="height: 250px"></div>
                     <div class="form-text">
                         Describe los detalles específicos de esta configuración del servicio.
                     </div>
@@ -527,7 +815,7 @@
 
         $("#configurations-list").append(configHTML);
 
-        initializeSummernote(configId);
+        initializeContractServiceEditor(configId);
 
         // Pre-llenar con la descripción del servicio si es una configuración nueva sin descripción
         if (!configDescriptions[configId]) {
@@ -535,7 +823,7 @@
             const service = contain_selected_services.find(s => s.id == service_id);
             if (service && service.description) {
                 configDescriptions[configId] = service.description;
-                $(`#config-summernote${configId}`).summernote('code', service.description);
+                setContractServiceEditorHtml(configId, service.description);
             }
         }
 
@@ -565,6 +853,9 @@
             }
         });
 
+        $(`#custom-interval-start-date-${configId}`).val($("#startdate").val());
+        applyGenerationDateBounds(configId);
+
         $(`#datesCollapse${configId}`).removeClass('show');
         $(`#ordersCollapse${configId}`).removeClass('show');
 
@@ -582,6 +873,31 @@
                 toggle: false
             });
         }
+    }
+
+    function toggleCustomIntervalFields(configId) {
+        const enabled = $(`#service-interval-${configId}`).val() === CUSTOM_INTERVAL_VALUE;
+        const fields = $(`#custom-interval-fields-${configId}`);
+        const badge = $(`#custom-interval-badge-${configId}`);
+
+        fields.toggleClass('d-none', !enabled);
+        badge.toggleClass('d-none', !enabled);
+
+        if (enabled && !$(`#custom-interval-start-date-${configId}`).val()) {
+            $(`#custom-interval-start-date-${configId}`).val($("#startdate").val());
+        }
+    }
+
+    function getCustomIntervalConfig(configId) {
+        const enabled = $(`#service-interval-${configId}`).val() === CUSTOM_INTERVAL_VALUE;
+        const startDate = $(`#custom-interval-start-date-${configId}`).val() || $("#startdate").val();
+        const days = parseInt($(`#custom-interval-days-${configId}`).val(), 10);
+
+        return {
+            enabled,
+            startDate,
+            days: Number.isInteger(days) && days > 0 ? days : null
+        };
     }
 
     // Función para agregar fecha manualmente
@@ -616,6 +932,17 @@
     function handleManualDateInput(configId, newDate) {
         const dateObj = parseLocalDate(newDate);
         if (!isNaN(dateObj.getTime())) {
+            const dateKey = toDateKey(dateObj);
+
+            if (!validateGenerationDateRange(configId)) {
+                return;
+            }
+
+            if (dateKey < getGenerationStartDate(configId) || dateKey > getGenerationEndDate(configId)) {
+                showErrorMessage('La fecha manual debe estar dentro del rango de generación de esta configuración');
+                return;
+            }
+
             // Inicializar configDates[configId] si no existe
             if (!configDates[configId]) {
                 configDates[configId] = [];
@@ -629,7 +956,6 @@
 
             if (!dateExists) {
                 // Guardar fecha en formato YYYY-MM-DD para evitar desfases por zona horaria
-                const dateKey = toDateKey(dateObj);
                 configDates[configId].push(dateKey);
 
                 // Buscar configuración existente
@@ -676,55 +1002,74 @@
         }
     }
 
-    function initializeSummernote(configId) {
-        $(`#config-summernote${configId}`).summernote({
-            height: 250,
-            lang: 'es-ES',
-            toolbar: [
-                ['style', ['bold', 'italic', 'underline', 'clear']],
-                ['font', ['fontsize', 'fontname']],
-                ['para', ['ul', 'ol', 'paragraph']],
-                ['height', ['height']],
-                ['insert', ['table', 'link']],
-            ],
-            fontSize: ['8', '10', '12', '14', '16'],
-            lineHeights: ['0.25', '0.5', '1', '1.5', '2'],
+    window.contractServiceQuillEditors = window.contractServiceQuillEditors || {};
 
-            cleaner: {
-                action: 'both', // 'both' | 'button' | 'paste'
-                newline: '<br>', // Formato para saltos de línea
-                notStyle: 'position:absolute;top:0;left:0;right:0', // Estilo de notificación
-                keepHtml: true, // Activa el modo de "lista blanca" (whitelist)
-                keepOnlyTags: ['<p>', '<br>', '<ul>', '<ol>', '<li>', '<a>', '<b>',
-                    '<strong>'
-                ], // Etiquetas permitidas
-                keepClasses: false, // Remueve todas las clases CSS
-                badTags: ['style', 'script', 'applet', 'embed', 'noframes',
-                    'noscript'
-                ], // Etiquetas prohibidas (se eliminan con su contenido)
-                badAttributes: ['style', 'start', 'dir',
-                    'class'
-                ] // Atributos prohibidos (se eliminan de las etiquetas restantes)
-            },
+    function getContractServiceEditorId(configId) {
+        return `config-summernote${configId}`;
+    }
 
-            callbacks: {
-                onPaste: function(e) {
-                    var thisNote = $(this);
-                    var updatePaste = function() {
-                        // Get the current HTML code FROM the Summernote editor
-                        var original = thisNote.summernote('code');
-                        var cleaned = original;
-                        // Set the cleaned code BACK to the editor
-                        thisNote.summernote('code', cleaned);
-                    };
-                    // Wait for Summernote to process the paste
-                    setTimeout(updatePaste, 10);
-                },
+    function getContractServiceEditor(configId) {
+        return window.contractServiceQuillEditors[getContractServiceEditorId(configId)] || null;
+    }
 
-                onChange: function(contents) {
-                    configDescriptions[configId] = contents;
-                }
+    function getContractServiceEditorHtml(configId) {
+        const quill = getContractServiceEditor(configId);
+
+        if (!quill) {
+            return configDescriptions[configId] || '';
+        }
+
+        const html = quill.root.innerHTML;
+        return html === '<p><br></p>' ? '' : html;
+    }
+
+    function setContractServiceEditorHtml(configId, html) {
+        const quill = getContractServiceEditor(configId);
+
+        if (!quill) {
+            configDescriptions[configId] = html || '';
+            return;
+        }
+
+        quill.clipboard.dangerouslyPasteHTML(html || '');
+        configDescriptions[configId] = getContractServiceEditorHtml(configId);
+    }
+
+    function initializeContractServiceEditor(configId) {
+        const editorId = getContractServiceEditorId(configId);
+        const editorElement = document.getElementById(editorId);
+
+        if (!editorElement || window.contractServiceQuillEditors[editorId]) {
+            return;
+        }
+
+        const quillToolbar = [
+            ['bold', 'italic', 'underline', 'strike'],
+            [{
+                list: 'ordered'
+            }, {
+                list: 'bullet'
+            }],
+            ['link', 'image'],
+            ['clean']
+        ];
+
+        const quill = new Quill(editorElement, {
+            theme: 'snow',
+            modules: {
+                toolbar: quillToolbar,
+                table: true
             }
+        });
+
+        window.contractServiceQuillEditors[editorId] = quill;
+
+        quill.on('text-change', () => {
+            configDescriptions[configId] = getContractServiceEditorHtml(configId);
+        });
+
+        addServiceEditorTableTools(quill, editorId, () => {
+            configDescriptions[configId] = getContractServiceEditorHtml(configId);
         });
     }
 
@@ -756,14 +1101,17 @@
     function updateOrdersTable(configId, orders) {
         const ordersTable = $(`#orders-table-${configId}`);
         const ordersCount = $(`#orders-count-${configId}`);
+        const ordersSummaryCount = $(`#orders-summary-count-${configId}`);
 
         if (!orders || orders.length === 0) {
             ordersTable.html('<tr><td colspan="4" class="text-center text-muted">No hay órdenes generadas</td></tr>');
             ordersCount.text('0');
+            ordersSummaryCount.text('0');
             return;
         }
 
         ordersCount.text(orders.length);
+        ordersSummaryCount.text(orders.length);
 
         const ordersHTML = orders.map(order => `
                 <tr>
@@ -935,8 +1283,12 @@
                 return true;
             });
 
+        const customOption = frequency_id === 5
+            ? [`<option value="${CUSTOM_INTERVAL_VALUE}">Personalizado</option>`]
+            : [];
         const optionsHtml = ['<option value="0">Seleccione</option>']
             .concat(filtered.map(item => `<option value="${item.id}">${item.name}</option>`))
+            .concat(customOption)
             .join('');
 
         $intervalSelect.html(optionsHtml);
@@ -1068,6 +1420,8 @@
         $(`#week-days-selector-${configId}`).addClass('d-none');
         $(`#month-days-selector-${configId}`).addClass('d-none');
         $(`#single-date-selector-${configId}`).addClass('d-none');
+        $(`#custom-interval-fields-${configId}`).addClass('d-none');
+        $(`#custom-interval-badge-${configId}`).addClass('d-none');
 
         // Mostrar/ocultar campo de intervalo según la frecuencia
         if (frequency_id === 3 || frequency_id === 5) { // Mensual o Por periodo
@@ -1075,6 +1429,7 @@
             updateIntervalOptions(configId, frequency_id);
         } else {
             intervalField.addClass('d-none');
+            $(`#service-interval-${configId}`).val('0');
         }
 
         // Si no hay frecuencia seleccionada, ocultar el campo de días
@@ -1129,7 +1484,9 @@
 
     function handleIntervalChange(configId) {
         const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
-        const interval_id = parseInt($(`#service-interval-${configId}`).val());
+        const intervalValue = $(`#service-interval-${configId}`).val();
+        const interval_id = parseInt(intervalValue);
+        const isCustomInterval = intervalValue === CUSTOM_INTERVAL_VALUE;
         const daysLabel = $(`#days-label-${configId}`);
         const daysInfo = $(`#days-info-${configId}`);
         const daysInput = $(`#service-days-${configId}`);
@@ -1142,14 +1499,16 @@
         // Resetear campo de días
         daysInput.val('');
         daysInput.prop('disabled', false);
+        toggleCustomIntervalFields(configId);
 
         // Si no hay intervalo seleccionado, ocultar selectores de días
-        if (!interval_id || interval_id === 0) {
+        if ((!interval_id || interval_id === 0) && !isCustomInterval) {
             daysInput.closest('.input-group').hide();
             daysField.find('.form-text').hide();
             $(`#week-days-selector-${configId}`).addClass('d-none');
             $(`#month-days-selector-${configId}`).addClass('d-none');
             $(`#single-date-selector-${configId}`).addClass('d-none');
+            toggleCustomIntervalFields(configId);
             return;
         }
 
@@ -1161,6 +1520,7 @@
         $(`#week-days-selector-${configId}`).addClass('d-none');
         $(`#month-days-selector-${configId}`).addClass('d-none');
         $(`#single-date-selector-${configId}`).addClass('d-none');
+        $(`#custom-interval-fields-${configId}`).addClass('d-none');
 
         if (frequency_id === 3) {
             // Frecuencia mensual
@@ -1180,7 +1540,20 @@
         } else if (frequency_id === 5) {
             console.log('Interval changed for Por periodo');
             // Frecuencia por periodo
-            if (interval_id === 7) { // Quincenal (ID 7 en el array)
+            if (isCustomInterval) {
+                daysInput.closest('.input-group').hide();
+                daysField.find('.form-text').show();
+                daysLabel.text('Intervalo personalizado');
+                daysInfo.html(
+                    '<i class="bi bi-info-circle me-1"></i> Se generarán órdenes cada N días desde la fecha inicial hasta el fin del contrato.'
+                );
+                $(`#custom-interval-fields-${configId}`).removeClass('d-none');
+                toggleCustomIntervalFields(configId);
+
+                if (start_date && !$(`#custom-interval-start-date-${configId}`).val()) {
+                    $(`#custom-interval-start-date-${configId}`).val(start_date);
+                }
+            } else if (interval_id === 7) { // Quincenal (ID 7 en el array)
                 // Ocultar el input de días normal
                 daysInput.closest('.input-group').hide();
                 daysField.find('.form-text').hide();
@@ -1217,13 +1590,14 @@
 
     function validateDaysInput(configId) {
         const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
-        const interval_id = parseInt($(`#service-interval-${configId}`).val());
+        const intervalValue = $(`#service-interval-${configId}`).val();
+        const interval_id = parseInt(intervalValue);
         const daysInput = $(`#service-days-${configId}`);
         let value = daysInput.val().toUpperCase();
 
         // Validar según el tipo de entrada esperada
         if (frequency_id === 2 || (frequency_id === 3 && interval_id !== 1) || (frequency_id === 5 && interval_id !==
-                7)) {
+                7 && intervalValue !== CUSTOM_INTERVAL_VALUE)) {
             // Solo permitir letras L,M,I,J,V,S,D y comas
             value = value.replace(/[^LMIJVSD,]/g, '');
 
@@ -1263,13 +1637,26 @@
     // Función para guardar una configuración individual
     function saveConfiguration(configId) {
         const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
-        const frequency = frequencies.find(f => f.id === frequency_id);
-        const interval_id = parseInt($(`#service-interval-${configId}`).val());
-        const interval = interval_id > 0 ? intervals[interval_id - 1] : '';
+        const intervalValue = $(`#service-interval-${configId}`).val();
+        const interval_id = parseInt(intervalValue);
+        const customInterval = getCustomIntervalConfig(configId);
+        const effectiveFrequencyId = customInterval.enabled && (!frequency_id || frequency_id === 0) ? 5 : frequency_id;
+        const effectiveIntervalId = customInterval.enabled && (!interval_id || interval_id === 0) ? 1 : interval_id;
+        const frequency = frequencies.find(f => f.id === effectiveFrequencyId);
+        const interval = customInterval.enabled ? 'Personalizado' : (effectiveIntervalId > 0 ? intervals[effectiveIntervalId - 1] : '');
+        const generationStartDate = getGenerationStartDate(configId);
+        const generationEndDate = getGenerationEndDate(configId);
+
+        if (!validateGenerationDateRange(configId)) {
+            return;
+        }
 
         // Para quincenal, obtener la fecha del selector de fecha individual
         let daysValue;
-        if (frequency_id === 5 && interval_id === 7) {
+        if (customInterval.enabled) {
+            daysValue = customInterval.startDate;
+            $(`#service-days-${configId}`).val(daysValue);
+        } else if (frequency_id === 5 && interval_id === 7) {
             // Obtener del selector de fecha individual
             daysValue = $(`#service-date-${configId}`).val();
             if (!daysValue) {
@@ -1289,19 +1676,28 @@
 
         const days = daysValue;
 
-        // Validar campos obligatorios
-        if (frequency_id === 0) {
+        if (customInterval.enabled) {
+            if (!customInterval.startDate) {
+                alert('Por favor seleccione la fecha inicial para el intervalo personalizado');
+                return;
+            }
+
+            if (!customInterval.days) {
+                alert('Por favor ingrese cada cuántos días se repite el servicio');
+                return;
+            }
+        } else if (frequency_id === 0) {
             alert('Por favor seleccione una frecuencia para esta configuración');
             return;
         }
 
         // Validación especial para quincenal
-        if (frequency_id === 5 && interval_id === 7) {
+        if (!customInterval.enabled && frequency_id === 5 && interval_id === 7) {
             if (!daysValue || daysValue.trim() === '') {
                 alert('Por favor seleccione una fecha de inicio para el servicio quincenal');
                 return;
             }
-        } else if (frequency_id !== 4 && days.trim() === '') {
+        } else if (!customInterval.enabled && frequency_id !== 4 && days.trim() === '') {
             // Para quincenal, validar que haya fecha en el selector individual
             if (frequency_id === 5 && interval_id === 7) {
                 const dateValue = $(`#service-date-${configId}`).val();
@@ -1320,10 +1716,15 @@
 
         // Crear objeto de servicio
         const service = {
-            frequency: frequency_id,
-            interval: interval_id,
+            frequency: effectiveFrequencyId,
+            interval: effectiveIntervalId,
             days: days.split(',').filter(d => d !== ''),
-            index: configId
+            index: configId,
+            generation_start_date: generationStartDate,
+            generation_end_date: generationEndDate,
+            custom_interval_enabled: customInterval.enabled,
+            custom_interval_start_date: customInterval.startDate,
+            custom_interval_days: customInterval.days
         };
 
         // Obtener fechas de inicio y fin del contrato
@@ -1336,8 +1737,8 @@
         }
 
         // Para frecuencia quincenal, usar la fecha específica seleccionada
-        let startDate = contractStartDate;
-        if (frequency_id === 5 && interval_id === 7) {
+        let startDate = customInterval.enabled ? customInterval.startDate : generationStartDate;
+        if (!customInterval.enabled && frequency_id === 5 && interval_id === 7) {
             const quincenalStartDate = $(`#service-date-${configId}`).val();
             if (quincenalStartDate) {
                 startDate = quincenalStartDate;
@@ -1348,7 +1749,10 @@
         }
 
         // Llamar a la función createDates
-        const dates = createDates(service, startDate, contractEndDate, configId);
+        const dates = filterDatesByGenerationRange(
+            createDates(service, startDate, generationEndDate, configId),
+            configId
+        );
 
         // Guardar fechas para esta configuración
         configDates[configId] = dates;
@@ -1368,22 +1772,32 @@
             config = {
                 config_id: configId,
                 service_id: parseInt($('#service-id').val()),
-                frequency_id: frequency_id,
-                interval_id: interval_id,
+                frequency_id: effectiveFrequencyId,
+                interval_id: effectiveIntervalId,
                 days: [days],
                 dates: dates, // Agregar dates
                 orders: generatedOrders,
-                quincenal_start_date: (frequency_id === 5 && interval_id === 7) ? startDate : null
+                generation_start_date: generationStartDate,
+                generation_end_date: generationEndDate,
+                quincenal_start_date: (!customInterval.enabled && frequency_id === 5 && interval_id === 7) ? startDate : null,
+                custom_interval_enabled: customInterval.enabled,
+                custom_interval_start_date: customInterval.enabled ? customInterval.startDate : null,
+                custom_interval_days: customInterval.enabled ? customInterval.days : null
             };
             configurations.push(config);
         } else {
             // Actualizar configuración existente
-            config.frequency_id = frequency_id;
-            config.interval_id = interval_id;
+            config.frequency_id = effectiveFrequencyId;
+            config.interval_id = effectiveIntervalId;
             config.days = [days];
             config.dates = dates; // Actualizar dates
             config.orders = generatedOrders;
-            if (frequency_id === 5 && interval_id === 7) {
+            config.generation_start_date = generationStartDate;
+            config.generation_end_date = generationEndDate;
+            config.custom_interval_enabled = customInterval.enabled;
+            config.custom_interval_start_date = customInterval.enabled ? customInterval.startDate : null;
+            config.custom_interval_days = customInterval.enabled ? customInterval.days : null;
+            if (!customInterval.enabled && frequency_id === 5 && interval_id === 7) {
                 config.quincenal_start_date = startDate;
             }
         }
@@ -1396,13 +1810,18 @@
 
         if (contractConfigIndex !== -1) {
             // Actualizar configuración existente en contract_configurations
-            contract_configurations[contractConfigIndex].frequency_id = frequency_id;
-            contract_configurations[contractConfigIndex].interval_id = interval_id;
+            contract_configurations[contractConfigIndex].frequency_id = effectiveFrequencyId;
+            contract_configurations[contractConfigIndex].interval_id = effectiveIntervalId;
             contract_configurations[contractConfigIndex].days = [days];
             contract_configurations[contractConfigIndex].dates = dates;
             contract_configurations[contractConfigIndex].orders = generatedOrders;
-            contract_configurations[contractConfigIndex].description = configDescriptions[configId] || null;
-            if (frequency_id === 5 && interval_id === 7) {
+            contract_configurations[contractConfigIndex].description = getContractServiceEditorHtml(configId) || null;
+            contract_configurations[contractConfigIndex].generation_start_date = generationStartDate;
+            contract_configurations[contractConfigIndex].generation_end_date = generationEndDate;
+            contract_configurations[contractConfigIndex].custom_interval_enabled = customInterval.enabled;
+            contract_configurations[contractConfigIndex].custom_interval_start_date = customInterval.enabled ? customInterval.startDate : null;
+            contract_configurations[contractConfigIndex].custom_interval_days = customInterval.enabled ? customInterval.days : null;
+            if (!customInterval.enabled && frequency_id === 5 && interval_id === 7) {
                 contract_configurations[contractConfigIndex].quincenal_start_date = startDate;
             }
         } else {
@@ -1413,14 +1832,19 @@
                 setting_id: c_config ? c_config.setting_id : null,
                 service_id: service_id,
                 frequency: frequency ? frequency.name : 'Manual',
-                frequency_id: frequency_id,
+                frequency_id: effectiveFrequencyId,
                 interval: interval,
-                interval_id: interval_id,
+                interval_id: effectiveIntervalId,
                 days: [days],
                 dates: dates,
                 orders: generatedOrders,
-                description: configDescriptions[configId] || null,
-                quincenal_start_date: (frequency_id === 5 && interval_id === 7) ? startDate : null
+                description: getContractServiceEditorHtml(configId) || null,
+                generation_start_date: generationStartDate,
+                generation_end_date: generationEndDate,
+                quincenal_start_date: (!customInterval.enabled && frequency_id === 5 && interval_id === 7) ? startDate : null,
+                custom_interval_enabled: customInterval.enabled,
+                custom_interval_start_date: customInterval.enabled ? customInterval.startDate : null,
+                custom_interval_days: customInterval.enabled ? customInterval.days : null
             });
         }
 
@@ -1518,6 +1942,8 @@
         if (datesListElement.length) {
             datesListElement.html(generateDatesList(configId));
         }
+
+        $(`#dates-count-${configId}`).text((configDates[configId] || []).length);
 
         // Actualizar el texto del botón del collapse
         const collapseButton = $(`#accordion-btn${configId}`);
@@ -1728,7 +2154,18 @@
 
     function createDates(service, startDate, endDate, configId) {
         var new_dates = [];
-        switch (service.frequency) {
+        const frequency = parseInt(service.frequency, 10);
+        const interval = parseInt(service.interval, 10);
+
+        if (service.custom_interval_enabled) {
+            return generateCustomIntervalDates(
+                service.custom_interval_start_date || startDate,
+                endDate,
+                service.custom_interval_days
+            );
+        }
+
+        switch (frequency) {
             case 1:
                 var new_date = $(`#service-date-${configId}`).val() || null;
                 new_date ? new_dates.push(new_date) : new_dates = [];
@@ -1737,9 +2174,9 @@
                 new_dates = generateDatesByLetter(startDate, endDate, service.days);
                 break;
             case 3:
-                if (service.interval > 0) {
+                if (interval > 0) {
                     new_dates =
-                        service.interval == 1 ?
+                        interval == 1 ?
                         generateDatesByNumber(
                             startDate,
                             endDate,
@@ -1749,7 +2186,7 @@
                             startDate,
                             endDate,
                             service.days,
-                            service.interval - 1
+                            interval - 1
                         );
                 } else {
                     alert(
@@ -1763,8 +2200,8 @@
                 new_dates = getAllDatesBetween(startDate, endDate);
                 break;
             case 5:
-                if (service.interval > 0) {
-                    if (service.interval === 7) { // Quincenal
+                if (interval > 0) {
+                    if (interval === 7) { // Quincenal
                         // Para quincenal, obtener la fecha específica del selector
                         const quincenalStartDate = $(`#service-date-${configId}`).val() || startDate;
                         new_dates = generateQuincenalDatesFromStart(quincenalStartDate, endDate);
@@ -1773,7 +2210,7 @@
                             startDate,
                             endDate,
                             service.days,
-                            service.interval - 1
+                            interval - 1
                         );
                     }
                 } else {
@@ -1790,6 +2227,31 @@
         }
 
         return new_dates;
+    }
+
+    function generateCustomIntervalDates(startDate, endDate, daysInterval) {
+        const dates = [];
+        const start = parseLocalDate(startDate);
+        const end = parseLocalDate(endDate);
+        const interval = parseInt(daysInterval, 10);
+
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || !Number.isInteger(interval) || interval < 1) {
+            return dates;
+        }
+
+        if (start > end) {
+            alert('La fecha inicial del intervalo personalizado no puede ser mayor a la fecha de fin del contrato');
+            return dates;
+        }
+
+        const currentDate = new Date(start);
+
+        while (currentDate <= end) {
+            dates.push(toDateKey(currentDate));
+            currentDate.setDate(currentDate.getDate() + interval);
+        }
+
+        return dates;
     }
 
     function generateQuincenalDatesFromStart(startDate, endDate) {
@@ -1913,6 +2375,7 @@
     function saveAllConfigurations() {
         const configElements = $('.configuration-item');
         const service_id = $('#service-id').val();
+        let hasInvalidConfiguration = false;
 
         // Array temporal para las nuevas configuraciones de ESTE servicio
         const newConfigurationsForThisService = [];
@@ -1920,41 +2383,91 @@
         configElements.each(function() {
             const configId = $(this).data('config-id');
             const frequency_id = parseInt($(`#service-frequency-${configId}`).val());
-            const frequency = frequencies.find(f => f.id === frequency_id);
-            const interval_id = parseInt($(`#service-interval-${configId}`).val());
-            const interval = interval_id > 0 ? intervals[interval_id - 1] : null;
+            const intervalValue = $(`#service-interval-${configId}`).val();
+            const interval_id = parseInt(intervalValue);
+            const customInterval = getCustomIntervalConfig(configId);
+            const effectiveFrequencyId = customInterval.enabled && (!frequency_id || frequency_id === 0) ? 5 : frequency_id;
+            const effectiveIntervalId = customInterval.enabled && (!interval_id || interval_id === 0) ? 1 : interval_id;
+            const frequency = frequencies.find(f => f.id === effectiveFrequencyId);
+            const interval = customInterval.enabled ? 'Personalizado' : (effectiveIntervalId > 0 ? intervals[effectiveIntervalId - 1] : null);
             const days = $(`#service-days-${configId}`).val();
+            const daysForPayload = customInterval.enabled ? customInterval.startDate : days;
+            const generationStartDate = getGenerationStartDate(configId);
+            const generationEndDate = getGenerationEndDate(configId);
+
+            if (!validateGenerationDateRange(configId)) {
+                hasInvalidConfiguration = true;
+                return false;
+            }
+
+            const service = {
+                frequency: effectiveFrequencyId,
+                interval: effectiveIntervalId,
+                days: daysForPayload ? daysForPayload.split(',').filter(d => d !== '') : [],
+                index: configId,
+                generation_start_date: generationStartDate,
+                generation_end_date: generationEndDate,
+                custom_interval_enabled: customInterval.enabled,
+                custom_interval_start_date: customInterval.startDate,
+                custom_interval_days: customInterval.days
+            };
+            const currentConfig = configurations.find(c => c.config_id == configId);
+            const currentDates = Array.isArray(configDates[configId]) ? configDates[configId] : [];
+            const shouldRegenerateDates = !currentConfig && currentDates.length === 0 && (
+                customInterval.enabled ||
+                (effectiveFrequencyId && effectiveFrequencyId !== 0 && daysForPayload && daysForPayload.trim() !== '')
+            );
+            const generatedDates = shouldRegenerateDates
+                ? filterDatesByGenerationRange(createDates(
+                    service,
+                    customInterval.enabled ? customInterval.startDate : generationStartDate,
+                    generationEndDate,
+                    configId
+                ), configId)
+                : currentDates;
 
             // Verificar si tiene fechas manuales O configuración de frecuencia
-            const hasManualDates = configDates[configId] && configDates[configId].length > 0;
-            const hasFrequencyConfig = frequency_id !== 0 && days.trim() !== '';
+            const hasManualDates = generatedDates.length > 0;
+            const hasFrequencyConfig = (effectiveFrequencyId && effectiveFrequencyId !== 0 && daysForPayload.trim() !== '') ||
+                customInterval.enabled;
 
             if (hasManualDates || hasFrequencyConfig) {
+                configDates[configId] = generatedDates;
+
                 // Crear nueva configuración para este servicio
                 const c_config = contract_configurations.find(c => c.config_id == configId && c.service_id ==
                     service_id) ?? null;
+                const existingOrders = currentConfig ? (currentConfig.orders || []) : (c_config ? c_config.orders : []);
                 const newConfig = {
                     config_id: configId,
                     setting_id: c_config ? c_config.setting_id : null,
                     service_id: parseInt(service_id),
                     frequency: frequency ? frequency.name : 'Manual',
-                    frequency_id: (frequency_id && frequency_id > 0) ? frequency_id :
+                    frequency_id: (effectiveFrequencyId && effectiveFrequencyId > 0) ? effectiveFrequencyId :
                     1, // Frecuencia por defecto: 1 (Día)
                     interval: interval,
-                    interval_id: (interval_id && interval_id > 0) ? interval_id :
+                    interval_id: (effectiveIntervalId && effectiveIntervalId > 0) ? effectiveIntervalId :
                     1, // Intervalo por defecto: 1
-                    days: days ? [days] : [],
-                    dates: configDates[configId] || [],
-                    orders: generateOrdersFromDates(configDates[configId] || [], configId, c_config ?
-                        c_config.orders : []),
-                    description: configDescriptions[configId] || null,
-                    quincenal_start_date: (frequency_id === 5 && interval_id === 7) ? $(
-                        `#service-date-${configId}`).val() : null
+                    days: daysForPayload ? [daysForPayload] : [],
+                    dates: generatedDates,
+                    orders: generateOrdersFromDates(generatedDates, configId, existingOrders),
+                    description: getContractServiceEditorHtml(configId) || null,
+                    generation_start_date: generationStartDate,
+                    generation_end_date: generationEndDate,
+                    quincenal_start_date: (!customInterval.enabled && frequency_id === 5 && interval_id === 7) ? $(
+                        `#service-date-${configId}`).val() : null,
+                    custom_interval_enabled: customInterval.enabled,
+                    custom_interval_start_date: customInterval.enabled ? customInterval.startDate : null,
+                    custom_interval_days: customInterval.enabled ? customInterval.days : null
                 };
 
                 newConfigurationsForThisService.push(newConfig);
             }
         });
+
+        if (hasInvalidConfiguration) {
+            return;
+        }
 
         // PRESERVAR configuraciones de otros servicios y actualizar solo las de este servicio
         const otherServicesConfigs = contract_configurations.filter(c => c.service_id != service_id);

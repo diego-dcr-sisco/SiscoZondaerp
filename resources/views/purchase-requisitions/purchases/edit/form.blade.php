@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    <div class="container-fluid mt-2 p-4">
+    @include('components.page-header', [
+        'title' => 'EDITAR REQUISICION',
+        'icon' => 'bi-cart-check',
+        'backRoute' => url()->previous(),
+    ])
+<div class="container-fluid mt-2 p-4">
         <form class="form" method="POST" action="{{ route('purchase-requisition.update', $requisition->id) }}">
             @csrf
             @method('PUT')

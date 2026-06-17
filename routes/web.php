@@ -219,6 +219,7 @@ Route::prefix('stock')
         // Entradas de almacen 
         Route::get('/entry{id}', [StockController::class, 'entry'])->name('entry');
         Route::put('/entry/store', [StockController::class, 'storeInMovement'])->name('entry.store');
+        Route::post('/lot/quick-store', [StockController::class, 'quickStoreLot'])->name('lot.quickStore');
         // Salidas de almacen
         Route::get('/exits/{id}', [StockController::class, 'exits'])->name('exits');
         Route::put('/exit/store', [StockController::class, 'storeOutMovement'])->name('exit.store');
@@ -226,10 +227,13 @@ Route::prefix('stock')
         Route::get('/movements', [StockController::class, 'movementsAll'])->name('movements.all');
         Route::get('/movements/warehouse/{id}', [StockController::class, 'movementsWarehouse'])->name('movements.warehouse');
         Route::get('/movements/orders', [StockController::class, 'movementsOrders'])->name('movements.orders');
+        Route::get('/consumptions/by-customer', [StockController::class, 'consumptionsByCustomer'])->name('consumptions.by-customer');
+        Route::get('/consumptions/by-customer/export', [StockController::class, 'exportConsumptionsByCustomer'])->name('consumptions.by-customer.export');
 
         Route::get('/movement/{id}', [StockController::class, 'wMovement'])->name('movement');
         Route::get('/movement/search/{id}', [StockController::class, 'searchMovements'])->name('movement.search');
         Route::post('/movement/update/{id}', [StockController::class, 'updateMovement'])->name('movement.update');
+        Route::post('/movement/signature/{id}', [StockController::class, 'updateMovementSignature'])->name('movement.signature.update');
 
         Route::get('/stock/{id}', [StockController::class, 'stock'])->name('stock');
         Route::get('/destroy/movement/{id}', [StockController::class, 'destroyMovement'])->name('destroy.movement');
@@ -293,8 +297,10 @@ Route::prefix('lot')
         Route::get('/index', [LotController::class, 'index'])->name('index');
         Route::get('/create', [LotController::class, 'create'])->name('create');
         Route::post('/store', [LotController::class, 'store'])->name('store');
+        Route::post('/import', [LotController::class, 'import'])->name('import');
         Route::get('/{id}/edit', [LotController::class, 'edit'])->name('edit');
         Route::put('/update/{id}', [LotController::class, 'update'])->name('update');
+        Route::patch('/{id}/toggle-active', [LotController::class, 'toggleActive'])->name('toggle-active');
         Route::get('/show/{id}', [LotController::class, 'show'])->name('show');
         Route::get('/destroy/{id}', [LotController::class, 'destroy'])->name('destroy');
         Route::get('/search', [LotController::class, 'search'])->name('search');
@@ -1115,8 +1121,6 @@ Route::prefix('invoices')
             Route::get('/edit/{id}', [InvoiceController::class, 'editPayment'])->name('edit');
             Route::put('/update/{id}', [InvoiceController::class, 'updatePayment'])->name('update');
         });
-
-
 
         Route::post('/ajax/search', [InvoiceController::class, 'searchInvoices'])->name('ajax.search');
     });

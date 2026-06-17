@@ -90,7 +90,7 @@
         const selectAllCheckbox = document.getElementById('selectAllDevices');
         const selectedCount = document.getElementById('selectedCount');
 
-        let selectedDevices = new Set();
+        let selectedDevices = new Map();
 
         // Filtrar floorplans cuando cambia el servicio
         serviceSelect.addEventListener('change', function() {
@@ -214,7 +214,7 @@
             const deviceName = checkbox.dataset.deviceName;
 
             if (checkbox.checked) {
-                selectedDevices.add({
+                selectedDevices.set(deviceId, {
                     id: deviceId,
                     name: deviceName
                 });
@@ -265,7 +265,7 @@
             }
 
             // Convertir Set a Array para enviar
-            const devicesArray = Array.from(selectedDevices);
+            const devicesArray = Array.from(selectedDevices.values());
 
             // Aquí implementarías la lógica para enviar los datos al servidor
             var formData = new FormData();
@@ -300,9 +300,22 @@
             //$('#loading').remove();
 
             $.each(response.devices, function(index, device) {
-                const pestsText = device.pests.map(pest => `${pest.name} (${pest.total})`).join(', ');
+                if ($(`#device-row-${device.id}`).length) {
+                    return;
+                }
+
+                const pestsText = device.pests.map(pest => `
+                    <li class="product-item">
+                        <span class="fw-bold">${pest.name}</span>
+                        (<span class="product-quantity">${pest.quantity}</span>)
+                    </li>
+                `).join('');
                 const productsText = device.products.map(product =>
-                    `${product.name} (${product.quantity})`).join(', ');
+                    `<li class="product-item">
+                        <span class="fw-bold">${product.name}</span>
+                        (<span class="product-quantity">${product.quantity} ${extractParenthesesContent(product.metric)}</span>)
+                    </li>`
+                ).join('');
 
                 const isCheckedClass = device.states.is_checked ? 'text-success' : 'text-danger';
                 const isScannedClass = device.states.is_scanned ? 'text-success' : 'text-danger';
@@ -310,26 +323,42 @@
                 const isCheckedTitle = device.states.is_checked ? 'Revisado' : 'No revisado';
                 const isScannedTitle = device.states.is_scanned ? 'Escaneado' : 'No escaneado';
 
+                const totalQuestions = device.questions?.length || 0;
+                const answeredQuestions = (device.questions || []).filter(q => q.answer && String(q.answer).trim() !== '').length;
+                const missingQuestions = totalQuestions - answeredQuestions;
+                const questionBadge = missingQuestions > 0
+                    ? `<span class="badge bg-warning text-dark" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Faltan ${missingQuestions} pregunta(s) por responder">
+                            <i class="bi bi-exclamation-triangle-fill"></i> ${answeredQuestions}/${totalQuestions}
+                       </span>`
+                    : `<span class="badge bg-success" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Todas las preguntas están respondidas">
+                            <i class="bi bi-check-circle-fill"></i> ${totalQuestions}/${totalQuestions}
+                       </span>`;
+
                 const row = `
-                    <tr id="device-${device.id}" class="highlight">
+                    <tr id="device-row-${device.id}" data-device-id="${device.id}" class="${device.states.is_checked ? 'device-row-reviewed' : 'device-row-pending'} highlight">
                         <th scope="row">${device.nplan}</th>
                         <td class="fw-bold text-primary">${device.code}</td>
                         <td>${device.control_point.name ?? ''}</td>
                         <td>${device.floorplan.name}</td>
                         <td>${device.application_area.name}</td>
-                        <td>${pestsText}</td>
-                        <td>${productsText}</td>
+                        <td id="device${device.id}-review-pests">
+                            <ul id="table-row-pest${device.id}-list">${pestsText}</ul>
+                        </td>
+                        <td id="device${device.id}-review-products">
+                            <ul id="table-row-product${device.id}-list">${productsText}</ul>
+                        </td>
+                        <td class="text-center">${questionBadge}</td>
                         <td>
-                            <span class="${isCheckedClass} m-1 status-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="${isCheckedTitle}">
+                            <span id="device${device.id}-is_checked" class="${isCheckedClass} m-1 status-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="${isCheckedTitle}">
                                 <i class="bi bi-check-circle-fill"></i>
                             </span>
-                            <span class="${isScannedClass} m-1 status-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="${isScannedTitle}">
+                            <span id="device${device.id}-is_scanned" class="${isScannedClass} m-1 status-icon" data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="${isScannedTitle}">
                                 <i class="bi bi-qr-code"></i>
                             </span>
                         </td>
                         <td class="align-middle">
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-secondary btn-sm btn-action" data-device='${JSON.stringify(device)}' onclick="openReviewModal(this, ${ device.service.id })">
+                                <button type="button" class="btn btn-secondary btn-sm btn-action" id="btn-review-device${device.id}" data-device='${JSON.stringify(device)}' onclick="openReviewModal(this, ${ device.service.id })">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
                             </div>

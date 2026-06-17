@@ -4,14 +4,111 @@
         $offset = ($pests->currentPage() - 1) * $pests->perPage();
     @endphp
 
+    @can('write_product')
+        @include('components.page-header', [
+            'title' => 'PLAGAS',
+            'icon' => 'bi-bug-fill',
+            'actionRoute' => route('pest.create'),
+            'actionText' => 'Crear plaga',
+        ])
+    @else
+        @include('components.page-header', [
+            'title' => 'PLAGAS',
+            'icon' => 'bi-bug-fill',
+        ])
+    @endcan
+
     <div class="container-fluid">
-        <div class="py-3">
-            @can('write_product')
-                <a class="btn btn-primary btn-sm" href="{{ route('pest.create') }}">
-                    <i class="bi bi-plus-lg fw-bold"></i> Crear plaga
-                </a>
-            @endcan
-        </div>
+        <form action="{{ route('pest.search') }}" method="GET" class="mb-3">
+            @csrf
+            <div class="card">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center gap-2">
+                        <h5 class="card-title fw-bold mb-0">
+                            <i class="bi bi-funnel-fill"></i> Busqueda Avanzada
+                        </h5>
+                        <button class="btn btn-outline-dark btn-sm" type="button" data-bs-toggle="collapse"
+                            data-bs-target=".pest-search-collapse" aria-expanded="true"
+                            aria-controls="pestSearchFilters pestSearchFooter">
+                            <i class="bi bi-caret-down-fill"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body collapse show pest-search-collapse" id="pestSearchFilters">
+                    <div class="row g-3 mb-3">
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="name" class="form-label">Nombre</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-bug-fill"></i></span>
+                                <input type="text" class="form-control" id="name" name="name"
+                                    value="{{ request('name') }}" placeholder="Buscar por nombre...">
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="code" class="form-label">Codigo</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-upc"></i></span>
+                                <input type="text" class="form-control" id="code" name="code"
+                                    value="{{ request('code') }}" placeholder="Codigo...">
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="category_id" class="form-label">Categoria</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-collection-fill"></i></span>
+                                <select class="form-select" id="category_id" name="category_id">
+                                    <option value="">Todos</option>
+                                    @foreach ($pest_categories as $pc)
+                                        <option value="{{ $pc->id }}"
+                                            {{ request('category_id') == $pc->id ? 'selected' : '' }}>
+                                            {{ $pc->category }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <label for="direction" class="form-label">Ordenar / Mostrar</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-arrow-down-up"></i></span>
+                                <select class="form-select form-select-sm" id="direction" name="direction">
+                                    <option value="DESC" {{ request('direction') == 'DESC' ? 'selected' : '' }}>DESC
+                                    </option>
+                                    <option value="ASC" {{ request('direction') == 'ASC' ? 'selected' : '' }}>ASC
+                                    </option>
+                                </select>
+                                <span class="input-group-text"><i class="bi bi-list-ol"></i></span>
+                                <select class="form-select form-select-sm" id="size" name="size">
+                                    <option value="25" {{ request('size') == 25 ? 'selected' : '' }}>25</option>
+                                    <option value="50" {{ request('size') == 50 ? 'selected' : '' }}>50</option>
+                                    <option value="100" {{ request('size') == 100 ? 'selected' : '' }}>100</option>
+                                    <option value="200" {{ request('size') == 200 ? 'selected' : '' }}>200</option>
+                                    <option value="500" {{ request('size') == 500 ? 'selected' : '' }}>500</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer collapse show pest-search-collapse" id="pestSearchFooter">
+                    <div class="row justify-content-end">
+                        <div class="col-lg-1 col-6">
+                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                <i class="bi bi-funnel-fill"></i> Filtrar
+                            </button>
+                        </div>
+                        <div class="col-lg-1 col-6">
+                            <a href="{{ route('pest.index') }}" class="btn btn-secondary btn-sm w-100">
+                                <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
 
         <div class="table-responsive">
             <table class="table table-bordered table-striped table-sm">
@@ -42,10 +139,6 @@
                                 <a href="{{ route('pest.edit', ['id' => $pest->id]) }}" class="btn btn-secondary btn-sm"
                                     data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Editar plaga"><i
                                         class="bi bi-pencil-square"></i></a>
-                                <a href="{{ route('pest.destroy', ['id' => $pest->id]) }}" class="btn btn-danger btn-sm"
-                                    onclick="return confirm('{{ __('messages.are_you_sure_delete') }}')"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Eliminar plaga">
-                                    <i class="bi bi-trash-fill"></i> </a>
                             </td>
                         </tr>
                     @empty

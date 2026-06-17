@@ -21,6 +21,7 @@ use App\Models\ToxicityCategories;
 use App\Models\ProductFile;
 use App\Models\Filenames;
 use App\Models\Metric;
+use App\Models\ProductTreatment;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -28,30 +29,65 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use App\Models\ProductTreatment;
-
 
 class ProductController extends Controller
 {
-    private $images_path = 'products/images/';
+    private string $images_path = 'products/images/';
+    private string $files_path = 'products/files/';
+    private int $size = 50;
+    public array $navigation = [];
 
-    private $files_path = 'products/files/';
+    public function __construct()
+    {
+        $this->navigation = config('stock_navigation.items');
+    }
 
-    private $size = 50;
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
 
-    public $navigation = [
-        'Almacenes' => '/stock',
-        'Lotes' => '/lot/index',
-        'Productos' => '/products',
-        'Movimientos' => '/stock/movements',
-        'Consumos en ordenes' => '/stock/movements/orders',
-        'Consumos' => '/consumptions/',
-        // 'Zonas' => '/customer-zones',
-        // 'Pedidos' => '/consumptions',
-        // 'Productos en ordenes' => '/stock/orders-products',
-        //'Estadisticas' => 'stock/analytics',
-        // 'Compras' => '/purchase-requisition/purchases',
-    ];
+    private function productEditNavigation(ProductCatalog $product): array
+    {
+        return [
+            'Producto'              => route('product.edit',            ['id' => $product->id]),
+            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
+            'Plagas'                => route('product.edit.pests',       ['id' => $product->id]),
+            'Insumos'               => route('product.edit.inputs',      ['id' => $product->id]),
+            'Archivos'              => route('product.edit.files',       ['id' => $product->id]),
+            'Tratamientos'          => route('product.edit.treatment',   ['id' => $product->id]),
+            'Movimientos'           => route('product.edit.movements',   ['id' => $product->id]),
+        ];
+    }
+
+    private function getCleanMetric(?string $rawMetric): string
+    {
+        $cleanKey = strtolower(trim(preg_replace('/[\(\)]/', '', $rawMetric ?? '')));
+
+        $map = [
+            'units'      => 'uds',
+            'unit'       => 'uds',
+            'uds'        => 'uds',
+            'wt'         => 'g',
+            'weight'     => 'g',
+            'grams'      => 'g',
+            'gramos'     => 'g',
+            'g'          => 'g',
+            'vol'        => 'ml',
+            'volume'     => 'ml',
+            'mililiters' => 'ml',
+            'mililitros' => 'ml',
+            'ml'         => 'ml',
+            'l'          => 'l',
+            'kg'         => 'kg',
+            'gts'        => 'gts',
+        ];
+
+        return $map[$cleanKey] ?? $rawMetric ?? 'uds';
+    }
+
+    // -------------------------------------------------------------------------
+    // Images / Files
+    // -------------------------------------------------------------------------
 
     public function getImage(string $url)
     {
@@ -59,19 +95,87 @@ class ProductController extends Controller
             abort(404);
         }
 
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
         $disk = Storage::disk('public');
         $file = $disk->get($url);
-
-        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
         $type = $disk->mimeType($url);
 
         return response($file, 200)->header('Content-Type', $type);
     }
 
+    public function downloadFile(string $id)
+    {
+        try {
+            $productFile = ProductFile::findOrFail($id);
+
+            if (Storage::disk('public')->exists($productFile->path)) {
+                return response()->download(storage_path('app/public/' . $productFile->path));
+            }
+
+            return response()->json(['error' => 'File not found.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while downloading the file.'], 500);
+        }
+    }
+
+    public function storeFile(Request $request, string $id)
+    {
+        $product = ProductCatalog::find($id);
+
+        if (!$product) {
+            return back()->with('error', 'Producto no encontrado.');
+        }
+
+        $filename = Filenames::find($request->input('filename_id'));
+
+        $productFile = new ProductFile();
+        $productFile->fill($request->all());
+        $productFile->product_id = $product->id;
+
+        if ($request->hasFile('file')) {
+            $request->validate([
+                'file' => 'required|file|mimes:pdf,xlsx|max:10000',
+            ]);
+
+            $file        = $request->file('file');
+            $dir         = $product->name . '_' . $product->id . '/';
+            $dirFilename = $filename->name . '.' . $file->getClientOriginalExtension();
+            $url         = $this->files_path . $dir . $dirFilename;
+
+            Storage::disk('public')->put($url, file_get_contents($file));
+            $productFile->path = $url;
+        }
+
+        $productFile->save();
+
+        return back();
+    }
+
+    public function destroyFile(string $id)
+    {
+        try {
+            $productFile = ProductFile::findOrFail($id);
+
+            if ($productFile->path && Storage::disk('public')->exists($productFile->path)) {
+                Storage::disk('public')->delete($productFile->path);
+            }
+
+            $productFile->delete();
+
+            return back()->with('success', 'Archivo eliminado.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'No se pudo eliminar el archivo: ' . $e->getMessage());
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Product CRUD
+    // -------------------------------------------------------------------------
+
     public function index(Request $request): View
     {
         $navigation = $this->navigation;
-        $query = ProductCatalog::query();
+        $query      = ProductCatalog::query();
 
         if ($request->filled('name')) {
             $query->where('name', 'like', '%' . $request->name . '%');
@@ -83,7 +187,7 @@ class ProductController extends Controller
 
         if ($request->filled('business_name')) {
             $query->where(function ($q) use ($request) {
-                $q->where('manufacturer', 'like', '%' . $request->business_name . '%')
+                $q->where('manufacturer',    'like', '%' . $request->business_name . '%')
                     ->orWhere('supplier_name', 'like', '%' . $request->business_name . '%');
             });
         }
@@ -92,13 +196,11 @@ class ProductController extends Controller
             $query->where('presentation_id', $request->presentation_id);
         }
 
-        // Dirección de ordenamiento
         $direction = strtoupper($request->input('direction', 'DESC'));
         if (!in_array($direction, ['ASC', 'DESC'])) {
             $direction = 'DESC';
         }
 
-        // Tamaño de página
         $size = $request->input('size', $this->size);
 
         $products = $query
@@ -110,32 +212,40 @@ class ProductController extends Controller
         $presentations = Cache::remember('catalog.presentations.all', now()->addHour(), function () {
             return Presentation::orderBy('name')->get(['id', 'name']);
         });
+
         return view('product.index', compact('products', 'presentations', 'navigation'));
     }
 
     public function create()
     {
-        $navigation = $this->navigation;
-        $line_business = LineBusiness::all();
+        $navigation         = $this->navigation;
+        $line_business      = LineBusiness::all();
         $application_methods = ApplicationMethod::all();
-        $purposes = Purpose::all();
-        $biocides = Biocide::all();
-        $presentations = Presentation::all();
-        $toxics = ToxicityCategories::all();
-        $pest_categories = PestCategory::orderBy('category', 'asc')->get();
-        $metrics = Metric::all();
+        $purposes           = Purpose::all();
+        $biocides           = Biocide::all();
+        $presentations      = Presentation::all();
+        $toxics             = ToxicityCategories::all();
+        $pest_categories    = PestCategory::orderBy('category')->get();
+        $metrics            = Metric::all();
 
-        return view(
-            'product.create',
-            compact('line_business', 'application_methods', 'purposes', 'biocides', 'presentations', 'toxics', 'pest_categories', 'metrics', 'navigation')
-        );
+        return view('product.create', compact(
+            'line_business',
+            'application_methods',
+            'purposes',
+            'biocides',
+            'presentations',
+            'toxics',
+            'pest_categories',
+            'metrics',
+            'navigation'
+        ));
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $url = null;
         $appMethods_selected = json_decode($request->input('appMethods_selected'), true);
-        $pests_selected = json_decode($request->input('pests_selected'), true);
+        $pests_selected      = json_decode($request->input('pests_selected'), true);
+
         $product = new ProductCatalog($request->all());
 
         if ($request->hasFile('image')) {
@@ -143,9 +253,10 @@ class ProductController extends Controller
                 'image' => 'required|image|mimes:jpeg,png,jpg|max:10000',
             ]);
 
-            $file = $request->file('image');
+            $file     = $request->file('image');
             $filename = $product->name . '.' . $file->getClientOriginalExtension();
-            $url = $this->images_path . $filename;
+            $url      = $this->images_path . $filename;
+
             Storage::disk('public')->put($url, file_get_contents($file));
             $product->image_path = $url;
         }
@@ -154,160 +265,160 @@ class ProductController extends Controller
 
         if (!empty($appMethods_selected)) {
             foreach ($appMethods_selected as $methd_id) {
-                Dosage::insert([
-                    'prod_id' => $product->id,
-                    'methd_id' => $methd_id,
-                ]);
+                Dosage::insert(['prod_id' => $product->id, 'methd_id' => $methd_id]);
             }
         }
 
         if (!empty($pests_selected)) {
             foreach ($pests_selected as $pest_id) {
-                ProductPest::insert([
-                    'product_id' => $product->id,
-                    'pest_id' => $pest_id,
-                ]);
+                ProductPest::insert(['product_id' => $product->id, 'pest_id' => $pest_id]);
             }
         }
 
         return redirect()->route('product.index');
     }
 
-    public function storeFile(Request $request, string $id)
-    {
-        $product = ProductCatalog::find($id);
-
-        if ($product) {
-            $filename = Filenames::find($request->input('filename_id'));
-
-            $product_file = new ProductFile();
-            $product_file->fill($request->all());
-            $product_file->product_id = $product->id;
-
-            if ($request->hasFile('file')) {
-                $request->validate([
-                    'file' => 'required|file|mimes:pdf,xlsx|max:10000',
-                ]);
-
-                $file = $request->file('file');
-                $dir = $product->name . '_' . $product->id . '/';
-                $dir_filename = $filename->name . '.' . $file->getClientOriginalExtension();
-                $url = $this->files_path . $dir . $dir_filename;
-                Storage::disk('public')->put($url, file_get_contents($file));
-                $product_file->path = $url;
-            }
-
-            $product_file->save();
-        }
-        return back();
-    }
-
     public function show(string $id, string $section): View
     {
         $navigation = $this->navigation;
-        $product = ProductCatalog::find($id);
-        $filenames = Filenames::where('type', 'product')->get();
+        $product    = ProductCatalog::find($id);
+        $filenames  = Filenames::where('type', 'product')->get();
 
         return view('product.show', compact('product', 'filenames', 'section', 'navigation'));
     }
 
-    public function edit(string $id)
+    public function destroy(string $id)
     {
         $product = ProductCatalog::find($id);
+
+        if ($product) {
+            $product->delete();
+            return redirect()->route('product.index');
+        }
+    }
+
+    public function search(Request $request)
+    {
+        $size      = $request->input('size', $this->size);
+        $direction = strtoupper($request->input('direction', 'DESC'));
+        if (!in_array($direction, ['ASC', 'DESC'])) {
+            $direction = 'DESC';
+        }
+
+        $query = ProductCatalog::query();
+
+        if ($request->filled('name')) {
+            $query->where('name', 'like', '%' . $request->name . '%');
+        }
+
+        if ($request->filled('business_name')) {
+            $query->where('business_name', 'like', '%' . $request->business_name . '%');
+        }
+
+        if ($request->filled('active_ingredient')) {
+            $query->where('active_ingredient', 'like', '%' . $request->active_ingredient . '%');
+        }
+
+        if ($request->filled('presentation_id')) {
+            $query->where('presentation_id', $request->presentation_id);
+        }
+
+        $products = $query
+            ->with(['presentation:id,name', 'metric:id,value'])
+            ->orderBy('name', $direction)
+            ->paginate($size)
+            ->appends($request->all());
+
+        $presentations = Cache::remember('catalog.presentations.all', now()->addHour(), function () {
+            return Presentation::orderBy('name')->get(['id', 'name']);
+        });
+
+        return view('product.index', compact('products', 'presentations'));
+    }
+
+    // -------------------------------------------------------------------------
+    // Edit sections
+    // -------------------------------------------------------------------------
+
+    public function edit(string $id)
+    {
+        $product       = ProductCatalog::findOrFail($id);
         $line_business = LineBusiness::all();
-        $purposes = Purpose::all();
-        $biocides = Biocide::all();
+        $purposes      = Purpose::all();
+        $biocides      = Biocide::all();
         $presentations = Presentation::all();
-        $toxics = ToxicityCategories::all();
-        $metrics = Metric::all();
+        $toxics        = ToxicityCategories::all();
+        $metrics       = Metric::all();
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation      = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
-        return view(
-            'product.edit.form',
-            compact('product', 'line_business', 'purposes', 'biocides', 'presentations', 'toxics', 'metrics', 'navigation')
-        );
+        return view('product.edit.form', compact(
+            'product',
+            'line_business',
+            'purposes',
+            'biocides',
+            'presentations',
+            'toxics',
+            'metrics',
+            'navigation',
+            'productNavigation'
+        ));
     }
 
     public function editAppMethods(string $id)
     {
-        $product = ProductCatalog::find($id);
+        $product             = ProductCatalog::findOrFail($id);
         $application_methods = ApplicationMethod::orderBy('name')->get();
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation        = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
-        return view(
-            'product.edit.app-methods',
-            compact('product', 'application_methods', 'navigation')
-        );
+        return view('product.edit.app-methods', compact(
+            'product',
+            'application_methods',
+            'navigation',
+            'productNavigation'
+        ));
     }
 
     public function editPests(string $id)
     {
-        $product = ProductCatalog::find($id);
-        $pest_categories = PestCategory::orderBy('category', 'asc')->get();
+        $product         = ProductCatalog::findOrFail($id);
+        $pest_categories = PestCategory::orderBy('category')->get();
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation        = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
-        return view(
-            'product.edit.pests',
-            compact('product', 'pest_categories', 'navigation')
-        );
+        return view('product.edit.pests', compact(
+            'product',
+            'pest_categories',
+            'navigation',
+            'productNavigation'
+        ));
     }
 
     public function editFiles(string $id)
     {
-        $inputs = [];
-        $product = ProductCatalog::find($id);
+        $product   = ProductCatalog::findOrFail($id);
         $filenames = Filenames::where('type', 'product')->orderBy('name')->get();
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation        = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
-        return view(
-            'product.edit.files',
-            compact('product', 'filenames', 'navigation')
-        );
+        return view('product.edit.files', compact(
+            'product',
+            'filenames',
+            'navigation',
+            'productNavigation'
+        ));
     }
 
     public function editInputs(string $id)
     {
-        $inputs = [];
-        // Cargamos el producto junto con su métrica enlazada
-        $product = ProductCatalog::with('metric')->findOrFail($id);
-
+        $product     = ProductCatalog::with('metric')->findOrFail($id);
         $metricValue = $product->metric->value ?? 'uds';
+
         if (!empty($product->metric->type)) {
             $shortMetric = $product->metric->type;
         } elseif (preg_match('/\(([^)]+)\)/', $metricValue, $matches)) {
@@ -316,72 +427,77 @@ class ProductController extends Controller
             $shortMetric = $metricValue;
         }
 
-        $line_business = LineBusiness::all();
+        $line_business       = LineBusiness::all();
         $application_methods = ApplicationMethod::all();
-        $purposes = Purpose::all();
-        $biocides = Biocide::all();
-        $presentations = Presentation::all();
-        $toxics = ToxicityCategories::all();
-        $metrics = Metric::all();
-        $filenames = Filenames::where('type', 'product')->get();
-        $pest_categories = PestCategory::orderBy('category', 'asc')->get();
+        $purposes            = Purpose::all();
+        $biocides            = Biocide::all();
+        $presentations       = Presentation::all();
+        $toxics              = ToxicityCategories::all();
+        $metrics             = Metric::all();
+        $filenames           = Filenames::where('type', 'product')->get();
+        $pest_categories     = PestCategory::orderBy('category')->get();
 
         $inputsByMethod = ProductInput::where('product_id', $id)
             ->orderBy('application_method_id')
             ->get()
             ->groupBy('application_method_id');
 
+        $inputs = [];
         foreach ($inputsByMethod as $appMethodId => $inputsGroup) {
             $pestCategories = [];
 
-            // CORREGIDO: Un solo ciclo limpio por grupo de insumos
             foreach ($inputsGroup as $input) {
                 $raw = $input->metric ?? $product->metric->value ?? 'uds';
 
                 $pestCategories[] = [
-                    'id' => $input->pest_category_id,
-                    'category' => PestCategory::find($input->pest_category_id)?->category ?? 'Sin categoría',
-                    'amount' => $input->amount,
+                    'id'             => $input->pest_category_id,
+                    'category'       => PestCategory::find($input->pest_category_id)?->category ?? 'Sin categoría',
+                    'amount'         => $input->amount,
                     'display_metric' => $this->getCleanMetric($raw),
-                    'pest_ids' => is_array($input->pest_ids)
+                    'pest_ids'       => is_array($input->pest_ids)
                         ? $input->pest_ids
                         : (json_decode($input->pest_ids, true) ?? []),
                 ];
             }
 
             $inputs[] = [
-                'application_method_id' => intval($appMethodId),
+                'application_method_id'   => intval($appMethodId),
                 'application_method_name' => ApplicationMethod::find($appMethodId)?->name ?? 'Método desconocido',
-                'pestCategories' => $pestCategories,
+                'pestCategories'          => $pestCategories,
             ];
         }
 
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation        = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
-        return view(
-            'product.edit.inputs',
-            compact('product', 'line_business', 'application_methods', 'purposes', 'biocides', 'presentations', 'toxics', 'metrics', 'pest_categories', 'inputs', 'filenames', 'navigation', 'shortMetric')
-        );
+        return view('product.edit.inputs', compact(
+            'product',
+            'line_business',
+            'application_methods',
+            'purposes',
+            'biocides',
+            'presentations',
+            'toxics',
+            'metrics',
+            'pest_categories',
+            'inputs',
+            'filenames',
+            'navigation',
+            'shortMetric',
+            'productNavigation'
+        ));
     }
 
-    public function updateInputs(Request $request, $id)
+    public function updateInputs(Request $request, string $id)
     {
         $request->validate([
             'application_method_id' => 'required|integer',
-            'selected_categories' => 'required',
+            'selected_categories'   => 'required',
         ]);
 
-        $appMethodId = $request->input('application_method_id');
+        $appMethodId         = $request->input('application_method_id');
         $selectedCategoriesRaw = $request->input('selected_categories', '[]');
-        $selectedCategories = is_array($selectedCategoriesRaw)
+        $selectedCategories  = is_array($selectedCategoriesRaw)
             ? $selectedCategoriesRaw
             : json_decode($selectedCategoriesRaw, true);
 
@@ -396,18 +512,19 @@ class ProductController extends Controller
 
             foreach ($selectedCategories as $item) {
                 $categoryId = isset($item['id']) ? intval($item['id']) : null;
+
                 if (empty($categoryId)) {
                     continue;
                 }
 
                 $rawAmount = $item['amount'] ?? 0;
-                $amount = is_string($rawAmount)
+                $amount    = is_string($rawAmount)
                     ? floatval(str_replace(',', '.', $rawAmount))
                     : floatval($rawAmount);
 
                 $pestIdsRaw = $item['pest_ids'] ?? [];
                 if (is_string($pestIdsRaw)) {
-                    $decoded = json_decode($pestIdsRaw, true);
+                    $decoded    = json_decode($pestIdsRaw, true);
                     $pestIdsRaw = is_array($decoded) ? $decoded : [];
                 }
 
@@ -415,77 +532,152 @@ class ProductController extends Controller
                     $pestIdsRaw = [];
                 }
 
-                $pestIds = array_values(array_filter(array_map('intval', $pestIdsRaw), function ($v) {
-                    return $v > 0;
-                }));
+                $pestIds = array_values(array_filter(
+                    array_map('intval', $pestIdsRaw),
+                    fn($v) => $v > 0
+                ));
 
-                ProductInput::create([
-                    'product_id' => $id,
-                    'application_method_id' => $appMethodId,
-                    'pest_category_id' => $categoryId,
-                    'amount' => $amount,
-                    'pest_ids' => $pestIds,
-                ]);
+                ProductInput::updateOrCreate(
+                    [
+                        'product_id'            => $id,
+                        'application_method_id' => $appMethodId,
+                        'pest_category_id'      => $categoryId,
+                    ],
+                    [
+                        'amount'   => $amount,
+                        'pest_ids' => $pestIds,
+                    ]
+                );
             }
 
-            return redirect()->back()->with('success', 'Configuración de insumos actualizada correctamente.');
+            return back()->with('success', 'Configuración de insumos actualizada correctamente.');
         } catch (\Exception $e) {
             Log::error("Error al actualizar insumos del producto {$id}: " . $e->getMessage());
 
-            return redirect()->back()->with('error', 'Ocurrió un error interno al guardar la configuración.');
+            return back()->with('error', 'Ocurrió un error interno al guardar la configuración.');
         }
     }
 
-    public function input(Request $request, $id)
+    public function editTreatments(string $id)
     {
-        return $this->updateInputs($request, $id);
+        $product           = ProductCatalog::with('treatments')->findOrFail($id);
+        $navigation        = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
+
+        return view('product.edit.treatments', compact('product', 'navigation', 'productNavigation'));
     }
 
-    public function editTreatments($id)
+    /**
+     * Versión legacy de upstream/main para actualizar insumos.
+     * Se conserva para no romper rutas antiguas que apunten a este nombre.
+     *
+     * @deprecated Usar updateInputs() directamente en rutas nuevas.
+     */
+    public function input(Request $request, string $id)
     {
-        $product = ProductCatalog::with('treatments')->findOrFail($id);
+        $selected_categories = json_decode($request->input('selected_categories'));
+        $appMethod_id        = $request->input('application_method_id');
 
-        $navigation = [
-            'Producto'              => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas'                => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos'               => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos'              => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos'          => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos'           => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $pest_categories   = ProductInput::where('product_id', $id)
+            ->where('application_method_id', $appMethod_id)
+            ->get()
+            ->pluck('pest_category_id');
 
-        return view('product.edit.treatments', compact('product', 'navigation'));
+        $categoryIds       = array_column((array) $selected_categories, 'category_id');
+        $delete_categories = array_diff($pest_categories->toArray(), $categoryIds);
+
+        ProductInput::where('product_id', $id)
+            ->where('application_method_id', $appMethod_id)
+            ->whereIn('pest_category_id', $delete_categories)
+            ->delete();
+
+        if (!empty($selected_categories)) {
+            foreach ($selected_categories as $pest) {
+                ProductInput::updateOrCreate(
+                    [
+                        'product_id'            => $id,
+                        'application_method_id' => $appMethod_id,
+                        'pest_category_id'      => $pest->category_id,
+                    ],
+                    [
+                        'amount'   => $pest->amount,
+                        'pest_ids' => json_encode($pest->pest_ids),
+                    ]
+                );
+            }
+
+            return back()->with('success', 'Configuración de insumos actualizada.');
+        }
+
+        return back()->with('error', 'Error al procesar la solicitud.');
     }
 
+    public function storeTreatment(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'name'        => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price'       => 'nullable|numeric|min:0',
+        ]);
 
-    public function editMovements(Request $request, $id)
+        ProductTreatment::create([
+            'product_id'  => $id,
+            'name'        => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'price'       => $validated['price'] ?? 0.00,
+        ]);
+
+        return back()->with('success', 'Tratamiento registrado correctamente.');
+    }
+
+    public function updateTreatment(Request $request, string $id, string $treatmentId)
+    {
+        $validated = $request->validate([
+            'name'        => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'price'       => 'nullable|numeric|min:0',
+        ]);
+
+        $treatment = ProductTreatment::where('product_id', $id)->findOrFail($treatmentId);
+        $treatment->update($validated);
+
+        return back()->with('success', 'Tratamiento actualizado correctamente.');
+    }
+
+    public function destroyTreatment(string $id, string $treatmentId)
+    {
+        $treatment = ProductTreatment::where('product_id', $id)->findOrFail($treatmentId);
+        $treatment->delete();
+
+        return back()->with('success', 'Tratamiento eliminado correctamente.');
+    }
+
+    // -------------------------------------------------------------------------
+    // Movements
+    // -------------------------------------------------------------------------
+
+    public function editMovements(Request $request, string $id)
     {
         $product = ProductCatalog::findOrFail($id);
 
-        // 1. Inicializamos la consulta base cargando de manera estricta todas las relaciones requeridas
         $query = \App\Models\MovementProduct::where('product_id', $id)
             ->with(['warehouseMovement', 'movement', 'warehouse', 'lot', 'product']);
 
-        // 2. Filtro: Rango de Fechas
         if ($request->filled('start_date') && $request->filled('end_date')) {
             $query->whereBetween('created_at', [
                 $request->start_date . ' 00:00:00',
-                $request->end_date . ' 23:59:59'
+                $request->end_date   . ' 23:59:59',
             ]);
         }
 
-        // 3. Filtro: Almacén
         if ($request->filled('warehouse_id')) {
             $query->where('warehouse_id', $request->warehouse_id);
         }
 
-        // 4. Filtro: Lote
         if ($request->filled('lot_id')) {
             $query->where('lot_id', $request->lot_id);
         }
 
-        // 5. Filtro Seguro: Tipo de Movimiento (Busca de forma elástica en las relaciones maestras)
         if ($request->filled('type')) {
             $typeSelected = strtolower($request->type);
             $query->where(function ($q) use ($typeSelected) {
@@ -498,16 +690,24 @@ class ProductController extends Controller
             });
         }
 
-        $totalsQuery = clone $query;
-        $allFilteredMovements = $totalsQuery->get();
-
+        $allFilteredMovements = (clone $query)->get();
         $totalEntries = 0;
-        $totalExits = 0;
+        $totalExits   = 0;
 
         foreach ($allFilteredMovements as $mv) {
-            $movementType = strtolower($mv->type ?? $mv->movement->type ?? $mv->movement->name ?? $mv->warehouseMovement->type ?? '');
+            $movementType = strtolower(
+                $mv->type
+                    ?? $mv->movement->type
+                    ?? $mv->movement->name
+                    ?? $mv->warehouseMovement->type
+                    ?? ''
+            );
 
-            if (str_contains($movementType, 'ingreso') || str_contains($movementType, 'entrada') || str_contains($movementType, 'compra')) {
+            if (
+                str_contains($movementType, 'ingreso')  ||
+                str_contains($movementType, 'entrada')  ||
+                str_contains($movementType, 'compra')
+            ) {
                 $totalEntries += $mv->quantity ?? 0;
             } else {
                 $totalExits += $mv->quantity ?? 0;
@@ -521,24 +721,16 @@ class ProductController extends Controller
             ->withQueryString();
 
         $warehouses = \App\Models\Warehouse::orderBy('name')->get(['id', 'name']);
+        $lots       = \App\Models\Lot::where('product_id', $id)->get();
 
-        // Obtenemos los lotes asociados al producto de manera segura sin invocar columnas inexistentes
-        $lots = \App\Models\Lot::where('product_id', $id)->get();
-
-        $navigation = [
-            'Producto' => route('product.edit', ['id' => $product->id]),
-            'Métodos de aplicación' => route('product.edit.appMethods', ['id' => $product->id]),
-            'Plagas' => route('product.edit.pests', ['id' => $product->id]),
-            'Insumos' => route('product.edit.inputs', ['id' => $product->id]),
-            'Archivos' => route('product.edit.files', ['id' => $product->id]),
-            'Tratamientos' => route('product.edit.treatment', ['id' => $product->id]),
-            'Movimientos' => route('product.edit.movements', ['id' => $product->id])
-        ];
+        $navigation        = $this->navigation;
+        $productNavigation = $this->productEditNavigation($product);
 
         return view('product.edit.movements', compact(
             'product',
             'movements',
             'navigation',
+            'productNavigation',
             'totalEntries',
             'totalExits',
             'netBalance',
@@ -547,85 +739,21 @@ class ProductController extends Controller
         ));
     }
 
-    public function search(Request $request)
-    {
-        $size = $request->input('size');
-        $direction = $request->input('direction', 'DESC');
-        $query_products = ProductCatalog::query();
-
-        if ($request->name) {
-            $query_products = $query_products->where('name', 'LIKE', '%' . $request->name . '%');
-        }
-
-        if ($request->business_name) {
-            $query_products = $query_products->where('business_name', 'LIKE', '%' . $request->business_name . '%');
-        }
-
-        if ($request->active_ingredient) {
-            $query_products = $query_products->where('active_ingredient', 'LIKE', '%' . $request->active_ingredient . '%');
-        }
-
-        if ($request->presentation_id) {
-            $query_products = $query_products->where('presentation_id', $request->presentation_id);
-        }
-
-
-        $products = $query_products
-            ->with(['presentation:id,name', 'metric:id,value'])
-            ->orderBy('name', $direction ?? 'DESC')
-            ->paginate($size ?? $this->size)
-            ->appends($request->all());
-
-        $presentations = Cache::remember('catalog.presentations.all', now()->addHour(), function () {
-            return Presentation::orderBy('name')->get(['id', 'name']);
-        });
-
-        return view(
-            'product.index',
-            compact(
-                'products',
-                'presentations',
-            )
-        );
-    }
-
-    public function destroy(string $id)
-    {
-        $product = ProductCatalog::find($id);
-        if ($product) {
-            $product->delete();
-            return redirect()->route('product.index');
-        }
-    }
-
-    public function destroyFile(string $id)
-    {
-        try {
-            $product_file = ProductFile::findOrFail($id);
-
-            if ($product_file->path && Storage::disk('public')->exists($product_file->path)) {
-                Storage::disk('public')->delete($product_file->path);
-            }
-            $product_file->delete();
-            return back()->with('success', 'Archivo eliminado');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'No se pudo eliminar el archivo: ' . $e->getMessage());
-        }
-    }
-
-
-    //////////////////////////////////////////////////////////////////////////////
-    //////////////////  FUNCIONES DE CONSUMOS ////////////////////////////////////
+    // -------------------------------------------------------------------------
+    // Consumptions
+    // -------------------------------------------------------------------------
 
     public function showConsumptions()
     {
         $consumptionsArray = $this->getPastConsumptions(new Request([
-            'start_date' => now()->subMonth()->toDateString(),
-            'end_date' => now()->toDateString(),
-            'customer_id' => null
+            'start_date'  => now()->subMonth()->toDateString(),
+            'end_date'    => now()->toDateString(),
+            'customer_id' => null,
         ]));
-        $page = request()->input('page', 1);
+
+        $page    = request()->input('page', 1);
         $perPage = 50;
+
         $consumptions = new \Illuminate\Pagination\LengthAwarePaginator(
             collect($consumptionsArray)->forPage($page, $perPage),
             count($consumptionsArray),
@@ -633,16 +761,14 @@ class ProductController extends Controller
             $page,
             ['path' => request()->url(), 'query' => request()->query()]
         );
-        $products = ProductCatalog::all();
-        $customers = Customer::select('id', 'name')
-            ->orderBy('name')
-            ->get();
-        $start = null;
-        $end = null;
-        $currentMonth = now()->locale('es')->translatedFormat('F');
-        $customerId = null;
 
-        $isIndex = true;
+        $products     = ProductCatalog::all();
+        $customers    = Customer::select('id', 'name')->orderBy('name')->get();
+        $currentMonth = now()->locale('es')->translatedFormat('F');
+        $start        = null;
+        $end          = null;
+        $customerId   = null;
+        $isIndex      = true;
 
         return view('stock.consumptions.index', compact(
             'start',
@@ -658,25 +784,26 @@ class ProductController extends Controller
 
     public function showFilteredConsumptions(Request $request)
     {
-        // dd($request->all());
         $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'customer_id' => 'nullable|exists:customer,id'
+            'start_date'  => 'required|date',
+            'end_date'    => 'required|date|after_or_equal:start_date',
+            'customer_id' => 'nullable|exists:customer,id',
         ]);
 
-        $start = $request->input('start_date');
-        $end = $request->input('end_date');
+        $start      = $request->input('start_date');
+        $end        = $request->input('end_date');
         $customerId = $request->input('customer_id');
-        $customer = Customer::find($customerId);
+        $customer   = Customer::find($customerId);
 
         $consumptionsArray = $this->getPastConsumptions(new Request([
-            'start_date' => $start,
-            'end_date' => $end,
-            'customer_id' => $customerId
+            'start_date'  => $start,
+            'end_date'    => $end,
+            'customer_id' => $customerId,
         ]));
-        $page = $request->input('page', 1);
+
+        $page    = $request->input('page', 1);
         $perPage = 50;
+
         $consumptions = new \Illuminate\Pagination\LengthAwarePaginator(
             collect($consumptionsArray)->forPage($page, $perPage),
             count($consumptionsArray),
@@ -685,9 +812,7 @@ class ProductController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        // dd($consumptions);
-
-        $isIndex = false; // Para mostrar la tabla de cliente especifico 
+        $isIndex = false;
 
         return view('stock.consumptions.index', compact(
             'start',
@@ -699,28 +824,26 @@ class ProductController extends Controller
         ));
     }
 
-    public function getPastConsumptions(Request $request)
+    public function getPastConsumptions(Request $request): array
     {
         $request->validate([
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'customer_id' => 'nullable|exists:customer,id'
+            'start_date'  => 'required|date',
+            'end_date'    => 'required|date|after_or_equal:start_date',
+            'customer_id' => 'nullable|exists:customer,id',
         ]);
 
-        $start = $request->input('start_date');
-        $end = $request->input('end_date');
+        $start      = $request->input('start_date');
+        $end        = $request->input('end_date');
         $customerId = $request->input('customer_id');
 
-        $orders = $customerId
-            ? Order::whereBetween('programmed_date', [$start, $end])
-            ->where('customer_id', $customerId)
-            ->with(['reportProducts'])
-            ->get()
-            : Order::whereBetween('programmed_date', [$start, $end])
-            ->with(['reportProducts'])
-            ->get();
+        $ordersQuery = Order::whereBetween('programmed_date', [$start, $end])
+            ->with(['reportProducts']);
 
-        // Crear un array para almacenar los totales por producto
+        if ($customerId) {
+            $ordersQuery->where('customer_id', $customerId);
+        }
+
+        $orders        = $ordersQuery->get();
         $productTotals = [];
 
         foreach ($orders as $order) {
@@ -739,72 +862,66 @@ class ProductController extends Controller
 
                 $productId = $product->id;
 
-                // Si el producto no existe en el array, inicializarlo
                 if (!isset($productTotals[$productId])) {
                     $productTotals[$productId] = [
                         'product' => $product,
-                        'amount' => 0,
-                        'uds' => $product->metric_id
+                        'amount'  => 0,
+                        'uds'     => $product->metric_id,
                     ];
                 }
 
-                // Sumar la cantidad al total del producto
                 $productTotals[$productId]['amount'] += $orderProduct->amount;
             }
         }
 
-        // Convertir el array asociativo a un array indexado
-        $consumptions = array_values($productTotals);
-
-        return $consumptions;
+        return array_values($productTotals);
     }
 
-    public function showProductConsumptionDetail($id, Request $request)
+    public function showProductConsumptionDetail(string $id, Request $request)
     {
         $request->validate([
             'start_date' => 'nullable|date',
-            'end_date' => 'nullable|date|after_or_equal:start_date'
+            'end_date'   => 'nullable|date|after_or_equal:start_date',
         ], [
-            'end_date.after_or_equal' => 'La fecha final debe ser posterior o igual a la fecha inicial'
+            'end_date.after_or_equal' => 'La fecha final debe ser posterior o igual a la fecha inicial.',
         ]);
+
         $product = ProductCatalog::find($id);
 
         if (!$product) {
-            return redirect()->back()->with('error', 'No se encontró el producto');
+            return back()->with('error', 'No se encontró el producto.');
         }
 
-        // Obtener fechas del request o usar valores por defecto
         $startDate = $request->get('start_date', now()->subMonth()->format('Y-m-d'));
-        $endDate = $request->get('end_date', now()->format('Y-m-d'));
+        $endDate   = $request->get('end_date',   now()->format('Y-m-d'));
 
-        // Consulta base de órdenes con el producto
-        $orders = OrderProduct::where('product_id', $id)
+        $orderProducts = OrderProduct::where('product_id', $id)
             ->whereHas('order', function ($query) use ($startDate, $endDate) {
                 $query->whereBetween('programmed_date', [$startDate, $endDate]);
             })
             ->with(['order.customer', 'service'])
             ->get();
 
+        // FIX: each iteration must append to the array, not overwrite it
         $details = [];
-        foreach ($orders as $order) {
+        foreach ($orderProducts as $orderProduct) {
             $details[] = [
-                'order_id' => $order->order_id,
-                'service' => $order->service->name ?? 'N/A',
-                'product_id' => $order->product_id,
-                'amount' => $order->amount,
-                'uds' => Metric::find($product->metric_id)->type ?? 'N/A',
-                'programmed_date' => $order->order->programmed_date ?? 'N/A',
-                'customer' => $order->order->customer->name ?? 'N/A',
-                'app_method' => ApplicationMethod::find($order->application_method_id)->name ?? 'N/A',
+                'order_id'       => $orderProduct->order_id,
+                'service'        => $orderProduct->service->name ?? 'N/A',
+                'product_id'     => $orderProduct->product_id,
+                'amount'         => $orderProduct->amount,
+                'uds'            => Metric::find($product->metric_id)->type ?? 'N/A',
+                'programmed_date' => $orderProduct->order->programmed_date ?? 'N/A',
+                'customer'       => $orderProduct->order->customer->name ?? 'N/A',
+                'app_method'     => ApplicationMethod::find($orderProduct->application_method_id)->name ?? 'N/A',
             ];
         }
 
         $totalConsumption = array_sum(array_column($details, 'amount'));
 
-        // Paginación
-        $page = $request->input('page', 1);
+        $page    = $request->input('page', 1);
         $perPage = 50;
-        $items = collect($details);
+        $items   = collect($details);
 
         $details = new \Illuminate\Pagination\LengthAwarePaginator(
             $items->forPage($page, $perPage),
@@ -826,9 +943,10 @@ class ProductController extends Controller
     public function createConsumption()
     {
         $productsCatalog = ProductCatalog::all();
-        $customers = Customer::select('id', 'name')
-            ->orderBy('name')
-            ->get();
+        $customers       = Customer::select('id', 'name')->orderBy('name')->get();
+        $zones           = CustomerZone::all();
+        $currentMonth    = now()->locale('es')->translatedFormat('F');
+
         $months = [
             'Enero',
             'Febrero',
@@ -841,10 +959,8 @@ class ProductController extends Controller
             'Septiembre',
             'Octubre',
             'Noviembre',
-            'Diciembre'
+            'Diciembre',
         ];
-        $zones = CustomerZone::all();
-        $currentMonth = now()->locale('es')->translatedFormat('F');
 
         return view('stock.consumptions.create.index', compact(
             'productsCatalog',
@@ -860,92 +976,16 @@ class ProductController extends Controller
         dd($request->all());
     }
 
-    public function getPestsByCategory($categoryId)
+    // -------------------------------------------------------------------------
+    // API / JSON endpoints
+    // -------------------------------------------------------------------------
+
+    public function getPestsByCategory(string $categoryId)
     {
         $pests = PestCatalog::where('pest_category_id', $categoryId)
             ->orderBy('name')
             ->get(['id', 'name', 'pest_category_id']);
 
         return response()->json($pests);
-    }
-
-    public function downloadFile($id)
-    {
-        try {
-            $product_file = ProductFile::find($id);
-
-            if (Storage::disk('public')->exists($product_file->path)) {
-                return response()->download(storage_path('app/public/' . $product_file->path));
-            }
-            return response()->json(['error' => 'File not found.'], 404);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'An error occurred while downloading the file.'], 500);
-        }
-    }
-
-    private function getCleanMetric($rawMetric)
-    {
-        $cleanKey = strtolower(trim(preg_replace('/[\(\)]/', '', $rawMetric ?? '')));
-
-        $map = [
-            'units' => 'uds',
-            'unit' => 'uds',
-            'uds' => 'uds',
-            'wt' => 'g',
-            'weight' => 'g',
-            'grams' => 'g',
-            'gramos' => 'g',
-            'g' => 'g',
-            'vol' => 'ml',
-            'volume' => 'ml',
-            'mililiters' => 'ml',
-            'mililitros' => 'ml',
-            'ml' => 'ml',
-            'l' => 'l',
-            'kg' => 'kg',
-            'gts' => 'gts'
-        ];
-
-        return $map[$cleanKey] ?? $rawMetric ?? 'uds';
-    }
-
-    public function storeTreatment(Request $request, $id)
-    {
-        $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price'       => 'nullable|numeric|min:0',
-        ]);
-
-        ProductTreatment::create([
-            'product_id'  => $id,
-            'name'        => $validated['name'],
-            'description' => $validated['description'],
-            'price'       => $validated['price'] ?? 0.00,
-        ]);
-
-        return back()->with('success', 'Tratamiento registrado correctamente.');
-    }
-
-    public function destroyTreatment($id, $treatmentId)
-    {
-        $treatment = ProductTreatment::where('product_id', $id)->findOrFail($treatmentId);
-        $treatment->delete();
-
-        return back()->with('success', 'Tratamiento eliminado correctamente.');
-    }
-
-    public function updateTreatment(Request $request, $id, $treatmentId)
-    {
-        $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'price'       => 'nullable|numeric|min:0',
-        ]);
-
-        $treatment = ProductTreatment::where('product_id', $id)->findOrFail($treatmentId);
-        $treatment->update($validated);
-
-        return back()->with('success', 'Tratamiento actualizado correctamente.');
     }
 }

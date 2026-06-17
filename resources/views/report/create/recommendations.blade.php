@@ -71,7 +71,7 @@
                 <div class="accordion-body">
                     <div class="mb-3">
                         <div id="summary-recs{{ $service->id }}" class="smnote smnote-recommendation"
-                            data-autosave-type="recommendation" data-service-id="{{ $service->id }}" style="height: 300px">
+                            data-change-type="recommendation" data-service-id="{{ $service->id }}" style="height: 300px">
                             @if ($order->hasRecommendations($service->id))
                                 @php
                                     $recommendationText = $order->reportRecommendations->where('service_id', $service->id)->first()->recommendation_text;
@@ -106,7 +106,7 @@
                     </div>
 
                     <div class="section-action-bar">
-                        <span id="autosave-status-recommendation-{{ $service->id }}" class="autosave-status">Sin cambios</span>
+                        <span id="change-status-recommendation-{{ $service->id }}" class="change-status">Sin cambios</span>
                         <div class="section-action-buttons">
                             <button type="button" class="btn btn-success btn-sm add-recommendation-btn"
                                 data-service-id="{{ $service->id }}">
@@ -353,7 +353,7 @@
         // Función para actualizar recomendaciones en el servidor
         function updateRecommendations(serviceId, silent = false) {
             const recommendationsHtml = getRecommendationHtml(serviceId);
-            const statusEl = $(`#autosave-status-recommendation-${serviceId}`);
+            const statusEl = $(`#change-status-recommendation-${serviceId}`);
 
             const recommendations = {
                 service_id: parseInt(serviceId),

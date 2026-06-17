@@ -1,36 +1,33 @@
 @extends('layouts.app')
 @section('content')
- @php
-    if (!function_exists('formatPath')) {
-        function formatPath($path)
-        {
-            return str_replace(['/', ' '], ['-', ''], $path);
-        }
-    }
+    @include('components.page-header', [
+        'title' => 'EDITAR PRODUCTO - ' . $product->name,
+        'icon' => 'bi-box-seam',
+        'backRoute' => route('product.index'),
+    ])
+    @include('product.edit.navigation-tabs')
 
-    if (!function_exists('extractFileName')) {
-        function extractFileName($filePath)
-        {
-            $fileNameWithExtension = basename($filePath);
-            $fileName = pathinfo($fileNameWithExtension, PATHINFO_FILENAME);
-
-            return $fileName;
+    @php
+        if (!function_exists('formatPath')) {
+            function formatPath($path)
+            {
+                return str_replace(['/', ' '], ['-', ''], $path);
+            }
         }
-    }
-@endphp
+
+        if (!function_exists('extractFileName')) {
+            function extractFileName($filePath)
+            {
+                $fileNameWithExtension = basename($filePath);
+                $fileName = pathinfo($fileNameWithExtension, PATHINFO_FILENAME);
+
+                return $fileName;
+            }
+        }
+    @endphp
 
     <div class="container-fluid p-0">
-        <div class="d-flex align-items-center border-bottom ps-4 p-2">
-            <a href="{{ route('product.index') }}" class="text-decoration-none pe-3">
-                <i class="bi bi-arrow-left fs-4"></i>
-            </a>
-            <span class="text-black fw-bold fs-4">
-                EDITAR PRODUCTO <span class="fs-5 fw-bold bg-warning p-1 rounded">{{ $product->name }}</span>
-            </span>
-        </div>
-
-        <form class="m-3" method="POST" action="{{ url('products/update/' . $product->id) }}"
-            enctype="multipart/form-data">
+        <form class="m-3" method="POST" action="{{ route('product.update', ['id' => $product->id]) }}" enctype="multipart/form-data">
             @csrf
             <div class="row">
                 <div class="col-3 mb-3">
@@ -38,9 +35,7 @@
                         <div class="card-header"></div>
                         <img src="{{ $product->image_path ? route('image.show', $product->image_path) : asset('images/default.png') }}"
                             alt="product-img">
-                        <div class="card-body">
-
-                        </div>
+                        <div class="card-body"></div>
                         <div class="card-footer">
                             <div class="mb-3">
                                 <label for="formFile" class="form-label">Agregar archivo</label>
@@ -159,7 +154,6 @@
                     </div>
                 </div>
 
-
                 <div class="col-12">
                     <div class="border rounded shadow p-3">
                         <div class="fw-bold mb-2 fs-5">Detalles técnicos de uso</div>
@@ -207,5 +201,15 @@
             </div>
             <button type="submit" class="btn btn-primary my-3">{{ __('buttons.update') }}</button>
         </form>
+        @can('write_product')
+            @if (auth()->user()->work_department_id == 1)
+                @include('components.danger-action', [
+                    'actionRoute' => route('product.destroy', ['id' => $product->id]),
+                    'title' => 'Zona de peligro',
+                    'description' => 'Elimina este producto desde su pantalla de edición.',
+                    'buttonText' => 'Eliminar producto',
+                ])
+            @endif
+        @endcan
     </div>
 @endsection

@@ -24,14 +24,13 @@
 @endphp
 
 @section('content')
+@include('components.page-header', [
+        'title' => 'VER FACTURA',
+        'icon' => 'bi-receipt',
+        'backRoute' => url()->previous(),
+    ])
 <div class="container-fluid">
-     
-    <div class="row border-bottom p-2 mb-3">
-        <a href="{{ route('invoices.customers') }}"
-            class="col-auto btn-primary p-0 fs-3"><i class="bi bi-arrow-left m-3"></i></a>
-        <h1 class="col-auto fs-2 fw-bold m-0"> Detalles de {{ $customer->customer->name }} </h1>
-    </div>
-    <div class="row mb-4">
+<div class="row mb-4">
         <div class="col-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-bold d-flex justify-content-between align-items-center">

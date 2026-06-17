@@ -1,6 +1,11 @@
 @extends('layouts.app')
 @section('content')
-    @php
+    @include('components.page-header', [
+        'title' => 'VER USUARIO',
+        'icon' => 'bi-person',
+        'backRoute' => url()->previous(),
+    ])
+@php
         function isPDF($filePath)
         {
             $extension = pathinfo($filePath, PATHINFO_EXTENSION);
@@ -40,14 +45,7 @@
         </div>
 
         <div class="col-11">
-            <div class="row p-3 border-bottom">
-                <a href="javascript:history.back()" class="col-auto btn-primary p-0 fs-3"><i
-                        class="bi bi-arrow-left m-3"></i></a>
-                <h1 class="col-auto fs-2 m-0">
-                    {{ __('user.title.show') }} [<span class="fw-bold">{{ $user->name }}</span>]
-                </h1>
-            </div>
-            <div class="row p-5 pt-3">
+<div class="row p-5 pt-3">
                 @switch($type)
                     @case(1)
                         <div class="col-12">

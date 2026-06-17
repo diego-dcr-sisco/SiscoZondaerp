@@ -7,14 +7,13 @@
     window.location.href = "{{ route('login') }}";
 </script>
 @endif
+@include('components.page-header', [
+    'title' => 'BUSQUEDA DE MOVIMIENTO',
+    'icon' => 'bi-search',
+    'backRoute' => route('dashboard.warehouse', ['status' => 1, 'page' => 1]),
+])
 <div>
     <div class="col-11">
-        <div class="row p-3 border-bottom">
-            <a href="{{ route('dashboard.warehouse', ['status' => 1, 'page' => 1]) }}" class="col-auto btn-primary p-0 fs-3">
-                <i class="bi bi-arrow-left m-3"></i>
-            </a>
-            <h1 class="col-auto fs-2 fw-bold m-0">Búsqueda de Movimiento:</h1>
-        </div>
     </div>
 
     <form  method="POST" class="form p-5 pt-3" action="{{ route('warehouse.search') }}" enctype="multipart/form-data">

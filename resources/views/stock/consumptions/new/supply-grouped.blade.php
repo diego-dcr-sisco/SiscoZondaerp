@@ -1,30 +1,24 @@
 @extends('layouts.app')
 
 @section('content')
+@include('components.page-header', [
+    'title' => 'SURTIR PRODUCTOS DEL CONSUMO',
+    'icon' => 'bi-box-seam',
+    'backRoute' => route('consumptions.show-grouped', [
+        'customer_id' => $groupedConsumption->customer->id,
+        'zone_id' => $groupedConsumption->zone->id,
+        'month' => $groupedConsumption->month,
+        'year' => $groupedConsumption->year
+    ]),
+])
+
 <div class="row w-100 h-100 m-0">
     @include('dashboard.stock.navigation')
 
     <div class="col-11 p-3 m-0">
         
         
-        <div class="row mb-3">
-            <div class="col-lg-8">
-                <div class="d-flex align-items-center">
-                    <a href="{{ route('consumptions.show-grouped', [
-                        'customer_id' => $groupedConsumption->customer->id,
-                        'zone_id' => $groupedConsumption->zone->id,
-                        'month' => $groupedConsumption->month,
-                        'year' => $groupedConsumption->year
-                    ]) }}" class="col-auto btn-primary p-0 fs-3">
-                        <i class="bi bi-arrow-left m-3"></i>
-                    </a>
-                    <div>
-                        <h1 class="h3 mb-0">Surtir Productos del Consumo</h1>
-                        <small class="text-muted">{{ $groupedConsumption->customer->name }} - {{ $groupedConsumption->period_formatted }}</small>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div class="text-muted small mb-3">{{ $groupedConsumption->customer->name }} - {{ $groupedConsumption->period_formatted }}</div>
 
         <!-- Información del Consumo -->
         <div class="row mb-4">

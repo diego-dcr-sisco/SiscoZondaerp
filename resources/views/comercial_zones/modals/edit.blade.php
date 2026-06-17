@@ -1,4 +1,8 @@
 <!-- Modal para editar zona comercial -->
+@php
+    $errors = $errors ?? new \Illuminate\Support\ViewErrorBag;
+@endphp
+
 <div class="modal fade" id="editComercialZoneModal" tabindex="-1" role="dialog"
     aria-labelledby="editComercialZoneModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
@@ -118,7 +122,15 @@
             const name = $(this).data('name');
             const code = $(this).data('code');
             const description = $(this).data('description');
-            const customerIds = $(this).data('customers').filter(id => id !== '');
+            let customerIds = $(this).data('customers') || [];
+            if (typeof customerIds === 'string') {
+                try {
+                    customerIds = JSON.parse(customerIds);
+                } catch (e) {
+                    customerIds = customerIds.split(',');
+                }
+            }
+            customerIds = customerIds.filter(id => id !== '');
 
             // Llenar campos del formulario
             $('#editComercialZoneId').val(comercialZoneId);
@@ -127,7 +139,7 @@
             $('#editDescription').val(description || '');
 
             // Establecer la ruta del formulario
-            $('#editComercialZoneForm').attr('action', `/comercial-zones/${comercialZoneId}`);
+            $('#editComercialZoneForm').attr('action', `/comercial-zones/update/${comercialZoneId}`);
 
             var csrfToken = $('meta[name="csrf-token"]').attr("content");
             var formData = new FormData();
@@ -172,11 +184,14 @@
 
             $.ajax({
                 url: "{{ route('order.search.customer') }}",
-                method: 'GET',
+                method: 'POST',
+                headers: {
+                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr("content"),
+                },
                 data: {
                     customer_name: query,
-                    customer_phone: query,
-                    customer_address: query
+                    customer_phone: '',
+                    customer_address: ''
                 },
                 success: function(response) {
                     $('#editSearchLoading').hide();
@@ -247,7 +262,7 @@
             });
 
             selectedList.html(html);
-            $('#editCustomerIds').val(editSelectedCustomers.map(c => c.id).join(','));
+            $('#editCustomerIds').val(JSON.stringify(editSelectedCustomers.map(c => c.id)));
         }
 
         // Manejar checkboxes en edición
