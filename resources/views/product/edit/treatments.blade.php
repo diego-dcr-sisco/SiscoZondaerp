@@ -49,7 +49,6 @@
                     </div>
                 </div>
 
-                {{-- Columna Derecha: Listado en Tabla --}}
                 <div class="col-12 col-lg-8">
                     <div class="card shadow-sm border-0 rounded-3 p-3 bg-white">
                         <h5 class="fw-bold text-dark mb-3">Tratamientos Asignados</h5>
