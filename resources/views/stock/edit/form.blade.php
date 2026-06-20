@@ -71,7 +71,7 @@
                                     @foreach ($technicians as $technician)
                                         <option value="{{ $technician->id }}"
                                                 {{ $technician->id == $warehouse->technician_id ? 'selected' : '' }}>
-                                            {{ $technician->user->name }}
+                                            {{ $technician->user->name ?? 'Técnico sin usuario asignado' }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -118,11 +118,13 @@
                                 <div class="card h-100 border-0 bg-light">
                                     <div class="card-body text-center">
                                         <div class="form-check form-switch d-flex justify-content-center">
+                                            <input type="hidden" name="allow_material_receipts" value="0">
                                             <input class="form-check-input form-check-input-lg" 
                                                    type="checkbox" 
                                                    role="switch"
                                                    id="allow-material-receipts"
-                                                   name="allow_material_receipts" 
+                                                   name="allow_material_receipts"
+                                                   value="1"
                                                    {{ $warehouse->allow_material_receipts ? 'checked' : '' }}>
                                         </div>
                                         <label class="form-check-label fw-semibold mt-2" for="allow-material-receipts">
@@ -140,11 +142,13 @@
                                 <div class="card h-100 border-0 bg-light">
                                     <div class="card-body text-center">
                                         <div class="form-check form-switch d-flex justify-content-center">
+                                            <input type="hidden" name="is_active" value="0">
                                             <input class="form-check-input form-check-input-lg" 
                                                    type="checkbox" 
                                                    role="switch"
                                                    id="is-active" 
                                                    name="is_active"
+                                                   value="1"
                                                    {{ $warehouse->is_active ? 'checked' : '' }}>
                                         </div>
                                         <label class="form-check-label fw-semibold mt-2" for="is-active">
@@ -162,11 +166,13 @@
                                 <div class="card h-100 border-0 bg-light">
                                     <div class="card-body text-center">
                                         <div class="form-check form-switch d-flex justify-content-center">
+                                            <input type="hidden" name="is_matrix" value="0">
                                             <input class="form-check-input form-check-input-lg" 
                                                    type="checkbox" 
                                                    role="switch"
                                                    id="is-matrix" 
                                                    name="is_matrix"
+                                                   value="1"
                                                    {{ $warehouse->is_matrix ? 'checked' : '' }}>
                                         </div>
                                         <label class="form-check-label fw-semibold mt-2" for="is-matrix">
@@ -327,31 +333,9 @@ document.addEventListener('DOMContentLoaded', function() {
             Actualizando...
         `;
         
-        // Configurar valores de checkboxes
-        setCheckboxValues();
-        
         // Enviar formulario
         form.submit();
     });
-    
-    function setCheckboxValues() {
-        const checkboxes = ['allow_material_receipts', 'is_active', 'is_matrix'];
-        checkboxes.forEach(name => {
-            const checkbox = form.querySelector(`[name="${name}"]`);
-            if (checkbox) {
-                // Crear input hidden para el valor
-                let hiddenInput = form.querySelector(`input[name="${name}_hidden"]`);
-                if (!hiddenInput) {
-                    hiddenInput = document.createElement('input');
-                    hiddenInput.type = 'hidden';
-                    hiddenInput.name = name;
-                    form.appendChild(hiddenInput);
-                }
-                hiddenInput.value = checkbox.checked ? '1' : '0';
-                checkbox.disabled = true; // Deshabilitar para que no se envíe
-            }
-        });
-    }
     
     function showAlert(message, type = 'info') {
         const alertDiv = document.createElement('div');

@@ -135,7 +135,7 @@ class StockController extends Controller
         $navigation = $this->navigation;
         $warehouse = Warehouse::findOrFail($id);
         $branches = Branch::all();
-        $technicians = Technician::all();
+        $technicians = Technician::with('user')->get();
         $states = json_decode(file_get_contents(public_path($this->states_route)), true);
         $cities = json_decode(file_get_contents(public_path($this->cities_route)), true);
 
@@ -160,23 +160,9 @@ class StockController extends Controller
         // esto se puede optimizar pero hay que tener cuidado como 
         // esta tomando la data los checkboxes del front 
 
-        if ($request->allow_material_receipts == '1') {
-            $warehouse->allow_material_receipts = 1;
-        } else {
-            $warehouse->allow_material_receipts = 0;
-        }
-
-        if ($request->is_active == '1') {
-            $warehouse->is_active = 1;
-        } else {
-            $warehouse->is_active = 0;
-        }
-
-        if ($request->is_matrix == '1') {
-            $warehouse->is_matrix = 1;
-        } else {
-            $warehouse->is_matrix = 0;
-        }
+        $warehouse->allow_material_receipts = $request->boolean('allow_material_receipts');
+        $warehouse->is_active = $request->boolean('is_active');
+        $warehouse->is_matrix = $request->boolean('is_matrix');
 
         $warehouse->observations = $request->observations;
         $warehouse->update();

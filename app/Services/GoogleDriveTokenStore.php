@@ -31,6 +31,12 @@ class GoogleDriveTokenStore
 
     public function saveRefreshToken(string $refreshToken): IntegrationCredential
     {
+        if (!Schema::hasTable('integration_credentials')) {
+            throw new \RuntimeException(
+                'La tabla integration_credentials no existe. Ejecuta php artisan migrate antes de guardar credenciales de Google Drive.'
+            );
+        }
+
         return IntegrationCredential::query()->updateOrCreate(
             [
                 'service' => self::SERVICE,
