@@ -1,39 +1,41 @@
 @extends('layouts.app')
 @section('content')
     @include('components.page-header', [
-        'title' => 'EDITAR PRODUCTO',
+        'title' => 'EDITAR PRODUCTO - ' . $product->name,
         'icon' => 'bi-box-seam',
-        'backRoute' => url()->previous(),
+        'backRoute' => route('product.index'),
     ])
     @include('product.edit.navigation-tabs')
-@php
-        function formatPath($path)
-        {
-            return str_replace(['/', ' '], ['-', ''], $path);
+
+    @php
+        if (!function_exists('formatPath')) {
+            function formatPath($path)
+            {
+                return str_replace(['/', ' '], ['-', ''], $path);
+            }
         }
 
-        function extractFileName($filePath)
-        {
-            $fileNameWithExtension = basename($filePath);
-            $fileName = pathinfo($fileNameWithExtension, PATHINFO_FILENAME);
+        if (!function_exists('extractFileName')) {
+            function extractFileName($filePath)
+            {
+                $fileNameWithExtension = basename($filePath);
+                $fileName = pathinfo($fileNameWithExtension, PATHINFO_FILENAME);
 
-            return $fileName;
+                return $fileName;
+            }
         }
     @endphp
 
     <div class="container-fluid p-0">
-<form class="m-3" method="POST" action="{{ route('product.update', ['id' => $product->id]) }}"
-            enctype="multipart/form-data">
+        <form class="m-3" method="POST" action="{{ route('product.update', ['id' => $product->id]) }}" enctype="multipart/form-data">
             @csrf
             <div class="row">
                 <div class="col-3 mb-3">
                     <div class="card border rounded shadow" style="height: 100%;">
-                        <div class="card-header">Imagen</div>
-                        <img src="{{ $product->image_path ? route('image.show', $product->image_path) : asset('img/default.jpg') }}"
+                        <div class="card-header"></div>
+                        <img src="{{ $product->image_path ? route('image.show', $product->image_path) : asset('images/default.png') }}"
                             alt="product-img">
-                        <div class="card-body">
-
-                        </div>
+                        <div class="card-body"></div>
                         <div class="card-footer">
                             <div class="mb-3">
                                 <label for="formFile" class="form-label">Agregar archivo</label>
@@ -141,17 +143,16 @@
                             <div class="col-lg-6 col-12 mb-3">
                                 <label for="description" class="form-label">{{ __('product.data.description') }}
                                 </label>
-                                <textarea class="form-control" name="description" id="description" rows="4"> {{ $product->description }} </textarea>
+                                <textarea class="form-control" name="description" id="description" rows="4">{{ $product->description }}</textarea>
                             </div>
                             <div class="col-lg-6 col-12 mb-3">
                                 <label for="execution_indications"
                                     class="form-label">{{ __('product.data.execution_indications') }}</label>
-                                <textarea class="form-control" name="execution_indications" id="execution_indications" rows="4"> {{ $product->execution_indications }} </textarea>
+                                <textarea class="form-control" name="execution_indications" id="execution_indications" rows="4">{{ $product->execution_indications }}</textarea>
                             </div>
                         </div>
                     </div>
                 </div>
-
 
                 <div class="col-12">
                     <div class="border rounded shadow p-3">

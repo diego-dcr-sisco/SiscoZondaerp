@@ -120,7 +120,7 @@
             </main>
 
         </div>
-    @else
+    @else 
         <main class="flex-grow-1">
             @yield('login')
         </main>

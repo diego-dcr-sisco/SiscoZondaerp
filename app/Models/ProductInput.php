@@ -11,23 +11,34 @@ class ProductInput extends Model
 
     protected $table = 'product_input';
 
+    protected $casts = [
+        'amount' => 'float',
+        'pest_ids' => 'array',
+
+    ];
+
+
     protected $fillable = [
         'id',
         'product_id',
         'application_method_id',
         'pest_category_id',
         'amount',
+        'pest_ids',
     ];
 
-    public function product() {
-        return $this->belongsTo(ProductCatalog::class ,'product_id');
+    public function product()
+    {
+        return $this->belongsTo(ProductCatalog::class, 'product_id');
     }
 
-    public function appMethod() {
-        return $this->belongsTo(ApplicationMethod::class ,'application_method_id');
+    public function appMethod()
+    {
+        return $this->belongsTo(ApplicationMethod::class, 'application_method_id');
     }
 
-    public function pestCategory() {
+    public function pestCategory()
+    {
         return $this->belongsTo(PestCategory::class, 'pest_category_id');
     }
 }

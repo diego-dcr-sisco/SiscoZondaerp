@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductCatalog extends Model
 {
@@ -153,25 +154,35 @@ class ProductCatalog extends Model
         return $this->pests->contains('id', $pestID);
     }
 
-    public function categories() {
+    public function categories()
+    {
         $categoryIds = $this->pests()->pluck('pest_category_id');
         //$pest_categories = PestCategory::whereIn('id', $categoryIds)->get();
         return PestCategory::whereIn('id', $categoryIds)->get();
     }
 
-    public function files() {
+    public function files()
+    {
         return $this->hasMany(ProductFile::class, 'product_id');
     }
 
-    public function file($filenameId) {
+    public function file($filenameId)
+    {
         return $this->files()->where('filename_id', $filenameId)->first();
     }
 
-    public function lots() {
+    public function inputs()
+    {
+        return $this->hasMany(\App\Models\ProductInput::class, 'product_id');
+    }
+
+    public function lots()
+    {
         return $this->hasMany(Lot::class, 'product_id', 'id');
     }
 
-    public function selectedLots($date) {
+    public function selectedLots($date)
+    {
         return $this->lots()
             ->active()
             ->whereDate('start_date', '<=', $date)
@@ -179,16 +190,23 @@ class ProductCatalog extends Model
             ->get();
     }
 
-    public function metric() {
+    public function metric()
+    {
         return $this->belongsTo(Metric::class, 'metric_id');
     }
 
-    public function biocide() {
+    public function biocide()
+    {
         return $this->belongsTo(Biocide::class, 'biocide_id');
     }
 
     public function movementProducts()
-{
-    return $this->hasMany(MovementProduct::class, 'product_id');
-}
+    {
+        return $this->hasMany(MovementProduct::class, 'product_id');
+    }
+
+    public function treatments()
+    {
+        return $this->hasMany(ProductTreatment::class, 'product_id');
+    }
 }
